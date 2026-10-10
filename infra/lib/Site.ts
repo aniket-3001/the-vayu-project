@@ -51,7 +51,7 @@ export const CONTENT_SECURITY_POLICY = [
   "style-src 'self' 'unsafe-inline'",
   "img-src 'self' data: blob: https://tiles.openfreemap.org",
   "font-src 'self' data: https://tiles.openfreemap.org",
-  "connect-src 'self' data: blob: https://tiles.openfreemap.org https://api.open-meteo.com https://air-quality-api.open-meteo.com https://geocoding-api.open-meteo.com",
+  "connect-src 'self' data: blob: https://tiles.openfreemap.org https://api.open-meteo.com https://air-quality-api.open-meteo.com https://geocoding-api.open-meteo.com https://photon.komoot.io",
   "worker-src 'self' blob:",
   "media-src 'self' blob:",
   "object-src 'none'",

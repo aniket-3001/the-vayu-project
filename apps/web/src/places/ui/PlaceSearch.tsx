@@ -9,7 +9,7 @@ type State =
   | { readonly kind: 'none' }
   | { readonly kind: 'failed' };
 
-/** Looks a place up by name and pins it. Only the name typed is sent, to Open-Meteo's geocoder. */
+/** Looks a place up by name, a school or an office as well as a town, and pins it. Only the name typed is sent. */
 export function PlaceSearch({
   onPick,
   search = searchPlaces,
@@ -54,10 +54,11 @@ export function PlaceSearch({
         <button type="submit">Search</button>
       </form>
       <div aria-live="polite" className="search-status">
-        {state.kind === 'loading' && <p className="muted">Checking the monitors nearby…</p>}
+        {state.kind === 'loading' && <p className="muted">Looking for that place…</p>}
         {state.kind === 'none' && (
           <p className="muted">
-            No monitors cover that place. We cover north India, so try a nearby city.
+            We could not find that. Try the name with the area or city, for example “DAV School
+            Sector 49 Gurugram”. We cover north India.
           </p>
         )}
         {state.kind === 'failed' && (

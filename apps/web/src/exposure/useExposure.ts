@@ -1,5 +1,6 @@
 import { readDemo } from '../demo/state';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
+import { useLiveLocation } from '../places/liveLocation';
 import { airStore } from '../air/store';
 import { loadLive, recordFix, saveLive } from './live';
 import type { LiveLog } from './model';
@@ -103,8 +104,8 @@ export function useSpots(
 export type LiveState = 'off' | 'asking' | 'on' | 'refused' | 'unavailable';
 
 /**
- * Live location: asks the browser, then logs where the person is for as long as the app is open. A
- * browser page cannot track in the background, so the screen says so.
+ * Live location for Exposure: the same switch as the one on every screen, plus the log of where the device was each
+ * hour while the app was open. A browser page cannot track in the background, so the screen says so.
  */
 export function useLive(storage: Storage = window.localStorage): {
   readonly log: LiveLog;
@@ -117,48 +118,33 @@ export function useLive(storage: Storage = window.localStorage): {
   readonly clearLog: () => void;
 } {
   const [log, setLog] = useState<LiveLog>(() => loadLive(storage));
-  const [state, setState] = useState<LiveState>('off');
   const track = airStore().madeUpExposure()?.track;
   const [sample, setSample] = useState(() => track !== undefined && readDemo()?.live === true);
-  const watch = useRef<number | null>(null);
+  const here = useLiveLocation();
 
-  const stop = useCallback(() => {
-    if (watch.current !== null) navigator.geolocation.clearWatch(watch.current);
-    watch.current = null;
-    setState('off');
-  }, []);
-
-  useEffect(() => stop, [stop]);
-
-  const start = (): void => {
-    if (!('geolocation' in navigator)) {
-      setState('unavailable');
-      return;
-    }
-    setState('asking');
-    watch.current = navigator.geolocation.watchPosition(
-      (position) => {
-        setState('on');
-        setSample(false);
-        setLog((current) => {
-          const next = recordFix(current, position.coords.latitude, position.coords.longitude);
-          saveLive(storage, next);
-          return next;
-        });
-      },
-      () => {
-        setState('refused');
-      },
-      { maximumAge: 60_000, timeout: 20_000 },
-    );
-  };
+  // Each fix, while live location is on, is written down against the hour it came in.
+  const lat = here.position?.lat;
+  const lng = here.position?.lng;
+  useEffect(() => {
+    if (!here.enabled || here.status !== 'on' || lat === undefined || lng === undefined) return;
+    setSample(false);
+    setLog((current) => {
+      const next = recordFix(current, lat, lng);
+      saveLive(storage, next);
+      return next;
+    });
+  }, [here.enabled, here.status, lat, lng, storage]);
 
   return {
     log: sample && track !== undefined ? track : log,
-    state,
+    state: here.status,
     sample,
-    start,
-    stop,
+    start: () => {
+      here.set(true);
+    },
+    stop: () => {
+      here.set(false);
+    },
     showSample:
       track === undefined
         ? undefined

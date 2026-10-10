@@ -127,7 +127,7 @@ describe('the Places screen', () => {
     screenWith({ search: () => Promise.resolve([]) });
     await userEvent.type(screen.getByRole('searchbox'), 'Paris');
     await userEvent.click(screen.getByRole('button', { name: 'Search' }));
-    expect(await screen.findByText(/No monitors cover that place/u)).toBeInTheDocument();
+    expect(await screen.findByText(/could not find that/u)).toBeInTheDocument();
     cleanup();
     screenWith({ search: () => Promise.reject(new Error('offline')) });
     await userEvent.type(screen.getByRole('searchbox'), 'Delhi');

@@ -333,6 +333,7 @@ describe('the public site', () => {
       'api.open-meteo.com',
       'air-quality-api.open-meteo.com',
       'geocoding-api.open-meteo.com',
+      'photon.komoot.io',
     ])
       expect(CONTENT_SECURITY_POLICY).toContain(host);
     expect(CONTENT_SECURITY_POLICY).toContain("frame-ancestors 'none'");

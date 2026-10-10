@@ -130,7 +130,9 @@ export function PlacesPanel({
           </>
         )}
         Pinned places are saved on this device only. Up to {MAX_PINS}. Search sends just the name
-        you type to Open-Meteo.
+        you type to Photon, the OpenStreetMap search. We show the nearest monitor within 25 km and
+        say how far it is; where there is none, an estimate from the regional model, which uses
+        satellite data.
       </p>
     </div>
   );
