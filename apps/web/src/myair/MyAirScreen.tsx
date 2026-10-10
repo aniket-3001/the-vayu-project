@@ -4,7 +4,11 @@ import { useSearchParams } from 'react-router-dom';
 import { readingForPin } from '../places/placeSample';
 import { usePins } from '../places/usePins';
 import { tasksFor } from '../tasks/model';
-import { TasksCard } from '../tasks/ui/TasksCard';
+import { AlertsStrip } from '../alerts/ui/AlertsStrip';
+import { alertsFor } from '../alerts/model';
+import { useFires } from '../alerts/useFires';
+import { SmokeCard } from '../units/SmokeCard';
+import { TipsCard } from '../tasks/ui/TipsCard';
 import { DevicesPanel } from '../devices/ui/DevicesPanel';
 import { PlacesPanel } from '../places/ui/PlacesPanel';
 import type { PlaceMatch } from '../data/geocode';
@@ -25,7 +29,13 @@ export function MyAirScreen({ search, locate }: Props): React.JSX.Element {
   const tab = params.get('tab') === 'devices' ? 'devices' : 'places';
   const { pins } = usePins();
   const first = pins[0];
-  const tasks = useMemo(() => (first === undefined ? [] : tasksFor(readingForPin(first))), [first]);
+  const reading = useMemo(() => (first === undefined ? undefined : readingForPin(first)), [first]);
+  const tips = useMemo(() => (reading === undefined ? [] : tasksFor(reading)), [reading]);
+  const fires = useFires();
+  const alerts = useMemo(
+    () => (reading === undefined ? [] : alertsFor(reading, fires)),
+    [reading, fires],
+  );
   return (
     <div className="page places">
       <header className="place">
@@ -49,9 +59,11 @@ export function MyAirScreen({ search, locate }: Props): React.JSX.Element {
           ))}
         </div>
       </header>
-      {first !== undefined && tasks.length > 0 && (
+      {first !== undefined && reading !== undefined && (
         <div className="places-main tasks-wrap">
-          <TasksCard tasks={tasks} placeName={first.name} />
+          <AlertsStrip alerts={alerts} data={reading} />
+          <SmokeCard pm25={reading.pm25} title={`${first.name} in cigarettes`} />
+          {tips.length > 0 && <TipsCard tips={tips} placeName={first.name} />}
         </div>
       )}
       <main

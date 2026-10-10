@@ -4,7 +4,9 @@ import type { PlaceMatch } from '../data/geocode';
 import { useDevices } from '../devices/useDevices';
 import { levelForAqi } from '../design/levels';
 import { usePins } from '../places/usePins';
+import { Progress } from '../tasks/ui/TipsCard';
 import { SmokeNote } from '../units/AirUnits';
+import { SmokeCard } from '../units/SmokeCard';
 import { ASSUMPTION_NOTES } from './assumptions';
 import {
   TODAY,
@@ -147,6 +149,9 @@ export function ExposureScreen({
           </div>
         )}
 
+        <div className="exposure-progress">
+          <Progress />
+        </div>
         <div className="persona-row" role="group" aria-label="Who is this for">
           {PERSONAS.map((p) => {
             const Icon = PERSONA_ICONS[p.id];
@@ -295,6 +300,17 @@ export function ExposureScreen({
                 </ul>
               )}
             </div>
+            {summary !== undefined && (
+              <SmokeCard
+                pm25={summary.meanPm25}
+                title="What you breathed, in cigarettes"
+                note={
+                  span === 'over the day'
+                    ? 'The average air you breathed over the day.'
+                    : `The average air you breathed ${span}.`
+                }
+              />
+            )}
             <Summary summary={summary} cells={counted} span={span} />
           </>
         )}

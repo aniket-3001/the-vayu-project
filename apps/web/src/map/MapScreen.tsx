@@ -1,6 +1,7 @@
-import { Flame, Layers } from 'lucide-react';
-import type { Map as MapLibreMap } from 'maplibre-gl';
-import { useMemo, useState } from 'react';
+import { Flame, Layers, LocateFixed } from 'lucide-react';
+import { Marker, type Map as MapLibreMap } from 'maplibre-gl';
+import { useMemo, useRef, useState } from 'react';
+import { inCoverage } from '../data/geocode';
 import { LEVELS } from '../design/levels';
 import { Pill } from '../today/ui/Chip';
 import { useAirUnits } from '../units/AirUnits';
@@ -25,11 +26,41 @@ export function MapScreen(): React.JSX.Element {
   const [map, setMap] = useState<MapLibreMap>();
   const { smoke } = useAirUnits();
   const data = useMapData();
+  const [where, setWhere] = useState('');
+  const marker = useRef<Marker>();
   const windField = useMemo(() => makeWindField(data.wind), [data.wind]);
 
   const choose = (next: MapMode): void => {
     setMode(next);
     setShown(defaultLayers(next));
+  };
+  /** Asks where the person is, drops a blue dot there and flies in close. */
+  const findMe = (): void => {
+    if (map === undefined) return;
+    if (!('geolocation' in navigator)) {
+      setWhere('This browser cannot share a location.');
+      return;
+    }
+    setWhere('Finding where you are…');
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        const { latitude, longitude } = position.coords;
+        marker.current?.remove();
+        const dot = document.createElement('div');
+        dot.className = 'you-dot';
+        marker.current = new Marker({ element: dot }).setLngLat([longitude, latitude]).addTo(map);
+        void map.flyTo({ center: [longitude, latitude], zoom: 9.5, duration: 1800 });
+        setWhere(
+          inCoverage(latitude, longitude)
+            ? 'You are here.'
+            : 'You are here. It is outside north India, so the monitors and fires shown are far away.',
+        );
+      },
+      () => {
+        setWhere('We could not get your location. You can still pan the map.');
+      },
+      { timeout: 10_000 },
+    );
   };
   const toggle = (key: keyof Shown): void => {
     setShown((current) => ({ ...current, [key]: !current[key] }));
@@ -80,6 +111,9 @@ export function MapScreen(): React.JSX.Element {
               </button>
             ))}
           </div>
+          <button type="button" className="map-layers-button" onClick={findMe}>
+            <LocateFixed size={18} strokeWidth={1.75} aria-hidden="true" /> Find me
+          </button>
           <button
             type="button"
             className="map-layers-button"
@@ -109,6 +143,9 @@ export function MapScreen(): React.JSX.Element {
             ))}
             <span>+</span>
           </div>
+          <p className="small" role="status">
+            {where}
+          </p>
           <p className="legend-notes small">
             {(shown.monitors || data.fires === undefined) && <Pill>Sample data</Pill>}
             {((shown.gradient && data.airLive) ||

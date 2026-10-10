@@ -22,11 +22,15 @@ describe('the relatable measure on the screens', () => {
   it('adds cigarettes a day beside the AQI on every place card, and the caveat on the Today hero', () => {
     window.localStorage.setItem(UNITS_STORAGE_KEY, 'smoke');
     render(withUnits(<MyAirScreen />));
-    expect(screen.getAllByText(/cigarettes? a day/u).length).toBeGreaterThanOrEqual(4);
+    expect(
+      screen.getAllByText(/cigarettes? a day|under ½ cigarette a day/u).length,
+    ).toBeGreaterThanOrEqual(4);
     cleanup();
     render(withUnits(<TodayScreen data={sampleDay('unhealthy')} />));
     expect(screen.getByText(/Berkeley Earth/u)).toBeInTheDocument();
-    expect(screen.getAllByText(/about \d+(\.\d)? cigarettes a day/u).length).toBeGreaterThan(0);
+    expect(screen.getByRole('region', { name: 'In cigarettes' })).toHaveTextContent(
+      /About \d+(\.\d)? cigarettes/u,
+    );
   });
 
   it('shows none of it when the measure is off', () => {

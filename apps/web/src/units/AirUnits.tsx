@@ -1,6 +1,6 @@
 import { Cigarette } from 'lucide-react';
 import { createContext, useCallback, useContext, useMemo, useState } from 'react';
-import { cigarettesPerDay, describeCigarettes } from './smoke';
+import { cigarettesPerDay, describeCigarettes, describeCigarettesShort } from './smoke';
 
 export const UNITS_STORAGE_KEY = 'vayu.units.v1';
 
@@ -65,16 +65,23 @@ export function SmokeToggle(): React.JSX.Element {
 export function SmokeNote({
   pm25,
   className = '',
+  short = false,
 }: {
   readonly pm25: number;
   readonly className?: string;
+  /** The shorter wording, for tight places such as a small card. */
+  readonly short?: boolean;
 }): React.JSX.Element | null {
   const { smoke } = useAirUnits();
   if (!smoke) return null;
   return (
     <span className={`smoke-note ${className}`.trim()}>
       <Cigarette size={14} strokeWidth={2} aria-hidden="true" />
-      <span>{describeCigarettes(cigarettesPerDay(pm25))}</span>
+      <span>
+        {short
+          ? describeCigarettesShort(cigarettesPerDay(pm25))
+          : describeCigarettes(cigarettesPerDay(pm25))}
+      </span>
     </span>
   );
 }

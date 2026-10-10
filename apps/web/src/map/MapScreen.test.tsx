@@ -1,5 +1,6 @@
 // @vitest-environment jsdom
 import { cleanup, render, screen } from '@testing-library/react';
+import { useEffect } from 'react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { defaultLayers } from './layers';
@@ -10,13 +11,42 @@ const dataNow: { windLive: boolean; airLive: boolean; fires: number | undefined 
   fires: undefined,
 };
 
-const seen: { mode?: string; layers?: Record<string, boolean>; windOn?: boolean } = {};
+const seen: {
+  mapObject?: unknown;
+  mode?: string;
+  layers?: Record<string, boolean>;
+  windOn?: boolean;
+} = {};
 
 vi.mock('./MapView', () => ({
-  MapView: ({ mode, layers }: { mode: string; layers: Record<string, boolean> }) => {
+  MapView: ({
+    mode,
+    layers,
+    onReady,
+  }: {
+    mode: string;
+    layers: Record<string, boolean>;
+    onReady: (m: unknown) => void;
+  }) => {
     seen.mode = mode;
+    useEffect(() => {
+      if (seen.mapObject !== undefined) onReady(seen.mapObject);
+    }, [onReady]);
     seen.layers = layers;
     return <div data-testid="map" />;
+  },
+}));
+vi.mock('maplibre-gl', () => ({
+  Marker: class {
+    setLngLat(): this {
+      return this;
+    }
+    addTo(): this {
+      return this;
+    }
+    remove(): void {
+      // Nothing to undo in a test.
+    }
   },
 }));
 vi.mock('./useMapData', () => ({
@@ -115,5 +145,46 @@ describe('what the map says about its data', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Globe' }));
     expect(screen.getByText('Wind is a sample flow.')).toBeInTheDocument();
     expect(screen.getByText(/Colour between monitors is an estimate/u)).toBeInTheDocument();
+  });
+});
+
+describe('Find me', () => {
+  afterEach(() => {
+    seen.mapObject = undefined;
+  });
+
+  it('flies to where the person is, and says so', async () => {
+    const flyTo = vi.fn();
+    const fakeMap = { flyTo } as unknown;
+    seen.mapObject = fakeMap;
+    Object.defineProperty(navigator, 'geolocation', {
+      configurable: true,
+      value: {
+        getCurrentPosition: (ok: (p: GeolocationPosition) => void) => {
+          ok({ coords: { latitude: 28.6, longitude: 77.2 } } as GeolocationPosition);
+        },
+      },
+    });
+    render(<MapScreen />);
+    await userEvent.click(screen.getByRole('button', { name: /Find me/u }));
+    expect(screen.getByRole('status')).toHaveTextContent('You are here.');
+    expect(flyTo).toHaveBeenCalledWith(expect.objectContaining({ center: [77.2, 28.6] }));
+    Reflect.deleteProperty(navigator, 'geolocation');
+  });
+
+  it('says plainly when the location cannot be had', async () => {
+    seen.mapObject = { flyTo: vi.fn() };
+    Object.defineProperty(navigator, 'geolocation', {
+      configurable: true,
+      value: {
+        getCurrentPosition: (_ok: unknown, no: () => void) => {
+          no();
+        },
+      },
+    });
+    render(<MapScreen />);
+    await userEvent.click(screen.getByRole('button', { name: /Find me/u }));
+    expect(screen.getByRole('status')).toHaveTextContent(/could not get your location/u);
+    Reflect.deleteProperty(navigator, 'geolocation');
   });
 });

@@ -21,3 +21,10 @@ export function describeCigarettes(perDay: number): string {
 
 export const SMOKE_CAVEAT =
   'A rule of thumb: 22 µg/m³ of PM2.5 over a day is about one cigarette (Berkeley Earth). It makes the number easier to feel. It is not a medical measure.';
+
+/** The short form for a tight place: "3 cigarettes a day", "under ½ a cigarette a day". */
+export function describeCigarettesShort(perDay: number): string {
+  if (perDay < 0.5) return 'under ½ cigarette a day';
+  const shown = perDay >= 10 ? String(Math.round(perDay)) : String(Math.round(perDay * 10) / 10);
+  return `${shown} ${shown === '1' ? 'cigarette' : 'cigarettes'} a day`;
+}

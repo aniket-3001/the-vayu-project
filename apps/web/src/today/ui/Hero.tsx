@@ -7,8 +7,6 @@ import { compassPoint } from '../wind';
 import { FaceIcon, WindArrow } from './icons';
 import { concentration, splitLabel } from './format';
 import { useSettle } from './hooks';
-import { SmokeNote, useAirUnits } from '../../units/AirUnits';
-import { SMOKE_CAVEAT } from '../../units/smoke';
 
 /** The status card: the number, what it means, the main pollutant, and the weather right now. */
 export function Hero({ data }: { readonly data: TodayData }): React.JSX.Element {
@@ -17,7 +15,6 @@ export function Hero({ data }: { readonly data: TodayData }): React.JSX.Element 
   const info = POLLUTANTS[0];
   const [base, sub] = splitLabel(info?.label ?? 'PM2.5');
   const w = data.weather;
-  const { smoke } = useAirUnits();
   return (
     <section className="hero" aria-labelledby="hero-title">
       <div className="hero-top">
@@ -48,12 +45,6 @@ export function Hero({ data }: { readonly data: TodayData }): React.JSX.Element 
           <strong className="tnum">{concentration(data.pm25)}</strong> µg/m³
         </dd>
       </dl>
-      {smoke && (
-        <p className="hero-smoke">
-          <SmokeNote pm25={data.pm25} />
-          <span className="small">{SMOKE_CAVEAT}</span>
-        </p>
-      )}
       <ul className="hero-weather" aria-label="Weather now">
         <li>
           <Thermometer size={20} strokeWidth={1.75} aria-hidden="true" />

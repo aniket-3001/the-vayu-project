@@ -4,7 +4,7 @@ import { GRID } from './live';
 import { advectWith, speedOf, type Wind } from './wind';
 
 /** About one streak for every this many square pixels of map. */
-const PIXELS_PER_PARTICLE = 130;
+const PIXELS_PER_PARTICLE = 210;
 const LIFE_FRAMES = 80;
 /** Past this angular distance from the centre of the view, a point is round the back of the globe. */
 const HORIZON_DEG = 78;
@@ -102,10 +102,11 @@ export function WindCanvas({
       const height = el.clientHeight;
       // Fade what was drawn, so each streak leaves a tail.
       ctx.globalCompositeOperation = 'destination-in';
-      ctx.fillStyle = 'rgba(0,0,0,0.92)';
+      ctx.fillStyle = 'rgba(0,0,0,0.955)';
       ctx.fillRect(0, 0, width, height);
       ctx.globalCompositeOperation = 'source-over';
-      ctx.lineWidth = 1.3;
+      ctx.lineWidth = 2.6;
+      ctx.lineCap = 'round';
       for (const p of particles) {
         const here = map.project([p.lng, p.lat]);
         const wind = field(p.lat, p.lng);
@@ -130,7 +131,7 @@ export function WindCanvas({
           const there = { x: here.x + (dx / length) * stepPx, y: here.y + (dy / length) * stepPx };
           if (visible) {
             const fade = Math.min(1, p.age / 12, (LIFE_FRAMES - p.age) / 12);
-            ctx.strokeStyle = `rgba(52, 78, 112, ${String(Math.min(0.8, 0.3 + speed / 12) * fade)})`;
+            ctx.strokeStyle = `rgba(70, 104, 150, ${String(Math.min(0.26, 0.09 + speed / 45) * fade)})`;
             ctx.beginPath();
             ctx.moveTo(here.x, here.y);
             ctx.lineTo(there.x, there.y);
