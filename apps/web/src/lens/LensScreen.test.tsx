@@ -85,7 +85,7 @@ describe('the AR Lens', () => {
     const kids = Array.from(hud?.children ?? []);
     expect(kids).toHaveLength(2);
     // The card is the home screen's place card, opened out; under it is the time slider.
-    expect(kids[0]).toHaveClass('place-card', 'open', 'lens-card');
+    expect(kids[0]).toHaveClass('place-card', 'lens-card');
     expect(kids[1]).toHaveClass('lens-dial');
     const round = Array.from(top?.querySelectorAll('.lens-round') ?? []);
     expect(round).toHaveLength(2);
@@ -109,6 +109,18 @@ describe('the AR Lens', () => {
     const more = document.querySelector('.lens-more');
     expect(more).not.toHaveAttribute('open');
     expect(more).toHaveTextContent('About this view');
+  });
+
+  it('is small until opened, then shows the wind, how far you can see and the best hour', async () => {
+    open();
+    const card = screen.getByRole('region', { name: 'The air here' });
+    expect(card).not.toHaveClass('open');
+    expect(card.querySelector('.pc-more')).toHaveAttribute('hidden');
+    await userEvent.click(screen.getByRole('button', { name: 'Show more about the air here' }));
+    expect(card).toHaveClass('open');
+    expect(card.querySelector('.pc-more')).not.toHaveAttribute('hidden');
+    await userEvent.click(screen.getByRole('button', { name: 'Show less' }));
+    expect(card).not.toHaveClass('open');
   });
 
   it('shows the face, the number, the wind, how far you can see and where the reading came from', () => {
@@ -182,6 +194,7 @@ describe('the AR Lens', () => {
       value: FakeOrientation,
     });
     open();
+    await userEvent.click(screen.getByRole('button', { name: 'Show more about the air here' }));
     await userEvent.click(screen.getByRole('button', { name: /Turn on the compass/u }));
     expect(request).toHaveBeenCalled();
     const turn = new Event('deviceorientation');

@@ -1,6 +1,3 @@
-import { usAqi } from '@vayu/core';
-import type { Monitor } from './monitors';
-
 /** A reading of the wind at a point: metres per second, and the direction it blows from, in degrees. */
 export interface WindPoint {
   readonly lat: number;
@@ -33,14 +30,17 @@ export function gridPoints(
   return points;
 }
 
+/** The whole map: every longitude, and latitudes to 80 degrees. The wind is a picture of this. */
+export const WORLD = { south: -80, north: 80, west: -180, east: 180 } as const;
+
 /**
- * The rest of the world, on a coarse grid, for the air colours: ten degrees apart, which is about 1,100 km. The
- * regional model has nothing finer to say there than that, and the map says so. Points in the closer grid above
- * are left out.
+ * The rest of the world, on a coarse grid: fifteen degrees apart, which is about 1,700 km. Wind changes slowly
+ * across that, and it keeps what the app asks Open-Meteo for each time the map opens to about six hundred points.
+ * Points inside the closer grid above are left out.
  */
-export function worldPoints(step = 10): readonly { readonly lat: number; readonly lng: number }[] {
+export function worldPoints(step = 15): readonly { readonly lat: number; readonly lng: number }[] {
   const points: { lat: number; lng: number }[] = [];
-  for (let lat = -80; lat <= 80; lat += step) {
+  for (let lat = -75; lat <= 75; lat += step) {
     for (let lng = -180; lng < 180; lng += step) {
       const inside =
         lat >= GRID.south - 1 &&
@@ -55,7 +55,6 @@ export function worldPoints(step = 10): readonly { readonly lat: number; readonl
 
 const CHUNK = 90;
 const WIND_URL = 'https://api.open-meteo.com/v1/forecast';
-const AIR_URL = 'https://air-quality-api.open-meteo.com/v1/air-quality';
 
 interface Chunked {
   readonly latitude: number;
@@ -89,7 +88,7 @@ async function manyPoints(
 export async function fetchWindGrid(
   fetchImpl: typeof fetch = fetch,
 ): Promise<readonly WindPoint[]> {
-  const points = gridPoints(3);
+  const points = [...gridPoints(3), ...worldPoints(15)];
   const rows = await manyPoints(
     WIND_URL,
     'wind_speed_10m,wind_direction_10m',
@@ -107,33 +106,6 @@ export async function fetchWindGrid(
   });
   if (winds.length === 0) throw new Error('No wind came back');
   return winds;
-}
-
-/**
- * PM2.5 and US AQI now, from the CAMS atmospheric model (satellite-assimilated), as pseudo-monitors: a close grid
- * over south Asia and a coarse one over the rest of the world.
- */
-export async function fetchAirGrid(fetchImpl: typeof fetch = fetch): Promise<readonly Monitor[]> {
-  const points = [...gridPoints(2), ...worldPoints(10)];
-  const rows = await manyPoints(AIR_URL, 'pm2_5,us_aqi', points, fetchImpl);
-  const grid: Monitor[] = [];
-  rows.forEach((row, i) => {
-    const at = points[i];
-    const pm25 = row.current?.pm2_5;
-    if (at === undefined || typeof pm25 !== 'number') return;
-    const reported = row.current?.us_aqi;
-    grid.push({
-      id: `cams-${String(at.lat)}-${String(at.lng)}`,
-      name: 'Model grid',
-      lat: at.lat,
-      lng: at.lng,
-      pm25,
-      aqi: typeof reported === 'number' ? reported : (usAqi(pm25)?.value ?? 0),
-      ageMinutes: 0,
-    });
-  });
-  if (grid.length === 0) throw new Error('No air quality came back');
-  return grid;
 }
 
 /** The number of fires our API counted in the last 24 hours (NASA satellite detections), or undefined. */

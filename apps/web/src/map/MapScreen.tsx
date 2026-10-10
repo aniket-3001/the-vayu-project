@@ -8,7 +8,7 @@ import { LEVELS } from '../design/levels';
 import { Pill } from '../today/ui/Chip';
 import { useAirUnits } from '../units/AirUnits';
 import { LAYER_LABELS, defaultLayers, type Shown } from './layers';
-import { monitorsFromStations } from './monitors';
+import { binMonitors, monitorsFromStations } from './monitors';
 import { MapView } from './MapView';
 import { WindStars } from './WindStars';
 import { makeWindField } from './windTexture';
@@ -29,6 +29,11 @@ export function MapScreen(): React.JSX.Element {
     () =>
       stations.status === 'ready' ? monitorsFromStations(stations.data, Date.parse(nowIso())) : [],
     [stations],
+  );
+  // The colour between monitors is worked out from the real monitors; the prototype has a made-up grid instead.
+  const air = useMemo(
+    () => (sample ? data.air : binMonitors(monitors, 1)),
+    [sample, data.air, monitors],
   );
   const [where, setWhere] = useState('');
   const marker = useRef<Marker>();
@@ -71,7 +76,7 @@ export function MapScreen(): React.JSX.Element {
       <MapView
         layers={shown}
         smoke={smoke}
-        air={data.air}
+        air={air}
         monitors={monitors}
         fires={data.fireList}
         sample={sample}
@@ -160,7 +165,7 @@ export function MapScreen(): React.JSX.Element {
           <p className="legend-pills">
             {sample && (shown.monitors || data.fires === undefined) && <Pill>Sample data</Pill>}
             {((!sample && shown.monitors && monitors.length > 0) ||
-              (shown.gradient && data.airLive) ||
+              (shown.gradient && !sample && monitors.length > 0) ||
               (shown.wind && data.windLive) ||
               data.fires !== undefined) && <Pill>Live</Pill>}
           </p>
@@ -173,14 +178,13 @@ export function MapScreen(): React.JSX.Element {
                     ? 'Getting the monitors…'
                     : monitors.length === 0
                       ? 'No monitor has reported in the last six hours, so none are shown.'
-                      : `${String(monitors.length)} monitors in north India with a reading in the last six hours (OpenAQ).`}
+                      : `${String(monitors.length)} monitors worldwide with a PM2.5 reading in the last six hours (OpenAQ). Each is a dot; zoom in for its number.`}
                 </span>
               )}
               {shown.gradient && (
                 <span>
-                  {data.airLive
-                    ? 'Air colour: the CAMS model via Open-Meteo, right now. An estimate, not a measurement.'
-                    : 'Colour between monitors is an estimate.'}
+                  Colour between monitors is an estimate from the nearest ones. It fades out about
+                  450 km from any monitor, where we know nothing.
                 </span>
               )}
               {shown.fires && (
@@ -194,7 +198,7 @@ export function MapScreen(): React.JSX.Element {
               {shown.wind && (
                 <span>
                   {data.windLive
-                    ? 'Wind: ICON and GFS models via Open-Meteo, right now.'
+                    ? 'Wind: ICON and GFS models via Open-Meteo, right now: close detail over south Asia, coarser elsewhere.'
                     : sample
                       ? 'Wind is a sample flow.'
                       : 'The wind could not be loaded just now, so none is shown.'}

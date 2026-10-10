@@ -2,7 +2,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   GRID,
-  fetchAirGrid,
   fetchFireCount,
   fetchWindGrid,
   gridPoints,
@@ -43,7 +42,8 @@ describe('wind from Open-Meteo', () => {
   it('asks in metres per second, in batches, and returns one point per place', async () => {
     const fetcher = echo({ wind_speed_10m: 4, wind_direction_10m: 270 });
     const wind = await fetchWindGrid(fetcher);
-    expect(wind).toHaveLength(gridPoints(3).length);
+    // The close grid over south Asia, and a coarse one for the rest of the world.
+    expect(wind).toHaveLength(gridPoints(3).length + worldPoints(15).length);
     expect(wind[0]).toMatchObject({ speed: 4, fromDeg: 270 });
     const urls = (fetcher as unknown as { mock: { calls: string[][] } }).mock.calls.map(
       (c) => c[0] ?? '',
@@ -74,29 +74,13 @@ describe('wind from Open-Meteo', () => {
 
 describe('the world grid', () => {
   it('covers the planet from pole to pole, without repeating the close grid', () => {
-    const world = worldPoints(10);
+    const world = worldPoints(15);
     expect(world.some((p) => p.lat < -60)).toBe(true);
     expect(world.some((p) => p.lat > 60)).toBe(true);
     expect(world.some((p) => p.lng < -150)).toBe(true);
-    expect(world.some((p) => p.lat === 28 && p.lng === 78)).toBe(false);
-    expect(world.length).toBeLessThan(700);
-  });
-});
-
-describe('air quality from Open-Meteo', () => {
-  it('becomes model-grid points with PM2.5 and the AQI the model reports', async () => {
-    const air = await fetchAirGrid(echo({ pm2_5: 62.9, us_aqi: 159 }));
-    // The close grid over south Asia, and a coarse one for the rest of the world.
-    expect(air).toHaveLength(gridPoints(2).length + worldPoints(10).length);
-    expect(air[0]).toMatchObject({ pm25: 62.9, aqi: 159, name: 'Model grid' });
-  });
-
-  it('works out the AQI from PM2.5 when the model gives none, and skips points with no reading', async () => {
-    const air = await fetchAirGrid(echo({ pm2_5: 12 }));
-    expect(air[0]?.aqi).toBeGreaterThan(40);
-    await expect(fetchAirGrid(reply([{ latitude: 1, longitude: 1, current: {} }]))).rejects.toThrow(
-      /No air quality/u,
-    );
+    expect(world.some((p) => p.lat === 30 && p.lng === 75)).toBe(false);
+    // About 600 points with the close grid: what a visitor spends of a day's free allowance each time.
+    expect(world.length + gridPoints(3).length).toBeLessThan(700);
   });
 });
 

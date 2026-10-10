@@ -27,9 +27,10 @@ const live = key !== undefined && key !== '';
 
 let monitors: unknown;
 if (live) {
+  // The whole world's monitors, about ten requests; MAX_PAGES keeps a local run short.
   const repo = openAqMapStationRepo({
     apiKey: key,
-    maxStations: Number(process.env.MAX_STATIONS ?? 12),
+    maxPages: Number(process.env.MAX_PAGES ?? 12),
   });
   repo
     .latest(new Date().toISOString())

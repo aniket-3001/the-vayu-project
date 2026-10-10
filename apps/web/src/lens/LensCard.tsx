@@ -1,4 +1,5 @@
-import { Compass, Eye, Navigation, Sunrise } from 'lucide-react';
+import { ChevronDown, Compass, Eye, Navigation, Sunrise } from 'lucide-react';
+import { useId, useState } from 'react';
 import type { Pin } from '../data/pins';
 import { levelForAqi } from '../design/levels';
 import { clock24, dayMonth, weekday } from '../today/time';
@@ -46,6 +47,8 @@ export function LensCard({
   };
   readonly cameraWords: string;
 }): React.JSX.Element {
+  const [open, setOpen] = useState(false);
+  const detailId = useId();
   const level = levelForAqi(hour.aqi);
   const p = data.provenance;
   const point = data.hourly.find((h) => h.at === hour.at);
@@ -53,10 +56,27 @@ export function LensCard({
   const when = step === 0 ? 'Now' : `${weekday(hour.at)} ${dayMonth(hour.at)}, ${clock24(hour.at)}`;
   return (
     <section
-      className="place-card open lens-card"
+      className={`place-card lens-card${open ? ' open' : ''}`}
       style={levelVars(level)}
       aria-label="The air here"
     >
+      <button
+        type="button"
+        className="pc-icon-button lens-more-toggle"
+        aria-expanded={open}
+        aria-controls={detailId}
+        aria-label={open ? 'Show less' : 'Show more about the air here'}
+        onClick={() => {
+          setOpen((v) => !v);
+        }}
+      >
+        <ChevronDown
+          size={22}
+          strokeWidth={2.25}
+          aria-hidden="true"
+          className={open ? 'flip' : ''}
+        />
+      </button>
       <div className="pc-hit">
         <span className="pc-name">{pin.id === 'live' ? 'Here' : pin.name}</span>
         <span className="pc-detail">{step === 0 ? (pin.detail ?? '') : when}</span>
@@ -76,10 +96,10 @@ export function LensCard({
         )}
         <SmokeSquare pm25={hour.pm25} compact className="pc-smoke" />
         <span className="pc-face" aria-hidden="true">
-          <FaceIcon face={level.face} size={64} />
+          <FaceIcon face={level.face} size={56} />
         </span>
       </div>
-      <div className="pc-more">
+      <div className="pc-more" id={detailId} hidden={!open}>
         <ul className="lens-facts">
           {hour.wind !== undefined && (
             <li>

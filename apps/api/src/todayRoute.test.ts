@@ -142,6 +142,15 @@ describe('GET /v1/today', () => {
     ).toBe(true);
   });
 
+  it('still answers from a live monitor when the regional forecast service is down', async () => {
+    const down = { forecastFor: () => Promise.reject(new Error('Open-Meteo 429')) };
+    const response = await ask({ forecastRepo: down }, { place: 'home' });
+    expect(response.statusCode).toBe(200);
+    const today = Today.parse(response.body);
+    expect(today.mode).toBe('live');
+    expect(today.hours.some((h) => h.kind === 'observed')).toBe(true);
+  });
+
   it('keeps coordinates to about a kilometre and inside north India, and says what to fix', async () => {
     const rounded = Today.parse((await ask({}, { lat: '28.60123', lng: '77.20987' })).body);
     expect(rounded.place).toMatchObject({ lat: 28.6, lng: 77.21 });

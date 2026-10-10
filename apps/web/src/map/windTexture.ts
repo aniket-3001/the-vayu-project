@@ -1,4 +1,4 @@
-import { GRID, towardsDeg, type WindPoint } from './live';
+import { WORLD, towardsDeg, type WindPoint } from './live';
 
 /** The wind speed the texture can hold either way, in metres per second. */
 export const WIND_RANGE = 25;
@@ -22,7 +22,7 @@ export function windPixels(
     readonly south: number;
     readonly east: number;
     readonly north: number;
-  } = GRID,
+  } = WORLD,
 ): Uint8ClampedArray {
   const pixels = new Uint8ClampedArray(width * height * 4);
   const known = points.map((p) => ({ ...p, ...toUV(p.speed, p.fromDeg) }));
@@ -62,18 +62,18 @@ const decode = (byte: number): number => (byte / 255) * 2 * WIND_RANGE - WIND_RA
  */
 export function makeWindField(
   points: readonly WindPoint[],
-  width = 144,
-  height = 128,
+  width = 360,
+  height = 160,
 ): (lat: number, lng: number) => { readonly u: number; readonly v: number } {
   const pixels = windPixels(points, width, height);
   return (lat, lng) => {
     const col = Math.min(
       width - 1,
-      Math.max(0, Math.floor(((lng - GRID.west) / (GRID.east - GRID.west)) * width)),
+      Math.max(0, Math.floor(((lng - WORLD.west) / (WORLD.east - WORLD.west)) * width)),
     );
     const row = Math.min(
       height - 1,
-      Math.max(0, Math.floor(((GRID.north - lat) / (GRID.north - GRID.south)) * height)),
+      Math.max(0, Math.floor(((WORLD.north - lat) / (WORLD.north - WORLD.south)) * height)),
     );
     const i = (row * width + col) * 4;
     return { u: decode(pixels[i] ?? 0), v: decode(pixels[i + 1] ?? 0) };

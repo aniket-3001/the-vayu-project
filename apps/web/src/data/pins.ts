@@ -33,15 +33,24 @@ function isPin(value: unknown): value is Pin {
   );
 }
 
-/** The saved pins, or the four sample places if nothing was ever saved. Never throws. */
+let starter: readonly Pin[] = SAMPLES;
+/**
+ * What a person who has never saved a place starts with. The prototype and the tests start with four sample
+ * places; the deployed app starts with none, so a new person sets their own.
+ */
+export function setStarterPins(pins: readonly Pin[]): void {
+  starter = pins;
+}
+
+/** The saved pins, or the starting places if nothing was ever saved. Never throws. */
 export function loadPins(storage: Storage): readonly Pin[] {
   try {
     const raw = storage.getItem(PINS_STORAGE_KEY);
-    if (raw === null) return SAMPLES;
+    if (raw === null) return starter;
     const parsed: unknown = JSON.parse(raw);
-    return Array.isArray(parsed) ? parsed.filter(isPin) : SAMPLES;
+    return Array.isArray(parsed) ? parsed.filter(isPin) : starter;
   } catch {
-    return SAMPLES;
+    return starter;
   }
 }
 

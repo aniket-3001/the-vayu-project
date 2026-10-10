@@ -106,7 +106,26 @@ describe('the Places screen', () => {
     for (const name of ['Home', 'School', 'Office', 'Park']) {
       await userEvent.click(screen.getByRole('button', { name: `Remove ${name}` }));
     }
-    expect(screen.getByText(/Nothing pinned yet/u)).toBeInTheDocument();
+    // Four dotted squares to fill in, one for each place most people want.
+    for (const name of ['Set Home', 'Set School', 'Set Office', 'Set Park'])
+      expect(screen.getByRole('button', { name })).toBeInTheDocument();
+  });
+
+  it('turns a dotted square into a card with the name of the square, once its place is given', async () => {
+    window.localStorage.setItem('vayu.pins.v1', '[]');
+    screenWith({
+      locate: (found) => {
+        found(28.4, 77.05);
+      },
+    });
+    await userEvent.click(screen.getByRole('button', { name: 'Set School' }));
+    const sheet = screen.getByRole('dialog', { name: 'Where is School?' });
+    await userEvent.click(within(sheet).getByRole('button', { name: 'Detect me' }));
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Open School' })).toBeInTheDocument();
+    // The other three are still there to fill in, and School's is gone.
+    expect(screen.queryByRole('button', { name: 'Set School' })).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Set Home' })).toBeInTheDocument();
   });
 
   it('searches by name and pins what the person picks, at the top', async () => {

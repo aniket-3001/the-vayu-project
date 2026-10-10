@@ -81,12 +81,19 @@ const isSpot = (value: unknown): value is Spot => {
   );
 };
 
+let ownerStartsWithSamples = true;
+/** The deployed app starts the phone's owner with no places too, to be filled in; the prototype and tests do not. */
+export function setOwnerStartsWithSamples(on: boolean): void {
+  ownerStartsWithSamples = on;
+}
+
 /**
  * The saved places for one person. The phone's owner starts with the usual ones for their kind of day, the same
  * places as the starter cards; anyone added later starts with none, to be filled in. Never throws.
  */
 export function loadSpots(storage: Storage, personId: string, persona: Persona): Spots {
-  const start = (): Spots => (personId === 'me' ? sampleSpotsFor(persona) : {});
+  const start = (): Spots =>
+    personId === 'me' && ownerStartsWithSamples ? sampleSpotsFor(persona) : {};
   try {
     const raw = storage.getItem(SPOTS_STORAGE_KEY);
     if (raw === null) return start();

@@ -121,6 +121,27 @@ export function AssistantFab({
       hearing.current?.cancel();
     }
   }, [open, voice]);
+  // On a phone the keyboard covers the bottom of the page without resizing it. The sheet follows the part of the
+  // screen that is really visible, so the message box stays above the keyboard.
+  useEffect(() => {
+    if (!open) return undefined;
+    const viewport = window.visualViewport ?? undefined;
+    if (viewport === undefined) return undefined;
+    const root = document.documentElement;
+    const follow = (): void => {
+      root.style.setProperty('--vv-top', `${String(Math.round(viewport.offsetTop))}px`);
+      root.style.setProperty('--vv-height', `${String(Math.round(viewport.height))}px`);
+    };
+    follow();
+    viewport.addEventListener('resize', follow);
+    viewport.addEventListener('scroll', follow);
+    return () => {
+      viewport.removeEventListener('resize', follow);
+      viewport.removeEventListener('scroll', follow);
+      root.style.removeProperty('--vv-top');
+      root.style.removeProperty('--vv-height');
+    };
+  }, [open]);
   useEffect(() => {
     if (!open) return;
     const onKey = (event: KeyboardEvent): void => {
@@ -288,7 +309,7 @@ export function AssistantFab({
         }}
       >
         <Sparkles size={22} strokeWidth={1.75} aria-hidden="true" />
-        <span>Assistant</span>
+        <span className="fab-label">Assistant</span>
       </button>
       {open && (
         <div

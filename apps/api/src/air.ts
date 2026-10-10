@@ -47,7 +47,10 @@ export async function loadAir(deps: AirDeps, place: Place, asOf: string): Promis
       : undefined;
   const [fresh, forecast, weather] = await Promise.all([
     harvested?.station ?? nearestFreshStation(deps.stationRepo, place, asOf),
-    harvested?.forecast ?? deps.forecastRepo.forecastFor(place, asOf),
+    // The forecast is context too: with the regional model down, a live monitor's readings still go out, with
+    // the hours ahead worked out from its own recent pattern, and with nothing to go on the answer says so.
+    harvested?.forecast ??
+      deps.forecastRepo.forecastFor(place, asOf).catch((): readonly RawHour[] => []),
     // Weather is context. If the model is down, the air answer still goes out without it.
     (deps.weatherRepo?.nowAt(place, asOf) ?? Promise.resolve(undefined)).catch(() => undefined),
   ]);

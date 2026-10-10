@@ -12,7 +12,7 @@ import { useEffect, useRef } from 'react';
 import { LEVELS } from '../design/levels';
 import type { Monitor } from './monitors';
 import { cigarettesPerDay, describeCigarettes } from '../units/smoke';
-import { FIELD_BOUNDS, grainyField } from './field';
+import { FIELD_TILES, grainyField, type Window } from './field';
 import { firesGeoJson, type Fire } from './fires';
 import { monitorsGeoJson } from './monitors';
 
@@ -51,13 +51,20 @@ const aqiColour = (value: unknown): unknown => [
   ...LEVELS.slice(1).flatMap((level) => [level.from, level.solid]),
 ];
 
-/** One clear pixel, for when there is no air colour to draw: nothing is better than a made-up wash. */
-const CLEAR =
-  'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==';
+/**
+ * One fully transparent pixel, for when there is no air colour to draw: nothing is better than a made-up wash. It is
+ * drawn rather than written out, so it can be nothing but empty.
+ */
+function clearPixel(): string {
+  const canvas = document.createElement('canvas');
+  canvas.width = 1;
+  canvas.height = 1;
+  return canvas.toDataURL();
+}
 
-function fieldImage(air: readonly Monitor[]): string {
-  if (air.length === 0) return CLEAR;
-  const { pixels, width, height } = grainyField(air, 180, 100, 4);
+function fieldImage(air: readonly Monitor[], tile: Window): string {
+  if (air.length === 0) return clearPixel();
+  const { pixels, width, height } = grainyField(air, 48, 100, 4, tile);
   const canvas = document.createElement('canvas');
   canvas.width = width;
   canvas.height = height;
@@ -68,6 +75,16 @@ function fieldImage(air: readonly Monitor[]): string {
   ctx.putImageData(data, 0, 0);
   return canvas.toDataURL();
 }
+
+const FIELD_IDS = FIELD_TILES.map((_, i) => `field-${String(i)}`);
+
+/**
+ * The monitor dots, by zoom. Every monitor is drawn at every zoom: a small dot far out (so the whole world is
+ * covered at a glance), growing as you come in. Numbers are added from city level (zoom 6), and where numbers would
+ * collide the worse air keeps its place and the rest wait for more room, which more zoom gives.
+ */
+const DOT_RADIUS = ['interpolate', ['linear'], ['zoom'], 0, 2.2, 3, 3.2, 6, 7, 9, 11, 14, 14];
+const LABEL_FROM_ZOOM = 6;
 
 /** The map itself: monitors, the colour field between them, fires, and a switch between flat and globe. */
 export function MapView({
@@ -117,26 +134,33 @@ export function MapView({
 
     const addLayers = (): void => {
       ready.current = true;
-      if (m.getSource('field') !== undefined) return;
+      if (m.getSource('field-0') !== undefined) return;
       const { layers: on } = latest.current;
       // A globe at country level looks flat, and MapLibre flattens it again as you zoom right in.
       m.setProjection({ type: 'globe' });
-      m.addSource('field', {
-        type: 'image',
-        url: fieldImage(latest.current.air),
-        coordinates: [
-          [FIELD_BOUNDS.west, FIELD_BOUNDS.north],
-          [FIELD_BOUNDS.east, FIELD_BOUNDS.north],
-          [FIELD_BOUNDS.east, FIELD_BOUNDS.south],
-          [FIELD_BOUNDS.west, FIELD_BOUNDS.south],
-        ],
-      });
-      m.addLayer({
-        id: 'field',
-        type: 'raster',
-        source: 'field',
-        paint: { 'raster-opacity': 0.8, 'raster-fade-duration': 0, 'raster-resampling': 'linear' },
-        layout: { visibility: on.gradient ? 'visible' : 'none' },
+      FIELD_TILES.forEach((tile, i) => {
+        const id = FIELD_IDS[i] ?? `field-${String(i)}`;
+        m.addSource(id, {
+          type: 'image',
+          url: fieldImage(latest.current.air, tile),
+          coordinates: [
+            [tile.west, tile.north],
+            [tile.east, tile.north],
+            [tile.east, tile.south],
+            [tile.west, tile.south],
+          ],
+        });
+        m.addLayer({
+          id,
+          type: 'raster',
+          source: id,
+          paint: {
+            'raster-opacity': 0.8,
+            'raster-fade-duration': 0,
+            'raster-resampling': 'linear',
+          },
+          layout: { visibility: on.gradient ? 'visible' : 'none' },
+        });
       });
       m.addSource('fires', { type: 'geojson', data: firesGeoJson(latest.current.fires) });
       m.addLayer({
@@ -155,50 +179,47 @@ export function MapView({
       m.addSource('monitors', {
         type: 'geojson',
         data: monitorsGeoJson(latest.current.monitors),
-        cluster: true,
-        clusterRadius: 38,
-        clusterMaxZoom: 8,
-        clusterProperties: { total: ['+', ['get', 'aqi']] },
       });
-      const label = [
-        'to-string',
-        [
-          'round',
-          [
-            'case',
-            ['has', 'point_count'],
-            ['/', ['get', 'total'], ['get', 'point_count']],
-            ['get', 'aqi'],
-          ],
-        ],
-      ];
-      const value = [
-        'case',
-        ['has', 'point_count'],
-        ['/', ['get', 'total'], ['get', 'point_count']],
-        ['get', 'aqi'],
-      ];
       m.addLayer({
         id: 'monitors-dot',
         type: 'circle',
         source: 'monitors',
         paint: {
-          'circle-color': aqiColour(value) as never,
-          'circle-radius': ['case', ['has', 'point_count'], 17, 13],
+          'circle-color': aqiColour(['get', 'aqi']) as never,
+          'circle-radius': DOT_RADIUS as never,
           'circle-stroke-color': '#ffffff',
-          'circle-stroke-width': 2,
+          'circle-stroke-width': [
+            'interpolate',
+            ['linear'],
+            ['zoom'],
+            0,
+            0.5,
+            6,
+            1.5,
+            10,
+            2,
+          ] as never,
+          'circle-opacity': 0.95,
         },
-        layout: { visibility: on.monitors ? 'visible' : 'none' },
+        layout: {
+          visibility: on.monitors ? 'visible' : 'none',
+          // The worst air is drawn on top, so a dot of bad air is never hidden under a clean one.
+          'circle-sort-key': ['get', 'aqi'] as never,
+        },
       });
       m.addLayer({
         id: 'monitors-label',
         type: 'symbol',
         source: 'monitors',
+        minzoom: LABEL_FROM_ZOOM,
         layout: {
-          'text-field': label as never,
+          'text-field': ['to-string', ['get', 'aqi']] as never,
           'text-font': ['Noto Sans Bold'],
-          'text-size': 11,
-          'text-allow-overlap': true,
+          'text-size': ['interpolate', ['linear'], ['zoom'], 6, 10, 12, 13] as never,
+          // Where two numbers would touch, the worse air keeps its number; the other waits for more zoom.
+          'text-allow-overlap': false,
+          'text-padding': 2,
+          'symbol-sort-key': ['*', -1, ['get', 'aqi']] as never,
           visibility: on.monitors ? 'visible' : 'none',
         },
         paint: { 'text-color': '#334155' },
@@ -222,16 +243,11 @@ export function MapView({
         aqi?: number;
         pm25?: number;
         age?: number;
-        point_count?: number;
       };
-      if (p.point_count !== undefined) {
-        void m.easeTo({ center: event.lngLat, zoom: m.getZoom() + 2 });
-        return;
-      }
       const box = document.createElement('div');
       box.className = 'map-popup';
       const title = document.createElement('strong');
-      title.textContent = p.name ?? 'Monitor';
+      title.textContent = p.name !== undefined && p.name !== '' ? p.name : 'Air monitor';
       const body = document.createElement('p');
       body.textContent = `AQI ${String(p.aqi)} · PM2.5 ${String(p.pm25)} µg/m³ · ${String(p.age)} min ago`;
       const note = document.createElement('p');
@@ -277,7 +293,7 @@ export function MapView({
     };
     const apply = (): void => {
       show(['monitors-dot', 'monitors-label'], layers.monitors);
-      show(['field'], layers.gradient);
+      show(FIELD_IDS, layers.gradient);
       show(['fires'], layers.fires);
     };
     apply();
@@ -286,10 +302,11 @@ export function MapView({
   useEffect(() => {
     const m = map.current;
     if (m === undefined || !ready.current) return;
-    const source = m.getSource('field');
-    if (source !== undefined && 'updateImage' in source) {
-      (source as unknown as ImageUpdater).updateImage({ url: fieldImage(air) });
-    }
+    FIELD_TILES.forEach((tile, i) => {
+      const source = m.getSource(FIELD_IDS[i] ?? '');
+      if (source !== undefined && 'updateImage' in source)
+        (source as unknown as ImageUpdater).updateImage({ url: fieldImage(air, tile) });
+    });
   }, [air]);
 
   useEffect(() => {

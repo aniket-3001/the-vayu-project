@@ -5,7 +5,7 @@ import type { Monitor } from './monitors';
 export const FIELD_BOUNDS = { west: -180, east: 180, south: -80, north: 80 } as const;
 
 /** How far from a monitor, in degrees, the field still colours anything. Past this we have no idea, so we say nothing. */
-export const REACH_DEG = 7;
+export const REACH_DEG = 4;
 
 const distanceDeg = (lat: number, lng: number, m: Monitor): number => {
   const dLat = lat - m.lat;
@@ -94,20 +94,39 @@ const noise = (col: number, row: number): number => {
   return ((h ^ (h >>> 16)) >>> 0) / 4294967295;
 };
 
-/** RGBA pixels for the field over `FIELD_BOUNDS`, `cols` by `rows`, rows spaced evenly in mercator y. */
+/** A window onto the field, in degrees: the whole world is drawn as several of these side by side. */
+export interface Window {
+  readonly west: number;
+  readonly east: number;
+  readonly south: number;
+  readonly north: number;
+}
+
+/**
+ * The world in four pictures, each a quarter of the way round. One picture three hundred and sixty degrees wide
+ * cannot be placed on a map (its corners would be on opposite sides of the globe), so each is placed on its own.
+ */
+export const FIELD_TILES: readonly Window[] = [-180, -90, 0, 90].map((west) => ({
+  west,
+  east: west + 90,
+  south: FIELD_BOUNDS.south,
+  north: FIELD_BOUNDS.north,
+}));
+
+/** RGBA pixels for the field over a window (all of `FIELD_BOUNDS` by default), rows spaced evenly in mercator y. */
 export function renderField(
   monitors: readonly Monitor[],
   cols: number,
   rows: number,
+  window: Window = FIELD_BOUNDS,
 ): Uint8ClampedArray {
   const pixels = new Uint8ClampedArray(cols * rows * 4);
-  const yTop = mercatorY(FIELD_BOUNDS.north);
-  const yBottom = mercatorY(FIELD_BOUNDS.south);
+  const yTop = mercatorY(window.north);
+  const yBottom = mercatorY(window.south);
   for (let row = 0; row < rows; row++) {
     const lat = latOfMercatorY(yTop + ((row + 0.5) / rows) * (yBottom - yTop));
     for (let col = 0; col < cols; col++) {
-      const lng =
-        FIELD_BOUNDS.west + ((col + 0.5) / cols) * (FIELD_BOUNDS.east - FIELD_BOUNDS.west);
+      const lng = window.west + ((col + 0.5) / cols) * (window.east - window.west);
       const value = fieldAt(lat, lng, monitors);
       if (value === undefined) continue;
       const [r, g, b] = gradientColour(value.aqi);
@@ -138,8 +157,9 @@ export function grainyField(
   cols: number,
   rows: number,
   scale: number,
+  window: Window = FIELD_BOUNDS,
 ): { readonly pixels: Uint8ClampedArray; readonly width: number; readonly height: number } {
-  const coarse = renderField(monitors, cols, rows);
+  const coarse = renderField(monitors, cols, rows, window);
   const width = cols * scale;
   const height = rows * scale;
   const pixels = new Uint8ClampedArray(width * height * 4);

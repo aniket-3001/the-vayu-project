@@ -3944,3 +3944,136 @@ button.alert-card {
 .lens-hud .pc-sky {
   margin-top: 2px;
 }
+
+/* The assistant sheet follows the visible part of the screen, so the keyboard does not hide the message box */
+.sheet-backdrop {
+  top: var(--vv-top, 0);
+  bottom: auto;
+  height: var(--vv-height, 100dvh);
+}
+.sheet.assistant {
+  height: min(80dvh, 640px, calc(var(--vv-height, 100dvh) - 16px));
+}
+
+/* Places still to be set, on the home screen: dotted blue squares the size of a place card */
+.starter-slot {
+  aspect-ratio: 1;
+}
+.starter-slot .slot {
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  border: 2.5px dashed #3b82c4;
+  border-radius: var(--radius);
+  background: #eef5fc;
+  color: #2f5fb3;
+}
+.starter-slot .slot-icon {
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background: #dcebfa;
+  color: #2f6aa3;
+}
+.starter-slot .slot strong {
+  font-size: 18px;
+  color: var(--text);
+}
+.starter-slot .slot-hint {
+  color: #2f5fb3;
+  font-size: 13px;
+  font-weight: 700;
+}
+.starter-picker {
+  display: contents;
+}
+
+/* Lens on a phone: a small card that opens, a thin scale, and the round buttons in columns at the sides */
+.lens-hud .place-card.lens-card:not(.open) .pc-aqi strong {
+  font-size: 40px;
+}
+.lens-hud .place-card.lens-card:not(.open) .pc-hit {
+  padding-bottom: 8px;
+}
+.lens-more-toggle {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  z-index: 2;
+  width: 44px;
+  height: 44px;
+  background: rgb(255 255 255 / 0.6);
+}
+.lens-hud .place-card .pc-face {
+  right: 54px;
+}
+.lens-hud .pc-more[hidden] {
+  display: none;
+}
+.lens-top {
+  grid-template-columns: 1fr;
+}
+.aqi-scale {
+  padding: 4px 8px 3px;
+}
+.aqi-scale-bar {
+  height: 7px;
+}
+.aqi-scale-names b {
+  font-size: 9px;
+}
+.aqi-scale-names small {
+  font-size: 8.5px;
+}
+[data-route='lens'] .dock {
+  top: 88px;
+  right: 12px;
+  bottom: auto;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 8px;
+}
+[data-route='lens'] .assistant-fab {
+  width: 48px;
+  height: 48px;
+  padding: 0;
+  border-radius: 50%;
+  justify-content: center;
+}
+[data-route='lens'] .assistant-fab .fab-label {
+  display: none;
+}
+
+.lens-empty {
+  display: grid;
+  gap: 12px;
+}
+.lens-empty p {
+  margin: 0;
+}
+.lens-empty-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+}
+.lens-empty .primary {
+  min-height: 44px;
+  padding: 0 18px;
+  border: 0;
+  border-radius: 999px;
+  background: #3b82c4;
+  color: #fff;
+  font: inherit;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+/* The Lens card is as tall as what is in it, not a square like a place card on the home screen */
+.lens-hud .place-card.lens-card {
+  aspect-ratio: auto;
+}
+.lens-hud .place-card.lens-card .pc-hit {
+  min-height: 0;
+  height: auto;
+}

@@ -118,9 +118,8 @@ describe('the Map screen', () => {
 });
 
 describe('what the map says about its data', () => {
-  it('names the live sources when it has them: the model and wind from Open-Meteo, the fire count from NASA', () => {
+  it('names the live sources when it has them: wind from Open-Meteo, the fire count from NASA', () => {
     dataNow.windLive = true;
-    dataNow.airLive = true;
     dataNow.fires = 127;
     render(<MapScreen />);
     expect(
@@ -129,7 +128,7 @@ describe('what the map says about its data', () => {
       ),
     ).toBeInTheDocument();
     expect(screen.getByText('Live')).toBeInTheDocument();
-    expect(screen.getByText(/the CAMS model via Open-Meteo, right now/u)).toBeInTheDocument();
+    expect(screen.getByText(/Colour between monitors is an estimate/u)).toBeInTheDocument();
     expect(screen.getByText(/ICON and GFS models via Open-Meteo/u)).toBeInTheDocument();
     expect(screen.queryByText(/sample flow/u)).not.toBeInTheDocument();
   });

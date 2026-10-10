@@ -10,6 +10,7 @@ import { usePins } from '../usePins';
 import { PlaceCard } from './PlaceCard';
 import { browserLocate, type Locate } from '../locate';
 import { PlaceSearch } from './PlaceSearch';
+import { StarterSlots } from './StarterSlots';
 
 /** Your places, each a card in the colour of its air. Tap one for its day. */
 export function PlacesPanel({
@@ -97,24 +98,26 @@ export function PlacesPanel({
           Your browser did not share your location, so live location is off.
         </p>
       )}
-      {pins.length === 0 && livePin === undefined ? (
-        <p className="empty">
-          Nothing pinned yet. Search for a place above, or detect where you are.
-        </p>
-      ) : (
-        <ul className="place-grid" aria-label="Your places">
-          {livePin !== undefined && <PlaceCard key="live" pin={livePin} />}
-          {pins.map((pin) => (
-            <PlaceCard
-              key={pin.id}
-              pin={pin}
-              onRemove={(p) => {
-                remove(p.id);
-              }}
-            />
-          ))}
-        </ul>
-      )}
+      <ul className="place-grid" aria-label="Your places">
+        {livePin !== undefined && <PlaceCard key="live" pin={livePin} />}
+        {pins.map((pin) => (
+          <PlaceCard
+            key={pin.id}
+            pin={pin}
+            onRemove={(p) => {
+              remove(p.id);
+            }}
+          />
+        ))}
+        <StarterSlots
+          pins={pins}
+          {...(search !== undefined ? { search } : {})}
+          locate={locate}
+          onSet={(name, place) => {
+            add({ name, ...place });
+          }}
+        />
+      </ul>
       {children}
       <p className="muted small places-note">
         {airStore().kind === 'sample' ? (

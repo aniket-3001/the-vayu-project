@@ -14,7 +14,7 @@ import { levelForAqi } from '../design/levels';
 import { airStore, useToday } from '../air/store';
 import { AirError, AirLoading } from '../components/AirState';
 import { AqiScale } from '../components/AqiScale';
-import { useLivePin } from '../places/liveLocation';
+import { liveLocation, useLivePin } from '../places/liveLocation';
 import { usePins } from '../places/usePins';
 import { clock24, dayMonth, isoDate, weekday } from '../today/time';
 import { HazeCanvas } from './HazeCanvas';
@@ -94,10 +94,23 @@ export function LensScreen(): React.JSX.Element {
         </header>
         <main className="places-main">
           {pin === undefined ? (
-            <p className="empty">
-              Nothing pinned yet, so there is no air to show.{' '}
-              <Link to="/">Pin a place on My Air</Link>
-            </p>
+            <div className="empty lens-empty">
+              <p>Nothing pinned yet, so there is no air to show.</p>
+              <div className="lens-empty-actions">
+                <button
+                  type="button"
+                  className="primary"
+                  onClick={() => {
+                    liveLocation().set(true);
+                  }}
+                >
+                  Use where I am
+                </button>
+                <Link to="/" className="plain">
+                  Pin a place on My Air
+                </Link>
+              </div>
+            </div>
           ) : state?.status === 'error' ? (
             <AirError
               message={state.message}

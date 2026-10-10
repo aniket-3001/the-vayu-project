@@ -44,7 +44,7 @@ export function AqiScale({
             <b>{level.short}</b>
             <small>
               {level.from}
-              {i === LEVELS.length - 1 ? '+' : `–${String((LEVELS[i + 1]?.from ?? 1) - 1)}`}
+              {i === LEVELS.length - 1 ? '+' : ''}
             </small>
           </span>
         ))}

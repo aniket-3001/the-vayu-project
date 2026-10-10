@@ -1,6 +1,6 @@
 import type { Map as MapLibreMap } from 'maplibre-gl';
 import { useEffect, useRef } from 'react';
-import { GRID } from './live';
+import { WORLD } from './live';
 import { angleBetween, HORIZON_DEG } from './sphere';
 import { advectWith, speedOf, type Wind } from './wind';
 
@@ -62,7 +62,7 @@ export function WindStars({
     };
 
     const inside = (lat: number, lng: number): boolean =>
-      lat >= GRID.south && lat <= GRID.north && lng >= GRID.west && lng <= GRID.east;
+      lat >= WORLD.south && lat <= WORLD.north && lng >= WORLD.west && lng <= WORLD.east;
     /** Before the style has loaded the map has no projection yet; treat it as the globe it will become. */
     const isGlobe = (): boolean => {
       try {
@@ -83,7 +83,7 @@ export function WindStars({
           return { lat: at.lat, lng: at.lng, age: Math.random() * life, life, trail: [] };
         }
       }
-      return { lat: GRID.south, lng: GRID.west, age: LIFE_MAX, life: LIFE_MAX, trail: [] };
+      return { lat: WORLD.south, lng: WORLD.west, age: LIFE_MAX, life: LIFE_MAX, trail: [] };
     };
 
     const rebuild = (): void => {

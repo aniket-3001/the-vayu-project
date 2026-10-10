@@ -21,14 +21,13 @@ Checked against the deployed stack and the live address on 10 October 2026.
 
 ## Built and tested, but not live or not used by the app
 
-| Part                                                                        | Why                                                                                                                                                                                                                                                                               |
-| --------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Map monitor dots**                                                        | The job that reads about 75 monitors every 30 minutes timed out and was rate-limited by OpenAQ in testing; the fix is committed and was deployed but had not been seen to complete when this was written. The map shows the air colours and fires without the dots until it does. |
-| **Telegram alerts** (the loop, links, "did it work?", Hindi voice)          | Built and tested against fakes. Live scheduled sends are off. The app has no screen yet for linking a chat or sending a test alert.                                                                                                                                               |
-| **Hindi voice notes (Polly)**                                               | Off by default. The permission is not in the stack.                                                                                                                                                                                                                               |
-| **Device messaging** (IoT, the Rooms table, Firehose to S3, Athena queries) | The stack and its tests exist. No device is connected, so the Devices screen shows no readings and says "To be implemented".                                                                                                                                                      |
-| **Replay of a past week**                                                   | The API route exists and is tested. The app does not show it.                                                                                                                                                                                                                     |
-| **Budget alert by email**                                                   | The stack makes one when given an address; none was given. The account has two $50 budgets made by hand.                                                                                                                                                                          |
+| Part                                                                        | Why                                                                                                                                 |
+| --------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
+| **Telegram alerts** (the loop, links, "did it work?", Hindi voice)          | Built and tested against fakes. Live scheduled sends are off. The app has no screen yet for linking a chat or sending a test alert. |
+| **Hindi voice notes (Polly)**                                               | Off by default. The permission is not in the stack.                                                                                 |
+| **Device messaging** (IoT, the Rooms table, Firehose to S3, Athena queries) | The stack and its tests exist. No device is connected, so the Devices screen shows no readings and says "To be implemented".        |
+| **Replay of a past week**                                                   | The API route exists and is tested. The app does not show it.                                                                       |
+| **Budget alert by email**                                                   | The stack makes one when given an address; none was given. The account has two $50 budgets made by hand.                            |
 
 ## Not built
 
@@ -69,3 +68,7 @@ Six faults were found by running it, each fixed with a test: a 403 from the `Hos
 | Elevation and boundary-layer height | No.                                                                                                                  | Not used anywhere                                                   |
 
 The forecast hours come from the CAMS model, which does include weather in what it predicts, and the app corrects it with the nearest monitor's recent readings. The app itself does not adjust a measured number for weather.
+
+## What the browser asks of Open-Meteo
+
+The wind grid is the one thing the browser still asks Open-Meteo for directly: about 600 points each time the map is opened (a close grid over south Asia and a coarse one worldwide), kept for 30 minutes in the tab. Open-Meteo's free allowance is 10,000 points a day for each address, so a person can open the map about 15 times a day before the wind stops and the map falls back to a sample flow. Moving the wind to our own API (one fetch for everyone, every three hours) would remove that limit; it is not done.

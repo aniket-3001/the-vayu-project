@@ -1,3 +1,4 @@
+import type { Monitor } from './monitors';
 import { describe, expect, it } from 'vitest';
 import { levelForAqi } from '../design/levels';
 import { firesGeoJson, sampleFires } from './fires';
@@ -97,5 +98,28 @@ describe('the sample wind', () => {
       (end.lng - start.lng) * 111 * Math.cos((29 * Math.PI) / 180),
     );
     expect(km).toBeCloseTo((speedOf(windAt(29, 77)) * 3600) / 1000, 0);
+  });
+});
+
+describe('monitors binned for the colour field', () => {
+  it('gives one value for each square of ground, the average of those in it', async () => {
+    const { binMonitors } = await import('./monitors');
+    const at = (id: string, lat: number, lng: number, pm25: number, aqi: number): Monitor => ({
+      id,
+      name: id,
+      lat,
+      lng,
+      pm25,
+      aqi,
+      ageMinutes: 0,
+    });
+    const bins = binMonitors(
+      [at('a', 28.1, 77.1, 40, 100), at('b', 28.3, 77.3, 60, 160), at('c', 40.5, -73.5, 5, 21)],
+      1,
+    );
+    expect(bins).toHaveLength(2);
+    const near = bins.find((b) => b.lat < 30);
+    expect(near).toMatchObject({ pm25: 50, aqi: 130 });
+    expect(near?.lat).toBeCloseTo(28.2, 5);
   });
 });

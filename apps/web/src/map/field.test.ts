@@ -88,10 +88,10 @@ describe('the rendered field', () => {
 
 describe('the edge of the field', () => {
   it('fades to nothing at the corner of the data, so there is no hard box', () => {
-    // Monitors every five degrees over the whole world, so only the edge of the picture can fade.
-    const everywhere = Array.from({ length: 33 }, (_, i) =>
-      Array.from({ length: 73 }, (_, j) =>
-        at(FIELD_BOUNDS.south + i * 5, FIELD_BOUNDS.west + j * 5, 100),
+    // Monitors every two degrees over the whole world, so only the edge of the picture can fade.
+    const everywhere = Array.from({ length: 81 }, (_, i) =>
+      Array.from({ length: 181 }, (_, j) =>
+        at(FIELD_BOUNDS.south + i * 2, FIELD_BOUNDS.west + j * 2, 100),
       ),
     ).flat();
     const cols = 72;
@@ -105,22 +105,24 @@ describe('the edge of the field', () => {
 
 describe('the fine grain', () => {
   const monitors = [at(20, 80, 120), at(25, 85, 60)];
+  /** A window over south Asia, where those two are, so the picture has pixels near them. */
+  const asia = { west: 60, east: 100, south: 5, north: 40 };
 
   it('is a picture `scale` times finer than the field, with four bytes a pixel', () => {
-    const { pixels, width, height } = grainyField(monitors, 20, 22, 5);
+    const { pixels, width, height } = grainyField(monitors, 20, 22, 5, asia);
     expect(width).toBe(100);
     expect(height).toBe(110);
     expect(pixels).toHaveLength(100 * 110 * 4);
   });
 
   it('is the same every time, so it does not shimmer', () => {
-    const a = grainyField(monitors, 20, 22, 4).pixels;
-    const b = grainyField(monitors, 20, 22, 4).pixels;
+    const a = grainyField(monitors, 20, 22, 4, asia).pixels;
+    const b = grainyField(monitors, 20, 22, 4, asia).pixels;
     expect(Array.from(a)).toEqual(Array.from(b));
   });
 
   it('roughens each pixel on its own, with specks and holes, and not in blocks', () => {
-    const { pixels, width, height } = grainyField(monitors, 40, 44, 6);
+    const { pixels, width, height } = grainyField(monitors, 40, 44, 6, asia);
     const alphas = new Set<number>();
     let neighbours = 0;
     let differ = 0;
@@ -141,7 +143,7 @@ describe('the fine grain', () => {
   });
 
   it('keeps colour at the level colours and is empty far from any monitor', () => {
-    const { pixels, width, height } = grainyField(monitors, 180, 100, 4);
+    const { pixels, width, height } = grainyField(monitors, 40, 44, 4, asia);
     expect(pixels[3]).toBe(0);
     let strong = 0;
     for (let i = 3; i < pixels.length; i += 4) if ((pixels[i] ?? 0) > 100) strong += 1;

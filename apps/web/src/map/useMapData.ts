@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { fetchAirGrid, fetchWindGrid, recall, remember, type WindPoint } from './live';
+import { fetchWindGrid, recall, remember, type WindPoint } from './live';
 import { API_URL } from '../config';
 import { readDemo } from '../demo/state';
 import { airStore } from '../air/store';
@@ -8,10 +8,9 @@ import type { Monitor } from './monitors';
 
 export interface MapData {
   readonly wind: readonly WindPoint[];
-  /** The grid of air quality that colours the map between monitors. */
+  /** A made-up grid of air quality, for the prototype only: the deployed map is coloured from real monitors. */
   readonly air: readonly Monitor[];
   readonly windLive: boolean;
-  readonly airLive: boolean;
   /** Fires counted in the last 24 hours, from our API, or undefined. */
   readonly fires: number | undefined;
   /** Where they were seen. */
@@ -19,7 +18,6 @@ export interface MapData {
 }
 
 const isWind = (v: unknown): v is readonly WindPoint[] => Array.isArray(v) && v.length > 0;
-const isAir = (v: unknown): v is readonly Monitor[] => Array.isArray(v) && v.length > 0;
 
 /**
  * What the map is drawn from. In the deployed app it starts empty and fills in as the live wind and air
@@ -29,22 +27,20 @@ const isAir = (v: unknown): v is readonly Monitor[] => Array.isArray(v) && v.len
 export function useMapData(fetchImpl: typeof fetch = fetch): MapData {
   const [data, setData] = useState<MapData>(() => {
     const wind = recall('wind');
-    const air = recall('air');
     // Only the prototype's source has made-up map data; the deployed app starts empty.
     const made = airStore().madeUpMap();
     const staged = readDemo()?.fires;
     return {
       wind: isWind(wind) ? wind : (made?.wind ?? []),
-      air: isAir(air) ? air : (made?.air ?? []),
+      air: made?.air ?? [],
       windLive: isWind(wind),
-      airLive: isAir(air),
       fires: staged,
       fireList: made?.fires ?? [],
     };
   });
 
   // What was missing when the map opened; only that is asked for.
-  const missing = useRef({ wind: !data.windLive, air: !data.airLive });
+  const missing = useRef({ wind: !data.windLive });
 
   useEffect(() => {
     let current = true;
@@ -56,15 +52,6 @@ export function useMapData(fetchImpl: typeof fetch = fetch): MapData {
         (wind) => {
           remember('wind', wind);
           apply({ wind, windLive: true });
-        },
-        () => undefined,
-      );
-    }
-    if (missing.current.air) {
-      fetchAirGrid(fetchImpl).then(
-        (air) => {
-          remember('air', air);
-          apply({ air, airLive: true });
         },
         () => undefined,
       );
