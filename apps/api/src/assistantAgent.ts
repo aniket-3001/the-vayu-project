@@ -139,6 +139,8 @@ export async function answer(input: AnswerInput): Promise<AssistantReply> {
       // A reworded answer may use only the numbers its own rule used, so it cannot move a true number somewhere false.
       facts: { answer: maskedRule },
       instruction: REWORD_INSTRUCTION,
+      // The standing instructions go in the system prompt, where the guardrail does not read them as an attack.
+      instructionAsSystem: true,
       generate: input.reword,
       timeoutMs: ASSISTANT_LIMITS.modelTimeoutMs,
     });

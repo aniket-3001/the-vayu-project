@@ -1,7 +1,7 @@
 import { BedrockRuntimeClient, ConverseCommand } from '@aws-sdk/client-bedrock-runtime';
 
 /** Anything that turns a prompt into text. Bedrock in production, a stub in tests. */
-export type Generate = (prompt: string) => Promise<string>;
+export type Generate = (prompt: string, system?: string) => Promise<string>;
 
 export type Facts = Readonly<Record<string, number | string>>;
 
@@ -19,11 +19,13 @@ const NUMBER = /\d{1,3}(?:,\d{3})+(?:\.\d+)?|\d+(?:\.\d+)?/g;
 /** The names PM2.5 and PM10 are labels, not figures, so they are not read as numbers. */
 const POLLUTANT_NAME = /PM\s?(?:2\.5|10)/gi;
 
+/** A masked name or place, such as "[person 2]": its number is a position in a list, never a figure. */
+const PLACEHOLDER = /\[(?:place|person \d+)\]/gu;
+
 /** Every number written in `text`. A time like 6:00 reads as 6 and 0; "1,200" reads as 1200. */
 export function numbersIn(text: string): number[] {
-  return (text.replaceAll(POLLUTANT_NAME, ' ').match(NUMBER) ?? []).map((token) =>
-    Number(token.replaceAll(',', '')),
-  );
+  const bare = text.replaceAll(POLLUTANT_NAME, ' ').replaceAll(PLACEHOLDER, ' ');
+  return (bare.match(NUMBER) ?? []).map((token) => Number(token.replaceAll(',', '')));
 }
 
 function factNumbers(facts: Facts): Set<number> {
@@ -51,6 +53,9 @@ function promptFor(template: string, facts: Facts, instruction: string): string 
   return [instruction, '', `Message: ${template}`, `Facts: ${JSON.stringify(facts)}`].join('\n');
 }
 
+const dataFor = (template: string, facts: Facts): string =>
+  [`Message: ${template}`, `Facts: ${JSON.stringify(facts)}`].join('\n');
+
 function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
   let timer: ReturnType<typeof setTimeout> | undefined;
   const timeout = new Promise<never>((_, reject) => {
@@ -71,6 +76,11 @@ export interface PhraseInput {
   readonly timeoutMs?: number;
   /** Replaces the standing instruction in the prompt. The number check applies whatever it says. */
   readonly instruction?: string;
+  /**
+   * Sends the instruction as the system prompt and only the message and facts as the prompt. A guardrail's
+   * prompt-attack filter reads instructions inside the prompt as an attack; the system prompt is not read that way.
+   */
+  readonly instructionAsSystem?: boolean;
 }
 
 /**
@@ -86,10 +96,11 @@ export async function phrase(input: PhraseInput): Promise<Phrased> {
   });
   let generated: string;
   try {
+    const instruction = input.instruction ?? DEFAULT_INSTRUCTION;
     generated = await withTimeout(
-      input.generate(
-        promptFor(input.template, input.facts, input.instruction ?? DEFAULT_INSTRUCTION),
-      ),
+      input.instructionAsSystem === true
+        ? input.generate(dataFor(input.template, input.facts), instruction)
+        : input.generate(promptFor(input.template, input.facts, instruction)),
       input.timeoutMs ?? 4000,
     );
   } catch {
@@ -121,12 +132,13 @@ export function bedrockGenerator(options: BedrockGeneratorOptions = {}): Generat
   const client =
     options.client ?? new BedrockRuntimeClient({ region: options.region ?? 'ap-south-1' });
   const modelId = options.modelId ?? 'apac.amazon.nova-micro-v1:0';
-  return async (prompt) => {
+  return async (prompt, system) => {
+    const standing = [options.system, system].filter((part) => part !== undefined).join('\n');
     const response = await client.send(
       new ConverseCommand({
         modelId,
         messages: [{ role: 'user', content: [{ text: prompt }] }],
-        ...(options.system === undefined ? {} : { system: [{ text: options.system }] }),
+        ...(standing === '' ? {} : { system: [{ text: standing }] }),
         ...(options.guardrail === undefined
           ? {}
           : {

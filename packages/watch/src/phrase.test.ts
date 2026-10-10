@@ -13,6 +13,34 @@ describe('numbersIn', () => {
   });
 });
 
+describe('masked names and places', () => {
+  it('are not numbers, so a position in a list cannot excuse an invented figure', () => {
+    expect(numbersIn('[person 1] and [person 12] at [place]: AQI 158')).toEqual([158]);
+    expect(
+      numbersMatchFacts('[person 1] is fine. Also 1 person agrees.', { a: '[person 1] ok' }),
+    ).toBe(false);
+  });
+});
+
+describe('instruction as the system prompt', () => {
+  it('sends the instruction apart from the message, so a guardrail does not read it as an attack', async () => {
+    const generate = vi.fn<Generate>(() =>
+      Promise.resolve('Stage IV is likely, AQI 410, from 6:00.'),
+    );
+    await phrase({
+      template: TEMPLATE,
+      facts: FACTS,
+      generate,
+      instruction: 'Reword kindly.',
+      instructionAsSystem: true,
+    });
+    const [prompt, system] = generate.mock.calls[0] ?? ['', ''];
+    expect(system).toBe('Reword kindly.');
+    expect(prompt).not.toContain('Reword kindly.');
+    expect(prompt).toContain(`Message: ${TEMPLATE}`);
+  });
+});
+
 describe('numbersMatchFacts (rule I6)', () => {
   it('accepts text whose numbers all appear in the facts', () => {
     expect(numbersMatchFacts('Stage IV is likely, AQI 410, from 6:00.', FACTS)).toBe(true);
@@ -86,6 +114,15 @@ describe('bedrockGenerator', () => {
     const [command] = send.mock.calls[0] as [{ input: { modelId: string; messages: unknown[] } }];
     expect(command.input.modelId).toBe('apac.amazon.nova-micro-v1:0');
     expect(command.input.messages).toHaveLength(1);
+  });
+
+  it('joins the standing system prompt and the one given with the call', async () => {
+    const { bedrockGenerator } = await import('./phrase');
+    const send = vi.fn().mockResolvedValue({ output: { message: { content: [{ text: 'ok' }] } } });
+    const generate = bedrockGenerator({ client: { send } as never, system: 'Standing.' });
+    await generate('data', 'For this call.');
+    const [command] = send.mock.calls[0] as [{ input: { system: { text: string }[] } }];
+    expect(command.input.system).toEqual([{ text: 'Standing.\nFor this call.' }]);
   });
 
   it('returns an empty string when the response has no text', async () => {
