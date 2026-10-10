@@ -821,9 +821,18 @@ h2 {
 }
 .pc-main {
   display: flex;
-  justify-content: space-between;
   align-items: flex-end;
   gap: 12px;
+}
+.pc-words {
+  flex: 1;
+  min-width: 0;
+}
+/* The face is the card's own colour, a good deal darker, so it reads as part of the card. */
+.pc-face {
+  flex: none;
+  color: color-mix(in srgb, var(--level) 52%, #334155);
+  line-height: 0;
 }
 .pc-level {
   font-size: 17px;
@@ -879,4 +888,14 @@ h2 {
 /* The Places page has no air colour of its own, so its wash is a quiet blue-grey. */
 .page.places {
   --level: #a9bdd6;
+}
+
+/* Inside a device frame the scrollbar would give the game away; phones and tablets hide it. */
+@media (max-width: 1100px) {
+  .embedded {
+    scrollbar-width: none;
+  }
+  .embedded::-webkit-scrollbar {
+    display: none;
+  }
 }

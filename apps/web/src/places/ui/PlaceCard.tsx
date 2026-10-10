@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import type { Pin } from '../../data/pins';
 import { levelForAqi } from '../../design/levels';
 import { levelVars } from '../../today/ui/format';
-import { CONDITION_LABELS, WeatherIcon } from '../../today/ui/icons';
+import { CONDITION_LABELS, FaceIcon, WeatherIcon } from '../../today/ui/icons';
 import { readingForPin } from '../placeSample';
 
 const age = (minutes: number): string =>
@@ -44,6 +44,9 @@ export function PlaceCard({
         </button>
       </div>
       <div className="pc-main">
+        <span className="pc-face">
+          <FaceIcon face={level.face} size={56} />
+        </span>
         <div className="pc-words">
           <p className="pc-level">{level.name}</p>
           <p className="pc-sky">

@@ -11,7 +11,7 @@ export interface Pin {
 }
 
 export const MAX_PINS = 8;
-const STORAGE_KEY = 'vayu.pins.v1';
+export const PINS_STORAGE_KEY = 'vayu.pins.v1';
 
 /** Two places within about a kilometre are the same pin: our monitors are not finer than that. */
 export const pinId = (lat: number, lng: number): string => `${lat.toFixed(2)},${lng.toFixed(2)}`;
@@ -36,7 +36,7 @@ function isPin(value: unknown): value is Pin {
 /** The saved pins, or the four sample places if nothing was ever saved. Never throws. */
 export function loadPins(storage: Storage): readonly Pin[] {
   try {
-    const raw = storage.getItem(STORAGE_KEY);
+    const raw = storage.getItem(PINS_STORAGE_KEY);
     if (raw === null) return SAMPLES;
     const parsed: unknown = JSON.parse(raw);
     return Array.isArray(parsed) ? parsed.filter(isPin) : SAMPLES;
@@ -47,7 +47,7 @@ export function loadPins(storage: Storage): readonly Pin[] {
 
 export function savePins(storage: Storage, pins: readonly Pin[]): void {
   try {
-    storage.setItem(STORAGE_KEY, JSON.stringify(pins));
+    storage.setItem(PINS_STORAGE_KEY, JSON.stringify(pins));
   } catch {
     // Best effort: a blocked or full storage must never break the screen.
   }
