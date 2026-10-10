@@ -111,6 +111,30 @@ describe('the Places screen', () => {
       expect(screen.getByRole('button', { name })).toBeInTheDocument();
   });
 
+  it('keeps the four dotted squares as fields: set one and its card sits on it, cross the card and the square returns', async () => {
+    window.localStorage.setItem('vayu.pins.v1', '[]');
+    screenWith({
+      locate: (found) => {
+        found(28.4, 77.05);
+      },
+    });
+    const list = (): HTMLElement[] =>
+      Array.from(screen.getByRole('list', { name: 'Your places' }).children) as HTMLElement[];
+    expect(list()).toHaveLength(4);
+    await userEvent.click(screen.getByRole('button', { name: 'Set Office' }));
+    await userEvent.click(
+      within(screen.getByRole('dialog', { name: 'Where is Office?' })).getByRole('button', {
+        name: 'Detect me',
+      }),
+    );
+    // Still four places, in the same order: Office is now a card where its square was.
+    expect(list()).toHaveLength(4);
+    expect(list()[2]?.querySelector('.pc-name')).toHaveTextContent('Office');
+    await userEvent.click(screen.getByRole('button', { name: 'Remove Office' }));
+    expect(list()).toHaveLength(4);
+    expect(screen.getByRole('button', { name: 'Set Office' })).toBeInTheDocument();
+  });
+
   it('turns a dotted square into a card with the name of the square, once its place is given', async () => {
     window.localStorage.setItem('vayu.pins.v1', '[]');
     screenWith({
@@ -128,7 +152,7 @@ describe('the Places screen', () => {
     expect(screen.getByRole('button', { name: 'Set Home' })).toBeInTheDocument();
   });
 
-  it('searches by name and pins what the person picks, at the top', async () => {
+  it('searches by name and pins what the person picks, after the four usual places', async () => {
     screenWith({ search: () => Promise.resolve([lucknow]) });
     await userEvent.type(screen.getByRole('searchbox'), 'Lucknow');
     await userEvent.click(screen.getByRole('button', { name: 'Search' }));
@@ -137,9 +161,10 @@ describe('the Places screen', () => {
       screen.getByRole('list', { name: 'Your places' }).children,
     ) as HTMLElement[];
     expect(cards).toHaveLength(5);
-    const first = cards[0];
-    if (first === undefined) throw new Error('no cards');
-    expect(first.querySelector('.pc-name')).toHaveTextContent('Lucknow');
+    // The four usual places keep their positions; a searched place follows them.
+    const last = cards[4];
+    if (last === undefined) throw new Error('no cards');
+    expect(last.querySelector('.pc-name')).toHaveTextContent('Lucknow');
   });
 
   it('says so when no monitors cover the search, and when search is down', async () => {

@@ -10,7 +10,7 @@ import { usePins } from '../usePins';
 import { PlaceCard } from './PlaceCard';
 import { browserLocate, type Locate } from '../locate';
 import { PlaceSearch } from './PlaceSearch';
-import { StarterSlots } from './StarterSlots';
+import { STARTER_KINDS, StarterSlot, starterKindOf } from './StarterSlots';
 
 /** Your places, each a card in the colour of its air. Tap one for its day. */
 export function PlacesPanel({
@@ -100,23 +100,40 @@ export function PlacesPanel({
       )}
       <ul className="place-grid" aria-label="Your places">
         {livePin !== undefined && <PlaceCard key="live" pin={livePin} />}
-        {pins.map((pin) => (
-          <PlaceCard
-            key={pin.id}
-            pin={pin}
-            onRemove={(p) => {
-              remove(p.id);
-            }}
-          />
-        ))}
-        <StarterSlots
-          pins={pins}
-          {...(search !== undefined ? { search } : {})}
-          locate={locate}
-          onSet={(name, place) => {
-            add({ name, ...place });
-          }}
-        />
+        {/* The four usual places are always there: a dotted square to fill in, or its card on top once set. */}
+        {STARTER_KINDS.map((kind) => {
+          const set = pins.find((pin) => starterKindOf(pin) === kind);
+          return set === undefined ? (
+            <StarterSlot
+              key={kind}
+              kind={kind}
+              {...(search !== undefined ? { search } : {})}
+              locate={locate}
+              onSet={(name, place) => {
+                add({ name, ...place });
+              }}
+            />
+          ) : (
+            <PlaceCard
+              key={set.id}
+              pin={set}
+              onRemove={(p) => {
+                remove(p.id);
+              }}
+            />
+          );
+        })}
+        {pins
+          .filter((pin) => starterKindOf(pin) === undefined)
+          .map((pin) => (
+            <PlaceCard
+              key={pin.id}
+              pin={pin}
+              onRemove={(p) => {
+                remove(p.id);
+              }}
+            />
+          ))}
       </ul>
       {children}
       <p className="muted small places-note">
