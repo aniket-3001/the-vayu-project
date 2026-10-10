@@ -9,7 +9,12 @@ describe('rules as data', () => {
   it('parses every rules file', () => {
     expect(rules.cpcb.pm25).toHaveLength(6);
     expect(rules.verdict.minOutsidePm25).toBe(100);
-    expect(rules.fixCheck).toEqual({ minDropPct: 20, maxTries: 3, minWaitSeconds: 30, maxWaitSeconds: 900 });
+    expect(rules.fixCheck).toEqual({
+      minDropPct: 20,
+      maxTries: 3,
+      minWaitSeconds: 30,
+      maxWaitSeconds: 900,
+    });
   });
 
   it('keeps the heads-up threshold below the official Stage IV level (it leans cautious)', () => {

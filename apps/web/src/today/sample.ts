@@ -1,6 +1,14 @@
 import { seededRandom, usAqi } from '@vayu/core';
 import { hourOfDay, isoDate } from './time';
-import type { Condition, DailyPoint, HourlyPoint, Pollutants, TodayData, Weather } from './types';
+import type {
+  Condition,
+  DailyPoint,
+  HourlyPoint,
+  Pollutants,
+  TodayData,
+  TodaySource,
+  Weather,
+} from './types';
 
 /** The moment every sample day describes: 08:30 on a Saturday morning in Delhi. */
 const AS_OF = '2026-10-10T03:00:00.000Z';
@@ -79,9 +87,9 @@ const SPECS: Readonly<Record<SampleId, Spec>> = {
     station: 'Sample monitor, central Delhi',
   },
   rainy: {
-    pm: (i) => {
-      if (i < 4) return 38 - 1.5 * Math.max(i, -6);
-      const washed = 12 + (38 - 12) * Math.exp(-(i - 4) / 3.5);
+    pm: (i, h) => {
+      if (i < 4) return 47 + 8 * wave(h, 21);
+      const washed = 12 + (47 - 12) * Math.exp(-(i - 4) / 3.5);
       return i < 16 ? washed : washed + 0.4 * Math.min(i - 16, 40);
     },
     temp: { mean: 26, amp: 3 },
@@ -156,10 +164,18 @@ function weatherAt(spec: Spec, i: number, at: string): Weather {
   const h = hourOfDay(at);
   const isDay = sunUp(h);
   const tempC = Math.round(
-    spec.temp.mean + spec.temp.amp * wave(h, 15) + (spec.tempShift?.(i) ?? 0),
+    spec.temp.mean +
+      spec.temp.amp * wave(h, 15) +
+      (spec.tempShift?.(i) ?? 0) +
+      drift(spec.seed + 3, i, 2.2),
   );
   const wind = spec.wind(i, h);
+  wind.kmh *= 1 + drift(spec.seed + 5, i, 0.3);
   const rain = spec.rain(i);
+  // After today, some days turn cloudy or hold a chance of showers, so a week has weather in it.
+  const mood = i < 24 ? 0 : Math.sin(Math.floor(i / 24) * 1.9 + spec.seed * 2.7);
+  const sky = spec.sky(isDay, h);
+  const calm = sky !== 'fog' && sky !== 'dust';
   const condition: Condition =
     rain.storm === true
       ? 'thunderstorm'
@@ -167,7 +183,14 @@ function weatherAt(spec: Spec, i: number, at: string): Weather {
         ? 'rain'
         : rain.mm > 0
           ? 'drizzle'
-          : spec.sky(isDay, h);
+          : calm && mood > 0.55
+            ? isDay
+              ? 'partly-cloudy'
+              : 'cloudy'
+            : calm && mood < -0.8
+              ? 'cloudy'
+              : sky;
+  if (calm && mood < -0.8 && rain.chance < 25) rain.chance = 30;
   const rise = hourOfDay(SUNRISE);
   const set = hourOfDay(SUNSET);
   return {
@@ -206,7 +229,8 @@ export function sampleDay(id: SampleId): TodayData {
   });
   const history = Array.from({ length: 48 }, (_, k) => {
     const i = k - 47;
-    return { at: atHour(i), aqi: aqiOf(pmAt(spec, i)) };
+    const pm25 = pmAt(spec, i);
+    return { at: atHour(i), aqi: aqiOf(pm25), pm25 };
   });
 
   // Seven calendar days in Delhi, from today, each from its own 24 hours of the recipe.
@@ -272,3 +296,8 @@ export function sampleDay(id: SampleId): TodayData {
     },
   };
 }
+
+/** A source that always answers with the same made-up day. The real one will have the same shape. */
+export const sampleSource = (id: SampleId): TodaySource => ({
+  load: () => Promise.resolve(sampleDay(id)),
+});

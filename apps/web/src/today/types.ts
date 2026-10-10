@@ -80,7 +80,7 @@ export interface TodayData {
   readonly hourly: readonly HourlyPoint[];
   readonly daily: readonly DailyPoint[];
   /** The past 48 hours of AQI, oldest first, ending at `asOf`. */
-  readonly history: readonly { readonly at: string; readonly aqi: number }[];
+  readonly history: readonly { readonly at: string; readonly aqi: number; readonly pm25: number }[];
   readonly sun: { readonly sunrise: string; readonly sunset: string };
   readonly provenance: Provenance;
 }

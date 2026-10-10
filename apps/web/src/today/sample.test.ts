@@ -22,7 +22,7 @@ describe('the sample days', () => {
     for (const day of all()) {
       expect(day.aqi).toBe(usAqi(day.pm25)?.value);
       for (const hour of [...day.hourly, ...day.history]) {
-        if ('pm25' in hour) expect(hour.aqi).toBe(usAqi(Number(hour.pm25))?.value);
+        expect(hour.aqi).toBe(usAqi(hour.pm25)?.value);
       }
     }
   });
