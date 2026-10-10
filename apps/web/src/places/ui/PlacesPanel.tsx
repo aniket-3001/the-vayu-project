@@ -8,23 +8,8 @@ import { useLiveLocation, useLivePin } from '../liveLocation';
 import { HereSheet } from './HereSheet';
 import { usePins } from '../usePins';
 import { PlaceCard } from './PlaceCard';
+import { browserLocate, type Locate } from '../locate';
 import { PlaceSearch } from './PlaceSearch';
-
-type Locate = (onFound: (lat: number, lng: number) => void, onFail: () => void) => void;
-
-const browserLocate: Locate = (onFound, onFail) => {
-  if (!('geolocation' in navigator)) {
-    onFail();
-    return;
-  }
-  navigator.geolocation.getCurrentPosition(
-    (position) => {
-      onFound(position.coords.latitude, position.coords.longitude);
-    },
-    onFail,
-    { timeout: 10_000 },
-  );
-};
 
 /** Your places, each a card in the colour of its air. Tap one for its day. */
 export function PlacesPanel({

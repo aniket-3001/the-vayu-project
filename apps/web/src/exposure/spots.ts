@@ -81,14 +81,18 @@ const isSpot = (value: unknown): value is Spot => {
   );
 };
 
-/** The saved places for one person, or the usual ones for their kind of day if none were ever saved. Never throws. */
+/**
+ * The saved places for one person. The phone's owner starts with the usual ones for their kind of day, the same
+ * places as the starter cards; anyone added later starts with none, to be filled in. Never throws.
+ */
 export function loadSpots(storage: Storage, personId: string, persona: Persona): Spots {
+  const start = (): Spots => (personId === 'me' ? sampleSpotsFor(persona) : {});
   try {
     const raw = storage.getItem(SPOTS_STORAGE_KEY);
-    if (raw === null) return sampleSpotsFor(persona);
+    if (raw === null) return start();
     const all = JSON.parse(raw) as Record<string, Record<string, unknown> | undefined>;
     const saved = all[personId];
-    if (saved === undefined) return sampleSpotsFor(persona);
+    if (saved === undefined) return start();
     const spots: Partial<Record<SpotKind, Spot>> = {};
     for (const kind of SPOT_KINDS) {
       const value = saved[kind];
@@ -96,7 +100,7 @@ export function loadSpots(storage: Storage, personId: string, persona: Persona):
     }
     return spots;
   } catch {
-    return sampleSpotsFor(persona);
+    return start();
   }
 }
 

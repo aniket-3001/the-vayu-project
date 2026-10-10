@@ -1,8 +1,12 @@
 import { X } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { WEEKDAYS } from '../calendar';
-import { DAY_LABELS, defaultDayFor, personaOf, type Day } from '../people';
-import { sampleSpotsFor, type Spot, type Spots } from '../spots';
+import { DAY_LABELS, defaultDayFor, type Day } from '../people';
+import type { PlaceMatch } from '../../data/geocode';
+import type { Pin } from '../../data/pins';
+import { DEFAULT_HOURS, type Spot, type SpotKind, type Spots } from '../spots';
+import { PlacePicker } from './PlacePicker';
+import { PlaceSlot, SLOT_NAMES } from './PlaceSlot';
 import { DaysPicker } from './SpotSection';
 
 const hourLabel = (hour: number): string => `${String(hour).padStart(2, '0')}:00`;
@@ -43,9 +47,16 @@ function HourSelect({
 export function AddPerson({
   onAdd,
   onClose,
+  pins = [],
+  onAddPin,
+  search,
 }: {
   readonly onAdd: (person: { name: string; age: number; day: Day }, spots: Spots) => void;
   readonly onClose: () => void;
+  /** The places already pinned, offered when picking where something is. */
+  readonly pins?: readonly Pin[];
+  readonly onAddPin?: (place: PlaceMatch) => void;
+  readonly search?: (query: string) => Promise<readonly PlaceMatch[]>;
 }): React.JSX.Element {
   const [name, setName] = useState('');
   const [age, setAge] = useState('');
@@ -54,6 +65,9 @@ export function AddPerson({
     {},
   );
   const [problem, setProblem] = useState('');
+  // Where they spend the day: empty squares to fill in, nothing assumed.
+  const [places, setPlaces] = useState<Partial<Record<SpotKind, Pin>>>({});
+  const [picking, setPicking] = useState<SpotKind | undefined>(undefined);
 
   useEffect(() => {
     const onKey = (event: KeyboardEvent): void => {
@@ -68,10 +82,11 @@ export function AddPerson({
   const years = Number(age);
   const day: Day =
     chosen ?? (age === '' || !Number.isFinite(years) ? 'work' : defaultDayFor(years));
-  const usual = sampleSpotsFor(personaOf({ day }));
-  const base = day === 'none' ? undefined : usual[day];
-  const from = edited.from ?? base?.from ?? 9;
-  const to = edited.to ?? base?.to ?? 17;
+  const usual = day === 'none' ? undefined : DEFAULT_HOURS[day];
+  const from = edited.from ?? usual?.from ?? 9;
+  const to = edited.to ?? usual?.to ?? 17;
+  const kinds: readonly SpotKind[] =
+    day === 'none' ? ['home', 'outdoor'] : ['home', day, 'outdoor'];
   const days = edited.days ?? WEEKDAYS;
   const dayLabel = day === 'school' ? 'School' : 'Work';
 
@@ -89,9 +104,16 @@ export function AddPerson({
       setProblem(`Please pick at least one day for ${dayLabel.toLowerCase()}.`);
       return;
     }
-    const spots: Partial<Record<'home' | 'school' | 'work', Spot>> = {};
-    if (usual.home !== undefined) spots.home = usual.home;
-    if (day !== 'none' && base !== undefined) spots[day] = { ...base, from, to, days };
+    // Only what was filled in becomes a place; the rest stay empty to be set later.
+    const spots: Partial<Record<SpotKind, Spot>> = {};
+    for (const kind of kinds) {
+      const pin = places[kind];
+      if (pin === undefined) continue;
+      spots[kind] =
+        kind === 'work' || kind === 'school'
+          ? { pin, from, to, days }
+          : { pin, ...DEFAULT_HOURS[kind] };
+    }
     onAdd({ name: name.trim(), age: years, day }, spots);
   };
 
@@ -165,7 +187,7 @@ export function AddPerson({
             ))}
           </div>
         </fieldset>
-        {day !== 'none' && (
+        {day !== 'none' && places[day] !== undefined && (
           <>
             <div className="hours-row">
               <HourSelect
@@ -192,10 +214,41 @@ export function AddPerson({
             />
           </>
         )}
-        <p className="muted small">
-          The rest of the time we assume they are at home. Time outdoors you log later, so it counts
-          where they really were.
-        </p>
+        <fieldset className="field">
+          <legend>Where they spend the day</legend>
+          <div className="slots">
+            {kinds.map((kind) => (
+              <PlaceSlot
+                key={kind}
+                kind={kind}
+                pin={places[kind]}
+                active={picking === kind}
+                onPress={() => {
+                  setPicking(picking === kind ? undefined : kind);
+                }}
+              />
+            ))}
+          </div>
+          {picking !== undefined && (
+            <PlacePicker
+              name={SLOT_NAMES[picking]}
+              pins={pins}
+              {...(onAddPin !== undefined ? { onAddPin } : {})}
+              {...(search !== undefined ? { search } : {})}
+              onPick={(pin) => {
+                setPlaces((current) => ({ ...current, [picking]: pin }));
+                setPicking(undefined);
+              }}
+              onCancel={() => {
+                setPicking(undefined);
+              }}
+            />
+          )}
+          <p className="muted small">
+            Tap a square to say where. Anything left empty can be set later. Time outdoors you log
+            afterwards, so it counts where they really were.
+          </p>
+        </fieldset>
         {problem !== '' && (
           <p className="banner" role="alert">
             {problem}

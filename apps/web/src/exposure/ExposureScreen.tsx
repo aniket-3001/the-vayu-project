@@ -30,7 +30,7 @@ import { personaById } from './persona';
 import { DAY_LABELS, initials, MAX_PEOPLE, personaOf } from './people';
 import { SPOT_LABELS, loadAllSpots, type SpotKind } from './spots';
 import { sourcesNote } from './sources';
-import { Dial, WHERE_LABELS } from './ui/Dial';
+import { Dial, DialKey, WHERE_LABELS } from './ui/Dial';
 import { Summary } from './ui/Summary';
 import { WeekStrip } from './ui/WeekStrip';
 import { allUnits } from './units';
@@ -355,15 +355,16 @@ export function ExposureScreen({
             </div>
             <div className="dial-wrap">
               <Dial
-                cells={shown}
+                cells={cells}
                 rings={rings}
-                show={shownTab}
+                focus={shownTab}
                 nowHour={isToday ? hoursSoFar(today()) + 0.5 : undefined}
                 picked={picked}
                 onPick={setPicked}
                 set={setKinds}
               />
             </div>
+            <DialKey rings={rings} focus={shownTab} />
             <div className="hour-row">
               <div className="hour-picker">
                 <label htmlFor="hour">Hour</label>
@@ -490,6 +491,9 @@ export function ExposureScreen({
       )}
       {adding && (
         <AddPerson
+          pins={pins}
+          onAddPin={addPin}
+          {...(search !== undefined ? { search } : {})}
           onClose={() => {
             setAdding(false);
           }}

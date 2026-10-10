@@ -12,6 +12,46 @@ const SWEEP = 290; // degrees, with the gap at the bottom where 24 meets 0
 
 export const WHERE_LABELS: Readonly<Record<Where, string>> = { ...SPOT_LABELS, live: 'Live' };
 
+/** What each ring is, in a few words, for the key under the dial. */
+export const WHERE_HELP: Readonly<Record<Where, string>> = {
+  home: 'Hours at home, indoors unless a monitor says otherwise',
+  work: 'Hours at work',
+  school: 'Hours at school',
+  outdoor: 'Time logged outside: walks, play, a park',
+  live: 'Where your phone put you, hour by hour',
+};
+
+/**
+ * What the dial shows, said plainly, with a key to its rings. The rings run from the outside in, in the order listed;
+ * the chosen one is bold.
+ */
+export function DialKey({
+  rings,
+  focus,
+}: {
+  readonly rings: readonly Where[];
+  readonly focus: 'all' | Where;
+}): React.JSX.Element {
+  return (
+    <div className="dial-key">
+      <p className="small">
+        <strong>How to read this.</strong> Each segment is one hour, from 0 at the bottom left round
+        to 24. Each ring is one kind of place, from the outside in. The colour is the AQI breathed
+        there: green is clean, red is unhealthy. A grey segment means no place or no reading for
+        that hour.
+      </p>
+      <ol className="ring-key" aria-label="The rings, outside in">
+        {rings.map((where) => (
+          <li key={where} className={focus === where ? 'on' : ''}>
+            <strong>{WHERE_LABELS[where]}</strong>
+            <span className="muted small"> {WHERE_HELP[where]}</span>
+          </li>
+        ))}
+      </ol>
+    </div>
+  );
+}
+
 /** Angle of the start of an hour, in radians from the top, clockwise. */
 const angle = (hour: number): number => ((-SWEEP / 2 + (hour / 24) * SWEEP) * Math.PI) / 180;
 
@@ -24,22 +64,23 @@ const cellPath = arc();
 
 /**
  * The day as a dial, in IQAir's shape: 24 hours round an arc, one ring per kind of place, each hour
- * coloured by the AQI breathed there. One kind selected becomes one thick ring.
+ * coloured by the AQI breathed there. Every ring is always drawn and named at its start; choosing a kind lifts that
+ * ring (an outline, the others faded) and leaves the picture where it is.
  */
 export function Dial({
   cells,
-  rings: allRings,
-  show,
+  rings,
+  focus,
   nowHour,
   picked,
   onPick,
   set,
 }: {
   readonly cells: readonly Cell[];
-  /** Every ring that can be shown, outside in. */
+  /** Every ring, outside in. */
   readonly rings: readonly Where[];
-  /** `all` for every ring, or one kind for a single thick ring. */
-  readonly show: 'all' | Where;
+  /** `all` for every ring alike, or one kind to lift above the rest. */
+  readonly focus: 'all' | Where;
   /** The hour to mark as now, or undefined for a finished day. */
   readonly nowHour: number | undefined;
   readonly picked: number;
@@ -47,7 +88,6 @@ export function Dial({
   /** Which kinds have been set, so the others show faint in the centre. */
   readonly set: ReadonlySet<Where>;
 }): React.JSX.Element {
-  const rings = show === 'all' ? allRings : [show];
   const thickness = (OUTER - INNER) / rings.length;
   const gap = rings.length > 1 ? 2 : 0;
 
@@ -56,7 +96,7 @@ export function Dial({
       viewBox={`0 0 ${String(SIZE)} ${String(SIZE)}`}
       className="dial"
       role="img"
-      aria-label="A 24-hour dial of the air you breathed, one ring for each kind of place"
+      aria-label="A 24-hour dial of the air you breathed, one ring for each kind of place: home, work or school, outdoors, and where your location put you"
     >
       {Array.from({ length: 25 }, (_, h) => {
         const [x1, y1] = point(OUTER + 4, h);
@@ -89,8 +129,19 @@ export function Dial({
       {rings.map((where, ringIndex) => {
         const outer = OUTER - ringIndex * thickness;
         const inner = outer - thickness + gap;
+        const lifted = focus === where;
+        const faded = focus !== 'all' && !lifted;
+        const [labelX, labelY] = point((outer + inner) / 2, 0);
         return (
-          <g key={where}>
+          <g key={where} className={faded ? 'ring faded' : lifted ? 'ring lifted' : 'ring'}>
+            <text
+              x={labelX - 7}
+              y={labelY + 3}
+              textAnchor="end"
+              className={`ring-name${lifted ? ' on' : ''}`}
+            >
+              {WHERE_LABELS[where]}
+            </text>
             {Array.from({ length: 24 }, (_, hour) => {
               const cell = cells.find((c) => c.hour === hour && c.where === where);
               const d = cellPath({
@@ -113,6 +164,20 @@ export function Dial({
                 />
               );
             })}
+            {lifted && (
+              <path
+                d={
+                  cellPath({
+                    innerRadius: inner - 1,
+                    outerRadius: outer + 1,
+                    startAngle: angle(0),
+                    endAngle: angle(24),
+                  }) ?? ''
+                }
+                transform={`translate(${String(C)} ${String(C)})`}
+                className="ring-outline"
+              />
+            )}
           </g>
         );
       })}
@@ -149,13 +214,13 @@ export function Dial({
         className="dial-person"
         aria-hidden="true"
       />
-      {allRings.map((where, i) => (
+      {rings.map((where, i) => (
         <text
           key={where}
           x={C}
           y={C - 2 + i * 12}
           textAnchor="middle"
-          className={`dial-name${show === where ? ' on' : ''}${set.has(where) ? '' : ' unset'}`}
+          className={`dial-name${focus === where ? ' on' : ''}${set.has(where) ? '' : ' unset'}`}
         >
           {WHERE_LABELS[where].toUpperCase()}
         </text>

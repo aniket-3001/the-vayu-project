@@ -41,6 +41,15 @@ const addPerson = async (
   await userEvent.click(within(sheet).getByRole('button', { name: 'Add person' }));
 };
 
+/** In the add-person sheet: taps a dotted square and picks one of the pinned places for it. */
+const fillSlot = async (kind: string, pinName: string): Promise<void> => {
+  const sheet = screen.getByRole('dialog', { name: 'Add a person' });
+  await userEvent.click(within(sheet).getByRole('button', { name: `Set ${kind}` }));
+  const picker = sheet.querySelector<HTMLElement>('.picker');
+  if (picker === null) throw new Error('The place picker did not open');
+  await userEvent.click(within(picker).getByRole('button', { name: pinName }));
+};
+
 /** Presses a person in the list, which opens their timetable. */
 const openPanel = async (name: string): Promise<HTMLElement> => {
   await userEvent.click(screen.getByRole('button', { name: new RegExp(`^${name}\\b`, 'u') }));
@@ -102,9 +111,28 @@ describe('the Exposure screen', () => {
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
   });
 
+  it('gives a new person dotted squares to fill in, and assumes no place for them', async () => {
+    open();
+    await userEvent.click(screen.getByRole('button', { name: /Add person/u }));
+    const sheet = screen.getByRole('dialog', { name: 'Add a person' });
+    await userEvent.type(within(sheet).getByRole('spinbutton', { name: 'Age' }), '9');
+    for (const name of ['Set Home', 'Set School', 'Set Park'])
+      expect(within(sheet).getByRole('button', { name })).toHaveClass('empty');
+    expect(within(sheet).queryByRole('button', { name: 'Set Office' })).not.toBeInTheDocument();
+    await userEvent.type(within(sheet).getByRole('textbox', { name: 'Name' }), 'Asha');
+    await userEvent.click(within(sheet).getByRole('button', { name: 'Add person' }));
+    const saved = JSON.parse(window.localStorage.getItem(SPOTS_STORAGE_KEY) ?? '{}') as Record<
+      string,
+      object
+    >;
+    expect(Object.values(saved).some((spots) => Object.keys(spots).length === 0)).toBe(true);
+  });
+
   it('adds a child, whose day goes to school instead of work, with school hours of 8 to 3', async () => {
     open();
-    await addPerson('Asha', '9');
+    await addPerson('Asha', '9', async () => {
+      await fillSlot('School', 'School');
+    });
     expect(screen.getByRole('button', { name: /^Asha/u })).toHaveAttribute('aria-pressed', 'true');
     expect(
       within(screen.getByRole('group', { name: 'Show' })).getByRole('button', { name: 'School' }),
@@ -133,11 +161,35 @@ describe('the Exposure screen', () => {
   it('lets the hours be changed before adding, and uses them', async () => {
     open();
     await addPerson('Asha', '9', async () => {
+      await fillSlot('School', 'School');
       const sheet = screen.getByRole('dialog', { name: 'Add a person' });
       await userEvent.selectOptions(within(sheet).getByLabelText('School until'), '14:00');
     });
     const panel = await openPanel('Asha');
     expect(within(panel).getByLabelText('School until')).toHaveValue('14');
+  });
+
+  it('lifts the chosen ring on the same dial instead of drawing another, and labels every ring', async () => {
+    open();
+    const rings = (): NodeListOf<Element> => document.querySelectorAll('.dial .ring');
+    const all = rings().length;
+    expect(all).toBeGreaterThanOrEqual(3);
+    expect(document.querySelectorAll('.dial .ring-name')).toHaveLength(all);
+    expect(screen.getByRole('list', { name: 'The rings, outside in' })).toBeInTheDocument();
+    await userEvent.click(
+      within(screen.getByRole('group', { name: 'Show' })).getByRole('button', { name: 'Home' }),
+    );
+    // The same rings are still there; one is lifted and the rest are faded.
+    expect(rings()).toHaveLength(all);
+    expect(document.querySelectorAll('.dial .ring.lifted')).toHaveLength(1);
+    expect(document.querySelectorAll('.dial .ring.faded')).toHaveLength(all - 1);
+    expect(document.querySelector('.dial .ring.lifted .ring-name')).toHaveTextContent('Home');
+    expect(screen.getByText(/How to read this/u)).toBeInTheDocument();
+    await userEvent.click(
+      within(screen.getByRole('group', { name: 'Show' })).getByRole('button', { name: 'All' }),
+    );
+    expect(document.querySelectorAll('.dial .ring.lifted')).toHaveLength(0);
+    expect(document.querySelectorAll('.dial .ring.faded')).toHaveLength(0);
   });
 
   it('asks for a name and a sensible age, and says what is wrong', async () => {
@@ -174,6 +226,13 @@ describe('the Exposure screen', () => {
     );
     open();
     const panel = await openPanel('Asha');
+    // Nothing is assumed: the school is a dotted square until it is set.
+    await userEvent.click(within(panel).getByRole('button', { name: 'Set School' }));
+    await userEvent.click(
+      within(panel.querySelector<HTMLElement>('.picker') ?? panel).getByRole('button', {
+        name: 'School',
+      }),
+    );
     const school = within(panel).getByRole('region', { name: 'School' });
     expect(school).toHaveTextContent('Vayu unit at the school');
     expect(school).toHaveTextContent(/you did not have to add it/u);
@@ -286,7 +345,9 @@ describe('the Exposure screen', () => {
       '12:00',
     );
     await closePanel();
-    await addPerson('Asha', '9');
+    await addPerson('Asha', '9', async () => {
+      await fillSlot('School', 'School');
+    });
     const hers = await openPanel('Asha');
     expect(within(hers).getByLabelText('School until')).toHaveValue('15');
     await closePanel();
@@ -315,7 +376,10 @@ describe('the Exposure screen', () => {
       'Bedroom unit is here. It is yours',
     );
     await closePanel();
-    await addPerson('Asha', '9');
+    await addPerson('Asha', '9', async () => {
+      await fillSlot('Home', 'Home');
+      await fillSlot('School', 'School');
+    });
     const hers = await openPanel('Asha');
     expect(within(hers).getByRole('region', { name: 'Home' })).toHaveTextContent(
       'Bedroom unit is here. It is yours',
@@ -415,7 +479,10 @@ describe('working it out from where I am', () => {
     open();
     await addPerson('Asha', '9', async () => {
       const sheet = screen.getByRole('dialog', { name: 'Add a person' });
-      expect(within(sheet).queryByLabelText(/Park|Outdoor|Home from/u)).not.toBeInTheDocument();
+      // No hours for home or the park; the school's come once the school is placed.
+      expect(within(sheet).queryByLabelText(/Park from|Home from/u)).not.toBeInTheDocument();
+      expect(within(sheet).queryByRole('group', { name: 'School days' })).not.toBeInTheDocument();
+      await fillSlot('School', 'School');
       expect(within(sheet).getByRole('group', { name: 'School days' })).toBeInTheDocument();
       // Monday to Friday to begin with; add Saturday, drop Friday.
       await userEvent.click(within(sheet).getByRole('button', { name: 'Saturday' }));
@@ -444,6 +511,7 @@ describe('working it out from where I am', () => {
     const sheet = screen.getByRole('dialog', { name: 'Add a person' });
     await userEvent.type(within(sheet).getByRole('textbox', { name: 'Name' }), 'Asha');
     await userEvent.type(within(sheet).getByRole('spinbutton', { name: 'Age' }), '9');
+    await fillSlot('School', 'School');
     for (const d of ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'])
       await userEvent.click(within(sheet).getByRole('button', { name: d }));
     await userEvent.click(within(sheet).getByRole('button', { name: 'Add person' }));

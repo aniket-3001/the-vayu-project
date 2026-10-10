@@ -1,18 +1,10 @@
-import {
-  Briefcase,
-  GraduationCap,
-  House,
-  Plus,
-  Trash2,
-  TreePine,
-  type LucideIcon,
-} from 'lucide-react';
+import { Briefcase, GraduationCap, House, Trash2, TreePine, type LucideIcon } from 'lucide-react';
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import type { PlaceMatch } from '../../data/geocode';
 import type { Pin } from '../../data/pins';
-import { pinId } from '../../data/pins';
-import { PlaceSearch } from '../../places/ui/PlaceSearch';
+import { PlacePicker } from './PlacePicker';
+import { PlaceSlot, SLOT_NAMES } from './PlaceSlot';
 import { INDOOR_SHARE } from '../assumptions';
 import { unitNear, type Unit } from '../units';
 import { DAY_INITIALS, DAY_NAMES, DAY_ORDER, WEEKDAYS } from '../calendar';
@@ -124,59 +116,25 @@ export function SpotSection({
       <section className="spot" aria-label={label}>
         <h2 className="spot-title">{label}</h2>
         {picking ? (
-          <div className="picker">
-            <p className="muted small">Pick one of your places, or search for another.</p>
-            <ul className="choice-row">
-              {pins.map((pin) => (
-                <li key={pin.id}>
-                  <button
-                    type="button"
-                    className="choice"
-                    onClick={() => {
-                      choose(pin);
-                    }}
-                  >
-                    {pin.name}
-                  </button>
-                </li>
-              ))}
-            </ul>
-            <PlaceSearch
-              {...(search !== undefined ? { search } : {})}
-              onPick={(match) => {
-                onAddPin(match);
-                choose({
-                  id: pinId(match.lat, match.lng),
-                  name: match.name,
-                  ...(match.detail === '' ? {} : { detail: match.detail }),
-                  lat: match.lat,
-                  lng: match.lng,
-                });
-              }}
-            />
-            <button
-              type="button"
-              className="plain"
-              onClick={() => {
-                setPicking(false);
-              }}
-            >
-              Cancel
-            </button>
-          </div>
+          <PlacePicker
+            name={SLOT_NAMES[kind]}
+            pins={pins}
+            onAddPin={onAddPin}
+            {...(search !== undefined ? { search } : {})}
+            onPick={choose}
+            onCancel={() => {
+              setPicking(false);
+            }}
+          />
         ) : (
-          <button
-            type="button"
-            className="dashed"
-            onClick={() => {
+          <PlaceSlot
+            kind={kind}
+            pin={undefined}
+            active={false}
+            onPress={() => {
               setPicking(true);
             }}
-          >
-            <span className="dashed-icon">
-              <Plus size={20} strokeWidth={2} aria-hidden="true" />
-            </span>
-            Set {label}
-          </button>
+          />
         )}
       </section>
     );

@@ -48,7 +48,8 @@ describe('the places for each kind of person', () => {
   });
 
   it('keeps each kind of person’s places apart, and starts with the sample ones', () => {
-    expect(loadSpots(window.localStorage, 'kid', 'child')).toEqual(sampleSpotsFor('child'));
+    // Anyone but the phone's owner starts with nothing set: squares to fill in.
+    expect(loadSpots(window.localStorage, 'kid', 'child')).toEqual({});
     saveSpots(window.localStorage, 'kid', { school: { pin, from: 9, to: 14 } });
     expect(loadSpots(window.localStorage, 'kid', 'child').school?.from).toBe(9);
     expect(loadSpots(window.localStorage, 'me', 'adult')).toEqual(sampleSpotsFor('adult'));

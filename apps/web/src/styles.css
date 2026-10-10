@@ -1234,6 +1234,62 @@ h2 {
 .dial .cell.empty {
   fill: #e6ecf4;
 }
+.dial .ring {
+  transition: opacity 180ms ease;
+}
+.dial .ring.faded {
+  opacity: 0.28;
+}
+.ring-name {
+  fill: var(--muted);
+  font-size: 8.5px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.ring-name.on {
+  fill: var(--text);
+}
+.ring-outline {
+  fill: none;
+  stroke: var(--text);
+  stroke-width: 1.6;
+  stroke-linejoin: round;
+  pointer-events: none;
+}
+.dial-key {
+  display: grid;
+  gap: 8px;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--card);
+}
+.dial-key p {
+  margin: 0;
+}
+.ring-key {
+  display: grid;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  counter-reset: ring;
+}
+.ring-key li {
+  counter-increment: ring;
+  padding: 2px 8px;
+  border-left: 3px solid var(--line);
+  border-radius: 4px;
+}
+.ring-key li::before {
+  content: counter(ring) '. ';
+  font-weight: 800;
+}
+.ring-key li.on {
+  border-left-color: var(--text);
+  background: #eef3f9;
+}
 .dial-tick {
   stroke: #9fb0c6;
   stroke-width: 1;
@@ -3647,4 +3703,59 @@ button.alert-card {
   display: flex;
   align-items: center;
   gap: 4px;
+}
+
+/* Places to fill in: dotted squares */
+.slots {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(104px, 1fr));
+  gap: 10px;
+}
+.slot {
+  display: grid;
+  align-content: center;
+  justify-items: center;
+  gap: 4px;
+  aspect-ratio: 1;
+  min-height: 104px;
+  padding: 10px 6px;
+  border: 2px solid #9fb0c6;
+  border-radius: 16px;
+  background: var(--card);
+  color: var(--text);
+  font: inherit;
+  text-align: center;
+  cursor: pointer;
+}
+.slot.empty {
+  border-style: dashed;
+  background: transparent;
+}
+.slot.set {
+  border-color: #8fbbe6;
+  background: #eef5fc;
+}
+.slot.active {
+  border-color: #3b82c4;
+  box-shadow: 0 0 0 3px rgb(59 130 196 / 0.25);
+}
+.slot-icon {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background: #fff;
+  color: #2f6aa3;
+}
+.slot-hint {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  max-width: 100%;
+  overflow: hidden;
+  color: var(--muted);
+  font-size: 12px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
