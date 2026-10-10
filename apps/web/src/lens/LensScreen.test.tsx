@@ -27,14 +27,14 @@ const open = (): void => {
 describe('the AR Lens', () => {
   it('opens on the first place with the air, the wind, how far you can see, and says what is sample', () => {
     open();
-    expect(screen.getByRole('img', { name: /sample home scene/u })).toBeInTheDocument();
+    expect(screen.getByRole('img', { name: /illustration of a home/u })).toBeInTheDocument();
     const card = screen.getByRole('region', { name: 'The air here' });
     expect(card).toHaveTextContent('Unhealthy');
     expect(card).toHaveTextContent(/From the north-west, \d+ km\/h/u);
     expect(card).toHaveTextContent(/You could see about \d/u);
     expect(card).toHaveTextContent('Estimate');
     expect(card).toHaveTextContent('Sample data');
-    expect(card).toHaveTextContent('Sample street, camera off.');
+    expect(card).toHaveTextContent('An illustration stands in for the camera.');
   });
 
   it('says the cleanest daylight hour, or that there is none on a bad day', () => {
@@ -47,7 +47,9 @@ describe('the AR Lens', () => {
     fireEvent.change(screen.getByRole('combobox'), {
       target: { value: screen.getByRole('option', { name: 'Park' }).getAttribute('value') },
     });
-    expect(screen.getByText(/Cleanest daylight hour: \d\d:\d\d, AQI \d+\./u)).toBeInTheDocument();
+    expect(
+      screen.getByText(/Cleanest daylight hour: \d\d:\d\d( tomorrow)?, AQI \d+\./u),
+    ).toBeInTheDocument();
   });
 
   it('shows a scene that matches the place: a room for Home, a school, an office, a park, a street for anywhere else', () => {
@@ -58,7 +60,7 @@ describe('the AR Lens', () => {
       });
     };
     const scene = (): string | null =>
-      screen.getByRole('img', { name: /sample .* scene/u }).getAttribute('data-place');
+      screen.getByRole('img', { name: /illustration of a .*/u }).getAttribute('data-place');
     expect(scene()).toBe('home');
     choose('School');
     expect(scene()).toBe('school');
@@ -118,25 +120,25 @@ describe('the AR Lens', () => {
     open();
     await userEvent.click(screen.getByRole('button', { name: 'Use camera' }));
     expect(await screen.findByText('Camera on; nothing leaves this phone.')).toBeInTheDocument();
-    expect(screen.queryByRole('img', { name: /sample home scene/u })).not.toBeInTheDocument();
+    expect(screen.queryByRole('img', { name: /illustration of a home/u })).not.toBeInTheDocument();
     await userEvent.click(screen.getByRole('button', { name: /Camera off/u }));
     expect(stop).toHaveBeenCalled();
-    expect(screen.getByRole('img', { name: /sample home scene/u })).toBeInTheDocument();
+    expect(screen.getByRole('img', { name: /illustration of a home/u })).toBeInTheDocument();
   });
 
-  it('carries on with a sample street when the camera is refused or missing', async () => {
+  it('carries on with an illustration when the camera is refused or missing', async () => {
     Object.defineProperty(navigator, 'mediaDevices', {
       configurable: true,
       value: { getUserMedia: vi.fn().mockRejectedValue(new Error('no')) },
     });
     open();
     await userEvent.click(screen.getByRole('button', { name: 'Use camera' }));
-    expect(await screen.findByText('Camera not allowed, so a sample street.')).toBeInTheDocument();
+    expect(await screen.findByText('Camera not allowed, so an illustration.')).toBeInTheDocument();
     cleanup();
     Reflect.deleteProperty(navigator, 'mediaDevices');
     open();
     await userEvent.click(screen.getByRole('button', { name: 'Use camera' }));
-    expect(screen.getByText('No camera here, so a sample street.')).toBeInTheDocument();
+    expect(screen.getByText('No camera here, so an illustration.')).toBeInTheDocument();
   });
 
   it('asks for the compass on a phone that needs a tap, and then follows where it points', async () => {

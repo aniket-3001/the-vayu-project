@@ -23,11 +23,13 @@ export function spanWords(at: string): string {
 export function basisFor(data: TodayData): string {
   const p = data.provenance;
   if (p.mode === 'sample') return 'From the sample data in this prototype';
+  if (p.stationName === undefined || p.distanceKm === undefined)
+    return 'From the regional air model, since no monitor near here has reported lately';
   const age =
     p.ageMinutes < 90
       ? `${String(p.ageMinutes)} minutes old`
       : `${String(Math.round(p.ageMinutes / 60))} hours old`;
-  return `From ${p.stationName}, ${String(p.distanceKm)} km away, ${age}`;
+  return `From ${p.stationName}, ${String(Math.round(p.distanceKm * 10) / 10)} km away, ${age}`;
 }
 
 /** Gathers what the assistant should know: the first place's air and day, the alerts, and the people tracked. */

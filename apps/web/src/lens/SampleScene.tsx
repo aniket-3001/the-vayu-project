@@ -277,7 +277,7 @@ export function SampleScene({
       viewBox="0 0 400 700"
       preserveAspectRatio="xMidYMax slice"
       role="img"
-      aria-label={`A sample ${SCENE_LABELS[place]} scene, standing in for the camera`}
+      aria-label={`An illustration of a ${SCENE_LABELS[place]}, standing in for the camera`}
     >
       <Sky night={night} />
       <Scene />

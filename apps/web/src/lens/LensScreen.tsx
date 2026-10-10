@@ -18,7 +18,7 @@ import { airStore, useToday } from '../air/store';
 import { AirError, AirLoading } from '../components/AirState';
 import { usePins } from '../places/usePins';
 import { compassPoint } from '../today/wind';
-import { clock24, dayMonth, weekday } from '../today/time';
+import { clock24, dayMonth, isoDate, weekday } from '../today/time';
 import { Pill } from '../today/ui/Chip';
 import { SmokeNote } from '../units/AirUnits';
 import { concentration } from '../today/ui/format';
@@ -46,11 +46,11 @@ import { useCamera } from './useCamera';
 import { useHeading } from './useHeading';
 
 const CAMERA_WORDS = {
-  off: 'Sample street, camera off.',
+  off: 'An illustration stands in for the camera.',
   asking: 'Asking for your camera…',
   on: 'Camera on; nothing leaves this phone.',
-  denied: 'Camera not allowed, so a sample street.',
-  unavailable: 'No camera here, so a sample street.',
+  denied: 'Camera not allowed, so an illustration.',
+  unavailable: 'No camera here, so an illustration.',
 } as const;
 
 /** What the number means, drawn over what is in front of you: haze, wind, how far you can see, and when to go out. */
@@ -114,7 +114,7 @@ export function LensScreen(): React.JSX.Element {
       ? undefined
       : best.aqi > 150
         ? 'No clean hour outside today. If you can stay in, do.'
-        : `Cleanest daylight hour: ${clock24(best.at)}, AQI ${String(best.aqi)}.`;
+        : `Cleanest daylight hour: ${clock24(best.at)}${isoDate(best.at) === isoDate(data.asOf) ? '' : ' tomorrow'}, AQI ${String(best.aqi)}.`;
 
   return (
     <div className="lens-screen">
@@ -210,7 +210,13 @@ export function LensScreen(): React.JSX.Element {
               </span>
             )}
             <span role="status">{CAMERA_WORDS[camera.state]}</span>
-            <Pill>Sample data</Pill>
+            <Pill>
+              {data.provenance.mode === 'sample'
+                ? 'Sample data'
+                : data.provenance.mode === 'live'
+                  ? `Live · ${data.provenance.stationName ?? 'monitor'}`
+                  : 'Estimate'}
+            </Pill>
           </p>
         </section>
 

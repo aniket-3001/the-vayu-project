@@ -137,10 +137,7 @@ describe('the answers behind our API', () => {
       [reply({}, 429), /reached its limit/u],
       [reply({ text: '' }), /could not read/u],
       [reply({ nope: 1 }), /could not read/u],
-      [
-        vi.fn(() => Promise.reject(new Error('offline'))),
-        /could not be reached/u,
-      ],
+      [vi.fn(() => Promise.reject(new Error('offline'))), /could not be reached/u],
     ];
     for (const [f, why] of cases) {
       const answer = await apiAssistant('https://x.test', f).ask('do I need a mask', base);
@@ -181,7 +178,7 @@ describe('the assistant button', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Vayu assistant' }));
     const chat = screen.getByRole('dialog', { name: 'Vayu assistant' });
     expect(within(chat).getByRole('group', { name: 'Suggested questions' })).toBeInTheDocument();
-    expect(chat).toHaveTextContent('Bedrock and Polly plug in here');
+    expect(chat).toHaveTextContent('Answers use made-up air, from fixed rules');
   });
 
   it('answers a question typed in, and one tapped from the suggestions', async () => {

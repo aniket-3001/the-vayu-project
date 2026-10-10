@@ -236,8 +236,16 @@ export function AssistantFab({
               <div>
                 <h2 id="assistant-title">Vayu assistant</h2>
                 <p className="muted small">
-                  <Pill>Sample data</Pill> Answers use today’s sample air. Bedrock and Polly plug in
-                  here.
+                  {airStore().kind === 'sample' ? (
+                    <>
+                      <Pill>Sample data</Pill> Answers use made-up air, from fixed rules.
+                    </>
+                  ) : (
+                    <>
+                      <Pill>Live</Pill> Answers come from fixed rules over the real readings. AI
+                      only words them, and its words are checked.
+                    </>
+                  )}
                 </p>
               </div>
               <button
