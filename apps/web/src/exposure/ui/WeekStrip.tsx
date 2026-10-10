@@ -1,5 +1,5 @@
 import { levelForAqi } from '../../design/levels';
-import { SmokeNote } from '../../units/AirUnits';
+import { SmokeSquare } from '../../units/AirUnits';
 import { formatDate, type DateKey, type Summary } from '../model';
 
 const shortDay = (date: DateKey): string => formatDate(date).split(' ')[0] ?? '';
@@ -33,12 +33,12 @@ export function WeekStrip({
       {best !== undefined && worst !== undefined ? (
         <p>
           Cleanest day: <strong>{formatDate(best.date)}</strong>, AQI {best.summary.aqi}. Worst:{' '}
-          <strong>{formatDate(worst.date)}</strong>, AQI {worst.summary.aqi}.{' '}
-          <SmokeNote pm25={meanPm} />
+          <strong>{formatDate(worst.date)}</strong>, AQI {worst.summary.aqi}.
         </p>
       ) : (
         <p className="muted">Nothing to add up. Set a place and the days fill in.</p>
       )}
+      {best !== undefined && <SmokeSquare pm25={meanPm} />}
       <ul className="week-bars">
         {days.map(({ date, summary }) => {
           const level = summary === undefined ? undefined : levelForAqi(summary.aqi);

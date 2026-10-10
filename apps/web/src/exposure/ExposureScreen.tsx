@@ -9,7 +9,7 @@ import { AirError, AirLoading } from '../components/AirState';
 import { pinId, type Pin } from '../data/pins';
 import { usePins } from '../places/usePins';
 import { Progress } from '../tasks/ui/TipsCard';
-import { SmokeNote } from '../units/AirUnits';
+import { SmokeSquare } from '../units/AirUnits';
 import { ASSUMPTION_NOTES } from './assumptions';
 import {
   today,
@@ -426,8 +426,8 @@ export function ExposureScreen({
                         <sub>2.5</sub>
                         {cell.source === 'assumed' || cell.source === 'trees' ? ' (assumed)' : ''}
                         {cell.source === 'unit' ? ' (from a nearby unit)' : ''}
-                        <SmokeNote pm25={cell.pm25} className="readout-smoke" />
                       </span>
+                      <SmokeSquare pm25={cell.pm25} compact />
                     </li>
                   ))}
                 </ul>

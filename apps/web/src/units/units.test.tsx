@@ -2,7 +2,7 @@
 import { cleanup, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { AirUnitsProvider, SmokeNote, SmokeToggle, UNITS_STORAGE_KEY } from './AirUnits';
+import { AirUnitsProvider, SmokeSquare, SmokeToggle, UNITS_STORAGE_KEY } from './AirUnits';
 import {
   PM25_PER_CIGARETTE,
   cigarettesForAqi,
@@ -43,7 +43,7 @@ describe('the relatable measure switch', () => {
     <AirUnitsProvider>
       <SmokeToggle />
       <p>
-        AQI 158 <SmokeNote pm25={71.3} />
+        AQI 158 <SmokeSquare pm25={71.3} />
       </p>
     </AirUnitsProvider>
   );
@@ -55,7 +55,7 @@ describe('the relatable measure switch', () => {
     expect(screen.queryByText(/cigarette/u)).not.toBeInTheDocument();
     await userEvent.click(toggle);
     expect(toggle).toHaveAttribute('aria-pressed', 'true');
-    expect(screen.getByText('about 3.2 cigarettes a day')).toBeInTheDocument();
+    expect(screen.getByRole('group', { name: /3\.2 cigarettes a day/u })).toBeInTheDocument();
     await userEvent.click(toggle);
     expect(screen.queryByText(/cigarette/u)).not.toBeInTheDocument();
   });
@@ -66,11 +66,11 @@ describe('the relatable measure switch', () => {
     expect(window.localStorage.getItem(UNITS_STORAGE_KEY)).toBe('smoke');
     unmount();
     render(<Demo />);
-    expect(screen.getByText('about 3.2 cigarettes a day')).toBeInTheDocument();
+    expect(screen.getByRole('group', { name: /3\.2 cigarettes a day/u })).toBeInTheDocument();
   });
 
   it('shows nothing, and does not fail, when used without a provider', () => {
-    render(<SmokeNote pm25={50} />);
+    render(<SmokeSquare pm25={50} />);
     expect(screen.queryByText(/cigarette/u)).not.toBeInTheDocument();
   });
 

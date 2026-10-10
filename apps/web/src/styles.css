@@ -1725,7 +1725,7 @@ h2 {
 }
 .lens-row {
   display: grid;
-  grid-template-columns: auto 1fr;
+  grid-template-columns: auto 1fr auto;
   align-items: center;
   gap: 12px;
 }
@@ -1878,18 +1878,6 @@ h2 {
 
 .bar {
   justify-content: space-between;
-}
-.smoke-note {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  font-size: 13px;
-  font-weight: 700;
-}
-.pc-aqi .pc-smoke {
-  margin-top: 6px;
-  font-size: 12px;
-  font-weight: 700;
 }
 .lens-smoke {
   font-size: 13px;
@@ -2841,49 +2829,74 @@ button.alert-card {
   }
 }
 
-/* The cigarettes card: small, square, still */
+/* The cigarettes square: one look everywhere, two sizes */
 
 .smoke-square {
   display: inline-grid;
-  gap: 2px;
-  min-width: 64px;
-  padding: 8px 10px;
-  border: 1px solid #e8c9ad;
-  border-radius: 12px;
+  place-content: center;
+  justify-items: center;
+  gap: 1px;
+  width: 84px;
+  height: 84px;
+  padding: 6px;
+  border: 1.5px solid #e8c9ad;
+  border-radius: 16px;
   background: #fff6ec;
   color: #7a3f14;
-  line-height: 1.1;
+  line-height: 1.05;
+  text-align: center;
 }
 .smoke-square-top {
-  display: flex;
-  align-items: center;
-  gap: 6px;
+  display: grid;
+  justify-items: center;
+  gap: 0;
 }
 .smoke-square-top strong {
-  font-size: 22px;
+  font-size: 26px;
   font-weight: 800;
   letter-spacing: -0.03em;
 }
 .smoke-square-label {
-  font-size: 11px;
+  font-size: 10.5px;
   font-weight: 700;
 }
 .smoke-square.compact {
-  min-width: 0;
-  padding: 2px 8px;
-  border-radius: 999px;
+  width: 60px;
+  height: 60px;
+  padding: 4px;
+  border-radius: 14px;
 }
-/* On a place card the number sits just above the face, in the right-hand column. */
+.smoke-square.compact .smoke-square-top strong {
+  font-size: 18px;
+}
+.smoke-square.compact .smoke-square-label {
+  font-size: 9.5px;
+}
+/* On a place card the square sits above the face, in the right-hand column. */
 .pc-hit .smoke-square.compact {
   position: absolute;
   right: 10px;
-  bottom: 82px;
+  bottom: 70px;
+  width: 54px;
+  height: 54px;
+}
+.pc-hit .smoke-square.compact .smoke-square-top strong {
+  font-size: 16px;
+}
+/* With the square there, the face is a little smaller, so the three fit the column. */
+.place-card:not(.open) .pc-hit:has(.smoke-square) .pc-face svg {
+  width: 52px;
+  height: 52px;
 }
 .place-card.open .pc-hit .smoke-square.compact {
-  bottom: 104px;
+  bottom: 108px;
 }
-.smoke-square.compact .smoke-square-top strong {
-  font-size: 14px;
+.readout .smoke-square {
+  flex: none;
+  margin-left: auto;
+}
+.lens-row .smoke-square {
+  justify-self: end;
 }
 .hero-fine {
   opacity: 0.9;

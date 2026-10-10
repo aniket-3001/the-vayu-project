@@ -22,7 +22,7 @@ import { usePins } from '../places/usePins';
 import { compassPoint } from '../today/wind';
 import { clock24, dayMonth, isoDate, weekday } from '../today/time';
 import { Pill } from '../today/ui/Chip';
-import { SmokeNote } from '../units/AirUnits';
+import { SmokeSquare } from '../units/AirUnits';
 import { concentration } from '../today/ui/format';
 import { HazeCanvas } from './HazeCanvas';
 import {
@@ -224,11 +224,11 @@ export function LensScreen(): React.JSX.Element {
                 <Pill>Estimate</Pill>
               </p>
             </div>
+            <SmokeSquare pm25={hour.pm25} compact />
           </div>
           {advice !== undefined && <p className="lens-line lens-advice">{advice}</p>}
           <details className="lens-more">
             <summary>More about this view</summary>
-            <SmokeNote pm25={hour.pm25} className="lens-smoke" />
             <p className="lens-foot muted small">
               {compass.needsTap ? (
                 <button type="button" className="link-button" onClick={compass.enable}>

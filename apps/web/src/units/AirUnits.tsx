@@ -1,11 +1,6 @@
 import { createContext, useCallback, useContext, useMemo, useState } from 'react';
 import { CigaretteIcon } from './CigaretteIcon';
-import {
-  cigarettesPerDay,
-  describeCigarettes,
-  describeCigarettesShort,
-  SMOKE_CAVEAT,
-} from './smoke';
+import { cigarettesPerDay, describeCigarettesShort, SMOKE_CAVEAT } from './smoke';
 
 export const UNITS_STORAGE_KEY = 'vayu.units.v1';
 
@@ -76,34 +71,10 @@ export function SmokeToggle(): React.JSX.Element {
   );
 }
 
-/** "≈ 3 cigarettes a day" beside a number, when the relatable measure is on. Nothing when it is off. */
-export function SmokeNote({
-  pm25,
-  className = '',
-  short = false,
-}: {
-  readonly pm25: number;
-  readonly className?: string;
-  /** The shorter wording, for tight places such as a small card. */
-  readonly short?: boolean;
-}): React.JSX.Element | null {
-  const { smoke } = useAirUnits();
-  if (!smoke) return null;
-  return (
-    <span className={`smoke-note ${className}`.trim()}>
-      <CigaretteIcon size={16} lit />
-      <span>
-        {short
-          ? describeCigarettesShort(cigarettesPerDay(pm25))
-          : describeCigarettes(cigarettesPerDay(pm25))}
-      </span>
-    </span>
-  );
-}
-
 /**
- * A small square card beside the AQI: one cigarette, a number, and what it means. Quiet and still. `compact` is
- * just the cigarette and the number, for the corner of a place card.
+ * The air as cigarettes a day, as one square: a cigarette, the number, and what it counts. The same square
+ * everywhere the measure is shown, in two sizes (`compact` for a corner of a card or a line of a list), and only
+ * while the cigarette switch is on.
  */
 export function SmokeSquare({
   pm25,
@@ -127,14 +98,12 @@ export function SmokeSquare({
       title={SMOKE_CAVEAT}
     >
       <span className="smoke-square-top" aria-hidden="true">
-        <CigaretteIcon size={compact ? 16 : 20} lit />
+        <CigaretteIcon size={compact ? 20 : 26} lit />
         <strong className="tnum">{shown}</strong>
       </span>
-      {!compact && (
-        <span className="smoke-square-label" aria-hidden="true">
-          cigarettes a day
-        </span>
-      )}
+      <span className="smoke-square-label" aria-hidden="true">
+        {compact ? 'a day' : 'cigarettes a day'}
+      </span>
     </span>
   );
 }
