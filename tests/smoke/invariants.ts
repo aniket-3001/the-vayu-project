@@ -198,3 +198,160 @@ export function checkRoom(body: unknown): string[] {
   }
   return problems;
 }
+
+// The routes the app reads (/v1/today, /v1/history, /v1/stations) and the site that serves it.
+
+const MAX_AGE_MINUTES = 6 * 60;
+
+export interface TodayLike {
+  readonly mode: string;
+  readonly asOf: string;
+  readonly hours: readonly {
+    readonly t: string;
+    readonly pm25: number | null;
+    readonly kind: string;
+  }[];
+  readonly windows: readonly unknown[];
+  readonly weather?:
+    | {
+        readonly hours: readonly {
+          readonly rhPct: number;
+          readonly windKmh: number;
+          readonly windFromDeg: number;
+        }[];
+      }
+    | undefined;
+  readonly prov: ProvLike & { readonly observedAt?: string | undefined };
+}
+
+const inRange = (value: number | null, high = 1000): boolean =>
+  value === null || (Number.isFinite(value) && value >= 0 && value <= high);
+
+/**
+ * `/v1/today` on a real answer. Nothing observed is from after `asOf` (I1). A "Nearby station" says which, how
+ * far, and is no more than six hours old (I3, I2); with no recent monitor it is an "Estimate" with no observed hours
+ * and no advice. Every number is physically possible.
+ */
+export function checkToday(today: TodayLike): string[] {
+  const problems: string[] = [];
+  const asOfMs = new Date(today.asOf).getTime();
+  const observed = today.hours.filter((h) => h.kind === 'observed');
+  for (const hour of today.hours) {
+    if (!inRange(hour.pm25))
+      problems.push(`hour ${hour.t}: PM2.5 ${String(hour.pm25)} is not possible`);
+  }
+  for (const hour of observed) {
+    if (new Date(hour.t).getTime() + HOUR_MS > asOfMs)
+      problems.push(`observed hour ${hour.t} had not ended by asOf (rule I1)`);
+  }
+  const times = today.hours.map((h) => new Date(h.t).getTime());
+  if (times.some((t, i) => i > 0 && t <= (times[i - 1] ?? 0)))
+    problems.push('hours are not in order');
+  if (today.mode === 'live') {
+    if (today.prov.label !== 'Nearby station')
+      problems.push(`live answer labelled "${today.prov.label}"`);
+    if (today.prov.stationName === undefined)
+      problems.push('live answer has no station name (rule I2)');
+    if (today.prov.distanceKm === undefined)
+      problems.push('live answer has no station distance (rule I2)');
+    if (observed.length === 0) problems.push('live answer has no observed hours');
+    if (today.prov.ageMinutes > MAX_AGE_MINUTES)
+      problems.push(
+        `live answer's newest reading is ${String(today.prov.ageMinutes)} minutes old (rule I3)`,
+      );
+    if (today.prov.observedAt === undefined)
+      problems.push('live answer does not say when it was observed');
+  } else {
+    if (today.prov.label !== 'Estimate')
+      problems.push(`model answer labelled "${today.prov.label}"`);
+    if (observed.length > 0) problems.push('model answer contains observed hours');
+    if (today.prov.stationName !== undefined) problems.push('model answer names a station');
+    if (today.windows.length > 0) problems.push('model answer gives advice (rule I3)');
+  }
+  for (const w of today.weather?.hours ?? []) {
+    if (w.rhPct < 0 || w.rhPct > 100 || w.windKmh < 0 || w.windFromDeg < 0 || w.windFromDeg > 360)
+      problems.push('a weather hour has an impossible value');
+  }
+  return problems;
+}
+
+export interface HistoryLike {
+  readonly mode: string;
+  readonly asOf: string;
+  readonly days: number;
+  readonly hours: readonly { readonly t: string; readonly pm25: number | null }[];
+  readonly prov: ProvLike;
+}
+
+/** `/v1/history`: only hours that had ended (I1), no more than asked for, in order, and labelled for what they are. */
+export function checkHistory(history: HistoryLike): string[] {
+  const problems: string[] = [];
+  const asOfMs = new Date(history.asOf).getTime();
+  if (history.hours.length > history.days * 24 + 1)
+    problems.push(`${String(history.hours.length)} hours for ${String(history.days)} days`);
+  for (const hour of history.hours) {
+    if (new Date(hour.t).getTime() + HOUR_MS > asOfMs)
+      problems.push(`hour ${hour.t} had not ended by asOf (rule I1)`);
+    if (!inRange(hour.pm25))
+      problems.push(`hour ${hour.t}: PM2.5 ${String(hour.pm25)} is not possible`);
+  }
+  const times = history.hours.map((h) => new Date(h.t).getTime());
+  if (times.some((t, i) => i > 0 && t <= (times[i - 1] ?? 0)))
+    problems.push('hours are not in order');
+  if (
+    history.mode === 'live' &&
+    (history.prov.stationName === undefined || history.prov.label !== 'Nearby station')
+  )
+    problems.push('live history does not name its station');
+  if (history.mode !== 'live' && history.prov.label !== 'Estimate')
+    problems.push(`model history labelled "${history.prov.label}"`);
+  return problems;
+}
+
+export interface StationsLike {
+  readonly asOf: string;
+  readonly mode: string;
+  readonly stations: readonly {
+    readonly id: string;
+    readonly lat: number;
+    readonly lng: number;
+    readonly pm25: number;
+    readonly at: string;
+  }[];
+}
+
+/** `/v1/stations`: every monitor has a recent reading (I3), none from the future (I1), a possible value and a place. */
+export function checkStations(body: StationsLike): string[] {
+  const problems: string[] = [];
+  const asOfMs = new Date(body.asOf).getTime();
+  const seen = new Set<string>();
+  for (const s of body.stations) {
+    const age = asOfMs - new Date(s.at).getTime();
+    if (age < 0) problems.push(`${s.id}: reading is from the future (rule I1)`);
+    if (age > MAX_AGE_MINUTES * 60_000)
+      problems.push(`${s.id}: reading is more than six hours old (rule I3)`);
+    if (!inRange(s.pm25)) problems.push(`${s.id}: PM2.5 ${String(s.pm25)} is not possible`);
+    if (!Number.isFinite(s.lat) || !Number.isFinite(s.lng)) problems.push(`${s.id}: no place`);
+    if (seen.has(s.id)) problems.push(`${s.id}: listed twice`);
+    seen.add(s.id);
+  }
+  if (body.mode === 'live' && body.stations.length === 0)
+    problems.push('says live but has no monitors');
+  return problems;
+}
+
+/** What the public site must send with every page (and with the API under it). */
+export function checkSecurityHeaders(headers: { get(name: string): string | null }): string[] {
+  const problems: string[] = [];
+  const csp = headers.get('content-security-policy') ?? '';
+  if (!csp.includes("default-src 'self'"))
+    problems.push("content policy does not say default-src 'self'");
+  if (!csp.includes("frame-ancestors 'none'")) problems.push('the page may be put in a frame');
+  if (/script-src[^;]*unsafe/u.test(csp)) problems.push('scripts are allowed to be inline or eval');
+  if (!/max-age=\d{6,}/u.test(headers.get('strict-transport-security') ?? ''))
+    problems.push('no HSTS');
+  if (headers.get('x-content-type-options') !== 'nosniff') problems.push('no nosniff');
+  if ((headers.get('x-frame-options') ?? '').toUpperCase() !== 'DENY')
+    problems.push('no frame denial');
+  return problems;
+}

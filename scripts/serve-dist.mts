@@ -21,6 +21,7 @@ const types: Record<string, string> = {
 };
 const headers = {
   'content-security-policy': CONTENT_SECURITY_POLICY,
+  'strict-transport-security': 'max-age=31536000; includeSubDomains',
   'x-content-type-options': 'nosniff',
   'x-frame-options': 'DENY',
   'referrer-policy': 'strict-origin-when-cross-origin',
@@ -39,7 +40,13 @@ createServer((req, res) => {
         ...(req.method === 'GET' ? {} : { body: Buffer.concat(chunks) }),
       })
         .then(async (r) => {
-          res.writeHead(r.status, { 'content-type': 'application/json', ...headers });
+          res.writeHead(r.status, {
+            'content-type': 'application/json',
+            ...(r.headers.get('cache-control') === null
+              ? {}
+              : { 'cache-control': r.headers.get('cache-control') ?? '' }),
+            ...headers,
+          });
           res.end(Buffer.from(await r.arrayBuffer()));
         })
         .catch(() => {

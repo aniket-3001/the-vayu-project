@@ -2,9 +2,13 @@ import { describe, expect, it } from 'vitest';
 import {
   checkError,
   checkFires,
+  checkHistory,
   checkReplayTimeline,
   checkRoom,
+  checkSecurityHeaders,
+  checkStations,
   checkTimeline,
+  checkToday,
   type TimelineLike,
 } from './invariants';
 
@@ -264,5 +268,167 @@ describe('checkRoom', () => {
   });
   it('fails an answer that does not say whether it is simulated', () => {
     expect(checkRoom(room({ simulated: undefined })).join(' ')).toMatch(/simulated/);
+  });
+});
+
+describe('checkToday', () => {
+  const base = {
+    mode: 'live',
+    asOf: '2026-10-10T12:00:00.000Z',
+    hours: [
+      { t: '2026-10-10T09:30:00.000Z', pm25: 60, kind: 'observed' },
+      { t: '2026-10-10T10:30:00.000Z', pm25: 62, kind: 'observed' },
+      { t: '2026-10-10T12:30:00.000Z', pm25: 65, kind: 'forecast' },
+    ],
+    windows: [],
+    prov: {
+      mode: 'live',
+      label: 'Nearby station',
+      source: 'station',
+      stationName: 'GK1',
+      distanceKm: 4,
+      ageMinutes: 30,
+      observedAt: '2026-10-10T11:30:00.000Z',
+    },
+  };
+  it('passes a good live answer and a good model answer', () => {
+    expect(checkToday(base)).toEqual([]);
+    expect(
+      checkToday({
+        ...base,
+        mode: 'model',
+        hours: [{ t: '2026-10-10T12:30:00.000Z', pm25: 65, kind: 'forecast' }],
+        prov: { mode: 'model', label: 'Estimate', source: 'model', ageMinutes: 0 },
+      }),
+    ).toEqual([]);
+  });
+  it('catches an observed hour that had not ended, a stale reading, and an unnamed station (I1, I3, I2)', () => {
+    const late = {
+      ...base,
+      hours: [...base.hours, { t: '2026-10-10T11:30:00.000Z', pm25: 70, kind: 'observed' }],
+    };
+    expect(checkToday(late).join()).toMatch(/had not ended/u);
+    expect(checkToday({ ...base, prov: { ...base.prov, ageMinutes: 400 } }).join()).toMatch(
+      /rule I3/u,
+    );
+    expect(checkToday({ ...base, prov: { ...base.prov, stationName: undefined } }).join()).toMatch(
+      /station name/u,
+    );
+  });
+  it('catches a model answer that has observed hours, a station, or advice', () => {
+    const model = {
+      ...base,
+      mode: 'model',
+      prov: { mode: 'model', label: 'Estimate', source: 'model', ageMinutes: 0 },
+    };
+    expect(checkToday(model).join()).toMatch(/observed hours/u);
+    expect(checkToday({ ...model, hours: [], windows: [{}] }).join()).toMatch(/advice/u);
+  });
+  it('catches impossible numbers and hours out of order', () => {
+    expect(
+      checkToday({
+        ...base,
+        hours: [{ t: '2026-10-10T09:30:00.000Z', pm25: -3, kind: 'observed' }],
+      }).join(),
+    ).toMatch(/not possible/u);
+    expect(checkToday({ ...base, hours: [...base.hours].reverse() }).join()).toMatch(/order/u);
+  });
+});
+
+describe('checkHistory', () => {
+  const ok = {
+    mode: 'live',
+    asOf: '2026-10-10T12:00:00.000Z',
+    days: 1,
+    hours: [
+      { t: '2026-10-10T09:30:00.000Z', pm25: 60 },
+      { t: '2026-10-10T10:30:00.000Z', pm25: null },
+    ],
+    prov: {
+      mode: 'live',
+      label: 'Nearby station',
+      source: 'station',
+      stationName: 'GK1',
+      ageMinutes: 30,
+    },
+  };
+  it('passes good history, and catches an unended hour, too many hours, and a model answer wearing a station label', () => {
+    expect(checkHistory(ok)).toEqual([]);
+    expect(
+      checkHistory({
+        ...ok,
+        hours: [...ok.hours, { t: '2026-10-10T11:30:00.000Z', pm25: 3 }],
+      }).join(),
+    ).toMatch(/had not ended/u);
+    expect(
+      checkHistory({
+        ...ok,
+        hours: Array.from({ length: 30 }, (_, i) => ({
+          t: new Date(Date.UTC(2026, 9, 9, i)).toISOString(),
+          pm25: 1,
+        })),
+      }).join(),
+    ).toMatch(/for 1 days/u);
+    expect(checkHistory({ ...ok, mode: 'model' }).join()).toMatch(/labelled/u);
+  });
+});
+
+describe('checkStations', () => {
+  const ok = {
+    asOf: '2026-10-10T12:00:00.000Z',
+    mode: 'live',
+    stations: [{ id: 'a', lat: 28, lng: 77, pm25: 50, at: '2026-10-10T11:00:00.000Z' }],
+  };
+  it('passes recent monitors, and catches old, future, impossible, repeated, and a live answer with none', () => {
+    expect(checkStations(ok)).toEqual([]);
+    const s = ok.stations[0];
+    if (s === undefined) throw new Error('no station');
+    expect(
+      checkStations({ ...ok, stations: [{ ...s, at: '2026-10-10T01:00:00.000Z' }] }).join(),
+    ).toMatch(/six hours/u);
+    expect(
+      checkStations({ ...ok, stations: [{ ...s, at: '2026-10-10T13:00:00.000Z' }] }).join(),
+    ).toMatch(/future/u);
+    expect(checkStations({ ...ok, stations: [{ ...s, pm25: 5000 }] }).join()).toMatch(
+      /not possible/u,
+    );
+    expect(checkStations({ ...ok, stations: [s, s] }).join()).toMatch(/twice/u);
+    expect(checkStations({ ...ok, stations: [] }).join()).toMatch(/no monitors/u);
+  });
+});
+
+describe('checkSecurityHeaders', () => {
+  const headers = (over: Record<string, string> = {}): { get(name: string): string | null } => {
+    const all: Record<string, string> = {
+      'content-security-policy': "default-src 'self'; script-src 'self'; frame-ancestors 'none'",
+      'strict-transport-security': 'max-age=31536000; includeSubDomains',
+      'x-content-type-options': 'nosniff',
+      'x-frame-options': 'DENY',
+      ...over,
+    };
+    return { get: (name) => all[name] ?? null };
+  };
+  it('passes the headers we send and catches each one missing or weakened', () => {
+    expect(checkSecurityHeaders(headers())).toEqual([]);
+    expect(checkSecurityHeaders(headers({ 'content-security-policy': '' })).length).toBeGreaterThan(
+      1,
+    );
+    expect(
+      checkSecurityHeaders(
+        headers({
+          'content-security-policy':
+            "default-src 'self'; script-src 'unsafe-inline'; frame-ancestors 'none'",
+        }),
+      ).join(),
+    ).toMatch(/inline/u);
+    expect(checkSecurityHeaders(headers({ 'strict-transport-security': '' })).join()).toMatch(
+      /HSTS/u,
+    );
+    expect(checkSecurityHeaders(headers({ 'x-content-type-options': '' })).join()).toMatch(
+      /nosniff/u,
+    );
+    expect(checkSecurityHeaders(headers({ 'x-frame-options': 'SAMEORIGIN' })).join()).toMatch(
+      /frame/u,
+    );
   });
 });

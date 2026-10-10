@@ -1,17 +1,23 @@
 /**
- * Smoke check against the deployed API (08.2). Read-only GETs; nothing is written or sent.
+ * Smoke check against the deployed app (08.2). Read-only, with two exceptions that write nothing: one question to the
+ * assistant, and requests that are refused for being invalid. Nothing is stored and nothing is sent to anyone.
  *
- *   npx tsx tests/smoke/live.ts [apiBaseUrl]
+ *   npx tsx tests/smoke/live.ts [baseUrl]
  *
+ * `baseUrl` is the public site (`https://....cloudfront.net`), where the API is under `/v1`, or the API's own address.
  * Exits 1 if any rule from `invariants.ts` fails on a real response, so it can gate a demo.
  */
-import { DEMO_PLACES, Timeline } from '@vayu/contracts';
+import { AssistantReply, DEMO_PLACES, History, Stations, Timeline, Today } from '@vayu/contracts';
 import {
   checkError,
   checkFires,
+  checkHistory,
   checkReplayTimeline,
   checkRoom,
+  checkSecurityHeaders,
+  checkStations,
   checkTimeline,
+  checkToday,
 } from './invariants';
 
 const BASE = (process.argv[2] ?? 'https://niu33luxo8.execute-api.ap-south-1.amazonaws.com').replace(
@@ -26,6 +32,19 @@ const out = (line: string): void => {
 async function getJson(path: string): Promise<{ status: number; body: unknown }> {
   const res = await fetch(`${BASE}${path}`);
   const body: unknown = await res.json();
+  return { status: res.status, body };
+}
+
+async function postJson(
+  path: string,
+  payload: unknown,
+): Promise<{ status: number; body: unknown }> {
+  const res = await fetch(`${BASE}${path}`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+  const body: unknown = await res.json().catch(() => null);
   return { status: res.status, body };
 }
 
@@ -106,6 +125,141 @@ async function main(): Promise<void> {
     report(
       'replay refuses a time outside the week',
       outside.status === 400 ? checkError(outside.body) : [`expected 400, got ${outside.status}`],
+    );
+  }
+
+  // What the app itself reads.
+  const where = [
+    ...DEMO_PLACES.map((p) => ({ name: p.id, query: `place=${p.id}` })),
+    { name: 'a place in Noida', query: 'lat=28.57&lng=77.32' },
+    { name: 'a place in Lucknow', query: 'lat=26.85&lng=80.95' },
+  ];
+  for (const place of where) {
+    const today = await getJson(`/v1/today?${place.query}`);
+    const parsed = today.status === 200 ? Today.safeParse(today.body) : undefined;
+    report(
+      `today, ${place.name}`,
+      today.status !== 200
+        ? [`status ${today.status}`]
+        : parsed?.success === true
+          ? checkToday(parsed.data)
+          : ['response does not satisfy the Today contract'],
+      parsed?.success === true
+        ? `${parsed.data.mode}, ${parsed.data.prov.stationName ?? 'regional model'}, ${parsed.data.prov.ageMinutes} min old`
+        : '',
+    );
+  }
+  const history = await getJson('/v1/history?lat=28.59&lng=77.05&days=14');
+  const parsedHistory = history.status === 200 ? History.safeParse(history.body) : undefined;
+  report(
+    'history, 14 days',
+    history.status !== 200
+      ? [`status ${history.status}`]
+      : parsedHistory?.success === true
+        ? checkHistory(parsedHistory.data)
+        : ['response does not satisfy the History contract'],
+    parsedHistory?.success === true ? `${parsedHistory.data.hours.length} hours` : '',
+  );
+  report(
+    'history, bad days',
+    (await getJson('/v1/history?lat=28.59&lng=77.05&days=99')).status === 400
+      ? []
+      : ['expected 400'],
+  );
+  report(
+    'today, outside north India',
+    (await getJson('/v1/today?lat=48.8&lng=2.3')).status === 400 ? [] : ['expected 400'],
+  );
+  const stations = await getJson('/v1/stations');
+  const parsedStations = stations.status === 200 ? Stations.safeParse(stations.body) : undefined;
+  report(
+    'monitors for the map',
+    stations.status !== 200
+      ? [`status ${stations.status}`]
+      : parsedStations?.success === true
+        ? checkStations(parsedStations.data)
+        : ['response does not satisfy the Stations contract'],
+    parsedStations?.success === true ? `${parsedStations.data.stations.length} monitors` : '',
+  );
+
+  // The assistant: one real question, and the ways it must say no.
+  const ask = await postJson('/v1/assistant', {
+    question: 'Do I need a mask?',
+    context: {
+      place: 'Smoke test',
+      aqi: 158,
+      level: 'Unhealthy',
+      pm25: 65,
+      grapStage: 0,
+      alerts: [],
+      people: [],
+      basis: 'From a smoke test',
+    },
+  });
+  if (ask.status === 503 || ask.status === 429) {
+    report('assistant', [], `answered ${ask.status}: switched off or at its limit, as designed`);
+  } else {
+    const reply = ask.status === 200 ? AssistantReply.safeParse(ask.body) : undefined;
+    report(
+      'assistant answers from the facts it was given',
+      ask.status !== 200
+        ? [`status ${ask.status}`]
+        : reply?.success !== true
+          ? ['response does not satisfy the AssistantReply contract']
+          : [
+              ...(reply.data.text.includes('N95')
+                ? []
+                : ['the answer does not give the mask rule']),
+              ...(reply.data.basis.includes('smoke test')
+                ? []
+                : ['the answer does not say where its numbers came from']),
+            ],
+      reply?.success === true ? reply.data.source : '',
+    );
+  }
+  report(
+    'assistant refuses a made-up fact outside its limits',
+    (await postJson('/v1/assistant', { question: 'x', context: { aqi: 9000 } })).status === 400
+      ? []
+      : ['expected 400'],
+  );
+  report(
+    'assistant takes only a POST',
+    (await getJson('/v1/assistant')).status === 405 ? [] : ['expected 405'],
+  );
+  report(
+    'requests refuse an invalid form, and store nothing',
+    (await postJson('/v1/requests', { who: 'school', name: '' })).status === 400
+      ? []
+      : ['expected 400'],
+  );
+
+  // The site itself, when this is the public address.
+  if (BASE.includes('cloudfront.net') || process.env.SITE === '1') {
+    const page = await fetch(`${BASE}/`);
+    const html = await page.text();
+    report(
+      'the app is served',
+      page.status === 200 && html.includes('id="root"')
+        ? []
+        : [`status ${page.status}, no app root`],
+    );
+    report('security headers on the page', checkSecurityHeaders(page.headers));
+    const viaSite = await fetch(`${BASE}/v1/today?place=home`);
+    report('security headers on the API under it', checkSecurityHeaders(viaSite.headers));
+    report(
+      'the API says how long an answer may be kept',
+      /max-age=\d+/u.test(viaSite.headers.get('cache-control') ?? '')
+        ? []
+        : ['no cache-control on /v1/today'],
+    );
+    await fetch(`${BASE}/v1/today?place=park`);
+    const again = await fetch(`${BASE}/v1/today?place=park`);
+    report(
+      'CloudFront keeps a repeat answer',
+      /hit/iu.test(again.headers.get('x-cache') ?? '')
+        ? []
+        : [`x-cache: ${again.headers.get('x-cache') ?? 'none'}`],
     );
   }
 
