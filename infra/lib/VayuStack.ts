@@ -1,5 +1,6 @@
 import { fileURLToPath } from 'node:url';
 import { CfnOutput, Duration, RemovalPolicy, Stack, type StackProps } from 'aws-cdk-lib';
+import type { CfnStage } from 'aws-cdk-lib/aws-apigatewayv2';
 import { HttpApi, HttpMethod, HttpStage, CorsHttpMethod } from 'aws-cdk-lib/aws-apigatewayv2';
 import { HttpLambdaIntegration } from 'aws-cdk-lib/aws-apigatewayv2-integrations';
 import { CfnBudget } from 'aws-cdk-lib/aws-budgets';
@@ -21,6 +22,7 @@ import { BlockPublicAccess, Bucket, BucketEncryption } from 'aws-cdk-lib/aws-s3'
 import { Secret } from 'aws-cdk-lib/aws-secretsmanager';
 import type { Construct } from 'constructs';
 import { AlertLoop } from './AlertLoop';
+import { Assistant } from './Assistant';
 import { Analytics } from './Analytics';
 import { FixCheck } from './FixCheck';
 import { Harvest } from './Harvest';
@@ -161,6 +163,9 @@ export class VayuStack extends Stack {
     firmsMapKey.grantRead(apiFunction);
     openAqKey.grantRead(apiFunction);
 
+    // The assistant: a switch, a guardrail, and the one model it may call.
+    new Assistant(this, 'Assistant').grant(apiFunction);
+
     // Athena over the harvest and the public OpenAQ archive.
     new Analytics(this, 'Analytics', { dataBucket });
 
@@ -221,6 +226,17 @@ export class VayuStack extends Stack {
         maxAge: Duration.days(1),
       },
     });
+    // The two routes that cost something or take a person's words get their own, tighter, throttle below.
+    for (const path of ['/v1/assistant', '/v1/requests']) {
+      api.addRoutes({
+        path,
+        methods: [HttpMethod.POST],
+        integration: new HttpLambdaIntegration(
+          `Integration${path.replace(/\W/gu, '')}`,
+          apiFunction,
+        ),
+      });
+    }
     api.addRoutes({
       path: '/v1/{proxy+}',
       methods: [HttpMethod.GET, HttpMethod.POST],
@@ -232,6 +248,13 @@ export class VayuStack extends Stack {
       autoDeploy: true,
       throttle: { rateLimit: 50, burstLimit: 100 },
     });
+    // Per route (rule I15): the assistant calls a model and the request form takes personal details, so they
+    // are held far below the rest. The daily limits in the code count on top of this.
+    (apiStage.node.defaultChild as CfnStage).routeSettings = {
+      // Written as CloudFormation spells them: this property is an untyped map, so nothing converts the case.
+      'POST /v1/assistant': { ThrottlingRateLimit: 3, ThrottlingBurstLimit: 6 },
+      'POST /v1/requests': { ThrottlingRateLimit: 1, ThrottlingBurstLimit: 3 },
+    };
 
     // Seeing that it works, and hearing when it does not.
     new Operations(this, 'Operations', {

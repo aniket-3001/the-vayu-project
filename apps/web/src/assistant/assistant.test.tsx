@@ -23,11 +23,11 @@ const base: AssistantContext = {
   aqi: 158,
   level: 'Unhealthy',
   pm25: 71.3,
-  best: undefined,
   grapStage: 0,
   alerts: ['Avoid park walks today'],
   fires: 127,
   people: [{ name: 'Asha', age: 9, day: 'school' }],
+  basis: 'From the sample data in this prototype',
 };
 const clean: AssistantContext = {
   ...base,

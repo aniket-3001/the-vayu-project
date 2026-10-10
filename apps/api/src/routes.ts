@@ -26,6 +26,7 @@ import type { CacheReader } from './roomStores';
 import { handleRoom, type RoomsDeps } from './roomsRoute';
 import { loadAir, placeFromQuery } from './air';
 import { handleHistory } from './historyRoute';
+import { handleAssistant, type AssistantDeps } from './assistantRoute';
 import { handleRequests, type RequestsDeps } from './requestsRoute';
 import { handleStations } from './stationsRoute';
 import { handleToday } from './todayRoute';
@@ -34,6 +35,8 @@ export type { ApiRequest, ApiResponse } from './respond';
 import { timelineFor } from './timeline';
 
 export interface RouterDeps {
+  /** The assistant behind Bedrock. Absent where nothing is wired: /v1/assistant is then not found. */
+  readonly assistant?: AssistantDeps | undefined;
   /** Asking for a demo or monitors. Absent where nothing is wired: /v1/requests is then not found. */
   readonly requests?: RequestsDeps | undefined;
   /** The Today screen's weather and gases. Absent, or failing, only means Today has none. */
@@ -111,6 +114,11 @@ export function createRouter(deps: RouterDeps) {
   return async function route(request: ApiRequest): Promise<ApiResponse> {
     if (request.path === '/v1/watch/telegram/webhook') {
       return handleTelegramWebhook(request, deps);
+    }
+    if (request.path === '/v1/assistant') {
+      return deps.assistant === undefined
+        ? failure(404, 'not_found', `No route for ${request.path}`)
+        : handleAssistant(request, deps.assistant);
     }
     if (request.path === '/v1/requests') {
       return deps.requests === undefined

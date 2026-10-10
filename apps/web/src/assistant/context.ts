@@ -19,6 +19,17 @@ export function spanWords(at: string): string {
     : `${twelve(hour)} ${suffix(hour)} to ${twelve(end)} ${suffix(end)}`;
 }
 
+/** Where the numbers came from, in a few words: the monitor, how far away it is and how old its reading is. */
+export function basisFor(data: TodayData): string {
+  const p = data.provenance;
+  if (p.mode === 'sample') return 'From the sample data in this prototype';
+  const age =
+    p.ageMinutes < 90
+      ? `${String(p.ageMinutes)} minutes old`
+      : `${String(Math.round(p.ageMinutes / 60))} hours old`;
+  return `From ${p.stationName}, ${String(p.distanceKm)} km away, ${age}`;
+}
+
 /** Gathers what the assistant should know: the first place's air and day, the alerts, and the people tracked. */
 export function buildContext(
   place: string,
@@ -33,17 +44,19 @@ export function buildContext(
     aqi: data.aqi,
     level: levelForAqi(data.aqi).name,
     pm25: data.pm25,
-    best:
-      best === undefined
-        ? undefined
-        : {
+    ...(best === undefined
+      ? {}
+      : {
+          best: {
             // Past midnight, say so: "3 to 4 pm" alone would read as later today.
             span: `${spanWords(best.at)}${isoDate(best.at) === isoDate(data.asOf) ? '' : ' tomorrow'}`,
             aqi: best.aqi,
           },
+        }),
     grapStage: grapStageFor(data),
     alerts: alerts.map((a) => a.title),
-    fires,
+    ...(fires === undefined ? {} : { fires }),
+    basis: basisFor(data),
     people: people.map((p) => ({ name: p.name, age: p.age, day: p.day })),
   };
 }

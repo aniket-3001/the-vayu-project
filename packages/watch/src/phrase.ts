@@ -40,16 +40,15 @@ export function numbersMatchFacts(text: string, facts: Facts): boolean {
   return numbersIn(text).every((n) => allowed.has(n));
 }
 
-function promptFor(template: string, facts: Facts): string {
-  return [
-    'Rewrite the message below in plain, calm, friendly words for a parent or school staff member.',
-    'Keep it to one or two short sentences. Keep every fact. Do not add advice or opinions.',
-    'Do not add, change, round or invent any number. Use only numbers that appear in the facts.',
-    'Reply with the rewritten message only.',
-    '',
-    `Message: ${template}`,
-    `Facts: ${JSON.stringify(facts)}`,
-  ].join('\n');
+const DEFAULT_INSTRUCTION = [
+  'Rewrite the message below in plain, calm, friendly words for a parent or school staff member.',
+  'Keep it to one or two short sentences. Keep every fact. Do not add advice or opinions.',
+  'Do not add, change, round or invent any number. Use only numbers that appear in the facts.',
+  'Reply with the rewritten message only.',
+].join('\n');
+
+function promptFor(template: string, facts: Facts, instruction: string): string {
+  return [instruction, '', `Message: ${template}`, `Facts: ${JSON.stringify(facts)}`].join('\n');
 }
 
 function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
@@ -70,6 +69,8 @@ export interface PhraseInput {
   readonly facts: Facts;
   readonly generate: Generate;
   readonly timeoutMs?: number;
+  /** Replaces the standing instruction in the prompt. The number check applies whatever it says. */
+  readonly instruction?: string;
 }
 
 /**
@@ -86,7 +87,9 @@ export async function phrase(input: PhraseInput): Promise<Phrased> {
   let generated: string;
   try {
     generated = await withTimeout(
-      input.generate(promptFor(input.template, input.facts)),
+      input.generate(
+        promptFor(input.template, input.facts, input.instruction ?? DEFAULT_INSTRUCTION),
+      ),
       input.timeoutMs ?? 4000,
     );
   } catch {
@@ -100,6 +103,10 @@ export async function phrase(input: PhraseInput): Promise<Phrased> {
 
 export interface BedrockGeneratorOptions {
   readonly client?: BedrockRuntimeClient;
+  /** Standing instructions the caller's text cannot override. Sent as the system prompt. */
+  readonly system?: string;
+  /** A Bedrock Guardrail applied to both the prompt and the answer. */
+  readonly guardrail?: { readonly id: string; readonly version: string };
   /**
    * A cross-region inference profile: Nova Micro cannot be called by its bare model id in
    * ap-south-1 (checked 6 Oct 2026), but the APAC profile works.
@@ -119,9 +126,20 @@ export function bedrockGenerator(options: BedrockGeneratorOptions = {}): Generat
       new ConverseCommand({
         modelId,
         messages: [{ role: 'user', content: [{ text: prompt }] }],
+        ...(options.system === undefined ? {} : { system: [{ text: options.system }] }),
+        ...(options.guardrail === undefined
+          ? {}
+          : {
+              guardrailConfig: {
+                guardrailIdentifier: options.guardrail.id,
+                guardrailVersion: options.guardrail.version,
+              },
+            }),
         inferenceConfig: { maxTokens: options.maxTokens ?? 200, temperature: 0.2 },
       }),
     );
+    // A guardrail that steps in replaces the answer with its own message. That is not wording: refuse it.
+    if (response.stopReason === 'guardrail_intervened') throw new Error('guardrail intervened');
     return response.output?.message?.content?.[0]?.text ?? '';
   };
 }

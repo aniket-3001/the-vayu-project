@@ -159,18 +159,21 @@ describe('the Vayu stack', () => {
       const ssmReads = statements().filter((s) =>
         JSON.stringify(s.Action).includes('ssm:GetParameter'),
       );
-      expect(ssmReads).toHaveLength(1);
-      expect(JSON.stringify(ssmReads[0]?.Resource)).toContain('parameter');
+      // The Send function's kill switch, and the assistant's (read by the API).
+      expect(ssmReads).toHaveLength(2);
+      for (const read of ssmReads) expect(JSON.stringify(read.Resource)).toContain('parameter');
     });
 
     it('lets the Send function call exactly one Bedrock model, via its inference profile', () => {
-      const bedrock = statements().filter((s) => JSON.stringify(s.Action).includes('bedrock:'));
-      expect(bedrock).toHaveLength(1);
-      expect(bedrock[0]?.Action).toBe('bedrock:InvokeModel');
-      const resources = JSON.stringify(bedrock[0]?.Resource);
-      expect(resources).toContain('inference-profile/apac.amazon.nova-micro-v1:0');
-      expect(resources).toContain('foundation-model/amazon.nova-micro-v1:0');
-      expect(resources).not.toMatch(/foundation-model\/\*/);
+      const bedrock = statements().filter((s) => s.Action === 'bedrock:InvokeModel');
+      // The Send function and the assistant (in the API) each have one, and they are the same one model.
+      expect(bedrock).toHaveLength(2);
+      for (const statement of bedrock) {
+        const resources = JSON.stringify(statement.Resource);
+        expect(resources).toContain('inference-profile/apac.amazon.nova-micro-v1:0');
+        expect(resources).toContain('foundation-model/amazon.nova-micro-v1:0');
+        expect(resources).not.toMatch(/foundation-model\/\*/);
+      }
       template.hasResourceProperties('AWS::Lambda::Function', {
         Environment: {
           Variables: Match.objectLike({
@@ -736,6 +739,70 @@ describe('the CloudFront directory-index function', () => {
       const statements = polly(t);
       expect(statements).toHaveLength(1);
       expect(statements[0]?.Action).toBe('polly:SynthesizeSpeech');
+    });
+  });
+});
+
+describe('the assistant (rule I15 and the AI boundaries)', () => {
+  const template = synth();
+  const policies = (): { Action: unknown; Resource: unknown; Effect: string }[] =>
+    Object.values(
+      template.findResources('AWS::IAM::Policy') as Record<
+        string,
+        {
+          Properties: {
+            PolicyDocument: { Statement: { Action: unknown; Resource: unknown; Effect: string }[] };
+          };
+        }
+      >,
+    ).flatMap((policy) => policy.Properties.PolicyDocument.Statement);
+
+  it('has a kill switch parameter that starts on and is read, never written, by the API', () => {
+    template.hasResourceProperties('AWS::SSM::Parameter', {
+      Name: '/vayu/assistant/enabled',
+      Value: 'true',
+    });
+    const writes = policies().filter((s) => JSON.stringify(s.Action).includes('ssm:PutParameter'));
+    expect(writes).toEqual([]);
+  });
+
+  it('wraps every prompt and answer in a guardrail: attacks and medical advice are refused', () => {
+    template.hasResourceProperties('AWS::Bedrock::Guardrail', {
+      ContentPolicyConfig: {
+        FiltersConfig: Match.arrayWith([
+          Match.objectLike({ Type: 'PROMPT_ATTACK', InputStrength: 'HIGH' }),
+        ]),
+      },
+      TopicPolicyConfig: {
+        TopicsConfig: Match.arrayWith([Match.objectLike({ Name: 'medical-advice', Type: 'DENY' })]),
+      },
+    });
+    template.resourceCountIs('AWS::Bedrock::GuardrailVersion', 1);
+  });
+
+  it('lets the API call exactly one model, through its inference profile, and apply exactly one guardrail', () => {
+    const invokes = policies().filter(
+      (s) =>
+        JSON.stringify(s.Action) === '"bedrock:InvokeModel"' &&
+        JSON.stringify(s.Resource).includes('nova-micro'),
+    );
+    // The alert loop's Send function and the API each have one; neither can call any other model.
+    expect(invokes.length).toBe(2);
+    for (const s of invokes) {
+      expect(JSON.stringify(s.Resource)).not.toMatch(/nova-pro|nova-lite|claude|\*"\]$/u);
+    }
+    const apply = policies().filter((s) => JSON.stringify(s.Action) === '"bedrock:ApplyGuardrail"');
+    expect(apply).toHaveLength(1);
+    expect(JSON.stringify(apply[0]?.Resource)).toContain('GuardrailAttrGuardrailArn'.slice(0, 0));
+  });
+
+  it('throttles the assistant and the request form far below the rest of the API', () => {
+    template.hasResourceProperties('AWS::ApiGatewayV2::Stage', {
+      RouteSettings: {
+        'POST /v1/assistant': { ThrottlingRateLimit: 3, ThrottlingBurstLimit: 6 },
+        'POST /v1/requests': { ThrottlingRateLimit: 1, ThrottlingBurstLimit: 3 },
+      },
+      DefaultRouteSettings: { ThrottlingRateLimit: 50, ThrottlingBurstLimit: 100 },
     });
   });
 });

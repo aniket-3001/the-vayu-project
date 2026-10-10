@@ -1,4 +1,5 @@
 import { Logger } from '@aws-lambda-powertools/logger';
+import { BedrockRuntimeClient } from '@aws-sdk/client-bedrock-runtime';
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
 import { GetSecretValueCommand, SecretsManagerClient } from '@aws-sdk/client-secrets-manager';
 import { SFNClient, StartExecutionCommand } from '@aws-sdk/client-sfn';
@@ -16,7 +17,9 @@ import {
   openMeteoWeatherForecastRepo,
   openMeteoWeatherRepo,
 } from '@vayu/data';
-import { dynamoLinkStore, dynamoTokenStore, resumeAlertLoop } from '@vayu/watch';
+import { bedrockGenerator, dynamoLinkStore, dynamoTokenStore, resumeAlertLoop } from '@vayu/watch';
+import { ASSISTANT_LIMITS, GROUNDED_SYSTEM_PROMPT } from './assistantAgent';
+import { ssmSwitch } from './killSwitch';
 import { s3ReplayRepo } from './replayStore';
 import { dynamoQuota } from './quota';
 import { dynamoRequestsSave } from './requestsStore';
@@ -45,6 +48,32 @@ async function readSecret(arn: string): Promise<string> {
     throw new Error(`Secret ${arn} has no string value`);
   }
   return res.SecretString;
+}
+
+/**
+ * The assistant's model calls: one model, the same guardrail on every prompt and answer, a small token limit, and
+ * a kill switch. The first call rewords an answer the rules decided; the second answers from the facts with
+ * standing instructions the caller's words cannot change.
+ */
+function assistantDeps(salt: string, doc: DynamoDBDocumentClient): RouterDeps['assistant'] {
+  const client = traced(new BedrockRuntimeClient({ region: 'ap-south-1' }));
+  const guardrailId = process.env.GUARDRAIL_ID;
+  const common = {
+    client,
+    modelId: mustEnv('ASSISTANT_MODEL_ID'),
+    maxTokens: ASSISTANT_LIMITS.maxOutputTokens,
+    ...(guardrailId === undefined
+      ? {}
+      : { guardrail: { id: guardrailId, version: mustEnv('GUARDRAIL_VERSION') } }),
+  };
+  return {
+    reword: bedrockGenerator(common),
+    grounded: bedrockGenerator({ ...common, system: GROUNDED_SYSTEM_PROMPT }),
+    enabled: ssmSwitch(mustEnv('ASSISTANT_SWITCH_PARAM')),
+    quota: dynamoQuota(mustEnv('WATCH_TABLE'), doc),
+    clock: liveClock(),
+    salt,
+  };
 }
 
 // Cold-start-once, reused across invocations in the same execution environment.
@@ -98,6 +127,7 @@ function buildRoute(): Promise<ReturnType<typeof createRouter>> {
           }),
       },
       cache: dynamoCacheReader(mustEnv('CACHE_TABLE')),
+      assistant: assistantDeps(requestSalt, docClient),
       requests: {
         save: dynamoRequestsSave(mustEnv('WATCH_TABLE'), docClient),
         quota: dynamoQuota(mustEnv('WATCH_TABLE'), docClient),

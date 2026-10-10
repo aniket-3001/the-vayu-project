@@ -13,3 +13,4 @@ export * from './usAqi';
 export * from './whoGuideline';
 export * from './fixcheck';
 export * from './roomVerdict';
+export * from './assistantRules';

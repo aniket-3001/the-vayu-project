@@ -281,6 +281,58 @@ export const AccessRequest = z
   });
 export type AccessRequest = z.infer<typeof AccessRequest>;
 
+/**
+ * What the assistant is allowed to know when it is asked: one place's air and day, the alerts, and who is
+ * being tracked. Every field is bounded, and nothing else is accepted: the assistant never sees anything the
+ * person has not chosen to give it.
+ */
+export const AssistantContext = z
+  .object({
+    place: z.string().trim().min(1).max(60),
+    aqi: z.number().int().min(0).max(500),
+    level: z.string().max(40),
+    pm25: z.number().min(0).max(1000),
+    /** The cleanest daylight hour ahead, if any. */
+    best: z
+      .object({ span: z.string().max(40), aqi: z.number().int().min(0).max(500) })
+      .strict()
+      .optional(),
+    /** GRAP stage by our estimate, 0 for none. */
+    grapStage: z.number().int().min(0).max(4),
+    alerts: z.array(z.string().max(80)).max(8),
+    fires: z.number().int().min(0).max(100_000).optional(),
+    people: z
+      .array(
+        z
+          .object({
+            name: z.string().trim().min(1).max(40),
+            age: z.number().int().min(0).max(110),
+            day: z.enum(['school', 'work', 'none']),
+          })
+          .strict(),
+      )
+      .max(6),
+    /** Where the numbers came from, in words, so every answer can say. */
+    basis: z.string().max(200),
+  })
+  .strict();
+export type AssistantContext = z.infer<typeof AssistantContext>;
+
+export const AssistantRequest = z
+  .object({ question: z.string().trim().min(1).max(300), context: AssistantContext })
+  .strict();
+export type AssistantRequest = z.infer<typeof AssistantRequest>;
+
+/** How an answer was worded: from fixed rules, reworded by the model and checked, or by the model from the facts. */
+export const AssistantSource = z.enum(['rules', 'model_reworded', 'model_grounded']);
+export const AssistantReply = z.object({
+  text: z.string(),
+  /** Where the answer came from, in a few words, for the small print. */
+  basis: z.string(),
+  source: AssistantSource,
+});
+export type AssistantReply = z.infer<typeof AssistantReply>;
+
 export const Leakiness = z.enum(['closed', 'typical', 'windows_open', 'custom']);
 export const RoomSpec = record({
   id: z.string(),
