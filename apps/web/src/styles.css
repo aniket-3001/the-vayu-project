@@ -1517,3 +1517,186 @@ h2 {
 .maplibregl-ctrl-bottom-right {
   bottom: 96px;
 }
+
+/* AR Lens */
+
+.lens-screen {
+  position: relative;
+  height: calc(100dvh - 52px);
+  overflow: hidden;
+  background: #dfe8f2;
+}
+.lens-view,
+.lens-view .scene,
+.lens-view .specks,
+.lens-view .veil {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+.lens-view .scene {
+  object-fit: cover;
+}
+.lens-view .specks {
+  pointer-events: none;
+}
+.lens-view .veil {
+  pointer-events: none;
+}
+.lens-top {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  right: 12px;
+  z-index: 2;
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+}
+.lens-place select,
+.lens-button {
+  min-height: 44px;
+  padding: 0 16px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--card);
+  color: var(--text);
+  font: inherit;
+  font-weight: 700;
+  box-shadow: 0 4px 14px -6px rgb(61 74 92 / 0.35);
+}
+.lens-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+}
+.lens-hud {
+  position: absolute;
+  left: 12px;
+  right: 12px;
+  bottom: 90px;
+  z-index: 2;
+  display: grid;
+  gap: 6px;
+  max-width: 460px;
+}
+.lens-card,
+.lens-dial {
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: rgb(255 255 255 / 0.93);
+}
+.lens-card {
+  display: grid;
+  gap: 8px;
+}
+.lens-row {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  gap: 12px;
+}
+.lens-number {
+  display: grid;
+  padding: 6px 12px;
+  border-radius: 12px;
+  line-height: 1;
+  text-align: center;
+}
+.lens-number strong {
+  font-size: 30px;
+  letter-spacing: -0.03em;
+}
+.lens-number span {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+}
+.lens-level {
+  font-weight: 800;
+  font-size: 16px;
+}
+.lens-wind {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 14px;
+}
+.lens-line {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 8px;
+  font-size: 14px;
+}
+.lens-advice {
+  font-weight: 600;
+}
+.lens-foot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 10px;
+}
+.link-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: #2f5fb3;
+  font: inherit;
+  font-weight: 700;
+  text-decoration: underline;
+  cursor: pointer;
+}
+.dial-labels {
+  display: flex;
+  justify-content: space-between;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+.dial-track {
+  position: relative;
+  height: 14px;
+  margin: 8px 0 4px;
+  border-radius: 7px;
+}
+.dial-track input {
+  position: absolute;
+  left: -2px;
+  top: -15px;
+  width: calc(100% + 4px);
+  height: 44px;
+  margin: 0;
+  background: transparent;
+  appearance: none;
+  cursor: pointer;
+}
+.dial-track input::-webkit-slider-runnable-track {
+  background: transparent;
+}
+.dial-track input::-webkit-slider-thumb {
+  appearance: none;
+  width: 26px;
+  height: 26px;
+  margin-top: 9px;
+  border: 3px solid var(--text);
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 2px 6px rgb(61 74 92 / 0.4);
+}
+.dial-track input::-moz-range-track {
+  background: transparent;
+}
+.dial-track input::-moz-range-thumb {
+  width: 20px;
+  height: 20px;
+  border: 3px solid var(--text);
+  border-radius: 50%;
+  background: #fff;
+}
