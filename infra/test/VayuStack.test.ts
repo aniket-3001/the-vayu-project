@@ -8,7 +8,8 @@ import {
   FORECAST_ERROR_SQL,
   HARVEST_COVERAGE_SQL,
 } from '../lib/queries';
-import { DIRECTORY_INDEX_FUNCTION, VayuStack, type VayuStackProps } from '../lib/VayuStack';
+import { APP_INDEX_FUNCTION, CONTENT_SECURITY_POLICY } from '../lib/Site';
+import { VayuStack, type VayuStackProps } from '../lib/VayuStack';
 
 const synth = (alertEmail?: string): Template =>
   Template.fromStack(
@@ -212,22 +213,6 @@ describe('the Vayu stack', () => {
     });
   });
 
-  it('serves /app/ from the site bucket: a viewer-request function adds index.html and redirects /app to /app/', () => {
-    template.resourceCountIs('AWS::CloudFront::Function', 1);
-    template.hasResourceProperties('AWS::CloudFront::Function', {
-      FunctionConfig: { Runtime: 'cloudfront-js-2.0' },
-      FunctionCode: Match.stringLikeRegexp('index.html'),
-    });
-    template.hasResourceProperties('AWS::CloudFront::Distribution', {
-      DistributionConfig: Match.objectLike({
-        DefaultCacheBehavior: Match.objectLike({
-          FunctionAssociations: [Match.objectLike({ EventType: 'viewer-request' })],
-          ViewerProtocolPolicy: 'redirect-to-https',
-        }),
-      }),
-    });
-  });
-
   it('can skip the CloudFront site while an account awaits verification, without touching the data/API layer', () => {
     const withoutSite = synthWith({ includeSite: false });
     withoutSite.resourceCountIs('AWS::CloudFront::Distribution', 0);
@@ -239,35 +224,114 @@ describe('the Vayu stack', () => {
   });
 });
 
-describe('the CloudFront directory-index function', () => {
+describe('the public site', () => {
   interface Result {
     uri?: string;
-    statusCode?: number;
-    headers?: { location: { value: string } };
   }
-  const handler = runInNewContext(`${DIRECTORY_INDEX_FUNCTION}; handler`) as (e: unknown) => Result;
-  const run = (uri: string): Result => handler({ request: { uri } });
+  const handler = runInNewContext(`${APP_INDEX_FUNCTION}; handler`) as (e: unknown) => Result;
+  const run = (uri: string): string | undefined => handler({ request: { uri } }).uri;
 
-  it('serves index.html for a trailing slash', () => {
-    expect(run('/app/').uri).toBe('/app/index.html');
-    expect(run('/').uri).toBe('/index.html');
-  });
-
-  it('redirects a bare directory to its slash form so relative asset paths resolve', () => {
-    const result = run('/app');
-    expect(result.statusCode).toBe(301);
-    expect(result.headers?.location.value).toBe('/app/');
-  });
-
-  it('leaves real files alone', () => {
+  it('serves the app for the address and for any path that names no file, and every real file as it is', () => {
+    expect(run('/')).toBe('/index.html');
+    expect(run('/place/abc')).toBe('/index.html');
     for (const uri of [
-      '/app/assets/index-abc.js',
-      '/landing.css',
-      '/og-image.svg',
-      '/app/index.html',
-    ]) {
-      expect(run(uri).uri).toBe(uri);
-    }
+      '/assets/index-abc.js',
+      '/assets/maplibre-gl-worker-x.js',
+      '/favicon.svg',
+      '/index.html',
+    ])
+      expect(run(uri)).toBe(uri);
+  });
+
+  const template = synth();
+  const distribution = (): { DistributionConfig: Record<string, unknown> } =>
+    (
+      Object.values(template.findResources('AWS::CloudFront::Distribution'))[0] as {
+        Properties: { DistributionConfig: Record<string, unknown> };
+      }
+    ).Properties;
+
+  it('serves over HTTPS only, from a private bucket that only this distribution can read', () => {
+    template.hasResourceProperties('AWS::CloudFront::Distribution', {
+      DistributionConfig: Match.objectLike({
+        DefaultCacheBehavior: Match.objectLike({
+          ViewerProtocolPolicy: 'redirect-to-https',
+          Compress: true,
+        }),
+        DefaultRootObject: 'index.html',
+        PriceClass: 'PriceClass_200',
+      }),
+    });
+    template.resourceCountIs('AWS::CloudFront::OriginAccessControl', 1);
+    template.hasResourceProperties('AWS::S3::BucketPolicy', {
+      PolicyDocument: Match.objectLike({
+        Statement: Match.arrayWith([
+          Match.objectLike({
+            Principal: { Service: 'cloudfront.amazonaws.com' },
+            Condition: Match.anyValue(),
+          }),
+        ]),
+      }),
+    });
+  });
+
+  it('puts our API under /v1/* on the same address, for every method, over HTTPS only', () => {
+    const config = distribution().DistributionConfig as {
+      CacheBehaviors: {
+        PathPattern: string;
+        ViewerProtocolPolicy: string;
+        AllowedMethods: string[];
+      }[];
+    };
+    expect(config.CacheBehaviors).toHaveLength(1);
+    expect(config.CacheBehaviors[0]).toMatchObject({
+      PathPattern: '/v1/*',
+      ViewerProtocolPolicy: 'https-only',
+    });
+    expect(config.CacheBehaviors[0]?.AllowedMethods).toContain('POST');
+  });
+
+  it('keeps an API answer for at most fifteen minutes, and by default not at all, so the API says how long', () => {
+    template.hasResourceProperties('AWS::CloudFront::CachePolicy', {
+      CachePolicyConfig: Match.objectLike({
+        MinTTL: 0,
+        DefaultTTL: 0,
+        MaxTTL: 900,
+        ParametersInCacheKeyAndForwardedToOrigin: Match.objectLike({
+          QueryStringsConfig: { QueryStringBehavior: 'all' },
+          CookiesConfig: { CookieBehavior: 'none' },
+        }),
+      }),
+    });
+  });
+
+  it('sends the security headers: HSTS, no sniffing, no framing, a strict referrer, and a content policy that names every outside host', () => {
+    template.hasResourceProperties('AWS::CloudFront::ResponseHeadersPolicy', {
+      ResponseHeadersPolicyConfig: Match.objectLike({
+        SecurityHeadersConfig: Match.objectLike({
+          StrictTransportSecurity: Match.objectLike({ Override: true }),
+          ContentTypeOptions: { Override: true },
+          FrameOptions: { FrameOption: 'DENY', Override: true },
+          ContentSecurityPolicy: { ContentSecurityPolicy: CONTENT_SECURITY_POLICY, Override: true },
+        }),
+      }),
+    });
+    for (const host of [
+      'tiles.openfreemap.org',
+      'api.open-meteo.com',
+      'air-quality-api.open-meteo.com',
+      'geocoding-api.open-meteo.com',
+    ])
+      expect(CONTENT_SECURITY_POLICY).toContain(host);
+    expect(CONTENT_SECURITY_POLICY).toContain("frame-ancestors 'none'");
+    expect(CONTENT_SECURITY_POLICY).toContain("object-src 'none'");
+    expect(CONTENT_SECURITY_POLICY).not.toMatch(/script-src[^;]*unsafe/u);
+  });
+
+  it('reports where to upload the app and which distribution to refresh', () => {
+    template.hasOutput('SiteUrl', {});
+    template.hasOutput('SiteBucketName', {});
+    template.hasOutput('DistributionId', {});
   });
 
   describe('the harvest', () => {

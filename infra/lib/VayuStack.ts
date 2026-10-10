@@ -4,15 +4,6 @@ import type { CfnStage } from 'aws-cdk-lib/aws-apigatewayv2';
 import { HttpApi, HttpMethod, HttpStage, CorsHttpMethod } from 'aws-cdk-lib/aws-apigatewayv2';
 import { HttpLambdaIntegration } from 'aws-cdk-lib/aws-apigatewayv2-integrations';
 import { CfnBudget } from 'aws-cdk-lib/aws-budgets';
-import {
-  Distribution,
-  Function as CloudFrontFunction,
-  FunctionCode,
-  FunctionEventType,
-  FunctionRuntime,
-  ViewerProtocolPolicy,
-} from 'aws-cdk-lib/aws-cloudfront';
-import { S3BucketOrigin } from 'aws-cdk-lib/aws-cloudfront-origins';
 import { AttributeType, BillingMode, Table } from 'aws-cdk-lib/aws-dynamodb';
 import { Effect, PolicyStatement } from 'aws-cdk-lib/aws-iam';
 import { Runtime, Tracing } from 'aws-cdk-lib/aws-lambda';
@@ -28,6 +19,7 @@ import { FixCheck } from './FixCheck';
 import { Harvest } from './Harvest';
 import { Ingest } from './Ingest';
 import { Operations } from './Operations';
+import { Site } from './Site';
 import { Stations } from './Stations';
 
 export interface VayuStackProps extends StackProps {
@@ -47,22 +39,6 @@ export interface VayuStackProps extends StackProps {
   /** Set to true to give alerts a Hindi voice note too (Polly). Defaults to false. */
   readonly voiceEnabled?: boolean;
 }
-
-export const DIRECTORY_INDEX_FUNCTION = `
-function handler(event) {
-  var request = event.request;
-  var uri = request.uri;
-  if (uri.endsWith('/')) {
-    request.uri = uri + 'index.html';
-    return request;
-  }
-  var last = uri.split('/').pop();
-  if (last.indexOf('.') === -1) {
-    return { statusCode: 301, statusDescription: 'Moved Permanently', headers: { location: { value: uri + '/' } } };
-  }
-  return request;
-}
-`;
 
 const apiEntry = fileURLToPath(new URL('../../apps/api/src/handler.ts', import.meta.url));
 
@@ -270,32 +246,12 @@ export class VayuStack extends Stack {
     });
 
     if (props.includeSite !== false) {
-      const siteBucket = new Bucket(this, 'SiteBucket', {
-        blockPublicAccess: BlockPublicAccess.BLOCK_ALL,
-        encryption: BucketEncryption.S3_MANAGED,
-        enforceSSL: true,
-        removalPolicy: RemovalPolicy.DESTROY,
-        autoDeleteObjects: true,
+      const site = new Site(this, 'Site', { api });
+      new CfnOutput(this, 'SiteUrl', {
+        value: `https://${site.distribution.distributionDomainName}`,
       });
-      // CloudFront only serves a default page at the root, so /app/ needs help: a trailing-slash
-      // request gets index.html, and /app (no slash, no file extension) redirects to /app/ so the
-      // app's relative asset paths resolve.
-      const directoryIndex = new CloudFrontFunction(this, 'DirectoryIndex', {
-        runtime: FunctionRuntime.JS_2_0,
-        code: FunctionCode.fromInline(DIRECTORY_INDEX_FUNCTION),
-      });
-      const site = new Distribution(this, 'Site', {
-        defaultRootObject: 'index.html',
-        defaultBehavior: {
-          origin: S3BucketOrigin.withOriginAccessControl(siteBucket),
-          viewerProtocolPolicy: ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
-          functionAssociations: [
-            { function: directoryIndex, eventType: FunctionEventType.VIEWER_REQUEST },
-          ],
-        },
-      });
-      new CfnOutput(this, 'SiteUrl', { value: `https://${site.distributionDomainName}` });
-      new CfnOutput(this, 'SiteBucketName', { value: siteBucket.bucketName });
+      new CfnOutput(this, 'SiteBucketName', { value: site.bucket.bucketName });
+      new CfnOutput(this, 'DistributionId', { value: site.distribution.distributionId });
     }
 
     if (props.alertEmail !== undefined) {

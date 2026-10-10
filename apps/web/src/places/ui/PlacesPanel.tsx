@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { inCoverage, type PlaceMatch } from '../../data/geocode';
 import { MAX_PINS } from '../../data/pins';
 import { Pill } from '../../today/ui/Chip';
+import { airStore } from '../../air/store';
 import { usePins } from '../usePins';
 import { PlaceCard } from './PlaceCard';
 import { PlaceSearch } from './PlaceSearch';
@@ -82,7 +83,16 @@ export function PlacesPanel({
         </ul>
       )}
       <p className="muted small places-note">
-        <Pill>Sample data</Pill> The readings here are made up, shaped like Delhi&rsquo;s seasons.
+        {airStore().kind === 'sample' ? (
+          <>
+            <Pill>Sample data</Pill> The readings here are made up.{' '}
+          </>
+        ) : (
+          <>
+            <Pill>Live</Pill> Each reading is the nearest monitor with a recent one, and says how
+            far and how old.{' '}
+          </>
+        )}
         Pinned places are saved on this device only. Up to {MAX_PINS}. Search sends just the name
         you type to Open-Meteo.
       </p>

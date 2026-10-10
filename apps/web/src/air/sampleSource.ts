@@ -1,7 +1,10 @@
 import type { MapStation } from '@vayu/contracts';
 import { nowIso } from '../clock';
 import type { Pin } from '../data/pins';
+import { SAMPLE_TRACK, SAMPLE_UNITS } from './sampleExposure';
+import { sampleFires } from '../map/fires';
 import { sampleMonitors } from '../map/monitors';
+import { sampleWindGrid } from '../map/wind';
 import { readingForPin, sampleIdForPin } from '../places/placeSample';
 import { SAMPLE_HISTORY_DAYS, sampleAmbientPm25 } from '../today/sample';
 import { isoDate } from '../today/time';
@@ -42,6 +45,8 @@ export function sampleAirSource(): AirSource {
     peekToday: (pin) => readingForPin(pin),
     peekHistory: history,
     peekStations: stations,
+    peekExposure: () => ({ units: SAMPLE_UNITS, track: SAMPLE_TRACK }),
+    peekMap: () => ({ wind: sampleWindGrid(), air: sampleMonitors(), fires: sampleFires() }),
     today: (pin) => Promise.resolve(readingForPin(pin)),
     history: (pin) => Promise.resolve(history(pin)),
     stations: () => Promise.resolve(stations()),

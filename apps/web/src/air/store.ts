@@ -50,6 +50,16 @@ export class AirStore {
   private readonly listeners = new Set<() => void>();
   private version = 0;
 
+  /** The made-up units and movement a prototype source can give, or undefined for the live source. */
+  madeUpExposure(): ReturnType<NonNullable<AirSource['peekExposure']>> | undefined {
+    return this.source.peekExposure?.();
+  }
+
+  /** The made-up map data a prototype source can give, or undefined for the live source. */
+  madeUpMap(): ReturnType<NonNullable<AirSource['peekMap']>> | undefined {
+    return this.source.peekMap?.();
+  }
+
   /** Whether this store runs on made-up days. The map and the labels ask. */
   get kind(): 'live' | 'sample' {
     return this.source.kind;

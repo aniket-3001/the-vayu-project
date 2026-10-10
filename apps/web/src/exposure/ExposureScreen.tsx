@@ -28,7 +28,7 @@ import {
 import { personaById } from './persona';
 import { DAY_LABELS, initials, MAX_PEOPLE, personaOf } from './people';
 import { SPOT_LABELS, loadAllSpots, type SpotKind } from './spots';
-import { SAMPLE_SOURCES } from './sources';
+import { sourcesNote } from './sources';
 import { Dial, WHERE_LABELS } from './ui/Dial';
 import { Summary } from './ui/Summary';
 import { WeekStrip } from './ui/WeekStrip';
@@ -183,7 +183,7 @@ export function ExposureScreen({
                 <li key={note}>{note}</li>
               ))}
             </ul>
-            <p className="muted small">{SAMPLE_SOURCES}</p>
+            <p className="muted small">{sourcesNote()}</p>
           </div>
         )}
 

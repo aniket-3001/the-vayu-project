@@ -3,9 +3,8 @@ import { fetchAirGrid, fetchWindGrid, recall, remember, type WindPoint } from '.
 import { API_URL } from '../config';
 import { readDemo } from '../demo/state';
 import { airStore } from '../air/store';
-import { fetchFires, sampleFires, type Fire } from './fires';
-import { sampleMonitors, type Monitor } from './monitors';
-import { sampleWindGrid } from './wind';
+import { fetchFires, type Fire } from './fires';
+import type { Monitor } from './monitors';
 
 export interface MapData {
   readonly wind: readonly WindPoint[];
@@ -31,15 +30,16 @@ export function useMapData(fetchImpl: typeof fetch = fetch): MapData {
   const [data, setData] = useState<MapData>(() => {
     const wind = recall('wind');
     const air = recall('air');
-    const sample = airStore().kind === 'sample';
+    // Only the prototype's source has made-up map data; the deployed app starts empty.
+    const made = airStore().madeUpMap();
     const staged = readDemo()?.fires;
     return {
-      wind: isWind(wind) ? wind : sample ? sampleWindGrid() : [],
-      air: isAir(air) ? air : sample ? sampleMonitors() : [],
+      wind: isWind(wind) ? wind : (made?.wind ?? []),
+      air: isAir(air) ? air : (made?.air ?? []),
       windLive: isWind(wind),
       airLive: isAir(air),
       fires: staged,
-      fireList: sample ? sampleFires() : [],
+      fireList: made?.fires ?? [],
     };
   });
 

@@ -22,7 +22,8 @@ import {
   summarise,
 } from './model';
 import { sampleSpotsFor, type Spot, type Spots } from './spots';
-import { SAMPLE_UNITS, allUnits, type Unit } from './units';
+import { SAMPLE_UNITS } from '../air/sampleExposure';
+import { allUnits, type Unit } from './units';
 
 const need = (spot: Spot | undefined): Spot => {
   if (spot === undefined) throw new Error('missing sample spot');

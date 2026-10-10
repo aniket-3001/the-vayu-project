@@ -1,5 +1,10 @@
 import type { MapStation } from '@vayu/contracts';
 import type { Pin } from '../data/pins';
+import type { LiveLog } from '../exposure/model';
+import type { Unit } from '../exposure/units';
+import type { Fire } from '../map/fires';
+import type { WindPoint } from '../map/live';
+import type { Monitor } from '../map/monitors';
 import type { TodayData } from '../today/types';
 
 /** One hour of PM2.5 at a place, the hour starting at `t`, or null where nothing was measured. */
@@ -25,6 +30,14 @@ export interface AirSource {
   peekToday?(pin: Pin): TodayData | undefined;
   peekHistory?(pin: Pin): readonly HourPm[] | undefined;
   peekStations?(): readonly MapStation[] | undefined;
+  /** Made-up shared Vayu units and a made-up day of movement, for the prototype's Exposure. The live source has none. */
+  peekExposure?(): { readonly units: readonly Unit[]; readonly track: LiveLog };
+  /** Made-up wind, colour and fires for the map, so the prototype's map is never empty. The live source has none. */
+  peekMap?(): {
+    readonly wind: readonly WindPoint[];
+    readonly air: readonly Monitor[];
+    readonly fires: readonly Fire[];
+  };
   today(pin: Pin): Promise<TodayData>;
   /** The hourly PM2.5 at a place over the last fourteen days. */
   history(pin: Pin): Promise<readonly HourPm[]>;

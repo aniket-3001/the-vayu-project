@@ -28,8 +28,9 @@ export function DevicesPanel(): React.JSX.Element {
       </section>
 
       <ToBeImplemented>
-        The Vayu monitor is not built yet, so nothing here is measured. Any device you add shows
-        made-up readings from the outside air, to show what this page will do.
+        The Vayu monitor is not built yet, so nothing here is measured. A device you add shows
+        made-up readings worked out from the outside air, to show what this page will do. They do
+        not count in your Exposure.
       </ToBeImplemented>
 
       {devices.length > 0 && (

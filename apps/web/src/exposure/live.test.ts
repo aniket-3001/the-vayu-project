@@ -1,9 +1,9 @@
 // @vitest-environment jsdom
 import { beforeEach, describe, expect, it } from 'vitest';
-import { LIVE_STORAGE_KEY, SAMPLE_TRACK, currentHour, loadLive, recordFix, saveLive } from './live';
+import { SAMPLE_TRACK, SAMPLE_UNITS } from '../air/sampleExposure';
+import { LIVE_STORAGE_KEY, currentHour, loadLive, recordFix, saveLive } from './live';
 import { today, dayCells } from './model';
 import { sampleSpotsFor } from './spots';
-import { SAMPLE_UNITS } from './units';
 
 beforeEach(() => {
   window.localStorage.clear();

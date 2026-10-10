@@ -1,6 +1,7 @@
 import { readDemo } from '../demo/state';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { loadLive, recordFix, saveLive, SAMPLE_TRACK } from './live';
+import { airStore } from '../air/store';
+import { loadLive, recordFix, saveLive } from './live';
 import type { LiveLog } from './model';
 import {
   ME,
@@ -111,12 +112,14 @@ export function useLive(storage: Storage = window.localStorage): {
   readonly sample: boolean;
   readonly start: () => void;
   readonly stop: () => void;
-  readonly showSample: () => void;
+  /** Shows a made-up day of movement. Only the prototype has one; the deployed app has none. */
+  readonly showSample: (() => void) | undefined;
   readonly clearLog: () => void;
 } {
   const [log, setLog] = useState<LiveLog>(() => loadLive(storage));
   const [state, setState] = useState<LiveState>('off');
-  const [sample, setSample] = useState(() => readDemo()?.live === true);
+  const track = airStore().madeUpExposure()?.track;
+  const [sample, setSample] = useState(() => track !== undefined && readDemo()?.live === true);
   const watch = useRef<number | null>(null);
 
   const stop = useCallback(() => {
@@ -151,14 +154,17 @@ export function useLive(storage: Storage = window.localStorage): {
   };
 
   return {
-    log: sample ? SAMPLE_TRACK : log,
+    log: sample && track !== undefined ? track : log,
     state,
     sample,
     start,
     stop,
-    showSample: () => {
-      setSample(true);
-    },
+    showSample:
+      track === undefined
+        ? undefined
+        : () => {
+            setSample(true);
+          },
     clearLog: () => {
       setSample(false);
       setLog({});

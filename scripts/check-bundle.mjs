@@ -4,6 +4,15 @@ import { readdirSync, readFileSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
 
 const MARKERS = ['vayu.demo.v1', 'Demo scenarios', 'demo-pill', 'second tour'];
+// Made-up data and local addresses that must never be in the deployed app, only in the prototype and the tests.
+const MADE_UP = [
+  'Vayu unit at the school',
+  'Sample monitor',
+  'Gurugram',
+  'shaped like Delhi',
+  'localhost',
+  'execute-api',
+];
 
 const read = (dir) => {
   const out = [];
@@ -21,7 +30,7 @@ const read = (dir) => {
 const real = 'apps/web/dist';
 if (!existsSync(real)) throw new Error(`${real} is missing: build the app first`);
 const text = read(real);
-const found = MARKERS.filter((m) => text.includes(m));
+const found = [...MARKERS, ...MADE_UP].filter((m) => text.includes(m));
 if (found.length > 0) {
   console.error(`The deployed bundle contains prototype code: ${found.join(', ')}`);
   process.exit(1);

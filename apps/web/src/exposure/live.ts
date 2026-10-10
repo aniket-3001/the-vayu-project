@@ -1,5 +1,4 @@
 import { today, hoursSoFar, type LiveLog } from './model';
-import { sampleSpotsFor } from './spots';
 
 export const LIVE_STORAGE_KEY = 'vayu.live.v1';
 
@@ -39,25 +38,3 @@ export function recordFix(
 ): LiveLog {
   return { ...log, [String(hour)]: { lat, lng } };
 }
-
-const spotPin = (kind: 'work' | 'outdoor'): { lat: number; lng: number } => {
-  const pin = sampleSpotsFor('adult')[kind]?.pin;
-  return { lat: pin?.lat ?? 28.6, lng: pin?.lng ?? 77.2 };
-};
-
-/**
- * A made-up day of movement, so the live ring can be shown without waiting a day: a commute, a lunch
- * walk in the park, an errand across town, and the park again. It is labelled as a sample wherever it shows.
- */
-export const SAMPLE_TRACK: LiveLog = {
-  '8': { lat: 28.61, lng: 77.1 },
-  '9': spotPin('work'),
-  '10': spotPin('work'),
-  '11': spotPin('work'),
-  '12': spotPin('work'),
-  '13': spotPin('outdoor'),
-  '14': spotPin('work'),
-  '15': { lat: 28.6139, lng: 77.209 },
-  '16': { lat: 28.6139, lng: 77.209 },
-  '17': spotPin('outdoor'),
-};

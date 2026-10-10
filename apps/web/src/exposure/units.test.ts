@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { Device } from '../devices/devices';
-import { SAMPLE_UNITS, allUnits, ownUnits, unitNear } from './units';
+import { SAMPLE_UNITS } from '../air/sampleExposure';
+import { allUnits, ownUnits, unitNear } from './units';
 import { sampleSpotsFor } from './spots';
 
 const monitor: Device = { id: 'd1', name: 'Bedroom unit', where: 'home' };

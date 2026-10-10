@@ -6,7 +6,7 @@ const STATUS: Readonly<Record<LiveState, string>> = {
   off: 'Off.',
   asking: 'Asking your browser for your location…',
   on: 'On. Logging where you are while this page is open.',
-  refused: 'Your browser did not give us your location. You can still try the sample below.',
+  refused: 'Your browser did not give us your location, so nothing can be logged from it.',
   unavailable: 'This browser cannot share a location.',
 };
 
@@ -25,7 +25,8 @@ export function LiveCard({
   readonly hours: number;
   readonly onStart: () => void;
   readonly onStop: () => void;
-  readonly onSample: () => void;
+  /** Shows a made-up day of movement. Left out in the deployed app. */
+  readonly onSample?: () => void;
   readonly onClear: () => void;
 }): React.JSX.Element {
   return (
@@ -62,9 +63,11 @@ export function LiveCard({
             Use live location
           </button>
         )}
-        <button type="button" className="plain" onClick={onSample}>
-          Show a sample day
-        </button>
+        {onSample !== undefined && (
+          <button type="button" className="plain" onClick={onSample}>
+            Show a sample day
+          </button>
+        )}
         {(hours > 0 || sample) && (
           <button type="button" className="plain" onClick={onClear}>
             Clear

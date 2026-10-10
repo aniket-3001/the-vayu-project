@@ -21,6 +21,7 @@ import { bedrockGenerator, dynamoLinkStore, dynamoTokenStore, resumeAlertLoop } 
 import { ASSISTANT_LIMITS, GROUNDED_SYSTEM_PROMPT } from './assistantAgent';
 import { ssmSwitch } from './killSwitch';
 import { s3ReplayRepo } from './replayStore';
+import { clientAddress } from './clientAddress';
 import { dynamoQuota } from './quota';
 import { dynamoRequestsSave } from './requestsStore';
 import { dynamoCacheReader, dynamoRoomStore } from './roomStores';
@@ -157,7 +158,7 @@ export async function handler(event: APIGatewayProxyEventV2): Promise<APIGateway
     path: event.rawPath,
     query: event.queryStringParameters ?? {},
     headers: event.headers,
-    sourceIp: event.requestContext.http.sourceIp,
+    sourceIp: clientAddress(event.headers, event.requestContext.http.sourceIp),
     ...(event.body === undefined ? {} : { body: event.body }),
   };
   const response = await route(request);

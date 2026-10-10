@@ -89,7 +89,8 @@ export async function submitRequest(
     sentAt: (options.now ?? (() => new Date()))().toISOString(),
   };
   const base = options.baseUrl;
-  if (base !== undefined && base !== '') {
+  // An empty address is our own site: the deployed app and its API share one address.
+  if (base !== undefined) {
     let res: Response;
     try {
       res = await (options.fetchImpl ?? fetch)(`${base.replace(/\/$/u, '')}/v1/requests`, {

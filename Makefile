@@ -1,4 +1,4 @@
-.PHONY: install lint format typecheck test synth bundle prove deploy-diff smoke
+.PHONY: install lint format typecheck test synth bundle prove local local-api deploy-diff deploy-site smoke
 
 install:
 	npm install
@@ -37,3 +37,14 @@ deploy-diff:
 # A live check of a deployed address: make smoke LIVE_URL=https://...
 smoke:
 	npx tsx tests/smoke/live.ts $(LIVE_URL)
+
+# Put the built app on S3 behind CloudFront (after `cdk deploy` has made the bucket): AWS_PROFILE=vayu make deploy-site
+deploy-site:
+	scripts/deploy-site.sh
+
+# The whole app on your own machine, on real air data when OPENAQ_API_KEY is set (otherwise fixtures, labelled).
+#   terminal 1: make local-api        terminal 2: make local
+local-api:
+	npx tsx scripts/dev-api.mts
+local:
+	VITE_API_URL=http://localhost:8787 npm run dev -w @vayu/web

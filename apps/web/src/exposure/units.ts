@@ -1,5 +1,5 @@
+import { airStore } from '../air/store';
 import type { Device } from '../devices/devices';
-import { DEMO_PLACES } from '@vayu/contracts';
 import { AT_PLACE_KM, distanceKm } from './geo';
 import type { Spots } from './spots';
 
@@ -17,24 +17,6 @@ export interface Unit {
   readonly own: boolean;
 }
 
-const place = (id: string): { lat: number; lng: number } => {
-  const found = DEMO_PLACES.find((p) => p.id === id);
-  return { lat: found?.lat ?? 28.6, lng: found?.lng ?? 77.2 };
-};
-
-/** Units in the world, which anyone standing near gets the benefit of. Made up for the prototype. */
-export const SAMPLE_UNITS: readonly Unit[] = [
-  { id: 'unit-school', name: 'Vayu unit at the school', ...place('school'), own: false },
-  { id: 'unit-office', name: 'Vayu unit at the office', ...place('office'), own: false },
-  {
-    id: 'unit-friend',
-    name: 'Vayu unit at a friend’s home',
-    lat: 28.6139,
-    lng: 77.209,
-    own: false,
-  },
-];
-
 /** The units the person added, placed where that kind of place is set, for any kind of person. */
 export function ownUnits(devices: readonly Device[], allSpots: readonly Spots[]): readonly Unit[] {
   const units = new Map<string, Unit>();
@@ -49,11 +31,18 @@ export function ownUnits(devices: readonly Device[], allSpots: readonly Spots[])
   return [...units.values()];
 }
 
-/** Every unit that can help: the person's own first, then the shared ones. */
+/**
+ * Every unit that can help: the person's own first, then the shared ones. The Vayu monitor is not built, so in the
+ * deployed app there are none at all and every indoor hour is the labelled assumption; only the prototype has
+ * made-up units, and they are labelled there too.
+ */
 export const allUnits = (
   devices: readonly Device[],
   allSpots: readonly Spots[],
-): readonly Unit[] => [...ownUnits(devices, allSpots), ...SAMPLE_UNITS];
+): readonly Unit[] => {
+  const made = airStore().madeUpExposure();
+  return made === undefined ? [] : [...ownUnits(devices, allSpots), ...made.units];
+};
 
 /** The nearest unit within reach of a point, if any. */
 export function unitNear(

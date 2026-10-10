@@ -48,7 +48,7 @@ export function PersonPanel({
     readonly hours: number;
     readonly start: () => void;
     readonly stop: () => void;
-    readonly showSample: () => void;
+    readonly showSample: (() => void) | undefined;
     readonly clear: () => void;
   };
   readonly canRemove: boolean;
@@ -182,7 +182,7 @@ export function PersonPanel({
             hours={live.hours}
             onStart={live.start}
             onStop={live.stop}
-            onSample={live.showSample}
+            {...(live.showSample === undefined ? {} : { onSample: live.showSample })}
             onClear={live.clear}
           />
         )}

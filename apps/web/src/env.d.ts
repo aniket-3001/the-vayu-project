@@ -5,6 +5,8 @@ interface ImportMetaEnv {
   readonly VITE_ASSISTANT_URL?: string;
   /** `1` only in the prototype build (device frames, scenarios). Never set for the deployed app. */
   readonly VITE_DEMO?: string;
+  /** The build mode: development, production, or test. */
+  readonly MODE: string;
   /** True while running the dev server. */
   readonly DEV: boolean;
 }
