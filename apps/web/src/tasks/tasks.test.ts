@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { beforeEach, describe, expect, it } from 'vitest';
 import { sampleDay, SAMPLE_IDS } from '../today/sample';
-import { POINTS, grapStage, grapStageFor, tasksFor } from './model';
+import { POINTS, cpcbAqiFor, grapStage, grapStageFor, tasksFor } from './model';
 import { RANKS, TASKS_STORAGE_KEY, loadDone, rankFor, saveDone, streak, toggle } from './store';
 
 beforeEach(() => {
@@ -26,13 +26,24 @@ describe('GRAP stage from the 24-hour CPCB AQI', () => {
     expect(grapStageFor(sampleDay('hazardous'))).toBe(4);
     expect(grapStageFor(sampleDay('dusty'))).toBeGreaterThanOrEqual(2);
   });
+
+  it('says nothing, rather than guess, when the model’s PM10 is missing or far out of line with the PM2.5', () => {
+    const day = sampleDay('hazardous');
+    expect(grapStageFor({ ...day, pollutants: { pm25: day.pollutants.pm25 } })).toBe(0);
+    expect(
+      cpcbAqiFor({ ...day, pollutants: { ...day.pollutants, pm10: day.pollutants.pm25 * 9 } }),
+    ).toBeNull();
+    expect(
+      cpcbAqiFor({ ...day, pollutants: { ...day.pollutants, pm10: day.pollutants.pm25 * 0.5 } }),
+    ).toBeNull();
+  });
 });
 
 describe('today’s tasks', () => {
   it('suggest a good hour for a walk on a clean day, with a reason and points', () => {
     const tasks = tasksFor(sampleDay('good'));
     const walk = tasks.find((t) => t.id === 'walk');
-    expect(walk?.title).toMatch(/^A good hour for a walk: \d\d:\d\d to \d\d:\d\d$/u);
+    expect(walk?.title).toMatch(/^A good hour for a walk: \d\d:\d\d to \d\d:\d\d( tomorrow)?$/u);
     expect(walk?.points).toBe(POINTS.walk);
     for (const id of SAMPLE_IDS) {
       for (const t of tasksFor(sampleDay(id))) expect(t.points).toBe(POINTS[t.kind]);

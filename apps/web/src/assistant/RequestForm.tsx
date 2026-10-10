@@ -1,5 +1,7 @@
 import { ArrowLeft, Check } from 'lucide-react';
 import { useState } from 'react';
+import { airStore } from '../air/store';
+import { API_URL } from '../config';
 import {
   EMPTY_DRAFT,
   WANTS,
@@ -14,8 +16,8 @@ import {
   type Who,
 } from './requests';
 
-const requestUrl = (): string | undefined =>
-  (import.meta.env as { VITE_REQUEST_URL?: string }).VITE_REQUEST_URL;
+/** The deployed app sends to our API; the prototype and the tests keep it on the device. */
+const requestUrl = (): string | undefined => (airStore().kind === 'live' ? API_URL : undefined);
 
 const ORG_LABELS: Readonly<Record<Exclude<Who, 'person'>, string>> = {
   school: 'School name',
@@ -82,9 +84,13 @@ export function RequestForm({
             setBusy(false);
             setDone(result);
           },
-          () => {
+          (error: unknown) => {
             setBusy(false);
-            setProblems(['That did not go through. Please try again in a moment.']);
+            setProblems([
+              error instanceof Error
+                ? error.message
+                : 'That did not go through. Please try again in a moment.',
+            ]);
           },
         );
       }}

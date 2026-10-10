@@ -41,6 +41,14 @@ describe('the API', () => {
     });
   });
 
+  it('says where the fires were, for the map, never the faintest and never more than a day old', async () => {
+    const response = await get('/v1/fires');
+    const body = response.body as { detections: { lat: number; lng: number; at: string }[] };
+    expect(body.detections).toHaveLength(1);
+    expect(body.detections[0]).toHaveProperty('lat');
+    expect(response.headers).toEqual({ 'cache-control': 'public, max-age=300' });
+  });
+
   it('reports the fire data mode on its own when it differs from the rest', async () => {
     const live = createRouter({ ...baseDeps, fireMode: 'live' });
     const response = await live({ method: 'GET', path: '/v1/fires', query: {}, headers: {} });

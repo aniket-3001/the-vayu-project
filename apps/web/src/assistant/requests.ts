@@ -71,8 +71,9 @@ export function problemsWith(draft: Draft): readonly string[] {
 export type Sent = 'sent' | 'saved';
 
 /**
- * Sends the request to our API when one is set (`POST {base}/v1/requests`). That endpoint is not deployed yet,
- * so without it, or if it fails, the request is kept on this device only, and the screen says so.
+ * Sends the request to our API (`POST {base}/v1/requests`). With no address (the prototype and the tests) it is
+ * kept on this device only. If the API cannot be reached, or refuses, this throws with words for the person: a
+ * request is never reported as sent when it was not.
  */
 export async function submitRequest(
   draft: Draft,
@@ -89,16 +90,25 @@ export async function submitRequest(
   };
   const base = options.baseUrl;
   if (base !== undefined && base !== '') {
+    let res: Response;
     try {
-      const res = await (options.fetchImpl ?? fetch)(`${base.replace(/\/$/u, '')}/v1/requests`, {
+      res = await (options.fetchImpl ?? fetch)(`${base.replace(/\/$/u, '')}/v1/requests`, {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify(request),
       });
-      if (res.ok) return 'sent';
     } catch {
-      // Fall through to keeping it on this device.
+      throw new Error('We could not reach the server. Please check your connection and try again.');
     }
+    if (res.ok) return 'sent';
+    let message = 'That did not go through. Please try again in a moment.';
+    try {
+      const body = (await res.json()) as { error?: { message?: unknown } };
+      if (typeof body.error?.message === 'string') message = body.error.message;
+    } catch {
+      // The general message stands.
+    }
+    throw new Error(message);
   }
   try {
     const storage = options.storage ?? window.localStorage;

@@ -62,6 +62,11 @@ describe('GET /v1/today', () => {
     expect(today.hours.some((h) => h.kind === 'forecast')).toBe(true);
     expect(today.prov.label).toBe('Nearby station');
     expect(today.prov.ageMinutes).toBeGreaterThanOrEqual(0);
+    // The age is how old the newest reading is, not zero.
+    const newest = [...today.hours].reverse().find((h) => h.kind === 'observed' && h.pm25 !== null);
+    expect(today.prov.observedAt).toBe(
+      new Date(Date.parse(newest?.t ?? '') + 3_600_000).toISOString(),
+    );
   });
 
   it('never returns an observed hour that had not ended by now (rule I1)', async () => {

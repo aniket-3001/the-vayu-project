@@ -20,6 +20,8 @@ export type Loaded<T> =
  * waiting; the live one cannot, and the store shows "loading" until it answers.
  */
 export interface AirSource {
+  /** `live` is our API on AWS; `sample` is made-up days, for the prototype build and the tests. */
+  readonly kind: 'live' | 'sample';
   peekToday?(pin: Pin): TodayData | undefined;
   peekHistory?(pin: Pin): readonly HourPm[] | undefined;
   peekStations?(): readonly MapStation[] | undefined;

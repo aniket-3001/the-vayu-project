@@ -1,11 +1,14 @@
 import { Flame, Layers, LocateFixed, Wind } from 'lucide-react';
 import { Marker, type Map as MapLibreMap } from 'maplibre-gl';
 import { useMemo, useRef, useState } from 'react';
+import { airStore, useStations } from '../air/store';
+import { nowIso } from '../clock';
 import { inCoverage } from '../data/geocode';
 import { LEVELS } from '../design/levels';
 import { Pill } from '../today/ui/Chip';
 import { useAirUnits } from '../units/AirUnits';
 import { LAYER_LABELS, defaultLayers, type Shown } from './layers';
+import { monitorsFromStations } from './monitors';
 import { MapView } from './MapView';
 import { WindStars } from './WindStars';
 import { makeWindField } from './windTexture';
@@ -20,6 +23,13 @@ export function MapScreen(): React.JSX.Element {
   const [map, setMap] = useState<MapLibreMap>();
   const { smoke } = useAirUnits();
   const data = useMapData();
+  const stations = useStations();
+  const sample = airStore().kind === 'sample';
+  const monitors = useMemo(
+    () =>
+      stations.status === 'ready' ? monitorsFromStations(stations.data, Date.parse(nowIso())) : [],
+    [stations],
+  );
   const [where, setWhere] = useState('');
   const marker = useRef<Marker>();
   const windField = useMemo(() => makeWindField(data.wind), [data.wind]);
@@ -58,7 +68,15 @@ export function MapScreen(): React.JSX.Element {
 
   return (
     <div className="map-screen">
-      <MapView layers={shown} smoke={smoke} air={data.air} onReady={setMap} />
+      <MapView
+        layers={shown}
+        smoke={smoke}
+        air={data.air}
+        monitors={monitors}
+        fires={data.fireList}
+        sample={sample}
+        onReady={setMap}
+      />
       <WindStars map={map} enabled={shown.wind} field={windField} />
 
       <div className="map-bottom">
@@ -140,14 +158,24 @@ export function MapScreen(): React.JSX.Element {
             {where}
           </p>
           <p className="legend-pills">
-            {(shown.monitors || data.fires === undefined) && <Pill>Sample data</Pill>}
-            {((shown.gradient && data.airLive) ||
+            {sample && (shown.monitors || data.fires === undefined) && <Pill>Sample data</Pill>}
+            {((!sample && shown.monitors && monitors.length > 0) ||
+              (shown.gradient && data.airLive) ||
               (shown.wind && data.windLive) ||
               data.fires !== undefined) && <Pill>Live</Pill>}
           </p>
           <details className="legend-about">
             <summary>About this data</summary>
             <p className="legend-notes small">
+              {shown.monitors && !sample && (
+                <span>
+                  {stations.status === 'loading'
+                    ? 'Getting the monitors…'
+                    : monitors.length === 0
+                      ? 'No monitor has reported in the last six hours, so none are shown.'
+                      : `${String(monitors.length)} monitors in north India with a reading in the last six hours (OpenAQ).`}
+                </span>
+              )}
               {shown.gradient && (
                 <span>
                   {data.airLive
@@ -160,14 +188,16 @@ export function MapScreen(): React.JSX.Element {
                   <Flame size={14} strokeWidth={2} aria-hidden="true" />{' '}
                   {data.fires === undefined
                     ? 'Fires, last 24 hours'
-                    : `${String(data.fires)} fires in the last 24 hours (NASA satellite). Positions are a sample.`}
+                    : `${String(data.fires)} fires in the last 24 hours (NASA satellite).${sample ? ' Positions are a sample.' : ''}`}
                 </span>
               )}
               {shown.wind && (
                 <span>
                   {data.windLive
                     ? 'Wind: ICON and GFS models via Open-Meteo, right now.'
-                    : 'Wind is a sample flow.'}
+                    : sample
+                      ? 'Wind is a sample flow.'
+                      : 'The wind could not be loaded just now, so none is shown.'}
                 </span>
               )}
             </p>

@@ -1,6 +1,6 @@
 import { aqi24h } from '@vayu/core';
 import { bestHour, lensSeries } from '../lens/model';
-import { clock24 } from '../today/time';
+import { clock24, isoDate } from '../today/time';
 import type { TodayData } from '../today/types';
 
 export type TaskKind = 'walk' | 'stay-in' | 'windows' | 'mask' | 'purifier' | 'grap';
@@ -28,6 +28,9 @@ export function cpcbAqiFor(data: TodayData): number | null {
   // The 24-hour CPCB figure needs PM10 too. Without the model's PM10 we cannot work it out, so we say nothing.
   if (data.pollutants.pm10 === undefined || data.pollutants.pm25 <= 0) return null;
   const ratio = data.pollutants.pm10 / data.pollutants.pm25;
+  // Delhi's PM10 is about one to three times its PM2.5, and up to five in a dust storm. A model value far outside that is a fault or a dust
+  // plume, and an alert built on it would be a guess, so we say nothing.
+  if (ratio < 1 || ratio > 5) return null;
   const pm10 = last24.map((v) => v * ratio);
   return aqi24h(last24, pm10)?.aqi ?? null;
 }
@@ -49,10 +52,12 @@ export const POINTS: Readonly<Record<TaskKind, number>> = {
 
 const ROMAN = ['', 'I', 'II', 'III', 'IV'] as const;
 
-const range = (at: string): string => {
+/** "16:00 to 17:00", and "tomorrow" when that hour is not on the same India day as `asOf`. */
+const range = (at: string, asOf: string): string => {
   const start = clock24(at);
   const hour = Number(start.slice(0, 2));
-  return `${start} to ${String((hour + 1) % 24).padStart(2, '0')}${start.slice(2)}`;
+  const day = isoDate(at) === isoDate(asOf) ? '' : ' tomorrow';
+  return `${start} to ${String((hour + 1) % 24).padStart(2, '0')}${start.slice(2)}${day}`;
 };
 
 /**
@@ -69,7 +74,7 @@ export function tasksFor(data: TodayData): readonly Task[] {
     tasks.push({
       id: 'walk',
       kind: 'walk',
-      title: `A good hour for a walk: ${range(best.at)}`,
+      title: `A good hour for a walk: ${range(best.at, data.asOf)}`,
       why: `Air stays near AQI ${String(best.aqi)} then.`,
       points: POINTS.walk,
     });
@@ -77,8 +82,8 @@ export function tasksFor(data: TodayData): readonly Task[] {
     tasks.push({
       id: 'walk',
       kind: 'walk',
-      title: `Cleanest hour for a short walk: ${range(best.at)}`,
-      why: `AQI ${String(best.aqi)}, the best of the day. Keep it short.`,
+      title: `Cleanest hour for a short walk: ${range(best.at, data.asOf)}`,
+      why: `AQI ${String(best.aqi)}, the best of the next day. Keep it short.`,
       points: POINTS.walk,
     });
   } else {

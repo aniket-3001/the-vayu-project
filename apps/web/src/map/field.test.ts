@@ -19,7 +19,6 @@ const at = (lat: number, lng: number, aqi: number): Monitor => ({
   pm25: aqi / 2,
   aqi,
   ageMinutes: 5,
-  kind: 'government',
 });
 
 describe('the colour field between monitors', () => {

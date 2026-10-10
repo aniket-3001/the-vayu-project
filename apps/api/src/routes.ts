@@ -3,6 +3,7 @@ import type { Clock } from '@vayu/core';
 import {
   countFires,
   NORTH_INDIA_BOX,
+  type FireDetection,
   type FireRepo,
   type ForecastRepo,
   type GasRepo,
@@ -30,9 +31,34 @@ import { handleAssistant, type AssistantDeps } from './assistantRoute';
 import { handleRequests, type RequestsDeps } from './requestsRoute';
 import { handleStations } from './stationsRoute';
 import { handleToday } from './todayRoute';
-import { failure, ok, type ApiRequest, type ApiResponse } from './respond';
+import { failure, ok, okCached, type ApiRequest, type ApiResponse } from './respond';
 export type { ApiRequest, ApiResponse } from './respond';
 import { timelineFor } from './timeline';
+
+const MAX_FIRE_POINTS = 400;
+
+/** The fires of the last 24 hours that are not the faintest, as small records, the fiercest first, at most 400. */
+function recentFires(
+  detections: readonly FireDetection[],
+  asOf: string,
+): readonly { lat: number; lng: number; at: string; frp: number | null }[] {
+  const now = Date.parse(asOf);
+  return detections
+    .filter(
+      (d) =>
+        d.confidence !== 'low' &&
+        now - Date.parse(d.detectedAt) >= 0 &&
+        now - Date.parse(d.detectedAt) <= 24 * 3_600_000,
+    )
+    .sort((a, b) => (b.frp ?? 0) - (a.frp ?? 0))
+    .slice(0, MAX_FIRE_POINTS)
+    .map((d) => ({
+      lat: Math.round(d.lat * 1000) / 1000,
+      lng: Math.round(d.lng * 1000) / 1000,
+      at: d.detectedAt,
+      frp: d.frp,
+    }));
+}
 
 export interface RouterDeps {
   /** The assistant behind Bedrock. Absent where nothing is wired: /v1/assistant is then not found. */
@@ -188,13 +214,19 @@ export function createRouter(deps: RouterDeps) {
         // Satellite fire detections, not a pollution reading: counts only, labelled as such.
         const asOf = deps.clock.now();
         const detections = await deps.fireRepo.firesIn(NORTH_INDIA_BOX, asOf);
-        return ok({
-          asOf,
-          region: 'Punjab, Haryana and Delhi (approximate box)',
-          source: 'NASA FIRMS satellite fire detections',
-          mode: deps.fireMode ?? deps.mode,
-          counts: countFires(detections, asOf),
-        });
+        return okCached(
+          {
+            asOf,
+            region: 'Punjab, Haryana and Delhi (approximate box)',
+            source: 'NASA FIRMS satellite fire detections',
+            mode: deps.fireMode ?? deps.mode,
+            counts: countFires(detections, asOf),
+            // Where they were seen, so the map can show them: the last day, not the faintest, and no more than
+            // four hundred. A position is a satellite's hot pixel, not a pollution reading.
+            detections: recentFires(detections, asOf),
+          },
+          300,
+        );
       }
       default:
         return failure(404, 'not_found', `No route for ${request.path}`);

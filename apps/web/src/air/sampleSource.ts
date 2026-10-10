@@ -38,6 +38,7 @@ export function sampleAirSource(): AirSource {
       at: new Date(Date.parse(nowIso()) - m.ageMinutes * 60_000).toISOString(),
     }));
   return {
+    kind: 'sample',
     peekToday: (pin) => readingForPin(pin),
     peekHistory: history,
     peekStations: stations,

@@ -60,16 +60,41 @@ describe('asking for a demo or monitors', () => {
     expect(window.localStorage.getItem(REQUESTS_STORAGE_KEY)).toBeNull();
   });
 
-  it('keeps it on this device when there is no API, or the API fails, and says so', async () => {
+  it('keeps it on this device when there is no API (the prototype), and says so', async () => {
     expect(await submitRequest(good)).toBe('saved');
-    const failing = vi.fn(() => Promise.reject(new Error('offline')));
-    expect(
-      await submitRequest(good, {
-        baseUrl: 'https://api.example',
-        fetchImpl: failing as unknown as typeof fetch,
-      }),
-    ).toBe('saved');
     const kept = JSON.parse(window.localStorage.getItem(REQUESTS_STORAGE_KEY) ?? '[]') as unknown[];
-    expect(kept).toHaveLength(2);
+    expect(kept).toHaveLength(1);
+  });
+
+  it('never says a request was sent when it was not: an unreachable or refusing API is an error with words', async () => {
+    const offline = vi.fn(() => Promise.reject(new Error('offline')));
+    await expect(
+      submitRequest(good, {
+        baseUrl: 'https://api.example',
+        fetchImpl: offline as unknown as typeof fetch,
+      }),
+    ).rejects.toThrow('could not reach the server');
+    const refused = vi.fn(() =>
+      Promise.resolve(
+        new Response(JSON.stringify({ error: { message: 'You have sent a few already today.' } }), {
+          status: 429,
+        }),
+      ),
+    );
+    await expect(
+      submitRequest(good, {
+        baseUrl: 'https://api.example',
+        fetchImpl: refused as unknown as typeof fetch,
+      }),
+    ).rejects.toThrow('You have sent a few already today.');
+    const odd = vi.fn(() => Promise.resolve(new Response('nope', { status: 502 })));
+    await expect(
+      submitRequest(good, {
+        baseUrl: 'https://api.example',
+        fetchImpl: odd as unknown as typeof fetch,
+      }),
+    ).rejects.toThrow('did not go through');
+    // Nothing is quietly kept on the device when the real route was meant.
+    expect(window.localStorage.getItem(REQUESTS_STORAGE_KEY)).toBeNull();
   });
 });

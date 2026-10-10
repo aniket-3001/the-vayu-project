@@ -1,5 +1,6 @@
 import { Today, type Gases, type TodayHour } from '@vayu/contracts';
 import type { GasRepo, WeatherForecast, WeatherForecastRepo } from '@vayu/data';
+import { makeProvenance } from '@vayu/core';
 import { loadAir, placeFromQuery, type AirDeps } from './air';
 import { failure, okCached, type ApiRequest, type ApiResponse } from './respond';
 import { timelineFor } from './timeline';
@@ -13,6 +14,12 @@ export interface TodayDeps extends AirDeps {
 
 /** How long a shared cache may keep a Today answer. The harvest runs every 15 minutes, so a few minutes is safe. */
 export const TODAY_CACHE_SECONDS = 300;
+
+/** When the newest observed reading's hour ended, or undefined when there is none. */
+function latestObservedEnd(hours: readonly TodayHour[]): string | undefined {
+  const last = [...hours].reverse().find((h) => h.kind === 'observed' && h.pm25 !== null);
+  return last === undefined ? undefined : new Date(Date.parse(last.t) + 3_600_000).toISOString();
+}
 
 const PAST_HOURS = 48;
 const FUTURE_HOURS = 120;
@@ -70,7 +77,17 @@ export async function handleToday(request: ApiRequest, deps: TodayDeps): Promise
       ...(gases === undefined ? {} : { gases }),
       windows: timeline.windows,
       headline: timeline.headline,
-      prov: timeline.prov,
+      // The timeline's own provenance does not know how old the newest reading is; this one does (rule I2).
+      prov: makeProvenance({
+        mode: timeline.mode,
+        source: timeline.prov.source,
+        asOf,
+        fetchedAt: timeline.prov.fetchedAt,
+        observedAt: latestObservedEnd(hours),
+        stationId: timeline.prov.stationId,
+        stationName: timeline.prov.stationName,
+        distanceKm: timeline.prov.distanceKm,
+      }),
     }),
     TODAY_CACHE_SECONDS,
   );

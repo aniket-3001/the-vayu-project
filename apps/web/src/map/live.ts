@@ -107,7 +107,6 @@ export async function fetchAirGrid(fetchImpl: typeof fetch = fetch): Promise<rea
       pm25,
       aqi: typeof reported === 'number' ? reported : (usAqi(pm25)?.value ?? 0),
       ageMinutes: 0,
-      kind: 'government',
     });
   });
   if (grid.length === 0) throw new Error('No air quality came back');

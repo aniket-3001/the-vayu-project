@@ -52,3 +52,33 @@ export function firesGeoJson(fires: readonly Fire[]): FeatureCollection<Point> {
     })),
   };
 }
+
+/** The fires our API saw in the last day: how many, and where. Undefined when the API cannot be reached. */
+export async function fetchFires(
+  baseUrl: string,
+  fetchImpl: typeof fetch = fetch,
+  nowMs: number = Date.now(),
+): Promise<{ readonly count: number; readonly fires: readonly Fire[] } | undefined> {
+  const res = await fetchImpl(`${baseUrl.replace(/\/+$/u, '')}/v1/fires`);
+  if (!res.ok) return undefined;
+  const body = (await res.json()) as {
+    counts?: { last24h?: unknown };
+    detections?: { lat?: unknown; lng?: unknown; at?: unknown; frp?: unknown }[];
+  };
+  const count = body.counts?.last24h;
+  if (typeof count !== 'number') return undefined;
+  const fires = (body.detections ?? []).flatMap((d, i): Fire[] =>
+    typeof d.lat === 'number' && typeof d.lng === 'number' && typeof d.at === 'string'
+      ? [
+          {
+            id: `fire-${String(i + 1)}`,
+            lat: d.lat,
+            lng: d.lng,
+            frp: typeof d.frp === 'number' ? d.frp : 10,
+            hoursAgo: Math.max(0, Math.round((nowMs - Date.parse(d.at)) / 3_600_000)),
+          },
+        ]
+      : [],
+  );
+  return { count, fires };
+}

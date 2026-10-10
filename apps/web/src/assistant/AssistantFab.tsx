@@ -4,7 +4,8 @@ import { alertsFor } from '../alerts/model';
 import { useFires } from '../alerts/useFires';
 import { useHousehold } from '../exposure/useExposure';
 import { readDemo } from '../demo/state';
-import { useToday } from '../air/store';
+import { airStore, useToday } from '../air/store';
+import { API_URL } from '../config';
 import { usePins } from '../places/usePins';
 import { Pill } from '../today/ui/Chip';
 import { apiAssistant } from './api';
@@ -38,11 +39,9 @@ const SUGGESTIONS = [
 const GREETING =
   'Ask about a walk, school, masks, windows, alerts or stubble burning. Or tell me what someone did outdoors, like “Asha walked in the park for 40 minutes”, and I will add it to their day.';
 
-/** The deployed assistant, if one is set; otherwise the local answers. */
-const configured = (): AssistantSource => {
-  const base = (import.meta.env as { VITE_ASSISTANT_URL?: string }).VITE_ASSISTANT_URL;
-  return base === undefined || base === '' ? localAssistant : apiAssistant(base);
-};
+/** The deployed app asks our API; the prototype and the tests answer from the rules alone. */
+const configured = (): AssistantSource =>
+  airStore().kind === 'live' ? apiAssistant(API_URL) : localAssistant;
 
 /**
  * A button that stays on every screen and opens a chat. It answers questions such as "when can I go for a

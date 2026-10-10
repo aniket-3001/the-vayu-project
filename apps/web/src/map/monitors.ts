@@ -1,5 +1,6 @@
 import type { FeatureCollection, Point } from 'geojson';
 import { seededRandom, usAqi } from '@vayu/core';
+import type { MapStation } from '@vayu/contracts';
 
 export interface Monitor {
   readonly id: string;
@@ -9,7 +10,6 @@ export interface Monitor {
   readonly pm25: number;
   readonly aqi: number;
   readonly ageMinutes: number;
-  readonly kind: 'government' | 'community';
 }
 
 /** A city, and the PM2.5 (µg/m³) that a sample monitor there reads around this time of year. */
@@ -73,8 +73,9 @@ export function sampleMonitors(): readonly Monitor[] {
         pm25,
         aqi: usAqi(pm25)?.value ?? 0,
         ageMinutes: 3 + Math.floor(random() * 55),
-        kind: random() < 0.7 ? 'government' : 'community',
       });
+      // This used to pick government or community; the draw stays so the made-up monitors stay put.
+      random();
     }
   }
   return out;
@@ -94,8 +95,23 @@ export function monitorsGeoJson(monitors: readonly Monitor[]): FeatureCollection
         aqi: m.aqi,
         pm25: m.pm25,
         age: m.ageMinutes,
-        kind: m.kind,
       },
     })),
   };
+}
+
+/** The monitors our API says have a recent reading, as the map draws them. The age is worked out from now. */
+export function monitorsFromStations(
+  stations: readonly MapStation[],
+  nowMs: number,
+): readonly Monitor[] {
+  return stations.map((s) => ({
+    id: s.id,
+    name: s.name,
+    lat: s.lat,
+    lng: s.lng,
+    pm25: s.pm25,
+    aqi: usAqi(s.pm25)?.value ?? 0,
+    ageMinutes: Math.max(0, Math.round((nowMs - Date.parse(s.at)) / 60_000)),
+  }));
 }

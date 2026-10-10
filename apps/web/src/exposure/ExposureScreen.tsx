@@ -3,6 +3,9 @@ import { useMemo, useState } from 'react';
 import type { PlaceMatch } from '../data/geocode';
 import { useDevices } from '../devices/useDevices';
 import { levelForAqi } from '../design/levels';
+import { airStore, useHistory } from '../air/store';
+import { AirError, AirLoading } from '../components/AirState';
+import { pinId, type Pin } from '../data/pins';
 import { usePins } from '../places/usePins';
 import { Progress } from '../tasks/ui/TipsCard';
 import { SmokeNote } from '../units/AirUnits';
@@ -101,16 +104,35 @@ export function ExposureScreen({
   const date = view === WEEK ? today() : view;
   const shownTab: Tab = tab !== 'all' && !info.kinds.some((k) => k === tab) ? 'all' : tab;
 
+  // The air at every place this person's day touches: where they are set, where they went outside, and where
+  // their location put them. It loads, and the dial fills in as it arrives.
+  const needed = useMemo(() => {
+    const pinsHere: Pin[] = [
+      ...Object.values(visible).map((spot) => spot.pin),
+      ...outings.map((o) => o.pin),
+      ...Object.values(live.log).map((fix) => ({
+        id: pinId(fix.lat, fix.lng),
+        name: 'Here',
+        lat: fix.lat,
+        lng: fix.lng,
+      })),
+    ];
+    return [...new Map(pinsHere.map((p) => [p.id, p])).values()];
+  }, [visible, outings, live.log]);
+  const history = useHistory(needed);
   const cells = useMemo(
     () => dayCells(visible, units, live.log, date, outings),
-    [visible, units, live.log, date, outings],
+    // `history` is here so the day is worked out again when the air arrives.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [visible, units, live.log, date, outings, history],
   );
   const shown = shownTab === 'all' ? cells : cells.filter((cell) => cell.where === shownTab);
   const counted = shownTab === 'all' ? countedCells(cells) : shown;
   const summary = summarise(counted, openAirFor(counted, visible, live.log, date));
   const week = useMemo(
     () => lastWeek().map((d) => ({ date: d, summary: daySummary(visible, units, {}, d, outings) })),
-    [visible, units, outings],
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [visible, units, outings, history],
   );
   const setKinds = new Set<Where>(info.kinds.filter((kind) => visible[kind] !== undefined));
   if (Object.keys(live.log).length > 0) setKinds.add('live');
@@ -277,6 +299,17 @@ export function ExposureScreen({
       </header>
 
       <main className="exposure-main">
+        {history === 'loading' && needed.length > 0 && (
+          <AirLoading what="the last two weeks of air for these places" />
+        )}
+        {history === 'error' && (
+          <AirError
+            message="Without it we cannot work out the hours."
+            onRetry={() => {
+              for (const pin of needed) airStore().ensureHistory(pin, true);
+            }}
+          />
+        )}
         {noData && (
           <p className="banner" role="status">
             No data for {formatDate(view)}. We only keep the last two weeks.

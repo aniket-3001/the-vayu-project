@@ -3,6 +3,7 @@ import { cleanup, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { answerFromRules } from '@vayu/core';
 import { sampleDay } from '../today/sample';
 import { apiAssistant } from './api';
 import { AssistantFab } from './AssistantFab';
@@ -105,20 +106,19 @@ describe('the answers behind our API', () => {
       Promise.resolve(new Response(JSON.stringify(body), { status })),
     ) satisfies typeof fetch;
 
-  it('use what Bedrock says, and the Polly audio file it sends', async () => {
-    const answer = await apiAssistant(
-      'https://x.test/',
-      reply({ text: 'From Bedrock.', audioUrl: 'https://a.test/x.mp3' }),
-    ).ask('hi', base);
-    expect(answer).toMatchObject({
-      text: 'From Bedrock.',
-      audioUrl: 'https://a.test/x.mp3',
-      basis: 'Amazon Bedrock, from live data',
-    });
+  const good = {
+    text: 'From Bedrock.',
+    basis: 'From GK1. Wording by AI, checked against the facts.',
+    source: 'model_reworded',
+  };
+
+  it('use what the API says, with its own small print', async () => {
+    const answer = await apiAssistant('https://x.test/', reply(good)).ask('hi', base);
+    expect(answer).toEqual({ text: 'From Bedrock.', basis: good.basis });
   });
 
   it('post the question and what the app knows to /v1/assistant', async () => {
-    const fetcher = reply({ text: 'ok' });
+    const fetcher = reply(good);
     await apiAssistant('https://x.test/', fetcher).ask('hello', base);
     const [url, init] = (fetcher as unknown as { mock: { calls: [string, RequestInit][] } }).mock
       .calls[0] ?? ['', {}];
@@ -126,20 +126,27 @@ describe('the answers behind our API', () => {
     expect(init.method).toBe('POST');
     expect(JSON.parse(init.body as string)).toMatchObject({
       question: 'hello',
-      context: { place: 'Home' },
+      context: { place: 'Home', basis: base.basis },
     });
   });
 
-  it('fall back to the local answers when the service is down, slow to answer or sends rubbish', async () => {
-    for (const f of [
-      reply({}, 500),
-      reply({ text: '' }),
-      reply({ nope: 1 }),
-      vi.fn(() => Promise.reject(new Error('offline'))) as unknown as typeof fetch,
-    ]) {
+  it('answer from the same rules themselves, and say why, when the service is down, off, over its limit or sends rubbish', async () => {
+    const cases: [typeof fetch, RegExp][] = [
+      [reply({}, 500), /had a problem/u],
+      [reply({}, 503), /switched off/u],
+      [reply({}, 429), /reached its limit/u],
+      [reply({ text: '' }), /could not read/u],
+      [reply({ nope: 1 }), /could not read/u],
+      [
+        vi.fn(() => Promise.reject(new Error('offline'))),
+        /could not be reached/u,
+      ],
+    ];
+    for (const [f, why] of cases) {
       const answer = await apiAssistant('https://x.test', f).ask('do I need a mask', base);
-      expect(answer.text).toMatch(/N95/u);
-      expect(answer.basis).toMatch(/sample data/u);
+      expect(answer.text).toBe(answerFromRules('do I need a mask', base).text);
+      expect(answer.basis).toMatch(why);
+      expect(answer.basis).toMatch(/own rules/u);
     }
   });
 });

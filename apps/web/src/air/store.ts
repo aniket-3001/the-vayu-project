@@ -50,6 +50,11 @@ export class AirStore {
   private readonly listeners = new Set<() => void>();
   private version = 0;
 
+  /** Whether this store runs on made-up days. The map and the labels ask. */
+  get kind(): 'live' | 'sample' {
+    return this.source.kind;
+  }
+
   constructor(
     private readonly source: AirSource,
     private readonly clockMs: () => number = Date.now,

@@ -3,17 +3,18 @@ import {
   NavigationControl,
   Popup,
   setWorkerUrl,
+  type GeoJSONSource,
   type StyleSpecification,
 } from 'maplibre-gl';
 import workerUrl from 'maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url';
 import 'maplibre-gl/dist/maplibre-gl.css';
-import { useEffect, useMemo, useRef } from 'react';
+import { useEffect, useRef } from 'react';
 import { LEVELS } from '../design/levels';
 import type { Monitor } from './monitors';
 import { cigarettesPerDay, describeCigarettes } from '../units/smoke';
 import { FIELD_BOUNDS, grainyField } from './field';
-import { firesGeoJson, sampleFires } from './fires';
-import { monitorsGeoJson, sampleMonitors } from './monitors';
+import { firesGeoJson, type Fire } from './fires';
+import { monitorsGeoJson } from './monitors';
 
 /** The part of MapLibre's image source that swaps the picture. */
 interface ImageUpdater {
@@ -50,7 +51,12 @@ const aqiColour = (value: unknown): unknown => [
   ...LEVELS.slice(1).flatMap((level) => [level.from, level.solid]),
 ];
 
+/** One clear pixel, for when there is no air colour to draw: nothing is better than a made-up wash. */
+const CLEAR =
+  'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==';
+
 function fieldImage(air: readonly Monitor[]): string {
+  if (air.length === 0) return CLEAR;
   const { pixels, width, height } = grainyField(air, 136, 144, 6);
   const canvas = document.createElement('canvas');
   canvas.width = width;
@@ -68,6 +74,9 @@ export function MapView({
   layers,
   smoke,
   air,
+  monitors,
+  fires,
+  sample,
   onReady,
 }: {
   readonly layers: MapLayers;
@@ -75,15 +84,18 @@ export function MapView({
   readonly smoke: boolean;
   /** The grid of air quality that colours the map between monitors. */
   readonly air: readonly Monitor[];
+  /** The monitors with a recent reading. */
+  readonly monitors: readonly Monitor[];
+  readonly fires: readonly Fire[];
+  /** Whether the readings are made up (the prototype), for the popup's small print. */
+  readonly sample: boolean;
   readonly onReady: (map: MapLibreMap) => void;
 }): React.JSX.Element {
   const container = useRef<HTMLDivElement>(null);
   const map = useRef<MapLibreMap>();
   const ready = useRef(false);
-  const latest = useRef({ layers, smoke, air });
-  latest.current = { layers, smoke, air };
-  const monitors = useMemo(() => sampleMonitors(), []);
-  const fires = useMemo(() => sampleFires(), []);
+  const latest = useRef({ layers, smoke, air, monitors, fires, sample });
+  latest.current = { layers, smoke, air, monitors, fires, sample };
 
   useEffect(() => {
     const el = container.current;
@@ -125,7 +137,7 @@ export function MapView({
         paint: { 'raster-opacity': 0.8, 'raster-fade-duration': 0, 'raster-resampling': 'linear' },
         layout: { visibility: on.gradient ? 'visible' : 'none' },
       });
-      m.addSource('fires', { type: 'geojson', data: firesGeoJson(fires) });
+      m.addSource('fires', { type: 'geojson', data: firesGeoJson(latest.current.fires) });
       m.addLayer({
         id: 'fires',
         type: 'circle',
@@ -141,7 +153,7 @@ export function MapView({
       });
       m.addSource('monitors', {
         type: 'geojson',
-        data: monitorsGeoJson(monitors),
+        data: monitorsGeoJson(latest.current.monitors),
         cluster: true,
         clusterRadius: 38,
         clusterMaxZoom: 6,
@@ -223,7 +235,9 @@ export function MapView({
       body.textContent = `AQI ${String(p.aqi)} · PM2.5 ${String(p.pm25)} µg/m³ · ${String(p.age)} min ago`;
       const note = document.createElement('p');
       note.className = 'muted';
-      note.textContent = 'Sample data';
+      note.textContent = latest.current.sample
+        ? 'Sample data'
+        : 'A monitor with a recent reading, from OpenAQ';
       box.append(title, body);
       if (latest.current.smoke && p.pm25 !== undefined) {
         const smokes = document.createElement('p');
@@ -276,6 +290,18 @@ export function MapView({
       (source as unknown as ImageUpdater).updateImage({ url: fieldImage(air) });
     }
   }, [air]);
+
+  useEffect(() => {
+    const m = map.current;
+    if (m === undefined || !ready.current) return;
+    void m.getSource<GeoJSONSource>('monitors')?.setData(monitorsGeoJson(monitors));
+  }, [monitors]);
+
+  useEffect(() => {
+    const m = map.current;
+    if (m === undefined || !ready.current) return;
+    void m.getSource<GeoJSONSource>('fires')?.setData(firesGeoJson(fires));
+  }, [fires]);
 
   return <div ref={container} className="map-view" />;
 }
