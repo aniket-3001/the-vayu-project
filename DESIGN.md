@@ -23,7 +23,7 @@ What we leave out: Windy's density, AQI's clutter, Halo's ads and weekly subscri
 
 ## Look (the starting point, to be iterated)
 
-- **Colour.** Near-white page, ink text. The only saturated colours are the six US AQI bands (green, yellow, orange, red, purple, maroon), contrast-checked to 4.5:1 for text. The wash is the band at about 14%, fading to the page colour by the lower third. Dark mode keeps the same hues on near-black. A warmer "paper" page colour is an iteration option, not the default.
+- **Colour.** Near-white page, greyed-slate text. The only saturated colours are the six US AQI bands (green, yellow, orange, red, purple, rose-plum), contrast-checked to 4.5:1 for text. The wash is the band at about 14%, fading to the page colour by the lower third. There is no dark mode: light feels more trustworthy and inviting. Where something has to be dark, it is a greyed slate (`#334155`), never navy or black, and only where contrast needs it. A warmer "paper" page colour is an iteration option, not the default.
 - **Type.** Hanken Grotesk (open source, self-hosted) for everything. Tabular numerals for any figure that changes. Big numerals are the main character of each screen. A serif for the numerals (Instrument Serif) is an iteration option to try once the base works.
 - **Shape and space.** Rounded cards on the page, a hairline or a very light shadow, an 8-point grid, one large thing per screen.
 - **Hero.** A gradient built from the current band, fixed at the top while the page scrolls under it, with the live number, the place, and the source line ("Anand Lok, 4 km away · 65 min ago · live").

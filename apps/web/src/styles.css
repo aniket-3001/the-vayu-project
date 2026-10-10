@@ -8,31 +8,20 @@
 @property --on-level {
   syntax: '<color>';
   inherits: true;
-  initial-value: #17202e;
+  initial-value: #334155;
 }
 
 :root {
   --page: #f4f7fb;
   --card: #ffffff;
-  --text: #17202e;
-  --muted: #5d6b7e;
+  --text: #3d4a5c;
+  --muted: #5f6e82;
   --line: #dfe6ef;
-  --ink: #17202e;
-  --shadow: 0 1px 2px rgb(23 32 46 / 0.04);
+  --ink: #334155;
+  --shadow: 0 1px 2px rgb(61 74 92 / 0.04);
   --radius: 16px;
   --gutter: 16px;
-  color-scheme: light dark;
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --page: #0d121b;
-    --card: #151c29;
-    --text: #eef2f7;
-    --muted: #9eabbd;
-    --line: #263042;
-    --shadow: none;
-  }
+  color-scheme: light;
 }
 
 * {
@@ -280,8 +269,8 @@ h2 {
   width: 108px;
   height: 108px;
   border-radius: 14px;
-  background: var(--on-level);
-  color: var(--level);
+  background: rgb(255 255 255 / 0.62);
+  color: var(--ink);
   line-height: 1;
 }
 .badge-num {
@@ -417,14 +406,6 @@ h2 {
 .wx-dust {
   color: #b07a3c;
 }
-@media (prefers-color-scheme: dark) {
-  .wx {
-    color: #9eabbd;
-  }
-  .wx-night {
-    color: #a3b0dc;
-  }
-}
 .wind-arrow {
   color: var(--text);
   flex: none;
@@ -472,7 +453,7 @@ h2 {
   font-weight: 500;
   font-size: 13px;
   color: var(--muted);
-  box-shadow: 8px 0 8px -8px rgb(23 32 46 / 0.12);
+  box-shadow: 8px 0 8px -8px rgb(61 74 92 / 0.12);
 }
 .hourly .day-start {
   border-left: 1px solid var(--line);
@@ -512,7 +493,7 @@ h2 {
 .segmented button[aria-pressed='true'] {
   background: var(--card);
   color: var(--text);
-  box-shadow: 0 1px 3px rgb(23 32 46 / 0.18);
+  box-shadow: 0 1px 3px rgb(61 74 92 / 0.18);
 }
 .daily li {
   display: grid;

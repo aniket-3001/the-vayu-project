@@ -1,5 +1,5 @@
-/** The ink used for text on the page and on most level colours. */
-export const INK = '#17202e';
+/** The darkest colour we use: a greyed slate, not navy or black. Text on level colours, and the page's text. */
+export const INK = '#334155';
 
 export type Face = 'happy' | 'neutral' | 'concerned' | 'masked' | 'masked-worried' | 'masked-alarm';
 
@@ -26,7 +26,7 @@ export const LEVELS: readonly Level[] = [
   {
     name: 'Good',
     short: 'Good',
-    solid: '#9ccc65',
+    solid: '#a9d67e',
     onSolid: INK,
     soft: '#eef7e3',
     face: 'happy',
@@ -35,7 +35,7 @@ export const LEVELS: readonly Level[] = [
   {
     name: 'Moderate',
     short: 'Moderate',
-    solid: '#f6d04d',
+    solid: '#f7d65c',
     onSolid: INK,
     soft: '#fdf6d9',
     face: 'neutral',
@@ -44,7 +44,7 @@ export const LEVELS: readonly Level[] = [
   {
     name: 'Unhealthy for sensitive groups',
     short: 'Sensitive',
-    solid: '#f5a34b',
+    solid: '#f7b56b',
     onSolid: INK,
     soft: '#fdebd6',
     face: 'concerned',
@@ -53,7 +53,7 @@ export const LEVELS: readonly Level[] = [
   {
     name: 'Unhealthy',
     short: 'Unhealthy',
-    solid: '#ee6f6f',
+    solid: '#f39595',
     onSolid: INK,
     soft: '#fde4e4',
     face: 'masked',
@@ -62,7 +62,7 @@ export const LEVELS: readonly Level[] = [
   {
     name: 'Very unhealthy',
     short: 'Very bad',
-    solid: '#b48ad6',
+    solid: '#c4a3e3',
     onSolid: INK,
     soft: '#f0e6f8',
     face: 'masked-worried',
@@ -71,7 +71,7 @@ export const LEVELS: readonly Level[] = [
   {
     name: 'Hazardous',
     short: 'Hazardous',
-    solid: '#8a2f55',
+    solid: '#b0527a',
     onSolid: '#ffffff',
     soft: '#f4dde6',
     face: 'masked-alarm',
