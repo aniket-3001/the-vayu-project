@@ -59,12 +59,6 @@ export function MyAirScreen({ search, locate }: Props): React.JSX.Element {
           ))}
         </div>
       </header>
-      {tab === 'places' && first !== undefined && reading !== undefined && (
-        <div className="places-main tasks-wrap">
-          <AlertsStrip alerts={alerts} data={reading} />
-          {tips.length > 0 && <TipsCard tips={tips} placeName={first.name} />}
-        </div>
-      )}
       <main
         className="places-main"
         role="tabpanel"
@@ -75,7 +69,14 @@ export function MyAirScreen({ search, locate }: Props): React.JSX.Element {
           <PlacesPanel
             {...(search !== undefined ? { search } : {})}
             {...(locate !== undefined ? { locate } : {})}
-          />
+          >
+            {first !== undefined && reading !== undefined && (
+              <div className="tasks-wrap">
+                <AlertsStrip alerts={alerts} data={reading} />
+                {tips.length > 0 && <TipsCard tips={tips} placeName={first.name} />}
+              </div>
+            )}
+          </PlacesPanel>
         ) : (
           <DevicesPanel />
         )}

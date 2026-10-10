@@ -3759,3 +3759,73 @@ button.alert-card {
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+
+/* My Air: the places come first, and what to do today sits under them, small */
+.locate-round {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 44px;
+  height: 44px;
+  padding: 0 !important;
+  border: 1px solid var(--line) !important;
+  border-radius: 50% !important;
+  background: #e6f1fb !important;
+  color: #2f6aa3 !important;
+}
+.places .tasks-wrap {
+  gap: 4px;
+}
+.places .carousel-section {
+  gap: 2px;
+}
+.places .carousel-toggle {
+  min-height: 36px;
+}
+.places .carousel-toggle h2 {
+  font-size: 16px;
+}
+.places .alert-card {
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+}
+.places .alert-icon {
+  width: 30px;
+  height: 30px;
+  border-radius: 10px;
+}
+.places .alert-words .small {
+  display: none;
+}
+.places .alert-words strong {
+  font-size: 14px;
+  line-height: 1.2;
+}
+.places .alerts .carousel > li {
+  flex-basis: min(72%, 240px);
+}
+.places .carousel:not(.expanded) .tip {
+  min-height: 0;
+  align-items: center;
+  padding: 8px 10px;
+}
+.places .carousel:not(.expanded) .task-words .muted {
+  display: none;
+}
+.places .tips .tips-foot,
+.places .tips .tasks-foot {
+  font-size: 13px;
+}
+
+/* Nothing on the home screen may be wider than the screen, whatever the search row holds */
+.panel,
+.search,
+.search-form,
+.places-main > * {
+  min-width: 0;
+}
+.search-form input {
+  width: 0;
+}

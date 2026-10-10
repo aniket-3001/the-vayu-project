@@ -15,9 +15,12 @@ import { PlaceSearch } from './PlaceSearch';
 export function PlacesPanel({
   search,
   locate = browserLocate,
+  children,
 }: {
   readonly search?: (query: string) => Promise<readonly PlaceMatch[]>;
   readonly locate?: Locate;
+  /** What follows the places on the page: today's alerts and tips, kept below so the places come first. */
+  readonly children?: React.ReactNode;
 }): React.JSX.Element {
   const { pins, add, remove } = usePins();
   const live = useLiveLocation();
@@ -47,14 +50,23 @@ export function PlacesPanel({
         onPick={(match) => {
           add(match);
         }}
+        trailing={
+          <button
+            type="button"
+            className="locate-round"
+            aria-label="Detect me"
+            title="Detect where I am"
+            onClick={detect}
+          >
+            <LocateFixed size={22} strokeWidth={1.9} aria-hidden="true" />
+          </button>
+        }
       />
-      <button type="button" className="locate" onClick={detect}>
-        <LocateFixed size={20} strokeWidth={1.75} aria-hidden="true" />
-        Detect me
-      </button>
-      <p className="muted small" role="status">
-        {note}
-      </p>
+      {note !== '' && (
+        <p className="muted small" role="status">
+          {note}
+        </p>
+      )}
       {found !== undefined && (
         <HereSheet
           {...(inCoverage(found.lat, found.lng)
@@ -103,6 +115,7 @@ export function PlacesPanel({
           ))}
         </ul>
       )}
+      {children}
       <p className="muted small places-note">
         {airStore().kind === 'sample' ? (
           <>

@@ -13,9 +13,12 @@ type State =
 export function PlaceSearch({
   onPick,
   search = searchPlaces,
+  trailing,
 }: {
   readonly onPick: (place: PlaceMatch) => void;
   readonly search?: (query: string) => Promise<readonly PlaceMatch[]>;
+  /** Something small beside the Search button, on the same row. */
+  readonly trailing?: React.ReactNode;
 }): React.JSX.Element {
   const [query, setQuery] = useState('');
   const [state, setState] = useState<State>({ kind: 'idle' });
@@ -52,6 +55,7 @@ export function PlaceSearch({
           }}
         />
         <button type="submit">Search</button>
+        {trailing}
       </form>
       <div aria-live="polite" className="search-status">
         {state.kind === 'loading' && <p className="muted">Looking for that place…</p>}
