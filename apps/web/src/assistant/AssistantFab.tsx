@@ -95,13 +95,14 @@ export function AssistantFab({
   const next = useRef(1);
   const { pins } = usePins();
   const { household } = useHousehold();
-  const fires = useFires();
   // Where the device is, when live location is on; otherwise the first place pinned.
   const livePin = useLivePin();
   const first = livePin ?? pins[0];
 
   const state = useToday(first);
   const reading = state?.status === 'ready' ? state.data : undefined;
+  // Only the fires that can reach this place: near it, or upwind of it.
+  const fires = useFires(first, reading?.hourly[0]?.weather?.windFromDeg);
   const context = useMemo<AssistantContext | undefined>(() => {
     if (first === undefined || reading === undefined) return undefined;
     return buildContext(

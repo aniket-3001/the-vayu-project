@@ -2,6 +2,7 @@ import { Cpu, MapPin } from 'lucide-react';
 import { useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useToday } from '../air/store';
+import { useLivePin } from '../places/liveLocation';
 import { usePins } from '../places/usePins';
 import { tasksFor } from '../tasks/model';
 import { AlertsStrip } from '../alerts/ui/AlertsStrip';
@@ -27,11 +28,13 @@ export function MyAirScreen({ search, locate }: Props): React.JSX.Element {
   const [params, setParams] = useSearchParams();
   const tab = params.get('tab') === 'devices' ? 'devices' : 'places';
   const { pins } = usePins();
-  const first = pins[0];
+  // The alerts are for where the device is while live location is on, else the first place pinned.
+  const livePin = useLivePin();
+  const first = livePin ?? pins[0];
   const state = useToday(first);
   const reading = state?.status === 'ready' ? state.data : undefined;
   const tips = useMemo(() => (reading === undefined ? [] : tasksFor(reading)), [reading]);
-  const fires = useFires();
+  const fires = useFires(first, reading?.hourly[0]?.weather?.windFromDeg);
   const alerts = useMemo(
     () => (reading === undefined ? [] : alertsFor(reading, fires)),
     [reading, fires],

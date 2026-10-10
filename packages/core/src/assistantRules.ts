@@ -51,7 +51,7 @@ function alerts(c: AssistantContext): string {
 function fires(c: AssistantContext): string {
   if (c.fires === undefined)
     return 'We could not read the fire count just now, so there is nothing to say about stubble burning.';
-  return `${String(c.fires)} fires were seen by satellite in the last 24 hours. ${c.fires >= 50 ? 'That is heavy, and smoke can reach Delhi within a day or two: keep windows shut and use the Contact authorities button on the alert to report burning.' : 'That is not heavy.'}`;
+  return `${String(c.fires)} fires were seen by satellite in the last 24 hours near ${c.place}, within 100 km or upwind within 300 km. ${c.fires >= 10 ? 'That is heavy, and smoke can reach you within a day or two: keep windows shut and use the Contact authorities button on the alert to report burning.' : 'That is not heavy.'}`;
 }
 
 function smoke(c: AssistantContext): string {

@@ -1,24 +1,41 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { readDemo } from '../demo/state';
-import { fetchFireCount, recall, remember } from '../map/live';
+import { firesAffecting, fetchFires, type Fire } from '../map/fires';
+import { recall, remember } from '../map/live';
 import { API_URL } from '../config';
 
-/** The number of fires our API counted in the last 24 hours, or undefined while it loads or if it cannot be reached. */
-export function useFires(fetchImpl: typeof fetch = fetch): number | undefined {
-  const [fires, setFires] = useState<number | undefined>(() => {
-    const staged = readDemo()?.fires;
-    if (staged !== undefined) return staged;
-    const saved = recall('fires');
-    return typeof saved === 'number' ? saved : undefined;
+interface Seen {
+  readonly count: number;
+  readonly fires: readonly Fire[];
+}
+
+const isSeen = (value: unknown): value is Seen =>
+  typeof value === 'object' &&
+  value !== null &&
+  typeof (value as Seen).count === 'number' &&
+  Array.isArray((value as Seen).fires);
+
+/**
+ * How many fires seen by satellite in the last day can reach this place: those within 100 km, and those upwind within
+ * 300 km. Undefined while it loads or if our API cannot be reached, so nothing is said without a count.
+ */
+export function useFires(
+  place?: { readonly lat: number; readonly lng: number },
+  windFromDeg?: number,
+  fetchImpl: typeof fetch = fetch,
+): number | undefined {
+  const [seen, setSeen] = useState<Seen | undefined>(() => {
+    const saved = recall('firelist');
+    return isSeen(saved) ? saved : undefined;
   });
   useEffect(() => {
     if (readDemo()?.fires !== undefined) return undefined;
     let current = true;
-    fetchFireCount(API_URL, fetchImpl).then(
-      (count) => {
-        if (current && count !== undefined) {
-          remember('fires', count);
-          setFires(count);
+    fetchFires(API_URL, fetchImpl).then(
+      (found) => {
+        if (current && found !== undefined) {
+          remember('firelist', found);
+          setSeen(found);
         }
       },
       () => undefined,
@@ -27,5 +44,13 @@ export function useFires(fetchImpl: typeof fetch = fetch): number | undefined {
       current = false;
     };
   }, [fetchImpl]);
-  return fires;
+  const lat = place?.lat;
+  const lng = place?.lng;
+  return useMemo(() => {
+    // A demo scenario states the count that is near.
+    const staged = readDemo()?.fires;
+    if (staged !== undefined) return staged;
+    if (seen === undefined || lat === undefined || lng === undefined) return undefined;
+    return firesAffecting(seen.fires, { lat, lng }, windFromDeg).length;
+  }, [seen, lat, lng, windFromDeg]);
 }

@@ -21,7 +21,8 @@ export interface Alert {
 }
 
 /** Fires in the last 24 hours at which stubble burning counts as heavy. */
-export const HEAVY_FIRES = 50;
+/** Fires near a place (within 100 km, or upwind within 300 km) that make a stubble alert. */
+export const HEAVY_FIRES = 10;
 
 const ROMAN = ['', 'I', 'II', 'III', 'IV'] as const;
 
@@ -98,8 +99,8 @@ export function alertsFor(data: TodayData, fires: number | undefined): readonly 
       kind: 'stubble',
       day: 1,
       title: 'Heavy stubble burning nearby',
-      body: `${String(fires)} fires seen by satellite in the last 24 hours. Smoke can reach Delhi within a day or two.`,
-      reason: `Satellites saw ${String(fires)} fires in the last 24 hours, in the stubble-burning belt of Punjab and Haryana. In October the wind blows from the north-west, towards Delhi.`,
+      body: `${String(fires)} fires seen by satellite in the last 24 hours, near here or upwind. Smoke can reach you within a day or two.`,
+      reason: `Satellites saw ${String(fires)} fires in the last 24 hours within 100 km of this place, or within 300 km on the side the wind comes from. Fires further away, or downwind, are not counted. In October the wind often blows from the north-west.`,
       todo: [
         'Keep windows shut when the smoke arrives.',
         'Run a purifier, and wear an N95 outside.',

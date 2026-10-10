@@ -32,7 +32,8 @@ describe('alerts for the next three days', () => {
     const heavy = alertsFor(sampleDay('good'), HEAVY_FIRES);
     const stubble = heavy.find((a) => a.kind === 'stubble');
     expect(stubble?.authorities).toBe(true);
-    expect(stubble?.body).toMatch(/50 fires/u);
+    expect(stubble?.body).toMatch(/10 fires/u);
+    expect(stubble?.reason).toMatch(/within 100 km/u);
     expect(alertsFor(sampleDay('good'), HEAVY_FIRES - 1)).toEqual([]);
     expect(alertsFor(sampleDay('good'), undefined)).toEqual([]);
   });
