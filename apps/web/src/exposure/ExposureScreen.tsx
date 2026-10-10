@@ -1,5 +1,6 @@
 import { CalendarDays, Info, LocateFixed, Plus } from 'lucide-react';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import type { PlaceMatch } from '../data/geocode';
 import { useDevices } from '../devices/useDevices';
 import { levelForAqi } from '../design/levels';
@@ -77,8 +78,26 @@ export function ExposureScreen({
   const { pins, add: addPin } = usePins();
   const live = useLive();
   const [view, setView] = useState<View>(today());
-  const [tab, setTab] = useState<Tab>('all');
-  const [picked, setPicked] = useState(12);
+  // A link from elsewhere (the assistant, after logging an outing) can open a person, a tab and an hour.
+  const [params] = useSearchParams();
+  const wantedTab = params.get('tab');
+  const wantedHour = Number(params.get('hour'));
+  const [tab, setTab] = useState<Tab>(
+    wantedTab === 'outdoor' || wantedTab === 'home' || wantedTab === 'work' ? wantedTab : 'all',
+  );
+  // The hour shown starts at the latest one so far today, not noon, so what was just logged is what you see.
+  const [picked, setPicked] = useState(() =>
+    params.has('hour') && Number.isInteger(wantedHour) && wantedHour >= 0 && wantedHour < 24
+      ? wantedHour
+      : Math.max(0, hoursSoFar(today()) - 1),
+  );
+  const wantedPerson = params.get('person');
+  useEffect(() => {
+    if (wantedPerson !== null && household.people.some((p) => p.id === wantedPerson))
+      select(wantedPerson);
+    // Once, when the link is followed.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [wantedPerson]);
   const [showInfo, setShowInfo] = useState(false);
 
   const info = personaById(persona);

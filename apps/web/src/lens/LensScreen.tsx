@@ -17,6 +17,7 @@ import { levelForAqi } from '../design/levels';
 import { airStore, useToday } from '../air/store';
 import { AirError, AirLoading } from '../components/AirState';
 import { AqiScale } from '../components/AqiScale';
+import { useLivePin } from '../places/liveLocation';
 import { usePins } from '../places/usePins';
 import { compassPoint } from '../today/wind';
 import { clock24, dayMonth, isoDate, weekday } from '../today/time';
@@ -56,7 +57,13 @@ const CAMERA_WORDS = {
 
 /** What the number means, drawn over what is in front of you: haze, wind, how far you can see, and when to go out. */
 export function LensScreen(): React.JSX.Element {
-  const { pins } = usePins();
+  const { pins: pinned } = usePins();
+  const livePin = useLivePin();
+  // The live place comes first while live location is on.
+  const pins = useMemo(
+    () => (livePin === undefined ? pinned : [livePin, ...pinned]),
+    [livePin, pinned],
+  );
   const [placeId, setPlaceId] = useState('');
   const [step, setStep] = useState(0);
   const hud = useRef<HTMLDivElement>(null);

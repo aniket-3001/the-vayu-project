@@ -6,18 +6,21 @@ import { ExposureScreen } from './exposure/ExposureScreen';
 import { LensScreen } from './lens/LensScreen';
 import { MapScreen } from './map/MapScreen';
 import { MyAirScreen } from './myair/MyAirScreen';
+import { LiveToggle } from './nav/LiveToggle';
 import { TabBar } from './nav/TabBar';
 import { AssistantFab } from './assistant/AssistantFab';
 import { AirUnitsProvider, SmokeToggle } from './units/AirUnits';
 import { airStore, useToday } from './air/store';
 import { AirError, AirLoading } from './components/AirState';
+import { useLivePin } from './places/liveLocation';
 import { usePins } from './places/usePins';
 import { TodayScreen } from './today/ui/TodayScreen';
 
 function PlaceRoute(): React.JSX.Element {
   const { id = '' } = useParams();
   const { pins } = usePins();
-  const pin = pins.find((candidate) => candidate.id === id);
+  const livePin = useLivePin();
+  const pin = id === 'live' ? livePin : pins.find((candidate) => candidate.id === id);
   const state = useToday(pin);
 
   if (pin === undefined) {
@@ -25,7 +28,8 @@ function PlaceRoute(): React.JSX.Element {
       <div className="page">
         <main className="layout">
           <p className="empty">
-            That place is not pinned on this device. <Link to="/">Back to your places</Link>
+            That place is not pinned on this device (or live location is off).{' '}
+            <Link to="/">Back to your places</Link>
           </p>
         </main>
       </div>
@@ -84,6 +88,7 @@ function Frame(): React.JSX.Element {
       </Routes>
       {import.meta.env.VITE_DEMO === '1' && <DemoPill />}
       <div className="dock">
+        <LiveToggle />
         <SmokeToggle />
         <AssistantFab />
       </div>

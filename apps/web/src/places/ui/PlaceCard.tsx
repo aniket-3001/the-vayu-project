@@ -24,7 +24,8 @@ export function PlaceCard({
   onRemove,
 }: {
   readonly pin: Pin;
-  readonly onRemove: (pin: Pin) => void;
+  /** Without it the card has no cross: the live place goes by turning live location off. */
+  readonly onRemove?: (pin: Pin) => void;
 }): React.JSX.Element {
   const [open, setOpen] = useState(false);
   const detailId = useId();
@@ -53,16 +54,18 @@ export function PlaceCard({
           )}
         </div>
         <div className="pc-actions">
-          <button
-            type="button"
-            className="pc-icon-button"
-            aria-label={`Remove ${pin.name}`}
-            onClick={() => {
-              onRemove(pin);
-            }}
-          >
-            <X size={18} strokeWidth={2.25} aria-hidden="true" />
-          </button>
+          {onRemove !== undefined && (
+            <button
+              type="button"
+              className="pc-icon-button"
+              aria-label={`Remove ${pin.name}`}
+              onClick={() => {
+                onRemove(pin);
+              }}
+            >
+              <X size={18} strokeWidth={2.25} aria-hidden="true" />
+            </button>
+          )}
         </div>
       </li>
     );
@@ -78,7 +81,10 @@ export function PlaceCard({
         className="pc-hit"
         aria-label={`Open ${pin.name}`}
       >
-        <span className="pc-name">{pin.name}</span>
+        <span className="pc-name">
+          {pin.name}
+          {pin.id === 'live' && <span className="pc-live">Live</span>}
+        </span>
         <span className="pc-detail">{pin.detail ?? 'Delhi NCR'}</span>
         <span className="pc-aqi">
           <strong className="tnum">{reading.aqi}</strong>
@@ -117,16 +123,18 @@ export function PlaceCard({
             className={open ? 'flip' : ''}
           />
         </button>
-        <button
-          type="button"
-          className="pc-icon-button"
-          aria-label={`Remove ${pin.name}`}
-          onClick={() => {
-            onRemove(pin);
-          }}
-        >
-          <X size={18} strokeWidth={2.25} aria-hidden="true" />
-        </button>
+        {onRemove !== undefined && (
+          <button
+            type="button"
+            className="pc-icon-button"
+            aria-label={`Remove ${pin.name}`}
+            onClick={() => {
+              onRemove(pin);
+            }}
+          >
+            <X size={18} strokeWidth={2.25} aria-hidden="true" />
+          </button>
+        )}
       </div>
       {open && (
         <div className="pc-more" id={detailId}>

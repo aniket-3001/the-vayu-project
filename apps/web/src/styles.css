@@ -2698,6 +2698,45 @@ button.alert-card {
   border-color: #e8b48c;
   background: #fff7ef;
 }
+.live-toggle {
+  color: #2f6aa3;
+}
+.live-toggle.on {
+  border-color: #8fbbe6;
+  background: #e6f1fb;
+}
+.live-dot {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 9px;
+  height: 9px;
+  border: 2px solid #fff;
+  border-radius: 50%;
+  background: #2f9e5a;
+}
+.live-toggle.asking .live-dot {
+  background: #e0953f;
+  animation: live-pulse 1s ease-in-out infinite;
+}
+@keyframes live-pulse {
+  50% {
+    opacity: 0.35;
+  }
+}
+.dock-note {
+  position: absolute;
+  right: 0;
+  bottom: 58px;
+  width: max-content;
+  max-width: min(280px, 80vw);
+  padding: 8px 12px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--card);
+  box-shadow: 0 8px 20px -10px rgb(61 74 92 / 0.5);
+  font-size: 13px;
+}
 .smoke-puffs {
   position: absolute;
   top: 7px;
@@ -3395,4 +3434,111 @@ button.alert-card {
   align-content: space-between;
   background: var(--card);
   color: var(--text);
+}
+
+/* Detect me: live, or pinned with a name */
+.pc-live {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 1px 7px;
+  border-radius: 999px;
+  background: rgb(255 255 255 / 0.75);
+  color: #2f6a3c;
+  font-size: 11px;
+  font-weight: 800;
+  vertical-align: middle;
+}
+.here-sheet h2 {
+  margin: 0;
+}
+.here-live {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  border: 1px solid #8fbbe6;
+  border-radius: 14px;
+  background: #e6f1fb;
+  color: #2f6aa3;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.here-live strong {
+  display: block;
+  color: var(--text);
+}
+.here-pin {
+  display: grid;
+  gap: 8px;
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+}
+.here-pin p {
+  margin: 0;
+}
+.here-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.here-chips button {
+  min-height: 40px;
+  padding: 0 14px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--card);
+  color: var(--text);
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+.here-chips button[aria-pressed='true'] {
+  border-color: #3b82c4;
+  background: #dcebfa;
+}
+.here-name {
+  display: flex;
+  gap: 8px;
+}
+.here-name input {
+  flex: 1;
+  min-width: 0;
+  min-height: 44px;
+  padding: 0 12px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  font: inherit;
+}
+.here-name button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 44px;
+  padding: 0 14px;
+  border: 0;
+  border-radius: 12px;
+  background: #3b82c4;
+  color: #fff;
+  font: inherit;
+  font-weight: 800;
+  cursor: pointer;
+}
+.here-name button:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.bubble-link {
+  display: inline-flex;
+  align-items: center;
+  margin-top: 8px;
+  min-height: 40px;
+  padding: 0 14px;
+  border-radius: 999px;
+  background: #3b82c4;
+  color: #fff;
+  font-weight: 800;
+  text-decoration: none;
 }

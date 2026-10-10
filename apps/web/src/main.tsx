@@ -5,6 +5,7 @@ import { App } from './App';
 import { AirStore, setAirStoreFactory } from './air/store';
 import { liveAirSource } from './air/liveSource';
 import { API_URL } from './config';
+import { liveLocation } from './places/liveLocation';
 import './styles.css';
 
 const root = document.getElementById('root');
@@ -18,6 +19,8 @@ if (import.meta.env.VITE_DEMO === '1') {
 } else {
   // The deployed app reads the real air from our API on AWS.
   setAirStoreFactory(() => new AirStore(liveAirSource(API_URL)));
+  // If live location was left on last time, carry on following the device.
+  liveLocation().resume();
   createRoot(root).render(
     <StrictMode>
       <App />

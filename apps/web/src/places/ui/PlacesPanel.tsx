@@ -4,6 +4,8 @@ import { inCoverage, type PlaceMatch } from '../../data/geocode';
 import { MAX_PINS } from '../../data/pins';
 import { Pill } from '../../today/ui/Chip';
 import { airStore } from '../../air/store';
+import { useLiveLocation, useLivePin } from '../liveLocation';
+import { HereSheet } from './HereSheet';
 import { usePins } from '../usePins';
 import { PlaceCard } from './PlaceCard';
 import { PlaceSearch } from './PlaceSearch';
@@ -33,18 +35,19 @@ export function PlacesPanel({
   readonly locate?: Locate;
 }): React.JSX.Element {
   const { pins, add, remove } = usePins();
+  const live = useLiveLocation();
+  const livePin = useLivePin();
   const [note, setNote] = useState('');
+  const [found, setFound] = useState<{ readonly lat: number; readonly lng: number } | undefined>(
+    undefined,
+  );
 
-  const useMyLocation = (): void => {
+  const detect = (): void => {
     setNote('Finding where you are…');
     locate(
       (lat, lng) => {
-        if (!inCoverage(lat, lng)) {
-          setNote('You are outside the area our monitors cover, which is north India.');
-          return;
-        }
-        add({ name: 'Near you', detail: 'Your location', lat, lng });
         setNote('');
+        setFound({ lat, lng });
       },
       () => {
         setNote('We could not get your location. You can still search for a place by name.');
@@ -60,17 +63,50 @@ export function PlacesPanel({
           add(match);
         }}
       />
-      <button type="button" className="locate" onClick={useMyLocation}>
+      <button type="button" className="locate" onClick={detect}>
         <LocateFixed size={20} strokeWidth={1.75} aria-hidden="true" />
-        Use my location
+        Detect me
       </button>
       <p className="muted small" role="status">
         {note}
       </p>
-      {pins.length === 0 ? (
-        <p className="empty">Nothing pinned yet. Search for a place above, or use your location.</p>
+      {found !== undefined && (
+        <HereSheet
+          {...(inCoverage(found.lat, found.lng)
+            ? {}
+            : {
+                note: 'You are outside north India. We can still show an estimate, but no monitors are near.',
+              })}
+          onLive={() => {
+            live.set(true);
+            setFound(undefined);
+          }}
+          onPin={(label) => {
+            add({
+              name: label,
+              detail: 'Pinned from your location',
+              lat: found.lat,
+              lng: found.lng,
+            });
+            setFound(undefined);
+          }}
+          onCancel={() => {
+            setFound(undefined);
+          }}
+        />
+      )}
+      {live.status === 'refused' && (
+        <p className="muted small" role="status">
+          Your browser did not share your location, so live location is off.
+        </p>
+      )}
+      {pins.length === 0 && livePin === undefined ? (
+        <p className="empty">
+          Nothing pinned yet. Search for a place above, or detect where you are.
+        </p>
       ) : (
         <ul className="place-grid" aria-label="Your places">
+          {livePin !== undefined && <PlaceCard key="live" pin={livePin} />}
           {pins.map((pin) => (
             <PlaceCard
               key={pin.id}

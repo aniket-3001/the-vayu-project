@@ -1,4 +1,5 @@
 import { Mic, SendHorizontal, Sparkles, Store, Volume2, X } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { alertsFor } from '../alerts/model';
 import { useFires } from '../alerts/useFires';
@@ -6,6 +7,7 @@ import { useHousehold } from '../exposure/useExposure';
 import { readDemo } from '../demo/state';
 import { airStore, useToday } from '../air/store';
 import { API_URL } from '../config';
+import { useLivePin } from '../places/liveLocation';
 import { usePins } from '../places/usePins';
 import { Pill } from '../today/ui/Chip';
 import { apiAssistant } from './api';
@@ -27,6 +29,8 @@ interface Message {
   readonly text: string;
   readonly basis?: string;
   readonly audioUrl?: string;
+  /** Somewhere to go from this message, such as the Exposure screen after something was logged. */
+  readonly link?: { readonly to: string; readonly label: string };
 }
 
 const SUGGESTIONS = [
@@ -66,13 +70,21 @@ export function AssistantFab({
   const { pins } = usePins();
   const { household } = useHousehold();
   const fires = useFires();
-  const first = pins[0];
+  // Where the device is, when live location is on; otherwise the first place pinned.
+  const livePin = useLivePin();
+  const first = livePin ?? pins[0];
 
   const state = useToday(first);
   const reading = state?.status === 'ready' ? state.data : undefined;
   const context = useMemo<AssistantContext | undefined>(() => {
     if (first === undefined || reading === undefined) return undefined;
-    return buildContext(first.name, reading, alertsFor(reading, fires), fires, household.people);
+    return buildContext(
+      first.id === 'live' ? 'Your location' : first.name,
+      reading,
+      alertsFor(reading, fires),
+      fires,
+      household.people,
+    );
   }, [first, reading, fires, household.people]);
 
   useEffect(() => {
@@ -110,6 +122,7 @@ export function AssistantFab({
     });
     if (logged !== undefined) {
       let reply: string;
+      let link: Message['link'];
       if (logged.kind === 'add') {
         const mine = loadOutings(window.localStorage, logged.person.id);
         saveOutings(
@@ -118,6 +131,11 @@ export function AssistantFab({
           addOuting(mine, newOuting(logged.outing, mine)),
         );
         reply = addedText(logged.person, logged.outing);
+        // Where to see it: that person's outdoor ring, at the hour it began.
+        link = {
+          to: `/exposure?person=${encodeURIComponent(logged.person.id)}&tab=outdoor&hour=${String(Math.floor((logged.outing.start + logged.outing.minutes - 1) / 60))}`,
+          label: 'See it in Exposure',
+        };
       } else reply = logged.text;
       setMessages((m) => [
         ...m,
@@ -126,6 +144,7 @@ export function AssistantFab({
           from: 'vayu',
           text: reply,
           basis: logged.kind === 'add' ? 'Added to Exposure' : 'Outdoor time',
+          ...(link === undefined ? {} : { link }),
         },
       ]);
       return;
@@ -282,6 +301,17 @@ export function AssistantFab({
                             </button>
                           ) : null}
                         </p>
+                      )}
+                      {m.link !== undefined && (
+                        <Link
+                          to={m.link.to}
+                          className="bubble-link"
+                          onClick={() => {
+                            setOpen(false);
+                          }}
+                        >
+                          {m.link.label}
+                        </Link>
                       )}
                     </div>
                   ))}

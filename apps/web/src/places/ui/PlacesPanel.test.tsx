@@ -6,6 +6,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { App } from '../../App';
 import type { PlaceMatch } from '../../data/geocode';
 import { MyAirScreen } from '../../myair/MyAirScreen';
+import { createLiveLocation, setLiveLocation } from '../liveLocation';
 
 beforeEach(() => {
   window.localStorage.clear();
@@ -134,31 +135,67 @@ describe('the Places screen', () => {
     expect(await screen.findByText(/Search is not working right now/u)).toBeInTheDocument();
   });
 
-  it('pins the person’s location when it is inside our area', async () => {
+  it('asks what to do with where you are: pin it under a name you choose', async () => {
     screenWith({
       locate: (found) => {
         found(28.6, 77.2);
       },
     });
-    await userEvent.click(screen.getByRole('button', { name: 'Use my location' }));
-    expect(screen.getByRole('link', { name: 'Open Near you' })).toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: 'Detect me' }));
+    const sheet = screen.getByRole('dialog', { name: 'Where you are' });
+    await userEvent.type(
+      within(sheet).getByRole('textbox', { name: 'Name for this place' }),
+      'Gym',
+    );
+    await userEvent.click(within(sheet).getByRole('button', { name: /Pin it/u }));
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Open Gym' })).toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: 'Open Near you' })).not.toBeInTheDocument();
   });
 
-  it('explains when the location is outside our area or cannot be read', async () => {
+  it('keeps it live instead: the switch is on, and a card that follows you appears', async () => {
+    const store = createLiveLocation({
+      storage: window.localStorage,
+      geolocation: () =>
+        ({
+          watchPosition: (ok: PositionCallback) => {
+            ok({ coords: { latitude: 28.6, longitude: 77.2 } } as GeolocationPosition);
+            return 1;
+          },
+          clearWatch: () => undefined,
+        }) as unknown as Geolocation,
+    });
+    setLiveLocation(store);
+    screenWith({
+      locate: (found) => {
+        found(28.6, 77.2);
+      },
+    });
+    await userEvent.click(screen.getByRole('button', { name: 'Detect me' }));
+    await userEvent.click(
+      within(screen.getByRole('dialog')).getByRole('button', { name: /Live/u }),
+    );
+    expect(store.get().enabled).toBe(true);
+    expect(await screen.findByRole('link', { name: 'Open Here' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Remove Here' })).not.toBeInTheDocument();
+    setLiveLocation(undefined);
+  });
+
+  it('says so when the place is outside our area, and when the location cannot be read', async () => {
     screenWith({
       locate: (found) => {
         found(48.8, 2.3);
       },
     });
-    await userEvent.click(screen.getByRole('button', { name: 'Use my location' }));
-    expect(screen.getByRole('status')).toHaveTextContent(/outside the area/u);
+    await userEvent.click(screen.getByRole('button', { name: 'Detect me' }));
+    expect(screen.getByRole('dialog')).toHaveTextContent(/outside north India/u);
     cleanup();
     screenWith({
       locate: (_found, fail) => {
         fail();
       },
     });
-    await userEvent.click(screen.getByRole('button', { name: 'Use my location' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Detect me' }));
     expect(screen.getByRole('status')).toHaveTextContent(/could not get your location/u);
   });
 });
