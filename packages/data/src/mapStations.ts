@@ -20,6 +20,13 @@ export interface OpenAqMapOptions {
   readonly maxStations?: number;
   /** Pause between requests, so one run stays under the provider's limit. */
   readonly delayMs?: number;
+  /**
+   * The most time a run may take. Once it is spent no more monitors are asked about, and the ones already read are
+   * kept, so a run always ends inside its limit with what it has (the newest-reporting monitors are asked first).
+   */
+  readonly budgetMs?: number;
+  /** The time, in milliseconds. A parameter so a test can move it. */
+  readonly now?: () => number;
   readonly fetchImpl?: typeof fetch;
   readonly sleep?: (ms: number) => Promise<void>;
 }
@@ -60,16 +67,23 @@ export function openAqMapStationRepo(options: OpenAqMapOptions): MapStationRepo 
   const doFetch = options.fetchImpl ?? fetch;
   const sleep =
     options.sleep ?? ((ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms)));
+  const clock = options.now ?? Date.now;
+  const startedAt = clock();
   // Told to slow down, a run waits as long as OpenAQ says (at most 20 seconds) and asks again, but only a few
   // times in all, so a provider that keeps refusing cannot hold the run past its time limit.
   let waits = 0;
   const get = async <T>(path: string): Promise<T> => {
     const res = await doFetch(`${baseUrl}${path}`, { headers: { 'X-API-Key': options.apiKey } });
     if (res.status === 429 && waits < MAX_RATE_LIMIT_WAITS) {
-      waits += 1;
       const asked = Number(res.headers.get('retry-after'));
-      await sleep(Math.min(Number.isFinite(asked) && asked > 0 ? asked : 5, 20) * 1000);
-      return get<T>(path);
+      const waitMs = Math.min(Number.isFinite(asked) && asked > 0 ? asked : 5, 20) * 1000;
+      // A wait that would carry the run past its time (and a little over) is not taken: the run ends with what it has.
+      const spent = clock() - startedAt;
+      if (options.budgetMs === undefined || spent + waitMs <= options.budgetMs + 10_000) {
+        waits += 1;
+        await sleep(waitMs);
+        return get<T>(path);
+      }
     }
     if (!res.ok) throw new Error(`OpenAQ request failed: ${String(res.status)}`);
     return (await res.json()) as T;
@@ -93,8 +107,13 @@ export function openAqMapStationRepo(options: OpenAqMapOptions): MapStationRepo 
         .slice(0, options.maxStations ?? 100);
 
       const out: MapStation[] = [];
+      // Requests start a fixed time apart, whatever each answer took: one a second at most keeps under the limit.
+      const spacing = options.delayMs ?? 1100;
+      let lastStart = 0;
       for (const [index, { location, sensor }] of candidates.entries()) {
-        if (index > 0) await sleep(options.delayMs ?? 1100);
+        if (options.budgetMs !== undefined && clock() - startedAt >= options.budgetMs) break;
+        if (index > 0) await sleep(Math.max(0, lastStart + spacing - clock()));
+        lastStart = clock();
         try {
           const latest = await get<{ results: readonly OpenAqLatest[] }>(
             `/locations/${String(location.id)}/latest`,

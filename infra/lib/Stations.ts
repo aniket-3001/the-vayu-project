@@ -39,9 +39,8 @@ export class Stations extends Construct {
       runtime: Runtime.NODEJS_22_X,
       tracing: Tracing.ACTIVE,
       memorySize: 256,
-      // Every wait has a limit (rule I9). Up to 75 monitors, a second apart plus the time each answer takes, is
-      // about two minutes; three waits of up to 20 seconds for OpenAQ's rate limit can add a minute.
-      timeout: Duration.seconds(240),
+      // Every wait has a limit (rule I9). Up to 75 monitors a second apiece is about 85 seconds.
+      timeout: Duration.seconds(110),
       bundling: { externalModules: ['@aws-sdk/*'], minify: true },
       logGroup: new LogGroup(this, 'StationsLogs', {
         retention: RetentionDays.ONE_MONTH,

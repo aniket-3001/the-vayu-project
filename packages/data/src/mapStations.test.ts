@@ -82,10 +82,48 @@ describe('the map’s monitors', () => {
       },
       '/locations/2/latest': latest(2, 60, '2026-10-10T11:00:00Z'),
     });
-    const repo = openAqMapStationRepo({ apiKey: 'k', fetchImpl, sleep });
+    const repo = openAqMapStationRepo({ apiKey: 'k', fetchImpl, sleep, now: () => 0 });
     const stations = await repo.latest(AS_OF);
     expect(stations.map((s) => s.name)).toEqual(['B']);
     expect(sleep).toHaveBeenCalledWith(1100);
+  });
+
+  it('starts requests a fixed time apart, so a slow answer does not add to the wait', async () => {
+    let t = 0;
+    const sleep = vi.fn(() => Promise.resolve());
+    const fetchImpl = fakeFetch({
+      '/locations?': {
+        results: [1, 2].map((id) => location(id, `S${String(id)}`, '2026-10-10T11:00:00Z')),
+      },
+      '/latest': latest(1, 50, '2026-10-10T11:00:00Z'),
+    });
+    // Each reading of the clock moves it on 400 ms, as an answer taking that long would.
+    const now = (): number => (t += 400);
+    await openAqMapStationRepo({ apiKey: 'k', fetchImpl, sleep, now }).latest(AS_OF);
+    const [asked] = sleep.mock.calls[0] as unknown as [number];
+    expect(asked).toBeLessThan(1100);
+    expect(asked).toBeGreaterThan(0);
+  });
+
+  it('stops asking when its time is spent, and keeps what it has read', async () => {
+    let t = 0;
+    const fetchImpl = fakeFetch({
+      '/locations?': {
+        results: [1, 2, 3, 4].map((id) => location(id, `S${String(id)}`, '2026-10-10T11:00:00Z')),
+      },
+      '/latest': latest(1, 50, '2026-10-10T11:00:00Z'),
+    });
+    const repo = openAqMapStationRepo({
+      apiKey: 'k',
+      fetchImpl,
+      sleep: () => Promise.resolve(),
+      budgetMs: 2500,
+      now: () => (t += 1000),
+    });
+    await repo.latest(AS_OF);
+    // One list call, then monitors only while the time lasts.
+    expect(fetchImpl.mock.calls.length).toBeLessThan(5);
+    expect(fetchImpl.mock.calls.length).toBeGreaterThan(1);
   });
 
   it('asks about no more monitors than it was allowed', async () => {
@@ -117,6 +155,26 @@ describe('the map’s monitors', () => {
     await openAqMapStationRepo({ apiKey: 'k', fetchImpl, sleep }).latest(AS_OF);
     expect(sleep).toHaveBeenCalledWith(7000);
     expect(fetchImpl).toHaveBeenCalledTimes(2);
+  });
+
+  it('does not wait for a rate limit when that would carry it past its time', async () => {
+    const limited = {
+      ok: false,
+      status: 429,
+      headers: new Headers({ 'retry-after': '20' }),
+    } as Response;
+    const fetchImpl = vi.fn().mockResolvedValue(limited);
+    const sleep = vi.fn(() => Promise.resolve());
+    const repo = openAqMapStationRepo({
+      apiKey: 'k',
+      fetchImpl,
+      sleep,
+      budgetMs: 5000,
+      now: () => 0,
+    });
+    // 0 + 20 s is more than 5 s + 10 s, so it fails at once rather than wait.
+    await expect(repo.latest(AS_OF)).rejects.toThrow(/429/u);
+    expect(sleep).not.toHaveBeenCalled();
   });
 
   it('gives up after a few waits, so a provider that keeps refusing cannot hold a run for ever', async () => {

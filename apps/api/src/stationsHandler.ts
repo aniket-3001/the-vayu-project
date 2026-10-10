@@ -25,7 +25,7 @@ export async function handler(): Promise<{ readonly stations: number }> {
   if (!secret.SecretString) throw new Error('The OpenAQ secret has no value');
   const result = await snapshotStations({
     // 75 monitors at a request a second is about 85 seconds, inside the function's two-minute limit.
-    repo: openAqMapStationRepo({ apiKey: secret.SecretString, maxStations: 75 }),
+    repo: openAqMapStationRepo({ apiKey: secret.SecretString, maxStations: 75, budgetMs: 95_000 }),
     cache: dynamoCacheStore(mustEnv('CACHE_TABLE')),
     now: liveClock().now(),
   });
