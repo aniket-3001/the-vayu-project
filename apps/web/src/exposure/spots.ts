@@ -18,6 +18,8 @@ export interface Spot {
   /** Hour of the day, 0 to 24. */
   readonly from: number;
   readonly to: number;
+  /** Outdoor places only: whether there are trees around. Cuts the estimate a little, and says it is assumed. */
+  readonly trees?: boolean;
 }
 
 export type Spots = Readonly<Partial<Record<SpotKind, Spot>>>;
@@ -32,16 +34,16 @@ const pinOf = (id: string): Pin => {
 
 /** What the prototype starts with, so the dial is not empty: home, an office, a park. School is left to set. */
 export const SAMPLE_SPOTS: Spots = {
-  home: { pin: pinOf('home'), from: 19, to: 8 },
+  home: { pin: pinOf('home'), from: 19, to: 9 },
   work: { pin: pinOf('office'), from: 9, to: 17 },
-  outdoor: { pin: pinOf('park'), from: 17, to: 19 },
+  outdoor: { pin: pinOf('park'), from: 17, to: 19, trees: true },
 };
 
 /** Default hours for a place set from scratch. */
 export const DEFAULT_HOURS: Readonly<
   Record<SpotKind, { readonly from: number; readonly to: number }>
 > = {
-  home: { from: 19, to: 8 },
+  home: { from: 19, to: 9 },
   work: { from: 9, to: 17 },
   school: { from: 8, to: 15 },
   outdoor: { from: 17, to: 18 },

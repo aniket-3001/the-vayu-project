@@ -1171,3 +1171,212 @@ h2 {
   background: var(--card);
   color: var(--text);
 }
+
+/* Exposure */
+
+.title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.segmented.wide {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: 1fr;
+  margin-top: 10px;
+}
+.segmented.kinds button[aria-pressed='true'] {
+  background: #3b82c4;
+  color: #fff;
+  box-shadow: none;
+}
+.info-box {
+  margin-top: 8px;
+  padding: 14px 16px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--card);
+  font-size: 14px;
+}
+.info-box ul {
+  margin: 8px 0;
+  padding-left: 18px;
+  list-style: disc;
+}
+.exposure-main {
+  max-width: 720px;
+  margin: 0 auto;
+  display: grid;
+  gap: 14px;
+}
+.dial-wrap {
+  max-width: 420px;
+  width: 100%;
+  margin: 0 auto;
+}
+.dial {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+.dial .cell {
+  cursor: pointer;
+}
+.dial .cell.empty {
+  fill: #e6ecf4;
+}
+.dial-tick {
+  stroke: #9fb0c6;
+  stroke-width: 1;
+}
+.dial-tick.strong {
+  stroke: #3b82c4;
+  stroke-width: 2;
+}
+.dial-label {
+  fill: var(--muted);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+.dial-label.strong {
+  fill: #2f6aa3;
+  font-weight: 700;
+}
+.picked {
+  fill: none;
+  stroke: var(--text);
+  stroke-width: 2.5;
+  stroke-linejoin: round;
+  pointer-events: none;
+}
+.now-mark {
+  fill: #3b82c4;
+}
+.dial-centre {
+  fill: var(--card);
+  stroke: #e6ecf4;
+  stroke-width: 6;
+}
+.dial-person {
+  color: #7da7d6;
+}
+.dial-name {
+  fill: var(--muted);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+}
+.dial-name.on {
+  fill: var(--text);
+}
+.dial-name.unset {
+  opacity: 0.4;
+}
+.hour-picker {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 12px;
+  font-size: 14px;
+  font-weight: 600;
+}
+.hour-picker input {
+  width: 100%;
+  min-height: 44px;
+  accent-color: #3b82c4;
+}
+.hour-picker output {
+  min-width: 120px;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  color: var(--muted);
+}
+.readout {
+  min-height: 48px;
+}
+.readout ul {
+  display: grid;
+  gap: 8px;
+}
+.readout li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 15px;
+}
+.sum-lead {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 17px;
+  font-weight: 700;
+}
+.level-bar {
+  display: flex;
+  height: 14px;
+  overflow: hidden;
+  border-radius: 7px;
+  background: #e6ecf4;
+}
+.level-bar span {
+  display: block;
+  height: 100%;
+}
+.how summary {
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 600;
+}
+.how ul {
+  margin: 8px 0 0;
+  padding-left: 18px;
+  list-style: disc;
+  font-size: 14px;
+}
+.spot {
+  display: grid;
+  gap: 10px;
+}
+.spot-set {
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--card);
+}
+.spot-title {
+  font-size: 17px;
+}
+.spot-head {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 12px;
+}
+.spot-set .dc-icon {
+  background: color-mix(in srgb, #3b82c4 12%, var(--card));
+  color: #2f6aa3;
+}
+.hours-row {
+  display: flex;
+  gap: 12px;
+}
+.field.inline {
+  flex: 1;
+}
+.check {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  font-size: 14px;
+}
+.check input {
+  width: 20px;
+  height: 20px;
+  accent-color: #3b82c4;
+}
+.picker {
+  display: grid;
+  gap: 10px;
+}
