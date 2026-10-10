@@ -102,7 +102,7 @@ describe('POST /v1/assistant', () => {
     expect(reword).not.toHaveBeenCalled();
   });
 
-  it('rule I15: stops one caller after forty questions a day, and everyone after fifteen hundred', async () => {
+  it('rule I15: stops one caller after forty questions a day, and everyone after five hundred', async () => {
     const { post } = setup();
     for (let i = 0; i < ASSISTANT_LIMITS.perCallerPerDay; i++)
       expect((await post(ask)).statusCode).toBe(200);

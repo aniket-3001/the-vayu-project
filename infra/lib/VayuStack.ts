@@ -225,7 +225,7 @@ export class VayuStack extends Stack {
     const apiStage = new HttpStage(this, 'ApiStage', {
       httpApi: api,
       autoDeploy: true,
-      throttle: { rateLimit: 50, burstLimit: 100 },
+      throttle: { rateLimit: 25, burstLimit: 50 },
     });
     // Per route (rule I15): the assistant calls a model and the request form takes personal details, so they
     // are held far below the rest. The daily limits in the code count on top of this.

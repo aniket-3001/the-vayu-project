@@ -49,7 +49,7 @@ describe('the Vayu stack', () => {
 
   it('rule I15: throttles the public API so a demo cannot run up a bill', () => {
     template.hasResourceProperties('AWS::ApiGatewayV2::Stage', {
-      DefaultRouteSettings: { ThrottlingRateLimit: 50, ThrottlingBurstLimit: 100 },
+      DefaultRouteSettings: { ThrottlingRateLimit: 25, ThrottlingBurstLimit: 50 },
     });
   });
 
@@ -878,7 +878,7 @@ describe('the assistant (rule I15 and the AI boundaries)', () => {
         'POST /v1/assistant': { ThrottlingRateLimit: 3, ThrottlingBurstLimit: 6 },
         'POST /v1/requests': { ThrottlingRateLimit: 1, ThrottlingBurstLimit: 3 },
       },
-      DefaultRouteSettings: { ThrottlingRateLimit: 50, ThrottlingBurstLimit: 100 },
+      DefaultRouteSettings: { ThrottlingRateLimit: 25, ThrottlingBurstLimit: 50 },
     });
   });
 });

@@ -14,9 +14,12 @@ export const ASSISTANT_LIMITS = {
   maxOutputTokens: 220,
   /** How long to wait for the model before the plain answer goes out. */
   modelTimeoutMs: 6000,
-  /** Calls to the model for one caller in a day, and for the whole service in a day. */
+  /**
+   * Calls to the model for one caller in a day, and for the whole service in a day. A call costs about $0.0008 (nearly
+   * all of it the guardrail, see `docs/cost.md`), so 500 a day is at most about $13 a month.
+   */
   perCallerPerDay: 40,
-  perDay: 1500,
+  perDay: 500,
 } as const;
 
 /** The standing instructions for a question no rule covers. The caller's text cannot change them. */
