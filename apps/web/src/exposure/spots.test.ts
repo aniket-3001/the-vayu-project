@@ -48,23 +48,25 @@ describe('the places for each kind of person', () => {
   });
 
   it('keeps each kind of person’s places apart, and starts with the sample ones', () => {
-    expect(loadSpots(window.localStorage, 'child')).toEqual(sampleSpotsFor('child'));
-    saveSpots(window.localStorage, 'child', { school: { pin, from: 9, to: 14 } });
-    expect(loadSpots(window.localStorage, 'child').school?.from).toBe(9);
-    expect(loadSpots(window.localStorage, 'adult')).toEqual(sampleSpotsFor('adult'));
-    expect(loadAllSpots(window.localStorage)).toHaveLength(3);
+    expect(loadSpots(window.localStorage, 'kid', 'child')).toEqual(sampleSpotsFor('child'));
+    saveSpots(window.localStorage, 'kid', { school: { pin, from: 9, to: 14 } });
+    expect(loadSpots(window.localStorage, 'kid', 'child').school?.from).toBe(9);
+    expect(loadSpots(window.localStorage, 'me', 'adult')).toEqual(sampleSpotsFor('adult'));
+    expect(
+      loadAllSpots(window.localStorage, [
+        { id: 'kid', persona: 'child' },
+        { id: 'me', persona: 'adult' },
+      ]),
+    ).toHaveLength(2);
   });
 
   it('remembers removing everything, and survives rubbish in storage', () => {
-    saveSpots(window.localStorage, 'adult', {});
-    expect(loadSpots(window.localStorage, 'adult')).toEqual({});
+    saveSpots(window.localStorage, 'me', {});
+    expect(loadSpots(window.localStorage, 'me', 'adult')).toEqual({});
     window.localStorage.setItem(SPOTS_STORAGE_KEY, 'not json');
-    expect(loadSpots(window.localStorage, 'adult')).toEqual(sampleSpotsFor('adult'));
-    window.localStorage.setItem(
-      SPOTS_STORAGE_KEY,
-      JSON.stringify({ adult: { home: { from: 'a' } } }),
-    );
-    expect(loadSpots(window.localStorage, 'adult')).toEqual({});
+    expect(loadSpots(window.localStorage, 'me', 'adult')).toEqual(sampleSpotsFor('adult'));
+    window.localStorage.setItem(SPOTS_STORAGE_KEY, JSON.stringify({ me: { home: { from: 'a' } } }));
+    expect(loadSpots(window.localStorage, 'me', 'adult')).toEqual({});
   });
 
   it('says whether someone is there at an hour, including windows that run past midnight', () => {

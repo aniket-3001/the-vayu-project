@@ -25,7 +25,7 @@ export interface Spot {
 
 export type Spots = Readonly<Partial<Record<SpotKind, Spot>>>;
 
-export const SPOTS_STORAGE_KEY = 'vayu.spots.v2';
+export const SPOTS_STORAGE_KEY = 'vayu.spots.v3';
 
 const pinOf = (id: string): Pin => {
   const place = DEMO_PLACES.find((p) => p.id === id);
@@ -82,13 +82,13 @@ const isSpot = (value: unknown): value is Spot => {
   );
 };
 
-/** The saved places for a kind of person, or the sample ones if none were ever saved. Never throws. */
-export function loadSpots(storage: Storage, persona: Persona): Spots {
+/** The saved places for one person, or the usual ones for their kind of day if none were ever saved. Never throws. */
+export function loadSpots(storage: Storage, personId: string, persona: Persona): Spots {
   try {
     const raw = storage.getItem(SPOTS_STORAGE_KEY);
     if (raw === null) return sampleSpotsFor(persona);
     const all = JSON.parse(raw) as Record<string, Record<string, unknown> | undefined>;
-    const saved = all[persona];
+    const saved = all[personId];
     if (saved === undefined) return sampleSpotsFor(persona);
     const spots: Partial<Record<SpotKind, Spot>> = {};
     for (const kind of SPOT_KINDS) {
@@ -101,16 +101,19 @@ export function loadSpots(storage: Storage, persona: Persona): Spots {
   }
 }
 
-/** Every saved set of places, for all kinds of person, so a shared home can be seen from each. */
-export function loadAllSpots(storage: Storage): readonly Spots[] {
-  return (['child', 'adult', 'senior'] as const).map((persona) => loadSpots(storage, persona));
+/** Everyone's saved places, so a shared home can be seen from each person. */
+export function loadAllSpots(
+  storage: Storage,
+  people: readonly { readonly id: string; readonly persona: Persona }[],
+): readonly Spots[] {
+  return people.map((person) => loadSpots(storage, person.id, person.persona));
 }
 
-export function saveSpots(storage: Storage, persona: Persona, spots: Spots): void {
+export function saveSpots(storage: Storage, personId: string, spots: Spots): void {
   try {
     const raw = storage.getItem(SPOTS_STORAGE_KEY);
     const all = raw === null ? {} : (JSON.parse(raw) as Record<string, unknown>);
-    storage.setItem(SPOTS_STORAGE_KEY, JSON.stringify({ ...all, [persona]: spots }));
+    storage.setItem(SPOTS_STORAGE_KEY, JSON.stringify({ ...all, [personId]: spots }));
   } catch {
     // Best effort: a blocked or full storage must never break the screen.
   }

@@ -6,7 +6,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { DEVICES_STORAGE_KEY } from '../devices/devices';
 import { AirUnitsProvider, UNITS_STORAGE_KEY } from '../units/AirUnits';
 import { ExposureScreen } from './ExposureScreen';
-import { PERSONA_STORAGE_KEY } from './persona';
+import { PEOPLE_STORAGE_KEY } from './people';
 import { SPOTS_STORAGE_KEY } from './spots';
 
 beforeEach(() => {
@@ -27,13 +27,27 @@ const open = (): void => {
   );
 };
 
+/** Adds someone through the sheet: a name, an age, and whatever else the test changes first. */
+const addPerson = async (
+  name: string,
+  age: string,
+  between?: () => Promise<void>,
+): Promise<void> => {
+  await userEvent.click(screen.getByRole('button', { name: /Add person/u }));
+  const sheet = screen.getByRole('dialog', { name: 'Add a person' });
+  await userEvent.type(within(sheet).getByRole('textbox', { name: 'Name' }), name);
+  await userEvent.type(within(sheet).getByRole('spinbutton', { name: 'Age' }), age);
+  if (between !== undefined) await between();
+  await userEvent.click(within(sheet).getByRole('button', { name: 'Add person' }));
+};
+
 const cellsFilled = (): number => document.querySelectorAll('.cell:not(.empty)').length;
 
 describe('the Exposure screen', () => {
   it('opens on Today, for an adult, with a dial, an answer, and only the places that matter', () => {
     open();
     expect(screen.getByRole('heading', { level: 1, name: 'Today’s exposure' })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /Adult/u })).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.getByRole('button', { name: /^Me/u })).toHaveAttribute('aria-pressed', 'true');
     expect(screen.getByRole('img', { name: /24-hour dial/u })).toBeInTheDocument();
     for (const name of ['Home', 'Work', 'Outdoor', 'Live location']) {
       expect(screen.getByRole('region', { name })).toBeInTheDocument();
@@ -54,9 +68,10 @@ describe('the Exposure screen', () => {
     ).toEqual(['All', 'Home', 'Work', 'Outdoor']);
   });
 
-  it('switches to a child, who goes to school instead of work, with school hours of 8 to 3', async () => {
+  it('adds a child, whose day goes to school instead of work, with school hours of 8 to 3', async () => {
     open();
-    await userEvent.click(screen.getByRole('button', { name: /Child/u }));
+    await addPerson('Asha', '9');
+    expect(screen.getByRole('button', { name: /^Asha/u })).toHaveAttribute('aria-pressed', 'true');
     expect(screen.getByRole('region', { name: 'School' })).toBeInTheDocument();
     expect(screen.queryByRole('region', { name: 'Work' })).not.toBeInTheDocument();
     expect(
@@ -64,12 +79,12 @@ describe('the Exposure screen', () => {
     ).toBeInTheDocument();
     expect(screen.getByLabelText('School from')).toHaveValue('8');
     expect(screen.getByLabelText('School until')).toHaveValue('15');
-    expect(window.localStorage.getItem(PERSONA_STORAGE_KEY)).toBe('child');
+    expect(window.localStorage.getItem(PEOPLE_STORAGE_KEY)).toContain('Asha');
   });
 
-  it('switches to a senior, who has only home and a walk: three tabs', async () => {
+  it('adds an older person who stays mostly home: three tabs', async () => {
     open();
-    await userEvent.click(screen.getByRole('button', { name: /Senior/u }));
+    await addPerson('Dadu', '70');
     const group = screen.getByRole('group', { name: 'Show' });
     expect(
       within(group)
@@ -78,8 +93,49 @@ describe('the Exposure screen', () => {
     ).toEqual(['All', 'Home', 'Outdoor']);
   });
 
+  it('lets the hours be changed before adding, and uses them', async () => {
+    open();
+    await addPerson('Asha', '9', async () => {
+      const sheet = screen.getByRole('dialog', { name: 'Add a person' });
+      await userEvent.selectOptions(within(sheet).getByLabelText('School until'), '14:00');
+    });
+    expect(screen.getByLabelText('School until')).toHaveValue('14');
+  });
+
+  it('asks for a name and a sensible age, and says what is wrong', async () => {
+    open();
+    await userEvent.click(screen.getByRole('button', { name: /Add person/u }));
+    const sheet = screen.getByRole('dialog', { name: 'Add a person' });
+    await userEvent.click(within(sheet).getByRole('button', { name: 'Add person' }));
+    expect(screen.getByRole('alert')).toHaveTextContent('Please give them a name.');
+    await userEvent.type(within(sheet).getByRole('textbox', { name: 'Name' }), 'X');
+    await userEvent.type(within(sheet).getByRole('spinbutton', { name: 'Age' }), '300');
+    await userEvent.click(within(sheet).getByRole('button', { name: 'Add person' }));
+    expect(within(sheet).getByRole('alert')).toHaveTextContent('between 0 and 110');
+    await userEvent.keyboard('{Escape}');
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+  });
+
+  it('switches between people, each with their own places, and can remove one', async () => {
+    open();
+    await addPerson('Asha', '9');
+    await userEvent.click(screen.getByRole('button', { name: /^Me/u }));
+    expect(screen.getByRole('region', { name: 'Work' })).toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: /^Asha/u }));
+    await userEvent.click(screen.getByRole('button', { name: 'Remove Asha' }));
+    expect(screen.queryByRole('button', { name: /^Asha/u })).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /^Me/u })).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.queryByRole('button', { name: 'Remove Me' })).not.toBeInTheDocument();
+  });
+
   it('gives a child the school’s unit automatically, with nothing added, and says so', () => {
-    window.localStorage.setItem(PERSONA_STORAGE_KEY, 'child');
+    window.localStorage.setItem(
+      PEOPLE_STORAGE_KEY,
+      JSON.stringify({
+        people: [{ id: 'kid', name: 'Asha', age: 9, day: 'school' }],
+        current: 'kid',
+      }),
+    );
     open();
     const school = screen.getByRole('region', { name: 'School' });
     expect(school).toHaveTextContent('Vayu unit at the school');
@@ -179,15 +235,15 @@ describe('the Exposure screen', () => {
     expect(window.localStorage.getItem(SPOTS_STORAGE_KEY)).toContain('"to":12');
   });
 
-  it('keeps each kind of person’s changes apart', async () => {
+  it('keeps each person’s changes apart', async () => {
     open();
     await userEvent.selectOptions(
       within(screen.getByRole('region', { name: 'Work' })).getByLabelText('Work until'),
       '12:00',
     );
-    await userEvent.click(screen.getByRole('button', { name: /Child/u }));
+    await addPerson('Asha', '9');
     expect(screen.getByLabelText('School until')).toHaveValue('15');
-    await userEvent.click(screen.getByRole('button', { name: /Adult/u }));
+    await userEvent.click(screen.getByRole('button', { name: /^Me/u }));
     expect(screen.getByLabelText('Work until')).toHaveValue('12');
   });
 
@@ -208,7 +264,7 @@ describe('the Exposure screen', () => {
     expect(screen.getByRole('region', { name: 'Home' })).toHaveTextContent(
       'Bedroom unit is here. It is yours',
     );
-    await userEvent.click(screen.getByRole('button', { name: /Child/u }));
+    await addPerson('Asha', '9');
     expect(screen.getByRole('region', { name: 'Home' })).toHaveTextContent(
       'Bedroom unit is here. It is yours',
     );

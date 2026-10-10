@@ -1,45 +1,79 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { loadLive, recordFix, saveLive, SAMPLE_TRACK } from './live';
 import type { LiveLog } from './model';
-import { loadPersona, savePersona, type Persona } from './persona';
+import {
+  ME,
+  addPerson,
+  loadHousehold,
+  personaOf,
+  removePerson,
+  saveHousehold,
+  type Day,
+  type Household,
+  type Person,
+} from './people';
 import { loadSpots, saveSpots, type Spot, type SpotKind, type Spots } from './spots';
 
-/** Which kind of person this is for, kept in this browser. */
-export function usePersona(
-  storage: Storage = window.localStorage,
-): readonly [Persona, (next: Persona) => void] {
-  const [persona, setPersona] = useState<Persona>(() => loadPersona(storage));
-  return [
-    persona,
-    (next) => {
-      savePersona(storage, next);
-      setPersona(next);
+/** The people being looked at, and who is selected. Kept in this browser. */
+export function useHousehold(storage: Storage = window.localStorage): {
+  readonly household: Household;
+  readonly person: Person;
+  readonly select: (id: string) => void;
+  readonly add: (details: {
+    readonly name: string;
+    readonly age: number;
+    readonly day: Day;
+  }) => string;
+  readonly remove: (id: string) => void;
+} {
+  const [household, setHousehold] = useState<Household>(() => loadHousehold(storage));
+  const apply = (next: Household): void => {
+    saveHousehold(storage, next);
+    setHousehold(next);
+  };
+  const person =
+    household.people.find((p) => p.id === household.current) ?? household.people[0] ?? ME;
+  return {
+    household,
+    person,
+    select: (id) => {
+      apply({ ...household, current: id });
     },
-  ];
+    add: (details) => {
+      const next = addPerson(household, details);
+      apply(next);
+      return next.current;
+    },
+    remove: (id) => {
+      apply(removePerson(household, id));
+    },
+  };
 }
 
-/** The set places for one kind of person, kept in this browser. Each kind of person has their own. */
+/** The set places for one person, kept in this browser. Everyone has their own. */
 export function useSpots(
-  persona: Persona,
+  person: Person,
   storage: Storage = window.localStorage,
 ): {
   readonly spots: Spots;
   readonly set: (kind: SpotKind, spot: Spot) => void;
   readonly clear: (kind: SpotKind) => void;
+  readonly replace: (spots: Spots) => void;
 } {
-  const [saved, setSaved] = useState<{ readonly persona: Persona; readonly spots: Spots }>(() => ({
-    persona,
-    spots: loadSpots(storage, persona),
+  const persona = personaOf(person);
+  const [saved, setSaved] = useState<{ readonly id: string; readonly spots: Spots }>(() => ({
+    id: person.id,
+    spots: loadSpots(storage, person.id, persona),
   }));
   // Switching person loads that person's places; the state is derived, not copied in an effect.
-  const spots = saved.persona === persona ? saved.spots : loadSpots(storage, persona);
+  const spots = saved.id === person.id ? saved.spots : loadSpots(storage, person.id, persona);
   const change = useCallback(
     (next: (current: Spots) => Spots) => {
       const updated = next(spots);
-      saveSpots(storage, persona, updated);
-      setSaved({ persona, spots: updated });
+      saveSpots(storage, person.id, updated);
+      setSaved({ id: person.id, spots: updated });
     },
-    [spots, persona, storage],
+    [spots, person.id, storage],
   );
   return {
     spots,
@@ -48,6 +82,9 @@ export function useSpots(
     },
     clear: (kind) => {
       change((current) => Object.fromEntries(Object.entries(current).filter(([k]) => k !== kind)));
+    },
+    replace: (next) => {
+      change(() => next);
     },
   };
 }

@@ -1,4 +1,4 @@
-import { Armchair, Baby, Briefcase, CalendarDays, Info } from 'lucide-react';
+import { CalendarDays, Info, Plus, Trash2 } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import type { PlaceMatch } from '../data/geocode';
 import { useDevices } from '../devices/useDevices';
@@ -23,7 +23,8 @@ import {
   type DateKey,
   type Where,
 } from './model';
-import { PERSONAS, personaById, type Persona } from './persona';
+import { personaById } from './persona';
+import { DAY_LABELS, initials, MAX_PEOPLE, personaBlurb, personaOf } from './people';
 import { SPOT_LABELS, loadAllSpots, type SpotKind } from './spots';
 import { SAMPLE_SOURCES } from './sources';
 import { Dial, WHERE_LABELS } from './ui/Dial';
@@ -32,14 +33,14 @@ import { SpotSection } from './ui/SpotSection';
 import { Summary } from './ui/Summary';
 import { WeekStrip } from './ui/WeekStrip';
 import { allUnits } from './units';
-import { useLive, usePersona, useSpots } from './useExposure';
+import { useHousehold, useLive, useSpots } from './useExposure';
+import { AddPerson } from './ui/AddPerson';
+import { saveSpots } from './spots';
 
 /** The week overview, or one date. */
 type View = DateKey;
 const WEEK = 'week';
 type Tab = 'all' | SpotKind;
-
-const PERSONA_ICONS = { child: Baby, adult: Briefcase, senior: Armchair } as const;
 
 const hourSpan = (hour: number): string =>
   `${String(hour).padStart(2, '0')}:00 to ${String((hour + 1) % 24).padStart(2, '0')}:00`;
@@ -63,8 +64,10 @@ export function ExposureScreen({
 }: {
   readonly search?: (query: string) => Promise<readonly PlaceMatch[]>;
 }): React.JSX.Element {
-  const [persona, setPersona] = usePersona();
-  const { spots, set, clear } = useSpots(persona);
+  const { household, person, select, add, remove } = useHousehold();
+  const persona = personaOf(person);
+  const { spots, set, clear } = useSpots(person);
+  const [adding, setAdding] = useState(false);
   const { devices } = useDevices();
   const { pins, add: addPin } = usePins();
   const live = useLive();
@@ -82,8 +85,15 @@ export function ExposureScreen({
     [spots, info],
   );
   const units = useMemo(
-    () => allUnits(devices, [spots, ...loadAllSpots(window.localStorage)]),
-    [devices, spots],
+    () =>
+      allUnits(devices, [
+        spots,
+        ...loadAllSpots(
+          window.localStorage,
+          household.people.map((p) => ({ id: p.id, persona: personaOf(p) })),
+        ),
+      ]),
+    [devices, spots, household.people],
   );
   const rings: readonly Where[] = [...info.kinds, 'live'];
   const date = view === WEEK ? TODAY : view;
@@ -112,8 +122,8 @@ export function ExposureScreen({
     setView(next);
     setPicked(next === TODAY ? Math.max(0, hoursSoFar(TODAY) - 1) : 12);
   };
-  const choosePersona = (next: Persona): void => {
-    setPersona(next);
+  const choosePerson = (id: string): void => {
+    select(id);
     setTab('all');
   };
 
@@ -152,28 +162,61 @@ export function ExposureScreen({
         <div className="exposure-progress">
           <Progress />
         </div>
-        <div className="persona-row" role="group" aria-label="Who is this for">
-          {PERSONAS.map((p) => {
-            const Icon = PERSONA_ICONS[p.id];
-            return (
-              <button
-                key={p.id}
-                type="button"
-                className="persona"
-                aria-pressed={persona === p.id}
-                onClick={() => {
-                  choosePersona(p.id);
-                }}
-              >
-                <Icon size={20} strokeWidth={1.75} aria-hidden="true" />
-                <span>
-                  <strong>{p.label}</strong>
-                  <span className="muted small">{p.blurb}</span>
+        <div className="people-row" role="group" aria-label="Who is this for">
+          {household.people.map((p) => (
+            <button
+              key={p.id}
+              type="button"
+              className="person"
+              aria-pressed={person.id === p.id}
+              onClick={() => {
+                choosePerson(p.id);
+              }}
+            >
+              <span className="avatar" aria-hidden="true">
+                {initials(p.name)}
+              </span>
+              <span className="person-words">
+                <strong>{p.name}</strong>
+                <span className="muted small">
+                  {p.age}, {DAY_LABELS[p.day].toLowerCase()}
                 </span>
-              </button>
-            );
-          })}
+              </span>
+            </button>
+          ))}
+          {household.people.length < MAX_PEOPLE && (
+            <button
+              type="button"
+              className="person add"
+              onClick={() => {
+                setAdding(true);
+              }}
+            >
+              <span className="avatar" aria-hidden="true">
+                <Plus size={18} strokeWidth={2.25} />
+              </span>
+              <span className="person-words">
+                <strong>Add person</strong>
+                <span className="muted small">Track someone</span>
+              </span>
+            </button>
+          )}
         </div>
+        <p className="muted small person-blurb">
+          {person.name}: {personaBlurb(person)}.{' '}
+          {household.people.length > 1 && (
+            <button
+              type="button"
+              className="link-button"
+              aria-label={`Remove ${person.name}`}
+              onClick={() => {
+                remove(person.id);
+              }}
+            >
+              <Trash2 size={13} aria-hidden="true" /> Remove {person.name}
+            </button>
+          )}
+        </p>
 
         <div className="segmented wide" role="group" aria-label="Span">
           <button
@@ -318,7 +361,7 @@ export function ExposureScreen({
         {(view === WEEK || !noData) &&
           (shownTab === 'all' ? info.kinds : [shownTab]).map((kind) => (
             <SpotSection
-              key={`${persona}-${kind}`}
+              key={`${person.id}-${kind}`}
               kind={kind}
               spot={spots[kind]}
               pins={pins}
@@ -345,6 +388,19 @@ export function ExposureScreen({
           />
         )}
       </main>
+      {adding && (
+        <AddPerson
+          onClose={() => {
+            setAdding(false);
+          }}
+          onAdd={(details, newSpots) => {
+            const id = add(details);
+            saveSpots(window.localStorage, id, newSpots);
+            setTab('all');
+            setAdding(false);
+          }}
+        />
+      )}
     </div>
   );
 }

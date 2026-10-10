@@ -1,14 +1,7 @@
 import { Cpu, Plus, Trash2 } from 'lucide-react';
 import { useState } from 'react';
 import { levelForAqi } from '../../design/levels';
-import { loadPersona } from '../../exposure/persona';
-import {
-  SPOT_KINDS,
-  SPOT_LABELS,
-  loadSpots,
-  sampleSpotsFor,
-  type SpotKind,
-} from '../../exposure/spots';
+import { SPOT_KINDS, SPOT_LABELS, sampleSpotsFor, type SpotKind } from '../../exposure/spots';
 import { readingForPin } from '../../places/placeSample';
 import { usAqi } from '@vayu/core';
 import { Pill } from '../../today/ui/Chip';
@@ -18,10 +11,7 @@ import { useDevices } from '../useDevices';
 
 /** The outdoor PM2.5 near where a device sits: the pinned place for that kind, or a Delhi default. */
 function outdoorPm25(where: SpotKind): number {
-  const pin = (
-    loadSpots(window.localStorage, loadPersona(window.localStorage))[where] ??
-    sampleSpotsFor('adult')[where]
-  )?.pin;
+  const pin = (sampleSpotsFor('adult')[where] ?? sampleSpotsFor('child')[where])?.pin;
   return pin === undefined ? 70 : readingForPin(pin).pm25;
 }
 
