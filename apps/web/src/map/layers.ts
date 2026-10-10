@@ -18,6 +18,6 @@ export const LAYER_LABELS: Readonly<
 > = {
   monitors: { name: 'Monitors', note: 'Readings from stations and community sensors' },
   gradient: { name: 'Air colour', note: 'An estimate between monitors, not a measurement' },
-  wind: { name: 'Wind', note: 'Fading blocks that drift the way the wind blows' },
+  wind: { name: 'Wind', note: 'Little shooting stars that fade in and out along the wind' },
   fires: { name: 'Fires', note: 'Burning detected by satellite, mostly stubble' },
 };

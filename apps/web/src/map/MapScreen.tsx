@@ -7,7 +7,7 @@ import { Pill } from '../today/ui/Chip';
 import { useAirUnits } from '../units/AirUnits';
 import { LAYER_LABELS, defaultLayers, type Shown } from './layers';
 import { MapView } from './MapView';
-import { WindBlocks } from './WindBlocks';
+import { WindStars } from './WindStars';
 import { makeWindField } from './windTexture';
 import { useMapData } from './useMapData';
 
@@ -59,7 +59,7 @@ export function MapScreen(): React.JSX.Element {
   return (
     <div className="map-screen">
       <MapView layers={shown} smoke={smoke} air={data.air} onReady={setMap} />
-      <WindBlocks map={map} enabled={shown.wind} field={windField} />
+      <WindStars map={map} enabled={shown.wind} field={windField} />
 
       <div className="map-bottom">
         {open && (

@@ -47,8 +47,8 @@ vi.mock('maplibre-gl', () => ({
 vi.mock('./useMapData', () => ({
   useMapData: () => ({ wind: [], air: [], ...dataNow }),
 }));
-vi.mock('./WindBlocks', () => ({
-  WindBlocks: ({ enabled }: { enabled: boolean }) => {
+vi.mock('./WindStars', () => ({
+  WindStars: ({ enabled }: { enabled: boolean }) => {
     seen.windOn = enabled;
     return null;
   },
