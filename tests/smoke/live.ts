@@ -227,6 +227,19 @@ async function main(): Promise<void> {
     'assistant takes only a POST',
     (await getJson('/v1/assistant')).status === 405 ? [] : ['expected 405'],
   );
+  // The voice: only what must be refused is tried here, so the check costs nothing and speaks nothing.
+  const tooLong = await postJson('/v1/speech', { text: 'x'.repeat(401) });
+  const empty = await postJson('/v1/speech', { text: '' });
+  report(
+    'speech refuses empty words and more than 400 characters',
+    tooLong.status === 400 && empty.status === 400
+      ? []
+      : [`expected 400 and 400, got ${String(tooLong.status)} and ${String(empty.status)}`],
+  );
+  report(
+    'speech takes only a POST',
+    (await getJson('/v1/speech')).status === 405 ? [] : ['expected 405'],
+  );
   report(
     'requests refuse an invalid form, and store nothing',
     (await postJson('/v1/requests', { who: 'school', name: '' })).status === 400

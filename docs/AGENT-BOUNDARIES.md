@@ -75,6 +75,22 @@ On 10 October 2026, the first deploy of the assistant answered every question fr
 
 A property test found a second gap the same day: a masked name's placeholder number (`[person 1]`) counted as an allowed number, so a model could have slipped an invented "1" past the check. Placeholders are no longer counted as numbers.
 
+## The voice
+
+Answers are read aloud in a woman's voice: Amazon Polly's Kajal, through `POST /v1/speech`. It is text to speech and nothing else: it cannot decide, change or fetch anything.
+
+| Limit            | Value                                                                                                                                                                    |
+| ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Length           | 400 characters a time; a longer answer is cut at the end of a sentence                                                                                                   |
+| Characters a day | 3,000 for one caller (about 15 answers) and 40,000 for the whole service, counted in DynamoDB; the same words spoken again are served from the store and are not counted |
+| Request rate     | 3 a second (burst 6)                                                                                                                                                     |
+| Switch           | the assistant's kill switch: off, and nothing is spoken                                                                                                                  |
+| When it cannot   | off, over a limit, down or slow: the browser's own voice reads the answer instead                                                                                        |
+
+The route reads any text of up to 400 characters it is sent, within these limits. It does not check that the text is one of our answers, so its cost is bounded by the limits and not by what it is asked to say. Tests: `speechRoute.test.ts` (the contract, the kill switch, the character limits, repeats are free, a failed voice) and `speech.test.ts` (Polly first, the browser's voice as the fallback).
+
+Listening is the browser's own speech recognition: the audio goes from the microphone to the browser's speech service, not to us. It stops by itself after about 2.5 seconds of quiet (6 seconds if nothing is said, 30 at the longest) and then lets go of the microphone.
+
 ## The other uses of AI
 
 | Use                                                                                            | State                                                                                              |

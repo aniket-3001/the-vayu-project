@@ -19,20 +19,25 @@ Unticked means not yet seen live.
 
 ## Checked by hand
 
-| Screen         | What was checked                                                                                               | Seen |
-| -------------- | -------------------------------------------------------------------------------------------------------------- | ---- |
-| My Air         | Four places show a live AQI, the weather, and the nearest monitor's name, distance and age                     | [x]  |
-| My Air         | Alerts and tips read the real air and the real fire count                                                      | [x]  |
-| My Air Devices | Says "To be implemented", shows no measured numbers, and nothing counts in Exposure                            | [x]  |
-| Exposure       | The dial is drawn from the real last 24 hours; hours in each level add up; no unit readings are counted        | [x]  |
-| Map            | The air colours and the wind load from Open-Meteo; fire points come from our API                               | [x]  |
-| Map            | Monitor dots appear once the stations job has run                                                              | [x]  |
-| Assistant      | A question gets an answer from the rules, reworded by Bedrock, with "Wording by AI, checked against the facts" | [x]  |
-| Assistant      | The answer names the monitor, its distance and its age                                                         | [x]  |
-| AR Lens        | Camera, location and microphone prompts, on a real phone                                                       | [ ]  |
-| Request form   | Sending a real request, then reading it in the table                                                           | [ ]  |
-| Laptop         | Every screen at a laptop width                                                                                 | [ ]  |
-| Offline        | Switch the phone to airplane mode: the last good readings stay and say how old they are                        | [ ]  |
+| Screen         | What was checked                                                                                                | Seen |
+| -------------- | --------------------------------------------------------------------------------------------------------------- | ---- |
+| My Air         | Four places show a live AQI, the weather, and the nearest monitor's name, distance and age                      | [x]  |
+| My Air         | Alerts and tips read the real air and the real fire count                                                       | [x]  |
+| My Air Devices | Says "To be implemented", shows no measured numbers, and nothing counts in Exposure                             | [x]  |
+| Exposure       | The dial is drawn from the real last 24 hours; hours in each level add up; no unit readings are counted         | [x]  |
+| Map            | The air colours and the wind load from Open-Meteo; fire points come from our API                                | [x]  |
+| Map            | Monitor dots appear once the stations job has run                                                               | [x]  |
+| Assistant      | A question gets an answer from the rules, reworded by Bedrock, with "Wording by AI, checked against the facts"  | [x]  |
+| Assistant      | The answer names the monitor, its distance and its age                                                          | [x]  |
+| AR Lens        | Camera, location and microphone prompts, on a real phone                                                        | [ ]  |
+| Request form   | Sending a real request, then reading it in the table                                                            | [ ]  |
+| Live location  | The switch is on every screen, is remembered after a reload, and a Here card follows the device                 | [ ]  |
+| Detect me      | Asks live or pin with a name; a pinned place keeps its name                                                     | [ ]  |
+| Search         | "DAV Public School Sector 49 Gurugram" is found, and shows a reading with its monitor's distance or an Estimate | [ ]  |
+| Voice          | Every answer is read in Kajal's voice; the mic shows listening, then the words, and lets go after a few seconds | [ ]  |
+| AR Lens        | Particles have a black outline and spray; the colour scale is at the top; the whole scene fits on a laptop      | [ ]  |
+| Laptop         | Every screen at a laptop width                                                                                  | [ ]  |
+| Offline        | Switch the phone to airplane mode: the last good readings stay and say how old they are                         | [ ]  |
 
 ## What changed on the way (each found by looking, then fixed and tested)
 

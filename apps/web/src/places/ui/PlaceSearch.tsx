@@ -58,7 +58,7 @@ export function PlaceSearch({
         {state.kind === 'none' && (
           <p className="muted">
             We could not find that. Try the name with the area or city, for example “DAV School
-            Sector 49 Gurugram”. We cover north India.
+            Sector 49 Gurgaon”. We cover north India.
           </p>
         )}
         {state.kind === 'failed' && (
