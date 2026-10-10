@@ -1267,6 +1267,7 @@ h2 {
 }
 .dial-key p {
   margin: 0;
+  line-height: 1.4;
 }
 .ring-key {
   display: grid;
@@ -3897,4 +3898,49 @@ button.alert-card {
 }
 .lens-hud .lens-foot {
   margin: 6px 0 0;
+}
+
+/* Lens card, compact: in the air's own colour like the home card, and short enough to leave the picture clear */
+.lens-hud .place-card.lens-card {
+  background: var(--level);
+  max-height: none;
+  overflow: visible;
+}
+.lens-hud .place-card .pc-hit {
+  grid-template-rows: auto auto auto auto;
+  min-height: 0;
+  padding: 10px 12px 4px;
+}
+.lens-hud .place-card .pc-aqi strong {
+  font-size: 44px;
+}
+.lens-hud .place-card .pc-aqi {
+  margin-top: 2px;
+}
+.lens-hud .place-card .pc-more {
+  gap: 6px;
+  padding: 0 12px 10px;
+}
+.lens-facts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.lens-facts li {
+  flex: 0 1 auto;
+  padding: 5px 9px;
+  font-size: 13px;
+}
+.lens-facts li:last-child:nth-child(3) {
+  flex-basis: 100%;
+}
+.lens-hud .pc-source {
+  padding-top: 6px;
+  overflow: hidden;
+  font-size: 12px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.lens-hud .pc-sky {
+  margin-top: 2px;
 }

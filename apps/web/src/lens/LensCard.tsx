@@ -76,7 +76,7 @@ export function LensCard({
         )}
         <SmokeSquare pm25={hour.pm25} compact className="pc-smoke" />
         <span className="pc-face" aria-hidden="true">
-          <FaceIcon face={level.face} size={88} />
+          <FaceIcon face={level.face} size={64} />
         </span>
       </div>
       <div className="pc-more">

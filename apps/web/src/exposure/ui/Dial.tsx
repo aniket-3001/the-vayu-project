@@ -35,10 +35,9 @@ export function DialKey({
   return (
     <div className="dial-key">
       <p className="small">
-        <strong>How to read this.</strong> Each segment is one hour, from 0 at the bottom left round
-        to 24. Each ring is one kind of place, from the outside in. The colour is the AQI breathed
-        there: green is clean, red is unhealthy. A grey segment means no place or no reading for
-        that hour.
+        <strong>How to read this.</strong> Each segment is an hour, 0 to 24 round the dial. Each
+        ring is a kind of place, outside in. Colour is the AQI breathed: green clean, red unhealthy,
+        grey nothing set.
       </p>
       <ol className="ring-key" aria-label="The rings, outside in">
         {rings.map((where) => (
@@ -131,13 +130,15 @@ export function Dial({
         const inner = outer - thickness + gap;
         const lifted = focus === where;
         const faded = focus !== 'all' && !lifted;
-        const [labelX, labelY] = point((outer + inner) / 2, 0);
+        // Each ring is named in the gap at the bottom, where the day starts and ends, level with its own ring.
+        const labelX = C;
+        const labelY = C + (outer + inner) / 2;
         return (
           <g key={where} className={faded ? 'ring faded' : lifted ? 'ring lifted' : 'ring'}>
             <text
-              x={labelX - 7}
+              x={labelX}
               y={labelY + 3}
-              textAnchor="end"
+              textAnchor="middle"
               className={`ring-name${lifted ? ' on' : ''}`}
             >
               {WHERE_LABELS[where]}
