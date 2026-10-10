@@ -1570,13 +1570,91 @@ h2 {
 }
 .lens-hud {
   position: absolute;
-  left: 12px;
-  right: 12px;
+  left: 50%;
   bottom: 90px;
   z-index: 2;
   display: grid;
   gap: 6px;
-  max-width: 460px;
+  width: min(460px, calc(100% - 24px));
+  transform: translateX(-50%);
+}
+.lens-top {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  right: 12px;
+  z-index: 2;
+  display: grid;
+  gap: 8px;
+  justify-items: start;
+  pointer-events: none;
+}
+.lens-top > * {
+  pointer-events: auto;
+}
+.lens-scale {
+  justify-self: center;
+  width: min(520px, 100%);
+}
+.aqi-scale {
+  display: grid;
+  gap: 3px;
+  padding: 6px 8px 5px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: rgb(255 255 255 / 0.9);
+}
+.aqi-scale-bar {
+  position: relative;
+  display: flex;
+  height: 9px;
+  border-radius: 5px;
+}
+.aqi-scale-bar span {
+  flex: 1;
+}
+.aqi-scale-bar span:first-child {
+  border-radius: 5px 0 0 5px;
+}
+.aqi-scale-bar span:last-of-type {
+  border-radius: 0 5px 5px 0;
+}
+.aqi-scale-mark {
+  position: absolute;
+  top: -4px;
+  width: 4px;
+  height: 17px;
+  margin-left: -2px;
+  border: 1px solid #fff;
+  border-radius: 2px;
+  background: var(--text);
+}
+.aqi-scale-names {
+  display: flex;
+}
+.aqi-scale-names span {
+  flex: 1;
+  display: grid;
+  justify-items: center;
+  line-height: 1.15;
+}
+.aqi-scale-names b {
+  font-size: 9.5px;
+  font-weight: 800;
+}
+.aqi-scale-names small {
+  font-size: 9px;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+.lens-more summary {
+  cursor: pointer;
+  color: #2f5fb3;
+  font-size: 13px;
+  font-weight: 700;
+}
+.lens-more[open] summary {
+  margin-bottom: 6px;
 }
 .lens-card,
 .lens-dial {
@@ -1957,9 +2035,10 @@ h2 {
   color: #fff;
   cursor: pointer;
 }
-.task.done .task-check {
-  border-color: #5aa469;
-  background: #5aa469;
+.task.done .task-check,
+.tip.done .task-check {
+  border-color: #3f9a58;
+  background: #3f9a58;
 }
 .task-icon {
   display: grid;
@@ -2346,8 +2425,7 @@ h2 {
 .assistant-fab:hover {
   transform: translateY(-1px);
 }
-[data-route='map'] .map-bottom,
-[data-route='lens'] .lens-hud {
+[data-route='map'] .map-bottom {
   right: 84px;
 }
 .sheet.assistant {
@@ -2597,11 +2675,9 @@ button.alert-card {
   bottom: 204px;
 }
 [data-route='lens'] .dock {
-  top: 12px;
-  bottom: auto;
+  bottom: calc(90px + var(--lens-hud-h, 150px) + 12px);
 }
-[data-route='map'] .map-bottom,
-[data-route='lens'] .lens-hud {
+[data-route='map'] .map-bottom {
   right: 12px;
 }
 
@@ -3223,12 +3299,10 @@ button.alert-card {
   box-shadow: 0 6px 14px -6px rgb(46 157 87 / 0.7);
 }
 
-/* Two round buttons just above the air card, on the right, within thumb reach: the camera, and the place below it. */
+/* Two round buttons at the top left, under the colour scale: the camera, and the place beside it. */
 .lens-actions {
-  display: grid;
-  justify-items: end;
+  display: flex;
   gap: 8px;
-  margin-bottom: 2px;
 }
 .lens-round {
   position: relative;

@@ -26,7 +26,7 @@ const Sky = ({ night }: { readonly night: boolean }): React.JSX.Element => (
         <stop offset="1" stopColor={night ? '#dbe2ee' : '#f3f8fc'} />
       </linearGradient>
     </defs>
-    <rect width="400" height="700" fill="url(#sky)" />
+    <rect x="-2400" width="5200" height="700" fill="url(#sky)" />
     {night ? (
       <circle cx="310" cy="120" r="22" fill="#f5f1e3" />
     ) : (
@@ -79,8 +79,8 @@ function Street(): React.JSX.Element {
         <rect x="346" y="420" width="10" height="12" />
         <rect x="368" y="420" width="10" height="12" />
       </g>
-      <rect x="0" y="520" width="400" height="180" fill="#dfe6ef" />
-      <rect x="0" y="600" width="400" height="100" fill="#cfd8e4" />
+      <rect y="520" x="-2400" width="5200" height="180" fill="#dfe6ef" />
+      <rect y="600" x="-2400" width="5200" height="100" fill="#cfd8e4" />
       <g fill="#f7fafc">
         <rect x="40" y="648" width="60" height="6" rx="3" />
         <rect x="170" y="648" width="60" height="6" rx="3" />
@@ -95,9 +95,9 @@ function Street(): React.JSX.Element {
 function Home(): React.JSX.Element {
   return (
     <>
-      <rect y="0" width="400" height="700" fill="#f2e9dd" />
-      <rect y="560" width="400" height="140" fill="#dcc8ac" />
-      <rect y="548" width="400" height="14" fill="#e9dcc7" />
+      <rect y="0" x="-2400" width="5200" height="700" fill="#f2e9dd" />
+      <rect y="560" x="-2400" width="5200" height="140" fill="#dcc8ac" />
+      <rect y="548" x="-2400" width="5200" height="14" fill="#e9dcc7" />
       {/* the window, showing the sky and a far roof line */}
       <rect x="86" y="120" width="228" height="290" rx="6" fill="#ffffff" />
       <rect x="98" y="132" width="204" height="266" rx="3" fill="url(#sky)" />
@@ -130,8 +130,8 @@ function Home(): React.JSX.Element {
 function School(): React.JSX.Element {
   return (
     <>
-      <rect y="470" width="400" height="230" fill="#cfe3c4" />
-      <rect y="560" width="400" height="140" fill="#dfe6ef" />
+      <rect y="470" x="-2400" width="5200" height="230" fill="#cfe3c4" />
+      <rect y="560" x="-2400" width="5200" height="140" fill="#dfe6ef" />
       <rect x="30" y="300" width="340" height="200" rx="4" fill="#f0d9c0" />
       <path d="M20 304 L200 232 L380 304Z" fill="#d9a98b" />
       <rect x="170" y="400" width="60" height="100" rx="4" fill="#b9a58c" />
@@ -202,8 +202,8 @@ function Work(): React.JSX.Element {
         <rect x="24" y="430" width="16" height="14" rx="2" />
         <rect x="52" y="430" width="16" height="14" rx="2" />
       </g>
-      <rect y="540" width="400" height="160" fill="#dfe6ef" />
-      <rect y="600" width="400" height="100" fill="#cfd8e4" />
+      <rect y="540" x="-2400" width="5200" height="160" fill="#dfe6ef" />
+      <rect y="600" x="-2400" width="5200" height="100" fill="#cfd8e4" />
       <rect x="150" y="500" width="100" height="40" rx="3" fill="#9fb2c8" />
       <rect x="186" y="500" width="28" height="40" fill="#e3f1fb" />
       <Tree x={60} y={500} s={0.75} />
@@ -219,7 +219,12 @@ function Work(): React.JSX.Element {
 function Park(): React.JSX.Element {
   return (
     <>
+      {/* the hills run on past both edges, so a wide screen is filled with more of them */}
+      <rect x="-2400" y="430" width="2400" height="270" fill="#cfe3c4" />
+      <rect x="400" y="400" width="2400" height="300" fill="#cfe3c4" />
       <path d="M0 430 Q120 360 250 420 T400 400 V700 H0Z" fill="#cfe3c4" />
+      <rect x="-2400" y="500" width="2400" height="200" fill="#bcd8ae" />
+      <rect x="400" y="490" width="2400" height="210" fill="#bcd8ae" />
       <path d="M0 500 Q140 450 260 500 T400 490 V700 H0Z" fill="#bcd8ae" />
       <path
         d="M150 700 Q190 600 230 540 Q250 510 262 500 L292 500 Q280 520 270 560 Q252 620 270 700Z"
@@ -275,7 +280,7 @@ export function SampleScene({
       className="scene"
       data-place={place}
       viewBox="0 0 400 700"
-      preserveAspectRatio="xMidYMax slice"
+      preserveAspectRatio="xMidYMax meet"
       role="img"
       aria-label={`An illustration of a ${SCENE_LABELS[place]}, standing in for the camera`}
     >

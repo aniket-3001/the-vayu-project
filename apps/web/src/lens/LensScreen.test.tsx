@@ -74,19 +74,40 @@ describe('the AR Lens', () => {
     expect(sceneFor('My flat')).toBe('home');
   });
 
-  it('puts two round buttons above the air card: the camera on top, the place below it, then the card and the slider', () => {
+  it('puts the colour scale and two round buttons at the top, and the card and the slider together below', () => {
     open();
-    expect(document.querySelector('.lens-top')).not.toBeInTheDocument();
+    const top = document.querySelector('.lens-top');
+    expect(Array.from(top?.children ?? []).map((el) => el.className.split(' ')[0])).toEqual([
+      'aqi-scale',
+      'lens-actions',
+    ]);
     const hud = document.querySelector('.lens-hud');
-    const kids = Array.from(hud?.children ?? []).map((el) => el.className);
-    expect(kids[0]).toBe('lens-actions');
-    expect(kids.slice(1)).toEqual(['lens-card', 'lens-dial']);
-    const round = Array.from(hud?.querySelectorAll('.lens-round') ?? []);
+    expect(Array.from(hud?.children ?? []).map((el) => el.className)).toEqual([
+      'lens-card',
+      'lens-dial',
+    ]);
+    const round = Array.from(top?.querySelectorAll('.lens-round') ?? []);
     expect(round).toHaveLength(2);
     expect(round[0]).toHaveAccessibleName('Use camera');
     expect(round[0]?.textContent).toBe('');
     expect(round[1]?.querySelector('select')).toBeInTheDocument();
     expect(round[1]).toHaveAccessibleName(/Place to look at/u);
+  });
+
+  it('says what each colour means, and marks where this air is', () => {
+    open();
+    const scale = screen.getByRole('img', { name: /What the colours mean/u });
+    expect(scale).toHaveAccessibleName(/Good from 0 to 50/u);
+    expect(scale).toHaveAccessibleName(/Hazardous from 301 up/u);
+    expect(scale.querySelectorAll('.aqi-scale-bar span')).toHaveLength(6);
+    expect(scale.querySelector('.aqi-scale-mark')).toBeInTheDocument();
+  });
+
+  it('keeps the smoke note and the camera words behind “More about this view”, so the picture stays clear', () => {
+    open();
+    const more = document.querySelector('.lens-more');
+    expect(more).not.toHaveAttribute('open');
+    expect(more).toHaveTextContent('More about this view');
   });
 
   it('changes place, and the air with it', () => {

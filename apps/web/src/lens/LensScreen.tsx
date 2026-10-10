@@ -11,11 +11,12 @@ import {
   TreePine,
   type LucideIcon,
 } from 'lucide-react';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { levelForAqi } from '../design/levels';
 import { airStore, useToday } from '../air/store';
 import { AirError, AirLoading } from '../components/AirState';
+import { AqiScale } from '../components/AqiScale';
 import { usePins } from '../places/usePins';
 import { compassPoint } from '../today/wind';
 import { clock24, dayMonth, isoDate, weekday } from '../today/time';
@@ -58,6 +59,7 @@ export function LensScreen(): React.JSX.Element {
   const { pins } = usePins();
   const [placeId, setPlaceId] = useState('');
   const [step, setStep] = useState(0);
+  const hud = useRef<HTMLDivElement>(null);
   const camera = useCamera();
   const compass = useHeading();
 
@@ -66,6 +68,23 @@ export function LensScreen(): React.JSX.Element {
   const data = state?.status === 'ready' ? state.data : undefined;
   const series = useMemo(() => (data === undefined ? [] : lensSeries(data)), [data]);
   const hour = series[Math.min(step, series.length - 1)];
+
+  // The buttons that stay on every screen sit just above this panel, so tell the page how tall it is.
+  useEffect(() => {
+    const panel = hud.current;
+    const root = document.documentElement;
+    if (panel === null || typeof ResizeObserver === 'undefined') return;
+    const report = (): void => {
+      root.style.setProperty('--lens-hud-h', `${String(Math.round(panel.offsetHeight))}px`);
+    };
+    report();
+    const watcher = new ResizeObserver(report);
+    watcher.observe(panel);
+    return () => {
+      watcher.disconnect();
+      root.style.removeProperty('--lens-hud-h');
+    };
+  });
 
   if (pin === undefined || data === undefined || hour === undefined) {
     return (
@@ -127,7 +146,8 @@ export function LensScreen(): React.JSX.Element {
         <HazeCanvas haze={haze} windToDeg={arrow} windKmh={hour.wind?.kmh ?? 0} />
       </div>
 
-      <div className="lens-hud">
+      <div className="lens-top">
+        <AqiScale aqi={hour.aqi} className="lens-scale" />
         <div className="lens-actions">
           <button
             type="button"
@@ -161,6 +181,9 @@ export function LensScreen(): React.JSX.Element {
             </select>
           </label>
         </div>
+      </div>
+
+      <div className="lens-hud" ref={hud}>
         <section className="lens-card" aria-label="The air here">
           <div className="lens-row">
             <p className="lens-number" style={{ background: level.solid, color: level.onSolid }}>
@@ -186,38 +209,41 @@ export function LensScreen(): React.JSX.Element {
                   From the {compassPoint(hour.wind.fromDeg)}, {hour.wind.kmh} km/h
                 </p>
               )}
+              <p className="lens-line">
+                <Eye size={16} strokeWidth={1.75} aria-hidden="true" />
+                <span>
+                  You could see about <strong>{formatDistance(sight)}</strong>
+                </span>
+                <Pill>Estimate</Pill>
+              </p>
             </div>
           </div>
-          <SmokeNote pm25={hour.pm25} className="lens-smoke" />
-          <p className="lens-line">
-            <Eye size={16} strokeWidth={1.75} aria-hidden="true" />
-            <span>
-              You could see about <strong>{formatDistance(sight)}</strong>
-            </span>
-            <Pill>Estimate</Pill>
-          </p>
           {advice !== undefined && <p className="lens-line lens-advice">{advice}</p>}
-          <p className="lens-foot muted small">
-            {compass.needsTap ? (
-              <button type="button" className="link-button" onClick={compass.enable}>
-                <Compass size={14} aria-hidden="true" /> Turn on the compass
-              </button>
-            ) : (
-              <span>
-                {compass.heading === undefined
-                  ? 'North is up.'
-                  : `Facing ${compassPoint(compass.heading)}.`}
-              </span>
-            )}
-            <span role="status">{CAMERA_WORDS[camera.state]}</span>
-            <Pill>
-              {data.provenance.mode === 'sample'
-                ? 'Sample data'
-                : data.provenance.mode === 'live'
-                  ? `Live · ${data.provenance.stationName ?? 'monitor'}`
-                  : 'Estimate'}
-            </Pill>
-          </p>
+          <details className="lens-more">
+            <summary>More about this view</summary>
+            <SmokeNote pm25={hour.pm25} className="lens-smoke" />
+            <p className="lens-foot muted small">
+              {compass.needsTap ? (
+                <button type="button" className="link-button" onClick={compass.enable}>
+                  <Compass size={14} aria-hidden="true" /> Turn on the compass
+                </button>
+              ) : (
+                <span>
+                  {compass.heading === undefined
+                    ? 'North is up.'
+                    : `Facing ${compassPoint(compass.heading)}.`}
+                </span>
+              )}
+              <span role="status">{CAMERA_WORDS[camera.state]}</span>
+              <Pill>
+                {data.provenance.mode === 'sample'
+                  ? 'Sample data'
+                  : data.provenance.mode === 'live'
+                    ? `Live · ${data.provenance.stationName ?? 'monitor'}`
+                    : 'Estimate'}
+              </Pill>
+            </p>
+          </details>
         </section>
 
         <section className="lens-dial" aria-label="Time">
