@@ -10,6 +10,7 @@ export function Carousel({
   hint,
   aside,
   className = '',
+  footer,
   children,
 }: {
   readonly title: string;
@@ -17,6 +18,8 @@ export function Carousel({
   /** Something small on the right of the heading, such as a progress ring. */
   readonly aside?: React.ReactNode;
   readonly className?: string;
+  /** Something under the row, such as a line of totals. */
+  readonly footer?: React.ReactNode;
   readonly children: React.ReactNode;
 }): React.JSX.Element {
   const [open, setOpen] = useState(false);
@@ -53,6 +56,7 @@ export function Carousel({
       <ul id={listId} className={open ? 'carousel expanded' : 'carousel'}>
         {children}
       </ul>
+      {footer}
     </section>
   );
 }

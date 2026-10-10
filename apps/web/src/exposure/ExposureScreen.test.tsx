@@ -314,15 +314,13 @@ describe('the Exposure screen', () => {
     );
   });
 
-  it('adds a small cigarettes card beside the answer when the relatable measure is on', async () => {
+  it('adds a small square cigarettes card beside the answer when the relatable measure is on', () => {
     window.localStorage.setItem(UNITS_STORAGE_KEY, 'smoke');
     open();
-    await userEvent.click(
-      screen.getByRole('button', { name: /cigarettes? a day\. Tap for more/u }),
-    );
+    const summary = screen.getByRole('region', { name: 'Your day in the air' });
     expect(
-      screen.getByRole('dialog', { name: 'What you breathed, in cigarettes' }),
-    ).toHaveTextContent(/Berkeley Earth/u);
+      within(summary).getByRole('group', { name: /cigarettes? a day\./u }),
+    ).toBeInTheDocument();
   });
 });
 

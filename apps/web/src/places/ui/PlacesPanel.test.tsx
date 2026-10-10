@@ -30,7 +30,7 @@ const screenWith = (props: React.ComponentProps<typeof MyAirScreen> = {}): void 
 
 describe('the Places screen', () => {
   const cardOf = (name: string): HTMLElement => {
-    const card = screen.getByRole('button', { name: new RegExp(`^${name}\\b`, 'u') }).closest('li');
+    const card = screen.getByRole('link', { name: `Open ${name}` }).closest('li');
     if (card === null) throw new Error(`no card for ${name}`);
     return card;
   };
@@ -48,41 +48,56 @@ describe('the Places screen', () => {
       expect(card.querySelector('.pc-aqi strong')?.textContent).toMatch(/^\d+$/u);
   });
 
-  it('opens a card out to the next two days and where the number came from, and folds it again', async () => {
+  it('opens the place when the card is pressed: a link to its page', () => {
     screenWith();
-    const home = cardOf('Home');
-    expect(within(home).queryByRole('list', { name: 'Next two days' })).not.toBeInTheDocument();
-    await userEvent.click(within(home).getByRole('button', { name: /^Home/u }));
-    const days = within(within(home).getByRole('list', { name: 'Next two days' })).getAllByRole(
-      'listitem',
-    );
-    expect(days).toHaveLength(2);
-    expect(home).toHaveTextContent('Sample data');
-    expect(within(home).getByRole('button', { name: /^Home/u })).toHaveAttribute(
-      'aria-expanded',
-      'true',
-    );
-    await userEvent.click(within(home).getByRole('button', { name: /^Home/u }));
-    expect(within(home).queryByRole('list', { name: 'Next two days' })).not.toBeInTheDocument();
-  });
-
-  it('links an opened card to its place page', async () => {
-    screenWith();
-    await userEvent.click(within(cardOf('Home')).getByRole('button', { name: /^Home/u }));
-    expect(screen.getByRole('link', { name: /Open Home/u })).toHaveAttribute(
+    expect(screen.getByRole('link', { name: 'Open Home' })).toHaveAttribute(
       'href',
       '/place/28.59%2C77.05',
     );
+    expect(screen.getByRole('link', { name: 'Open School' })).toBeInTheDocument();
+  });
+
+  it('opens a card out to today and the next two days with an arrow beside the cross, and folds it again', async () => {
+    screenWith();
+    const home = cardOf('Home');
+    expect(
+      within(home).queryByRole('list', { name: 'Today and the next two days' }),
+    ).not.toBeInTheDocument();
+    const actions = home.querySelector('.pc-actions');
+    expect(actions?.querySelectorAll('button')).toHaveLength(2);
+    expect(actions?.querySelectorAll('button')[1]).toHaveAccessibleName('Remove Home');
+    await userEvent.click(within(home).getByRole('button', { name: 'Show Home for three days' }));
+    const days = within(
+      within(home).getByRole('list', { name: 'Today and the next two days' }),
+    ).getAllByRole('listitem');
+    expect(days).toHaveLength(3);
+    expect(days[0]).toHaveTextContent('Today');
+    expect(home).toHaveTextContent('Sample data');
+    expect(within(home).getByRole('button', { name: 'Fold Home' })).toHaveAttribute(
+      'aria-expanded',
+      'true',
+    );
+    await userEvent.click(within(home).getByRole('button', { name: 'Fold Home' }));
+    expect(
+      within(home).queryByRole('list', { name: 'Today and the next two days' }),
+    ).not.toBeInTheDocument();
+  });
+
+  it('puts the face in the bottom right of the square, and the number bottom left', () => {
+    screenWith();
+    const home = cardOf('Home');
+    expect(home.querySelector('.pc-face')).toBeInTheDocument();
+    expect(home.querySelector('.pc-aqi strong')).toBeInTheDocument();
   });
 
   it('removes a place, and remembers it after a reload', async () => {
     screenWith();
     await userEvent.click(screen.getByRole('button', { name: 'Remove School' }));
-    expect(screen.queryByRole('button', { name: /^School\b/u })).not.toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: 'Open School' })).not.toBeInTheDocument();
     cleanup();
     screenWith();
-    expect(screen.queryByRole('button', { name: /^School\b/u })).not.toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /^Home\b/u })).toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: 'Open School' })).not.toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Open Home' })).toBeInTheDocument();
   });
 
   it('says plainly when nothing is pinned', async () => {
@@ -126,7 +141,7 @@ describe('the Places screen', () => {
       },
     });
     await userEvent.click(screen.getByRole('button', { name: 'Use my location' }));
-    expect(screen.getByRole('button', { name: /^Near you\b/u })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Open Near you' })).toBeInTheDocument();
   });
 
   it('explains when the location is outside our area or cannot be read', async () => {
@@ -151,8 +166,7 @@ describe('the Places screen', () => {
 describe('moving between Places and a place', () => {
   it('opens a place from its card and comes back with the back link', async () => {
     render(<App />);
-    await userEvent.click(screen.getByRole('button', { name: /^Park\b/u }));
-    await userEvent.click(screen.getByRole('link', { name: /Open Park/u }));
+    await userEvent.click(screen.getByRole('link', { name: 'Open Park' }));
     await waitFor(() => {
       expect(screen.getByRole('heading', { level: 1, name: 'Park' })).toBeInTheDocument();
     });

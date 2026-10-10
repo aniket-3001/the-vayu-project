@@ -6,9 +6,9 @@ import type { Wind } from './wind';
 
 /** Distance between blocks on screen, in pixels. */
 const SPACING = 28;
-/** How long one ripple takes to pass a block, in seconds, and how far apart ripples are, in pixels. */
-const PERIOD = 3.4;
-const WAVELENGTH = 110;
+/** How far apart the waves are on screen, and how far each dash slides in one hop, in pixels. */
+const WAVELENGTH = 120;
+const TRAVEL = 34;
 
 interface Block {
   x: number;
@@ -22,8 +22,8 @@ interface Block {
 }
 
 /**
- * Wind as a field of short soft blocks that brighten and fade in a wave moving the way the air does, so the
- * flow reads without lines racing about. Quiet by design: translucent, never more than a few percent heavy.
+ * Wind as a field of short soft dashes that slide the way the air blows and fade in and out as they go, lined
+ * up into little waves, so the flow reads without lines racing about. Quiet by design: translucent.
  * It follows the map as it pans and zooms, hides round the back of the globe, and holds still when motion is
  * reduced.
  */
@@ -113,19 +113,25 @@ export function WindBlocks({
       ctx.clearRect(0, 0, el.clientWidth, el.clientHeight);
       ctx.lineCap = 'round';
       for (const b of blocks) {
-        const len = Math.min(24, 8 + b.speed * 2.6);
-        // A wave of brightness that travels along the wind: phase falls with distance along the flow.
+        // Each dash slides along the wind and fades in and out as it goes, one hop at a time. Neighbours are
+        // timed so the dashes line up into waves that roll with the flow; stronger wind rolls faster.
         const along = b.x * b.dx + b.y * b.dy;
-        const wave = reduced
-          ? 0.7
-          : 0.5 + 0.5 * Math.sin(2 * Math.PI * (seconds / PERIOD - along / WAVELENGTH));
-        const alpha = Math.min(0.42, 0.16 + b.speed / 30) * (0.2 + 0.8 * wave) * b.edge;
-        if (alpha < 0.005) continue;
-        ctx.strokeStyle = `rgba(48, 84, 140, ${alpha.toFixed(3)})`;
-        ctx.lineWidth = 5 + Math.min(3, b.speed / 3);
+        const rate = 1 / Math.max(1.6, 4.4 - b.speed * 0.45);
+        const phase = reduced ? 0.5 : (((seconds * rate - along / WAVELENGTH) % 1) + 1) % 1;
+        const fade = Math.sin(Math.PI * phase) ** 1.4;
+        const alpha = Math.min(0.5, 0.2 + b.speed / 24) * fade * b.edge;
+        if (alpha < 0.01) continue;
+        const len = Math.min(26, 10 + b.speed * 2.4);
+        const hop = (phase - 0.5) * TRAVEL;
+        // A slight sideways sway, so the motion reads as a ripple and not a conveyor belt.
+        const sway = reduced ? 0 : Math.sin(2 * Math.PI * (phase + along / WAVELENGTH)) * 2.2;
+        const cx = b.x + b.dx * hop - b.dy * sway;
+        const cy = b.y + b.dy * hop + b.dx * sway;
+        ctx.strokeStyle = `rgba(44, 82, 140, ${alpha.toFixed(3)})`;
+        ctx.lineWidth = 5 + Math.min(2.5, b.speed / 3);
         ctx.beginPath();
-        ctx.moveTo(b.x - (b.dx * len) / 2, b.y - (b.dy * len) / 2);
-        ctx.lineTo(b.x + (b.dx * len) / 2, b.y + (b.dy * len) / 2);
+        ctx.moveTo(cx - (b.dx * len) / 2, cy - (b.dy * len) / 2);
+        ctx.lineTo(cx + (b.dx * len) / 2, cy + (b.dy * len) / 2);
         ctx.stroke();
       }
     };

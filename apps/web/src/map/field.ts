@@ -112,11 +112,9 @@ export function renderField(
       if (value === undefined) continue;
       const [r, g, b] = gradientColour(value.aqi);
       const i = (row * cols + col) * 4;
-      // A little grain in the colour and more in the opacity, so the field reads as washed out and gritty.
-      const grain = noise(col, row);
-      pixels[i] = Math.max(0, Math.min(255, r + (grain - 0.5) * 26));
-      pixels[i + 1] = Math.max(0, Math.min(255, g + (grain - 0.5) * 26));
-      pixels[i + 2] = Math.max(0, Math.min(255, b + (grain - 0.5) * 26));
+      pixels[i] = r;
+      pixels[i + 1] = g;
+      pixels[i + 2] = b;
       const edge = Math.min(
         lat - FIELD_BOUNDS.south,
         FIELD_BOUNDS.north - lat,
@@ -124,10 +122,70 @@ export function renderField(
         FIELD_BOUNDS.east - lng,
       );
       // Fade out towards the edge of the data, so the field does not end in a hard box.
-      pixels[i + 3] = Math.round(
-        value.confidence * Math.min(1, edge / 5) * (150 + (noise(row, col) - 0.5) * 120),
-      );
+      pixels[i + 3] = Math.round(value.confidence * Math.min(1, edge / 5) * 215);
     }
   }
   return pixels;
+}
+
+/**
+ * The field as a fine picture: the smooth colours are stretched up by `scale` with bilinear blending, then
+ * every pixel is roughened with grain, so the air reads like dust or fog and not like blocks. A few pixels are
+ * brighter specks and a few are holes. The grain is a fixed pattern, so it does not shimmer between draws.
+ */
+export function grainyField(
+  monitors: readonly Monitor[],
+  cols: number,
+  rows: number,
+  scale: number,
+): { readonly pixels: Uint8ClampedArray; readonly width: number; readonly height: number } {
+  const coarse = renderField(monitors, cols, rows);
+  const width = cols * scale;
+  const height = rows * scale;
+  const pixels = new Uint8ClampedArray(width * height * 4);
+  const at = (c: number, r: number, k: number): number =>
+    coarse[
+      (Math.min(rows - 1, Math.max(0, r)) * cols + Math.min(cols - 1, Math.max(0, c))) * 4 + k
+    ] ?? 0;
+  for (let y = 0; y < height; y++) {
+    const fy = (y + 0.5) / scale - 0.5;
+    const r0 = Math.floor(fy);
+    const ty = fy - r0;
+    for (let x = 0; x < width; x++) {
+      const fx = (x + 0.5) / scale - 0.5;
+      const c0 = Math.floor(fx);
+      const tx = fx - c0;
+      // Blend the four neighbours, weighting colour by opacity so empty ground does not darken the edges.
+      let a = 0;
+      let rr = 0;
+      let gg = 0;
+      let bb = 0;
+      for (const [dc, dr, w] of [
+        [0, 0, (1 - tx) * (1 - ty)],
+        [1, 0, tx * (1 - ty)],
+        [0, 1, (1 - tx) * ty],
+        [1, 1, tx * ty],
+      ] as const) {
+        const alpha = at(c0 + dc, r0 + dr, 3);
+        a += w * alpha;
+        rr += w * alpha * at(c0 + dc, r0 + dr, 0);
+        gg += w * alpha * at(c0 + dc, r0 + dr, 1);
+        bb += w * alpha * at(c0 + dc, r0 + dr, 2);
+      }
+      if (a < 0.5) continue;
+      const n = noise(x, y);
+      const n2 = noise(y + 7919, x + 104729);
+      // Grain in the opacity: mostly 60 to 100 percent, with the odd brighter speck and the odd hole.
+      let grain = 0.6 + 0.4 * n;
+      if (n2 > 0.97) grain = 1.35;
+      else if (n2 < 0.04) grain = 0.12;
+      const shade = (n - 0.5) * 22;
+      const i = (y * width + x) * 4;
+      pixels[i] = Math.max(0, Math.min(255, rr / a + shade));
+      pixels[i + 1] = Math.max(0, Math.min(255, gg / a + shade));
+      pixels[i + 2] = Math.max(0, Math.min(255, bb / a + shade));
+      pixels[i + 3] = Math.max(0, Math.min(255, a * grain));
+    }
+  }
+  return { pixels, width, height };
 }

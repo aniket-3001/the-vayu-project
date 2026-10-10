@@ -139,34 +139,39 @@ export function MapScreen(): React.JSX.Element {
           <p className="small" role="status">
             {where}
           </p>
-          <p className="legend-notes small">
+          <p className="legend-pills">
             {(shown.monitors || data.fires === undefined) && <Pill>Sample data</Pill>}
             {((shown.gradient && data.airLive) ||
               (shown.wind && data.windLive) ||
               data.fires !== undefined) && <Pill>Live</Pill>}
-            {shown.gradient && (
-              <span>
-                {data.airLive
-                  ? 'Air colour: the CAMS model via Open-Meteo, right now. An estimate, not a measurement.'
-                  : 'Colour between monitors is an estimate.'}
-              </span>
-            )}
-            {shown.fires && (
-              <span className="legend-fire">
-                <Flame size={14} strokeWidth={2} aria-hidden="true" />{' '}
-                {data.fires === undefined
-                  ? 'Fires, last 24 hours'
-                  : `${String(data.fires)} fires in the last 24 hours (NASA satellite). Positions are a sample.`}
-              </span>
-            )}
-            {shown.wind && (
-              <span>
-                {data.windLive
-                  ? 'Wind: ICON and GFS models via Open-Meteo, right now.'
-                  : 'Wind is a sample flow.'}
-              </span>
-            )}
           </p>
+          <details className="legend-about">
+            <summary>About this data</summary>
+            <p className="legend-notes small">
+              {shown.gradient && (
+                <span>
+                  {data.airLive
+                    ? 'Air colour: the CAMS model via Open-Meteo, right now. An estimate, not a measurement.'
+                    : 'Colour between monitors is an estimate.'}
+                </span>
+              )}
+              {shown.fires && (
+                <span className="legend-fire">
+                  <Flame size={14} strokeWidth={2} aria-hidden="true" />{' '}
+                  {data.fires === undefined
+                    ? 'Fires, last 24 hours'
+                    : `${String(data.fires)} fires in the last 24 hours (NASA satellite). Positions are a sample.`}
+                </span>
+              )}
+              {shown.wind && (
+                <span>
+                  {data.windLive
+                    ? 'Wind: ICON and GFS models via Open-Meteo, right now.'
+                    : 'Wind is a sample flow.'}
+                </span>
+              )}
+            </p>
+          </details>
         </div>
       </div>
     </div>

@@ -104,6 +104,11 @@ export function TipsCard({
       hint={`Tips for ${placeName}, given the air`}
       className="tips"
       aside={<Ring done={doneCount} total={tips.length} />}
+      footer={
+        <div className="tips-footer">
+          <Progress progress={progress} />
+        </div>
+      }
     >
       {tips.map((task) => {
         const checked = progress.done.has(task.id);
@@ -140,9 +145,6 @@ export function TipsCard({
           </li>
         );
       })}
-      <li className="tip-stat">
-        <Progress progress={progress} />
-      </li>
     </Carousel>
   );
 }

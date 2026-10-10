@@ -30,14 +30,15 @@ describe('the Breathe better tips on My Air', () => {
     expect(within(card).getByRole('img', { name: /0 of \d done/u })).toBeInTheDocument();
   });
 
-  it('put the streak and points last: as the final card in the row', () => {
+  it('put the streak and points in a footer under the tips, above the search', () => {
     open();
     const card = screen.getByRole('region', { name: 'Breathe better today' });
-    const items = Array.from(card.querySelectorAll('ul > li'));
-    const last = items.at(-1);
-    expect(last).toHaveClass('tip-stat');
-    expect(last).toHaveTextContent('No streak yet');
-    expect(items.slice(0, -1).every((li) => li.className.includes('tip'))).toBe(true);
+    const footer = card.querySelector('.tips-footer');
+    expect(footer).toBeInTheDocument();
+    expect(footer).toHaveTextContent('No streak yet');
+    expect(card.querySelector('ul')?.contains(footer)).toBe(false);
+    expect(card.lastElementChild).toBe(footer);
+    expect(card.querySelector('.tip-stat')).not.toBeInTheDocument();
   });
 
   it('can be ticked for points and a streak, and unticked again', async () => {

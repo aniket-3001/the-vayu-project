@@ -11,7 +11,7 @@ import { useEffect, useMemo, useRef } from 'react';
 import { LEVELS } from '../design/levels';
 import type { Monitor } from './monitors';
 import { cigarettesPerDay, describeCigarettes } from '../units/smoke';
-import { FIELD_BOUNDS, renderField } from './field';
+import { FIELD_BOUNDS, grainyField } from './field';
 import { firesGeoJson, sampleFires } from './fires';
 import { monitorsGeoJson, sampleMonitors } from './monitors';
 
@@ -51,15 +51,14 @@ const aqiColour = (value: unknown): unknown => [
 ];
 
 function fieldImage(air: readonly Monitor[]): string {
-  const cols = 272;
-  const rows = 288;
+  const { pixels, width, height } = grainyField(air, 136, 144, 6);
   const canvas = document.createElement('canvas');
-  canvas.width = cols;
-  canvas.height = rows;
+  canvas.width = width;
+  canvas.height = height;
   const ctx = canvas.getContext('2d');
   if (ctx === null) return '';
-  const data = ctx.createImageData(cols, rows);
-  data.data.set(renderField(air, cols, rows));
+  const data = ctx.createImageData(width, height);
+  data.data.set(pixels);
   ctx.putImageData(data, 0, 0);
   return canvas.toDataURL();
 }
@@ -123,7 +122,7 @@ export function MapView({
         id: 'field',
         type: 'raster',
         source: 'field',
-        paint: { 'raster-opacity': 0.6, 'raster-fade-duration': 0, 'raster-resampling': 'nearest' },
+        paint: { 'raster-opacity': 0.8, 'raster-fade-duration': 0, 'raster-resampling': 'linear' },
         layout: { visibility: on.gradient ? 'visible' : 'none' },
       });
       m.addSource('fires', { type: 'geojson', data: firesGeoJson(fires) });

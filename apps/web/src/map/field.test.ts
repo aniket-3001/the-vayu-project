@@ -1,6 +1,14 @@
 import { describe, expect, it } from 'vitest';
 import { LEVELS } from '../design/levels';
-import { FIELD_BOUNDS, REACH_DEG, fieldAt, gradientColour, mercatorY, renderField } from './field';
+import {
+  FIELD_BOUNDS,
+  REACH_DEG,
+  fieldAt,
+  gradientColour,
+  grainyField,
+  mercatorY,
+  renderField,
+} from './field';
 import { sampleMonitors, type Monitor } from './monitors';
 
 const at = (lat: number, lng: number, aqi: number): Monitor => ({
@@ -95,14 +103,49 @@ describe('the edge of the field', () => {
   });
 });
 
-describe('the grain', () => {
-  it('varies from pixel to pixel over an even field, and is the same every time', () => {
-    const monitors = [at(20, 80, 120)];
-    const a = renderField(monitors, 40, 40);
-    const b = renderField(monitors, 40, 40);
+describe('the fine grain', () => {
+  const monitors = [at(20, 80, 120), at(25, 85, 60)];
+
+  it('is a picture `scale` times finer than the field, with four bytes a pixel', () => {
+    const { pixels, width, height } = grainyField(monitors, 20, 22, 5);
+    expect(width).toBe(100);
+    expect(height).toBe(110);
+    expect(pixels).toHaveLength(100 * 110 * 4);
+  });
+
+  it('is the same every time, so it does not shimmer', () => {
+    const a = grainyField(monitors, 20, 22, 4).pixels;
+    const b = grainyField(monitors, 20, 22, 4).pixels;
     expect(Array.from(a)).toEqual(Array.from(b));
+  });
+
+  it('roughens each pixel on its own, with specks and holes, and not in blocks', () => {
+    const { pixels, width, height } = grainyField(monitors, 40, 44, 6);
     const alphas = new Set<number>();
-    for (let i = 3; i < a.length; i += 4) if ((a[i] ?? 0) > 0) alphas.add(a[i] ?? 0);
-    expect(alphas.size).toBeGreaterThan(20);
+    let neighbours = 0;
+    let differ = 0;
+    for (let y = 0; y < height; y++) {
+      for (let x = 0; x < width - 1; x++) {
+        const i = (y * width + x) * 4 + 3;
+        const a = pixels[i] ?? 0;
+        const b = pixels[i + 4] ?? 0;
+        if (a > 40 && b > 40) {
+          alphas.add(a);
+          neighbours += 1;
+          if (a !== b) differ += 1;
+        }
+      }
+    }
+    expect(alphas.size).toBeGreaterThan(60);
+    expect(differ / neighbours).toBeGreaterThan(0.8);
+  });
+
+  it('keeps colour at the level colours and is empty far from any monitor', () => {
+    const { pixels, width, height } = grainyField(monitors, 40, 44, 4);
+    expect(pixels[3]).toBe(0);
+    let strong = 0;
+    for (let i = 3; i < pixels.length; i += 4) if ((pixels[i] ?? 0) > 100) strong += 1;
+    expect(strong).toBeGreaterThan(200);
+    expect(strong).toBeLessThan(width * height);
   });
 });

@@ -1,6 +1,11 @@
-import { Cigarette } from 'lucide-react';
 import { createContext, useCallback, useContext, useMemo, useState } from 'react';
-import { cigarettesPerDay, describeCigarettes, describeCigarettesShort } from './smoke';
+import { CigaretteIcon } from './CigaretteIcon';
+import {
+  cigarettesPerDay,
+  describeCigarettes,
+  describeCigarettesShort,
+  SMOKE_CAVEAT,
+} from './smoke';
 
 export const UNITS_STORAGE_KEY = 'vayu.units.v1';
 
@@ -44,7 +49,10 @@ export function AirUnitsProvider({
   return <Units.Provider value={value}>{children}</Units.Provider>;
 }
 
-/** The icon in the top bar that switches every screen to a more relatable measure. */
+/**
+ * A cigarette beside the Ask button. Off, it is a plain outline. On, it lights up in white and orange with a
+ * little smoke, and every screen also shows the air as cigarettes.
+ */
 export function SmokeToggle(): React.JSX.Element {
   const { smoke, toggle } = useAirUnits();
   return (
@@ -56,7 +64,14 @@ export function SmokeToggle(): React.JSX.Element {
       title="Relatable measure: also show cigarettes a day"
       onClick={toggle}
     >
-      <Cigarette size={20} strokeWidth={1.75} aria-hidden="true" />
+      <CigaretteIcon size={26} lit={smoke} />
+      {smoke && (
+        <span className="smoke-puffs" aria-hidden="true">
+          <i />
+          <i />
+          <i />
+        </span>
+      )}
     </button>
   );
 }
@@ -76,12 +91,50 @@ export function SmokeNote({
   if (!smoke) return null;
   return (
     <span className={`smoke-note ${className}`.trim()}>
-      <Cigarette size={14} strokeWidth={2} aria-hidden="true" />
+      <CigaretteIcon size={16} lit />
       <span>
         {short
           ? describeCigarettesShort(cigarettesPerDay(pm25))
           : describeCigarettes(cigarettesPerDay(pm25))}
       </span>
+    </span>
+  );
+}
+
+/**
+ * A small square card beside the AQI: one cigarette, a number, and what it means. Quiet and still. `compact` is
+ * just the cigarette and the number, for the corner of a place card.
+ */
+export function SmokeSquare({
+  pm25,
+  className = '',
+  compact = false,
+}: {
+  readonly pm25: number;
+  readonly className?: string;
+  readonly compact?: boolean;
+}): React.JSX.Element | null {
+  const { smoke } = useAirUnits();
+  if (!smoke) return null;
+  const perDay = cigarettesPerDay(pm25);
+  const shown = perDay < 0.5 ? '<½' : perDay >= 10 ? String(Math.round(perDay)) : String(perDay);
+  const words = describeCigarettesShort(perDay);
+  return (
+    <span
+      className={`smoke-square${compact ? ' compact' : ''} ${className}`.trim()}
+      role="group"
+      aria-label={`${words}. ${SMOKE_CAVEAT}`}
+      title={SMOKE_CAVEAT}
+    >
+      <span className="smoke-square-top" aria-hidden="true">
+        <CigaretteIcon size={compact ? 16 : 20} lit />
+        <strong className="tnum">{shown}</strong>
+      </span>
+      {!compact && (
+        <span className="smoke-square-label" aria-hidden="true">
+          cigarettes a day
+        </span>
+      )}
     </span>
   );
 }

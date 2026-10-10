@@ -7,7 +7,8 @@ import { compassPoint } from '../wind';
 import { FaceIcon, WindArrow } from './icons';
 import { concentration, splitLabel } from './format';
 import { useSettle } from './hooks';
-import { SmokeChip } from '../../units/SmokeCard';
+import { SmokeSquare, useAirUnits } from '../../units/AirUnits';
+import { SMOKE_CAVEAT } from '../../units/smoke';
 
 /** The status card: the number, what it means, the main pollutant, and the weather right now. */
 export function Hero({ data }: { readonly data: TodayData }): React.JSX.Element {
@@ -16,6 +17,7 @@ export function Hero({ data }: { readonly data: TodayData }): React.JSX.Element 
   const info = POLLUTANTS[0];
   const [base, sub] = splitLabel(info?.label ?? 'PM2.5');
   const w = data.weather;
+  const { smoke } = useAirUnits();
   return (
     <section className="hero" aria-labelledby="hero-title">
       <div className="hero-top">
@@ -29,12 +31,7 @@ export function Hero({ data }: { readonly data: TodayData }): React.JSX.Element 
               AQI
             </span>
           </div>
-          <SmokeChip
-            pm25={data.pm25}
-            title="In cigarettes"
-            note="At today’s level, for a whole day."
-            className="on-card"
-          />
+          <SmokeSquare pm25={data.pm25} />
         </div>
         <div className="hero-words">
           <h2 id="hero-title" className="hero-level">
@@ -54,6 +51,7 @@ export function Hero({ data }: { readonly data: TodayData }): React.JSX.Element 
           <strong className="tnum">{concentration(data.pm25)}</strong> µg/m³
         </dd>
       </dl>
+      {smoke && <p className="hero-fine small">Cigarettes: {SMOKE_CAVEAT}</p>}
       <ul className="hero-weather" aria-label="Weather now">
         <li>
           <Thermometer size={20} strokeWidth={1.75} aria-hidden="true" />

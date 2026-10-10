@@ -69,12 +69,6 @@ function Frame(): React.JSX.Element {
   const route = useLocation().pathname.split('/')[1] ?? '';
   return (
     <div className="frame" data-route={route === '' ? 'home' : route}>
-      <div className="bar">
-        <Link to="/" className="wordmark">
-          Vayu Air
-        </Link>
-        <SmokeToggle />
-      </div>
       <Routes>
         <Route path="/" element={<MyAirScreen />} />
         <Route path="/place/:id" element={<PlaceRoute />} />
@@ -83,7 +77,10 @@ function Frame(): React.JSX.Element {
         <Route path="/lens" element={<LensScreen />} />
         <Route path="*" element={<MyAirScreen />} />
       </Routes>
-      <AssistantFab />
+      <div className="dock">
+        <SmokeToggle />
+        <AssistantFab />
+      </div>
       <TabBar />
     </div>
   );
