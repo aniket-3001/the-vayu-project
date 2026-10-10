@@ -11,6 +11,8 @@ format:
 
 typecheck:
 	npm run typecheck
+	npx tsc --noEmit -p scripts
+	npx tsc --noEmit -p tests/smoke
 
 test:
 	npm test

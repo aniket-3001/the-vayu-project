@@ -45,6 +45,11 @@ export default tseslint.config(
     rules: { '@typescript-eslint/no-unnecessary-condition': 'off' },
   },
   {
+    // Scripts that run in a terminal talk to it.
+    files: ['scripts/**', 'tests/smoke/live.ts'],
+    rules: { 'no-console': 'off' },
+  },
+  {
     files: ['**/*.js', '**/*.mjs'],
     ...tseslint.configs.disableTypeChecked,
     languageOptions: {

@@ -35,7 +35,7 @@ createServer((req, res) => {
     req.on('data', (c: Buffer) => chunks.push(c));
     req.on('end', () => {
       fetch(`${api}${url.pathname}${url.search}`, {
-        method: req.method,
+        method: req.method ?? 'GET',
         headers: { 'content-type': req.headers['content-type'] ?? 'application/json' },
         ...(req.method === 'GET' ? {} : { body: Buffer.concat(chunks) }),
       })
