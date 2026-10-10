@@ -127,6 +127,7 @@ export function MapView({
   sample,
   start,
   onReady,
+  onReportFire,
 }: {
   readonly layers: MapLayers;
   /** Whether popups also say cigarettes a day. */
@@ -141,12 +142,14 @@ export function MapView({
   /** Where to open, from a link; otherwise south Asia at country level. */
   readonly start?: { readonly center: [number, number]; readonly zoom: number } | undefined;
   readonly onReady: (map: MapLibreMap) => void;
+  /** Called when the person presses "Report this fire" in a fire's popup. */
+  readonly onReportFire?: (fire: Fire) => void;
 }): React.JSX.Element {
   const container = useRef<HTMLDivElement>(null);
   const map = useRef<MapLibreMap>();
   const ready = useRef(false);
-  const latest = useRef({ layers, smoke, air, monitors, fires, sample, start });
-  latest.current = { layers, smoke, air, monitors, fires, sample, start };
+  const latest = useRef({ layers, smoke, air, monitors, fires, sample, start, onReportFire });
+  latest.current = { layers, smoke, air, monitors, fires, sample, start, onReportFire };
 
   useEffect(() => {
     const el = container.current;
@@ -246,7 +249,7 @@ export function MapView({
         source: 'monitors',
         minzoom: LABEL_FROM_ZOOM,
         layout: {
-          'text-field': ['to-string', ['get', 'aqi']] as never,
+          'text-field': ['to-string', ['get', latest.current.smoke ? 'cigs' : 'aqi']] as never,
           'text-font': ['Noto Sans Bold'],
           'text-size': ['interpolate', ['linear'], ['zoom'], 6, 10, 12, 13] as never,
           // Where two numbers would touch, the worse air keeps its number; the other waits for more zoom.
@@ -333,6 +336,55 @@ export function MapView({
         .setDOMContent(box)
         .addTo(m);
     });
+    // A fire opens its details, with a button to report it. The flame is small, so a press near it counts.
+    m.on('click', (event) => {
+      const ids = ['fires', 'fires-dot'].filter((id) => m.getLayer(id) !== undefined);
+      if (ids.length === 0) return;
+      const { x, y } = event.point;
+      const hit = m
+        .queryRenderedFeatures(
+          [
+            [x - 16, y - 16],
+            [x + 16, y + 16],
+          ],
+          { layers: ids },
+        )
+        .find((f) => f.geometry.type === 'Point');
+      if (hit?.geometry.type !== 'Point') return;
+      const [lng, lat] = hit.geometry.coordinates as [number, number];
+      const p = hit.properties as { frp?: number; hoursAgo?: number };
+      const fire: Fire = {
+        id: String(hit.properties.id ?? ''),
+        lat,
+        lng,
+        frp: p.frp ?? 0,
+        hoursAgo: p.hoursAgo ?? 0,
+      };
+      const box = document.createElement('div');
+      box.className = 'map-popup';
+      const title = document.createElement('strong');
+      title.textContent = 'Fire seen by satellite';
+      const body = document.createElement('p');
+      body.textContent = `Seen about ${String(fire.hoursAgo)} h ago · power ${String(fire.frp)} MW`;
+      const note = document.createElement('p');
+      note.className = 'muted';
+      note.textContent = latest.current.sample
+        ? 'Sample data'
+        : 'A heat spot from NASA satellites. It may be a crop fire, a kiln or a flare.';
+      const report = document.createElement('button');
+      report.type = 'button';
+      report.className = 'popup-button';
+      report.textContent = 'Report this fire';
+      const popup = new Popup({ closeButton: false, offset: 14 })
+        .setLngLat([lng, lat])
+        .setDOMContent(box)
+        .addTo(m);
+      report.addEventListener('click', () => {
+        popup.remove();
+        latest.current.onReportFire?.(fire);
+      });
+      box.append(title, body, note, report);
+    });
     m.on('mouseenter', 'monitors-dot', () => {
       m.getCanvas().style.cursor = 'pointer';
     });
@@ -380,6 +432,16 @@ export function MapView({
     if (m === undefined || !ready.current) return;
     void m.getSource<GeoJSONSource>('monitors')?.setData(monitorsGeoJson(monitors));
   }, [monitors]);
+
+  // The cigarette switch changes the numbers on the map from AQI to cigarettes a day, straight away.
+  useEffect(() => {
+    const m = map.current;
+    if (m === undefined || !ready.current || m.getLayer('monitors-label') === undefined) return;
+    m.setLayoutProperty('monitors-label', 'text-field', [
+      'to-string',
+      ['get', smoke ? 'cigs' : 'aqi'],
+    ]);
+  }, [smoke]);
 
   useEffect(() => {
     const m = map.current;

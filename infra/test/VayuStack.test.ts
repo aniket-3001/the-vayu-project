@@ -887,6 +887,7 @@ describe('the assistant (rule I15 and the AI boundaries)', () => {
         'POST /v1/assistant': { ThrottlingRateLimit: 3, ThrottlingBurstLimit: 6 },
         'POST /v1/speech': { ThrottlingRateLimit: 3, ThrottlingBurstLimit: 6 },
         'POST /v1/requests': { ThrottlingRateLimit: 1, ThrottlingBurstLimit: 3 },
+        'POST /v1/fire-reports': { ThrottlingRateLimit: 1, ThrottlingBurstLimit: 3 },
       },
       DefaultRouteSettings: { ThrottlingRateLimit: 25, ThrottlingBurstLimit: 50 },
     });
@@ -899,7 +900,12 @@ describe('the assistant (rule I15 and the AI boundaries)', () => {
   });
 
   it('has a route for the voice beside the assistant, so each can be throttled on its own', () => {
-    for (const key of ['POST /v1/assistant', 'POST /v1/speech', 'POST /v1/requests'])
+    for (const key of [
+      'POST /v1/assistant',
+      'POST /v1/speech',
+      'POST /v1/requests',
+      'POST /v1/fire-reports',
+    ])
       template.hasResourceProperties('AWS::ApiGatewayV2::Route', { RouteKey: key });
   });
 });

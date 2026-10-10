@@ -28,6 +28,7 @@ import { handleRoom, type RoomsDeps } from './roomsRoute';
 import { loadAir, placeFromQuery } from './air';
 import { handleHistory } from './historyRoute';
 import { handleAssistant, type AssistantDeps } from './assistantRoute';
+import { handleFireReports, type FireReportsDeps } from './fireReportsRoute';
 import { handleRequests, type RequestsDeps } from './requestsRoute';
 import { handleSpeech, type SpeechDeps } from './speechRoute';
 import { handleStations } from './stationsRoute';
@@ -66,6 +67,8 @@ export interface RouterDeps {
   readonly assistant?: AssistantDeps | undefined;
   /** Asking for a demo or monitors. Absent where nothing is wired: /v1/requests is then not found. */
   readonly requests?: RequestsDeps | undefined;
+  /** Reporting a fire. Absent where nothing is wired: /v1/fire-reports is then not found. */
+  readonly fireReports?: FireReportsDeps | undefined;
   /** Reading an answer aloud. Absent where nothing is wired: /v1/speech is then not found. */
   readonly speech?: SpeechDeps | undefined;
   /** The Today screen's weather and gases. Absent, or failing, only means Today has none. */
@@ -158,6 +161,11 @@ export function createRouter(deps: RouterDeps) {
       return deps.requests === undefined
         ? failure(404, 'not_found', `No route for ${request.path}`)
         : handleRequests(request, deps.requests);
+    }
+    if (request.path === '/v1/fire-reports') {
+      return deps.fireReports === undefined
+        ? failure(404, 'not_found', `No route for ${request.path}`)
+        : handleFireReports(request, deps.fireReports);
     }
     if (request.path === '/v1/fixchecks' || request.path.startsWith('/v1/fixchecks/')) {
       return deps.fixChecks === undefined

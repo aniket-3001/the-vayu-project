@@ -247,6 +247,13 @@ async function main(): Promise<void> {
       : ['expected 400'],
   );
 
+  report(
+    'fire reports refuse a place that is not on Earth, and store nothing',
+    (await postJson('/v1/fire-reports', { lat: 200, lng: 0 })).status === 400
+      ? []
+      : ['expected 400'],
+  );
+
   // The site itself, when this is the public address.
   if (BASE.includes('cloudfront.net') || process.env.SITE === '1') {
     const page = await fetch(`${BASE}/`);

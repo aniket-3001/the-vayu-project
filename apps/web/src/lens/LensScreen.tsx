@@ -1,13 +1,4 @@
-import {
-  Briefcase,
-  Camera,
-  CameraOff,
-  GraduationCap,
-  House,
-  MapPin,
-  TreePine,
-  type LucideIcon,
-} from 'lucide-react';
+import { Briefcase, GraduationCap, House, MapPin, TreePine, type LucideIcon } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { levelForAqi } from '../design/levels';
@@ -18,7 +9,7 @@ import { liveLocation, useLivePin } from '../places/liveLocation';
 import { usePins } from '../places/usePins';
 import { clock24, dayMonth, isoDate, weekday } from '../today/time';
 import { HazeCanvas } from './HazeCanvas';
-import { LensCard } from './LensCard';
+import { LIVE_OUTDOOR_NAME, LensCard } from './LensCard';
 import {
   DIAL_HOURS,
   bestHour,
@@ -38,14 +29,12 @@ const SCENE_ICONS: Readonly<Record<ScenePlace, LucideIcon>> = {
   street: MapPin,
 };
 import { useCamera } from './useCamera';
-import { useHeading } from './useHeading';
 
+/** Said on the card only when the camera is being asked for or could not be had. */
 const CAMERA_WORDS = {
-  off: 'An illustration stands in for the camera.',
   asking: 'Asking for your camera…',
-  on: 'Camera on; nothing leaves this phone.',
-  denied: 'Camera not allowed, so an illustration.',
-  unavailable: 'No camera here, so an illustration.',
+  denied: 'Camera not allowed, so an illustration stands in.',
+  unavailable: 'No camera here, so an illustration stands in.',
 } as const;
 
 /** What the number means, drawn over what is in front of you: haze, wind, how far you can see, and when to go out. */
@@ -61,9 +50,22 @@ export function LensScreen(): React.JSX.Element {
   const [step, setStep] = useState(0);
   const hud = useRef<HTMLDivElement>(null);
   const camera = useCamera();
-  const compass = useHeading();
 
   const pin = pins.find((p) => p.id === placeId) ?? pins[0];
+  // The switch on the card: where you are (live outdoor location) and every pinned place.
+  const placeOptions = useMemo(
+    () => [
+      { id: 'live', name: LIVE_OUTDOOR_NAME },
+      ...pinned.map((p) => ({ id: p.id, name: p.name })),
+    ],
+    [pinned],
+  );
+  const choosePlace = (id: string): void => {
+    setStep(0);
+    setPlaceId(id);
+    // Choosing where you are asks the browser, if it has not been asked.
+    if (id === 'live' && !liveLocation().get().enabled) liveLocation().set(true);
+  };
   const state = useToday(pin);
   const data = state?.status === 'ready' ? state.data : undefined;
   const series = useMemo(() => (data === undefined ? [] : lensSeries(data)), [data]);
@@ -130,8 +132,8 @@ export function LensScreen(): React.JSX.Element {
   const haze = hazeFor(hour.pm25, hour.aqi);
   const sight = visibilityKm(hour.pm25);
   const best = bestHour(series);
-  const heading = compass.heading ?? 0;
-  const arrow = hour.wind === undefined ? 0 : windOnScreen(hour.wind.fromDeg, heading);
+  // North is up: with no compass, the wind's arrow points the way it blows on a map.
+  const arrow = hour.wind === undefined ? 0 : windOnScreen(hour.wind.fromDeg, 0);
   const when = step === 0 ? 'Now' : `${weekday(hour.at)} ${dayMonth(hour.at)}, ${clock24(hour.at)}`;
   const track = `linear-gradient(to right, ${series
     .map(
@@ -158,43 +160,6 @@ export function LensScreen(): React.JSX.Element {
         <HazeCanvas haze={haze} windToDeg={arrow} windKmh={hour.wind?.kmh ?? 0} />
       </div>
 
-      <div className="lens-top">
-        <AqiScale aqi={hour.aqi} className="lens-scale" />
-        <div className="lens-actions">
-          <button
-            type="button"
-            className="lens-round"
-            onClick={camera.state === 'on' ? camera.stop : camera.start}
-            aria-pressed={camera.state === 'on'}
-            aria-label={camera.state === 'on' ? 'Camera off' : 'Use camera'}
-            title={camera.state === 'on' ? 'Camera off' : 'Use camera'}
-          >
-            {camera.state === 'on' ? (
-              <CameraOff size={22} strokeWidth={1.75} aria-hidden="true" />
-            ) : (
-              <Camera size={22} strokeWidth={1.75} aria-hidden="true" />
-            )}
-          </button>
-          <label className="lens-round lens-place" title="Place to look at">
-            <PlaceIcon size={22} strokeWidth={1.75} aria-hidden="true" />
-            <span className="sr-only">Place to look at</span>
-            <select
-              value={pin.id}
-              onChange={(event) => {
-                setPlaceId(event.target.value);
-                setStep(0);
-              }}
-            >
-              {pins.map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.name}
-                </option>
-              ))}
-            </select>
-          </label>
-        </div>
-      </div>
-
       <div className="lens-hud" ref={hud}>
         <LensCard
           pin={pin}
@@ -204,11 +169,23 @@ export function LensScreen(): React.JSX.Element {
           sight={sight}
           arrow={arrow}
           advice={advice}
-          compass={compass}
-          cameraWords={CAMERA_WORDS[camera.state]}
+          camera={{
+            on: camera.state === 'on',
+            toggle: camera.state === 'on' ? camera.stop : camera.start,
+          }}
+          places={{
+            options: placeOptions,
+            activeId: pin.id,
+            onChange: choosePlace,
+          }}
+          cameraWords={
+            camera.state === 'off' || camera.state === 'on' ? undefined : CAMERA_WORDS[camera.state]
+          }
+          icon={PlaceIcon}
         />
 
         <section className="lens-dial" aria-label="Time">
+          <AqiScale aqi={hour.aqi} className="lens-scale" />
           <div className="dial-labels">
             <span>{when}</span>
             <span className="muted small">

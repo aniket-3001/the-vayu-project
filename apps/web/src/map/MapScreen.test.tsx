@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { cleanup, render, screen } from '@testing-library/react';
+import { act, cleanup, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { useEffect } from 'react';
 import { MemoryRouter } from 'react-router-dom';
@@ -16,17 +16,21 @@ const seen: {
   mapObject?: unknown;
   layers?: Record<string, boolean>;
   windOn?: boolean;
+  reportFire?: (fire: unknown) => void;
 } = {};
 
 vi.mock('./MapView', () => ({
   MapView: ({
     layers,
     onReady,
+    onReportFire,
   }: {
     layers: Record<string, boolean>;
     onReady: (m: unknown) => void;
+    onReportFire: (fire: unknown) => void;
   }) => {
     seen.layers = layers;
+    seen.reportFire = onReportFire;
     useEffect(() => {
       if (seen.mapObject !== undefined) onReady(seen.mapObject);
     }, [onReady]);
@@ -88,45 +92,51 @@ describe('the Map screen', () => {
     expect(screen.getByText('Sample data')).toBeInTheDocument();
   });
 
-  it('has a Wind button that turns the wind off and on, and says which it is', async () => {
+  it('has no wind or layers buttons: everything is always on', () => {
     render(
       <MemoryRouter>
         <MapScreen />
       </MemoryRouter>,
     );
-    const wind = screen.getByRole('button', { name: /Wind on/u });
-    expect(wind).toHaveAttribute('aria-pressed', 'true');
-    await userEvent.click(wind);
-    expect(seen.windOn).toBe(false);
-    expect(screen.getByRole('button', { name: /Wind off/u })).toHaveAttribute(
-      'aria-pressed',
-      'false',
-    );
-    expect(screen.queryByText(/Wind: ICON/u)).not.toBeInTheDocument();
-    await userEvent.click(screen.getByRole('button', { name: /Wind off/u }));
+    expect(screen.queryByRole('button', { name: /Wind/u })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Layers/u })).not.toBeInTheDocument();
     expect(seen.windOn).toBe(true);
+    expect(seen.layers).toEqual({ monitors: true, gradient: true, fires: true, wind: true });
   });
 
-  it('keeps the other layers in a sheet, each described, and leaves the wind to its own button', async () => {
+  it('keeps the colour scale, detection and the notes in one card that folds', async () => {
     render(
       <MemoryRouter>
         <MapScreen />
       </MemoryRouter>,
     );
-    await userEvent.click(screen.getByRole('button', { name: 'Layers' }));
-    for (const name of ['Monitors', 'Air colour', 'Fires']) {
-      expect(screen.getByRole('checkbox', { name: new RegExp(name, 'u') })).toBeInTheDocument();
-    }
-    expect(screen.queryByRole('checkbox', { name: /Wind/u })).not.toBeInTheDocument();
+    const card = document.querySelector('.map-legend');
+    expect(card?.querySelector('.aqi-scale')).toBeInTheDocument();
     expect(
-      screen.getByText(/An estimate between monitors, not a measurement/u),
-    ).toBeInTheDocument();
-    await userEvent.click(screen.getByRole('checkbox', { name: /Fires/u }));
-    expect(seen.layers?.fires).toBe(false);
-    await userEvent.click(screen.getByRole('checkbox', { name: /Air colour/u }));
-    expect(seen.layers?.gradient).toBe(false);
-    await userEvent.click(screen.getByRole('button', { name: 'Layers' }));
-    expect(screen.queryByRole('checkbox', { name: /Fires/u })).not.toBeInTheDocument();
+      within(card as HTMLElement).getByRole('button', { name: /Detect my location/u }),
+    ).toBeVisible();
+    expect(document.querySelector('.lens-top')).not.toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: /Fold the colour scale/u }));
+    expect(document.querySelector('.legend-body')).not.toBeVisible();
+    await userEvent.click(screen.getByRole('button', { name: /Show the colour scale/u }));
+    expect(document.querySelector('.legend-body')).toBeVisible();
+  });
+
+  it('opens a report for a fire pressed on the map, and says plainly what happens to it', async () => {
+    render(
+      <MemoryRouter>
+        <MapScreen />
+      </MemoryRouter>,
+    );
+    expect(screen.queryByRole('dialog', { name: 'Report a fire' })).not.toBeInTheDocument();
+    act(() => {
+      seen.reportFire?.({ id: 'fire-1', lat: 30.9, lng: 75.5, frp: 12, hoursAgo: 3 });
+    });
+    const dialog = screen.getByRole('dialog', { name: 'Report a fire' });
+    expect(dialog).toHaveTextContent('30.900°N, 75.500°E');
+    expect(dialog).toHaveTextContent('not sent to any agency');
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Send the report' }));
+    expect(await within(dialog).findByRole('status')).toHaveTextContent(/saved/iu);
   });
 
   it('draws a legend from Good to Hazardous', () => {

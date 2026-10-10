@@ -282,6 +282,24 @@ export const AccessRequest = z
 export type AccessRequest = z.infer<typeof AccessRequest>;
 
 /**
+ * A report that a fire is burning somewhere: where, and what the person wants to add. It is kept so a person can
+ * check it, and it is not sent to any agency. `POST /v1/fire-reports` takes exactly this and refuses anything else.
+ */
+export const FireReport = z
+  .object({
+    lat: z.number().min(-90).max(90),
+    lng: z.number().min(-180).max(180),
+    /** For a fire seen on the map: how long ago the satellite saw it. */
+    hoursAgo: z.number().int().min(0).max(240).optional(),
+    /** For a fire seen on the map: how fierce it was, in megawatts. */
+    frp: z.number().min(0).max(5000).optional(),
+    note: z.string().trim().max(200).optional(),
+    sentAt: z.string().optional(),
+  })
+  .strict();
+export type FireReport = z.infer<typeof FireReport>;
+
+/**
  * What the assistant is allowed to know when it is asked: one place's air and day, the alerts, and who is
  * being tracked. Every field is bounded, and nothing else is accepted: the assistant never sees anything the
  * person has not chosen to give it.

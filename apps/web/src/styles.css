@@ -1082,7 +1082,7 @@ h2 {
 }
 .ring-name {
   fill: var(--muted);
-  font-size: 8.5px;
+  font-size: 7.4px;
   font-weight: 800;
   letter-spacing: 0.06em;
   text-transform: uppercase;
@@ -3684,18 +3684,37 @@ button.alert-card {
   margin-top: 8px;
 }
 
-/* ---- One look for every card, button and figure (replaces the earlier square cards) ---- */
+/* ---- One look for every card, button and figure ---- */
 
-/* A place: a card as wide as the screen, in the colour of its air, with everything on it */
+/* A place: a card in the colour of its air. Folded it is a small block; opened it runs across the row. */
+.place-grid {
+  align-items: stretch;
+}
 .place-card {
   position: relative;
-  grid-column: 1 / -1;
+  min-height: 176px;
   border-radius: var(--radius);
   background: var(--level);
   color: var(--on-level);
   box-shadow: 0 8px 22px -14px rgb(51 65 85 / 0.55);
+  transition:
+    transform 160ms ease,
+    box-shadow 160ms ease;
+}
+.place-card:hover {
+  transform: translateY(-2px);
+}
+.place-card.open {
+  grid-column: 1 / -1;
+  min-height: 0;
+  transform: none;
+}
+.place-card.open .pc-hit {
+  height: auto;
 }
 .place-card.pending {
+  display: grid;
+  align-content: space-between;
   background: var(--card);
   color: var(--text);
   box-shadow: none;
@@ -3705,10 +3724,11 @@ button.alert-card {
   position: relative;
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
-  column-gap: 12px;
+  column-gap: 8px;
   row-gap: 2px;
   align-content: start;
-  padding: 14px 14px 12px;
+  height: 100%;
+  padding: 12px 12px 12px;
   border-radius: var(--radius);
   color: inherit;
   text-decoration: none;
@@ -3721,10 +3741,10 @@ button.alert-card {
   outline-offset: 2px;
 }
 .pc-name {
-  grid-column: 1;
-  padding-right: 44px;
+  grid-column: 1 / -1;
+  padding-right: 84px;
   overflow: hidden;
-  font-size: 20px;
+  font-size: 18px;
   font-weight: 800;
   letter-spacing: -0.02em;
   line-height: 1.15;
@@ -3733,9 +3753,9 @@ button.alert-card {
 }
 .pc-detail {
   display: -webkit-box;
-  grid-column: 1;
+  grid-column: 1 / -1;
   overflow: hidden;
-  font-size: 13px;
+  font-size: 12.5px;
   line-height: 1.3;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
@@ -3744,9 +3764,8 @@ button.alert-card {
   display: flex;
   grid-column: 1;
   align-items: flex-end;
-  gap: 18px;
-  margin-top: 8px;
-  font-size: 46px;
+  margin-top: 6px;
+  font-size: 40px;
   line-height: 1;
 }
 .pc-aqi .fig,
@@ -3756,7 +3775,7 @@ button.alert-card {
   justify-items: start;
 }
 .pc-aqi strong,
-.smoke-fig strong {
+.smoke-fig-num {
   font-size: 1em;
   font-weight: 800;
   letter-spacing: -0.045em;
@@ -3766,28 +3785,78 @@ button.alert-card {
 .smoke-fig-label {
   font-size: 11px;
   font-weight: 700;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.04em;
 }
-.smoke-fig-label,
-.badge-unit {
+.smoke-fig-num,
+.badge-num {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
+  gap: 0.1em;
 }
-.pc-aqi > .smoke-fig {
-  padding-left: 18px;
-  border-left: 1.5px solid color-mix(in srgb, var(--on-level) 30%, transparent);
+.smoke-fig .cig-icon,
+.badge-num .cig-icon {
+  width: 0.78em;
+  height: 0.78em;
+  flex: none;
+}
+/* With the cigarettes on, the two figures are tiles that share an edge: side by side where the card is wide,
+   one above the other where it is narrow. */
+.pc-aqi.pair .fig,
+.pc-aqi.pair .smoke-fig {
+  padding: 6px 10px;
+}
+.pc-aqi.pair .fig {
+  background: rgb(255 255 255 / 0.55);
+}
+.pc-aqi.pair .smoke-fig {
+  background: #fff6ec;
+  color: #7a3f14;
+}
+.pc-aqi.pair.row {
+  flex-direction: row;
+  align-items: stretch;
+}
+.pc-aqi.pair.row .fig {
+  border-radius: 14px 0 0 14px;
+}
+.pc-aqi.pair.row .smoke-fig {
+  border-radius: 0 14px 14px 0;
+}
+.pc-aqi.pair.stack {
+  flex-direction: column;
+  align-items: stretch;
+  width: max-content;
+  font-size: 26px;
+}
+.pc-aqi.pair.stack .fig {
+  border-radius: 14px 14px 0 0;
+}
+.pc-aqi.pair.stack .smoke-fig {
+  border-radius: 0 0 14px 14px;
+  border-top: 1px solid rgb(122 63 20 / 0.18);
+}
+.pc-aqi.pair.stack .fig,
+.pc-aqi.pair.stack .smoke-fig {
+  grid-auto-flow: column;
+  align-items: baseline;
+  justify-content: start;
+  gap: 0 5px;
+  padding: 3px 9px;
+}
+/* A narrow card has no room for the words: the cigarette says what it is by its picture, and its tooltip. */
+.pc-aqi.pair.stack .smoke-fig-label {
+  display: none;
 }
 .pc-line {
   display: flex;
-  grid-column: 1;
+  grid-column: 1 / -1;
   flex-wrap: wrap;
   align-items: center;
-  gap: 6px 12px;
-  margin-top: 8px;
+  gap: 4px 10px;
+  margin-top: 6px;
 }
 .pc-level {
-  font-size: 16px;
+  font-size: 14px;
   font-weight: 800;
   line-height: 1.15;
 }
@@ -3795,7 +3864,7 @@ button.alert-card {
   display: flex;
   align-items: center;
   gap: 6px;
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 600;
 }
 .pc-sky-disc {
@@ -3806,64 +3875,22 @@ button.alert-card {
   border-radius: 50%;
   background: rgb(255 255 255 / 0.78);
 }
+/* The face keeps its size whatever else is on the card, at the right of the figures. */
 .pc-face {
   grid-column: 2;
-  grid-row: 2 / span 3;
-  align-self: center;
+  grid-row: 3;
+  align-self: end;
+  justify-self: end;
   color: color-mix(in srgb, var(--level) 52%, #334155);
   line-height: 0;
 }
-.pc-days {
-  display: grid;
-  grid-column: 1 / -1;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 8px;
-  margin-top: 12px;
-}
-.pc-day {
-  display: grid;
-  justify-items: center;
-  align-content: start;
-  gap: 4px;
-  padding: 8px 4px;
-  border-radius: 12px;
-  background: rgb(255 255 255 / 0.5);
-  font-size: 13px;
-}
-.pc-day-name {
-  font-weight: 700;
-}
-.pc-day .chip {
-  height: 24px;
-  min-width: 40px;
-  font-size: 14px;
-}
-.pc-day-sky {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: center;
-  gap: 2px 6px;
-}
-.pc-lo {
-  opacity: 0.7;
-}
-.pc-day-rain {
-  display: inline-flex;
-  align-items: center;
-  gap: 2px;
-}
-.pc-source {
-  grid-column: 1 / -1;
-  margin-top: 10px;
-  padding-top: 8px;
-  border-top: 1px solid color-mix(in srgb, var(--on-level) 24%, transparent);
-  font-size: 12.5px;
+.place-card.open .pc-aqi {
+  font-size: 52px;
 }
 .pc-actions {
   position: absolute;
-  top: 6px;
-  right: 6px;
+  top: 4px;
+  right: 4px;
   z-index: 1;
   display: flex;
 }
@@ -3881,24 +3908,147 @@ button.alert-card {
 .pc-icon-button:hover {
   background: rgb(255 255 255 / 0.4);
 }
+.pc-icon-button .flip {
+  transform: rotate(180deg);
+}
+.pc-more {
+  display: grid;
+  gap: 10px;
+  padding: 0 12px 12px;
+}
+.pc-days {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.pc-days li {
+  display: grid;
+  justify-items: center;
+  gap: 4px;
+  padding: 8px 4px;
+  border-radius: 12px;
+  background: rgb(255 255 255 / 0.5);
+  font-size: 13px;
+}
+.pc-day-name {
+  font-weight: 700;
+}
+.pc-days .chip {
+  height: 24px;
+  min-width: 40px;
+  font-size: 14px;
+}
+.pc-lo {
+  opacity: 0.7;
+}
+.pc-day-rain {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+}
+.pc-source {
+  grid-column: 1 / -1;
+  margin: 0;
+  padding-top: 8px;
+  border-top: 1px solid color-mix(in srgb, var(--on-level) 24%, transparent);
+  font-size: 12.5px;
+}
 
-/* The Lens card is the same card with what is worth knowing from here in place of the days, and no link */
+/* The Lens card: the same card with its two actions in the top right corner, and a fold */
 .lens-hud .place-card {
-  max-height: 52dvh;
+  min-height: 0;
+  max-height: 56dvh;
   overflow-y: auto;
 }
-.lens-hud .pc-hit {
-  padding: 12px 14px 10px;
+.lens-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 10px 6px 0 14px;
 }
-.lens-hud .pc-aqi {
-  font-size: 40px;
+.lens-title {
+  display: grid;
+  flex: 1 1 0;
+  min-width: 0;
+  padding-top: 2px;
+}
+.lens-title .pc-name {
+  padding-right: 0;
+  font-size: 19px;
+}
+.lens-tools {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: 6px;
+}
+.lens-tool {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  max-width: 150px;
+  height: 38px;
+  padding: 0 11px;
+  border: 0;
+  border-radius: 999px;
+  background: rgb(255 255 255 / 0.62);
+  color: var(--on-level);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.lens-tool[aria-pressed='true'] {
+  background: #fff;
+}
+.lens-switch-name {
+  max-width: 76px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.lens-switch select {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 999px;
+  opacity: 0;
+  cursor: pointer;
+}
+.lens-note {
+  margin: 0;
+  padding: 4px 14px 0;
+}
+.lens-body {
+  display: grid;
+  gap: 8px;
+  padding: 0 14px 12px;
+}
+.lens-main {
+  height: auto;
+  padding: 0;
+}
+.lens-main .pc-face {
+  grid-row: 1 / span 2;
+  align-self: center;
+}
+.lens-card.folded .lens-body {
+  padding-bottom: 8px;
 }
 .lens-facts {
   display: grid;
-  grid-column: 1 / -1;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 6px;
-  margin: 10px 0 0;
+  margin: 0;
   padding: 0;
   list-style: none;
 }
@@ -3919,26 +4069,21 @@ button.alert-card {
   flex: none;
   margin-top: 1px;
 }
-.lens-more {
-  grid-column: 1 / -1;
-  margin-top: 6px;
+/* The colour scale sits in the time card, above the slider */
+.lens-dial .aqi-scale {
+  margin-bottom: 8px;
+  border: 0;
+  background: transparent;
+  padding: 0;
 }
-.lens-more summary {
-  color: inherit;
-  cursor: pointer;
-  font-size: 13px;
-  font-weight: 700;
-  text-decoration: underline;
-}
-.lens-foot {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 4px 10px;
-  margin: 6px 0 0;
+.aqi-scale-unit {
+  margin: 0;
+  color: var(--muted);
+  font-size: 9.5px;
+  text-align: center;
 }
 
-/* The cigarettes, beside the AQI and the same size, in a chip, a tile or a big figure */
+/* Cigarettes in a chip, a tile or a figure; joined under the AQI chip in lines of text */
 .cig-chip {
   --level: #fff3e6;
   --on-level: #7a3f14;
@@ -3949,9 +4094,34 @@ button.alert-card {
   align-items: center;
   gap: 3px;
 }
+.chip-pair {
+  display: inline-grid;
+  flex: none;
+}
+.chip-pair.on .chip {
+  width: 100%;
+}
+.chip-pair.on .chip:first-child {
+  border-radius: 8px 8px 0 0;
+}
+.chip-pair.on .cig-chip {
+  height: 26px;
+  border-top: 0;
+  border-radius: 0 0 8px 8px;
+}
 .smoke-badge {
+  width: auto;
+  min-width: 108px;
+  padding: 0 12px;
   background: #fff6ec;
   color: #7a3f14;
+}
+.smoke-badge .badge-num {
+  font-size: 52px;
+}
+.smoke-badge .badge-unit {
+  font-size: 11px;
+  letter-spacing: 0;
 }
 .badge-col {
   display: flex;
@@ -3965,7 +4135,7 @@ button.alert-card {
   grid-row: 2;
 }
 
-/* The three round buttons: Ask, cigarettes, live location, in one column at the bottom right of every screen */
+/* The two round buttons: Ask and cigarettes, in one column at the bottom right of every screen */
 .dock {
   position: fixed;
   right: 16px;
@@ -4013,62 +4183,139 @@ button.alert-card {
   border-color: #e8b48c;
   background: #fff7ef;
 }
-.live-toggle {
-  color: #2f6aa3;
+
+/* Detect my location: one switch, wherever live location is wanted */
+.detect {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 2px 8px;
 }
-.live-toggle.on {
+.detect-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 38px;
+  padding: 0 12px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--card);
+  color: #2f6aa3;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.detect-button.on {
   border-color: #8fbbe6;
   background: #e6f1fb;
 }
-.live-dot {
-  position: absolute;
-  top: 8px;
-  right: 8px;
-  width: 9px;
-  height: 9px;
-  border: 2px solid #fff;
-  border-radius: 50%;
-  background: #2f9e5a;
+.detect-button.asking {
+  opacity: 0.7;
 }
-.live-toggle.asking .live-dot {
-  background: #e0953f;
-  animation: live-pulse 1s ease-in-out infinite;
-}
-.dock-note {
-  position: absolute;
-  right: 60px;
-  bottom: 0;
-  width: max-content;
-  max-width: min(260px, 70vw);
-  padding: 8px 12px;
-  border: 1px solid var(--line);
-  border-radius: 12px;
-  background: var(--card);
-  box-shadow: 0 8px 20px -10px rgb(61 74 92 / 0.5);
-  font-size: 13px;
+.locate-hint {
+  display: block;
+  margin: -4px 4px 0 0;
+  color: #2f6aa3;
+  font-size: 12px;
+  font-weight: 700;
+  text-align: right;
 }
 
-/* The map: the colour scale at the top, centred, as on the AR Lens, and round buttons under it */
+/* The map: everything is on; one card at the bottom holds the colour scale, detection and the notes */
 .map-legend {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 4px 10px;
+  display: grid;
+  gap: 6px;
   padding: 8px 12px;
   border: 1px solid var(--line);
   border-radius: var(--radius);
-  background: rgb(255 255 255 / 0.92);
+  background: rgb(255 255 255 / 0.94);
+}
+.legend-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.legend-head .legend-pills {
+  flex: none;
+}
+.legend-head .detect {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.legend-fold {
+  flex: none;
+  margin-left: auto;
+  color: var(--text);
+}
+.legend-body {
+  display: grid;
+  gap: 6px;
+}
+.legend-body[hidden] {
+  display: none;
 }
 .map-legend p:empty {
   display: none;
 }
-.map-legend .legend-about {
-  flex: 1 0 100%;
-}
-.map-top .map-sheet {
-  justify-self: stretch;
-  max-width: 420px;
-}
 .map-screen .maplibregl-ctrl-top-right {
-  top: 66px;
+  top: 12px;
+}
+.popup-button {
+  margin-top: 6px;
+  padding: 8px 12px;
+  border: 0;
+  border-radius: 999px;
+  background: #e8743b;
+  color: #fff;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 800;
+  cursor: pointer;
+}
+.fire-report {
+  display: grid;
+  gap: 10px;
+}
+.fire-report h2 {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: #b9531f;
+}
+.fire-report textarea {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  font: inherit;
+}
+.form-error {
+  margin: 0;
+  color: #b3261e;
+  font-weight: 600;
+}
+
+/* Exposure: the three rings as filters, and the ring lifted when one is chosen */
+.ring-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.ring-filters button {
+  min-height: 40px;
+  padding: 0 14px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--card);
+  color: var(--text);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.ring-filters button[aria-pressed='true'] {
+  border-color: #3b82c4;
+  background: #3b82c4;
+  color: #fff;
 }

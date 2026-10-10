@@ -16,6 +16,8 @@ import { localAssistant } from './local';
 import { RequestForm } from './RequestForm';
 import { addedText } from './outingParse';
 import { isOutdoorStatement, nextStep, readInto, startDraft, type LogDraft } from './logging';
+import { isFireReport, isSendIt, placeFromText, type FireDraft } from './fireReporting';
+import { sentWords, submitFireReport } from '../map/fireReport';
 import { pinForRole, type Role } from '../places/roles';
 import { today } from '../exposure/model';
 import { addOuting, loadOutings, newOuting, saveOutings } from '../exposure/outings';
@@ -198,6 +200,7 @@ export function AssistantFab({
   const asked = useRef(false);
   const waitingFor = useRef<string | undefined>(undefined);
   const logging = useRef<LogDraft | undefined>(undefined);
+  const fire = useRef<FireDraft | undefined>(undefined);
 
   const ask = (question: string): void => {
     const text = question.trim();
@@ -219,6 +222,93 @@ export function AssistantFab({
       ]);
       if (spoken) void voice.speak(words);
     };
+    // A question in the middle of finding the fire's place is a new question, not an answer to it.
+    if (
+      fire.current !== undefined &&
+      fire.current.where === undefined &&
+      /\?\s*$/u.test(text) &&
+      !isFireReport(text)
+    )
+      fire.current = undefined;
+    // Someone telling us about a fire is helped to report it: where, then anything to add, then it is sent.
+    if (fire.current !== undefined || (logging.current === undefined && isFireReport(text))) {
+      const held: FireDraft = fire.current ?? {};
+      const basis = 'Fire report';
+      if (/^(cancel|never mind|nevermind|forget it|stop)\b/iu.test(text)) {
+        fire.current = undefined;
+        say('Okay, I did not send a report.', { basis });
+        return;
+      }
+      const askNote = (where: NonNullable<FireDraft['where']>): void => {
+        fire.current = { where, asked: 'note' };
+        say(
+          `Got it: the fire near ${where.label}. Anything to add? Say it in a line, or tap Send it.`,
+          { basis, chips: ['Send it'] },
+        );
+      };
+      const send = (where: NonNullable<FireDraft['where']>, note: string | undefined): void => {
+        fire.current = undefined;
+        void submitFireReport(
+          { lat: where.lat, lng: where.lng, ...(note === undefined ? {} : { note }) },
+          { baseUrl: airStore().kind === 'live' ? API_URL : undefined },
+        ).then(
+          (how) => {
+            say(sentWords(how), {
+              basis,
+              link: {
+                to: `/map?lat=${String(where.lat)}&lng=${String(where.lng)}&z=10`,
+                label: 'See it on the map',
+              },
+            });
+          },
+          (error: unknown) => {
+            say(error instanceof Error ? error.message : 'That did not go through.', { basis });
+          },
+        );
+      };
+      if (held.where !== undefined && held.asked === 'note') {
+        send(held.where, isSendIt(text) ? undefined : text.trim().slice(0, 200));
+        return;
+      }
+      const found = placeFromText(text, allPins);
+      if (found === undefined) {
+        fire.current = {};
+        say('Where is the fire? Say near me, or name one of your places.', {
+          basis,
+          chips: ['Near me', ...allPins.map((p) => p.name).slice(0, 4)],
+        });
+        return;
+      }
+      if (found === 'here') {
+        if (!('geolocation' in navigator)) {
+          fire.current = {};
+          say('This browser cannot share where you are. Name one of your places instead.', {
+            basis,
+          });
+          return;
+        }
+        fire.current = {};
+        say('Finding where you are…', { basis });
+        navigator.geolocation.getCurrentPosition(
+          (position) => {
+            askNote({
+              lat: position.coords.latitude,
+              lng: position.coords.longitude,
+              label: 'where you are',
+            });
+          },
+          () => {
+            say('I could not get your location. Name one of your places instead, or say cancel.', {
+              basis,
+            });
+          },
+          { timeout: 10_000 },
+        );
+        return;
+      }
+      askNote(found);
+      return;
+    }
     let draftNow: LogDraft | undefined;
     if (logging.current !== undefined) {
       const held = logging.current;

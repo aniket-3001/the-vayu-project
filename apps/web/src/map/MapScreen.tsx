@@ -1,4 +1,4 @@
-import { Flame, Layers, Wind } from 'lucide-react';
+import { ChevronDown, Flame } from 'lucide-react';
 import { Marker, type Map as MapLibreMap } from 'maplibre-gl';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
@@ -9,7 +9,10 @@ import { AqiScale } from '../components/AqiScale';
 import { useLiveLocation } from '../places/liveLocation';
 import { Pill } from '../today/ui/Chip';
 import { useAirUnits } from '../units/AirUnits';
-import { LAYER_LABELS, defaultLayers, type Shown } from './layers';
+import { DetectLocation } from '../nav/DetectLocation';
+import { defaultLayers } from './layers';
+import { FireReportSheet } from './FireReportSheet';
+import type { Fire } from './fires';
 import { binMonitors, monitorsFromStations } from './monitors';
 import { MapView } from './MapView';
 import { WindStars } from './WindStars';
@@ -18,8 +21,10 @@ import { useMapData } from './useMapData';
 
 /** Where the air is bad, and where it is going: a flat map of readings and fires, or a globe with the wind on it. */
 export function MapScreen(): React.JSX.Element {
-  const [shown, setShown] = useState<Shown>(defaultLayers());
-  const [open, setOpen] = useState(false);
+  // Everything is always on: the monitors, the air colour, the fires and the wind.
+  const shown = useMemo(defaultLayers, []);
+  const [open, setOpen] = useState(true);
+  const [reporting, setReporting] = useState<Fire | undefined>(undefined);
   const [map, setMap] = useState<MapLibreMap>();
   const { smoke } = useAirUnits();
   const data = useMapData();
@@ -107,10 +112,6 @@ export function MapScreen(): React.JSX.Element {
     };
   }, []);
 
-  const toggle = (key: keyof Shown): void => {
-    setShown((current) => ({ ...current, [key]: !current[key] }));
-  };
-
   return (
     <div className="map-screen">
       <MapView
@@ -122,116 +123,98 @@ export function MapScreen(): React.JSX.Element {
         sample={sample}
         start={start}
         onReady={setMap}
+        onReportFire={setReporting}
       />
       <WindStars map={map} enabled={shown.wind} field={windField} />
 
-      <div className="lens-top map-top">
-        <AqiScale className="lens-scale" />
-        <div className="lens-actions">
-          <button
-            type="button"
-            className="lens-round wind-switch"
-            aria-pressed={shown.wind}
-            aria-label={shown.wind ? 'Wind on. Turn wind off' : 'Wind off. Turn wind on'}
-            title={shown.wind ? 'Wind on' : 'Wind off'}
-            onClick={() => {
-              toggle('wind');
-            }}
-          >
-            <Wind size={22} strokeWidth={1.75} aria-hidden="true" />
-          </button>
-          <button
-            type="button"
-            className="lens-round"
-            aria-label="Layers"
-            title="Layers"
-            aria-expanded={open}
-            aria-controls="map-layers"
-            onClick={() => {
-              setOpen((v) => !v);
-            }}
-          >
-            <Layers size={22} strokeWidth={1.75} aria-hidden="true" />
-          </button>
-        </div>
-        {open && (
-          <fieldset className="map-sheet" id="map-layers">
-            <legend>Show on the map</legend>
-            {(Object.keys(LAYER_LABELS) as (keyof Shown)[])
-              .filter((key) => key !== 'wind')
-              .map((key) => (
-                // The label text is a computed name inside nested spans, which the rule cannot see.
-                // eslint-disable-next-line jsx-a11y/label-has-associated-control
-                <label key={key} className="map-toggle" htmlFor={`layer-${key}`}>
-                  <input
-                    id={`layer-${key}`}
-                    type="checkbox"
-                    checked={shown[key]}
-                    onChange={() => {
-                      toggle(key);
-                    }}
-                  />
-                  <span>
-                    <strong>{LAYER_LABELS[key].name}</strong>
-                    <span className="muted small"> {LAYER_LABELS[key].note}</span>
-                  </span>
-                </label>
-              ))}
-          </fieldset>
-        )}
-      </div>
-
       <div className="map-bottom" ref={bottom}>
-        <div className="map-legend">
+        <div className={`map-legend${open ? ' open' : ''}`}>
+          <div className="legend-head">
+            <p className="legend-pills">
+              {sample && data.fires === undefined && <Pill>Sample data</Pill>}
+              {((!sample && monitors.length > 0) || data.windLive || data.fires !== undefined) && (
+                <Pill>Live</Pill>
+              )}
+            </p>
+            <DetectLocation />
+            <button
+              type="button"
+              className="pc-icon-button legend-fold"
+              aria-expanded={open}
+              aria-controls="map-legend-body"
+              aria-label={
+                open ? 'Fold the colour scale and notes' : 'Show the colour scale and notes'
+              }
+              onClick={() => {
+                setOpen((v) => !v);
+              }}
+            >
+              <ChevronDown
+                size={20}
+                strokeWidth={2.25}
+                aria-hidden="true"
+                className={open ? '' : 'flip'}
+              />
+            </button>
+          </div>
           <p className="small" role="status">
             {where}
           </p>
-          <p className="legend-pills">
-            {sample && (shown.monitors || data.fires === undefined) && <Pill>Sample data</Pill>}
-            {((!sample && shown.monitors && monitors.length > 0) ||
-              (shown.gradient && !sample && monitors.length > 0) ||
-              (shown.wind && data.windLive) ||
-              data.fires !== undefined) && <Pill>Live</Pill>}
-          </p>
-          <details className="legend-about">
-            <summary>About this data</summary>
-            <p className="legend-notes small">
-              {shown.monitors && !sample && (
-                <span>
-                  {stations.status === 'loading'
-                    ? 'Getting the monitors…'
-                    : monitors.length === 0
-                      ? 'No monitor has reported in the last six hours, so none are shown.'
-                      : `${String(monitors.length)} monitors worldwide with a PM2.5 reading in the last six hours (OpenAQ). Each is a dot; zoom in for its number.`}
-                </span>
-              )}
-              {shown.gradient && (
-                <span>
-                  Colour between monitors is an estimate from the nearest ones. It fades out about
-                  450 km from any monitor, where we know nothing.
-                </span>
-              )}
-              {shown.fires && (
-                <span className="legend-fire">
-                  <Flame size={14} strokeWidth={2} aria-hidden="true" />{' '}
-                  {data.fires === undefined
-                    ? 'Fires, last 24 hours'
-                    : `${String(data.fires)} fires in the last 24 hours (NASA satellite).${sample ? ' Positions are a sample.' : ''}`}
-                </span>
-              )}
-              {shown.wind && (
-                <span>
-                  {data.windLive
-                    ? 'Wind: ICON and GFS models via Open-Meteo, right now: close detail over south Asia, coarser elsewhere.'
-                    : sample
-                      ? 'Wind is a sample flow.'
-                      : 'The wind could not be loaded just now, so none is shown.'}
-                </span>
-              )}
-            </p>
-          </details>
+          <div id="map-legend-body" hidden={!open} className="legend-body">
+            <AqiScale />
+            <details className="legend-about">
+              <summary>About this data</summary>
+              <p className="legend-notes small">
+                {shown.monitors && !sample && (
+                  <span>
+                    {stations.status === 'loading'
+                      ? 'Getting the monitors…'
+                      : monitors.length === 0
+                        ? 'No monitor has reported in the last six hours, so none are shown.'
+                        : `${String(monitors.length)} monitors worldwide with a PM2.5 reading in the last six hours (OpenAQ). Each is a dot; zoom in for its number.`}
+                  </span>
+                )}
+                {shown.gradient && (
+                  <span>
+                    Colour between monitors is an estimate from the nearest ones. It fades out about
+                    450 km from any monitor, where we know nothing.
+                  </span>
+                )}
+                {shown.fires && (
+                  <span className="legend-fire">
+                    <Flame size={14} strokeWidth={2} aria-hidden="true" />{' '}
+                    {data.fires === undefined
+                      ? 'Fires, last 24 hours'
+                      : `${String(data.fires)} fires in the last 24 hours (NASA satellite).${sample ? ' Positions are a sample.' : ''}`}
+                  </span>
+                )}
+                {shown.wind && (
+                  <span>
+                    {data.windLive
+                      ? 'Wind: ICON and GFS models via Open-Meteo, right now: close detail over south Asia, coarser elsewhere.'
+                      : sample
+                        ? 'Wind is a sample flow.'
+                        : 'The wind could not be loaded just now, so none is shown.'}
+                  </span>
+                )}
+              </p>
+            </details>
+          </div>
         </div>
       </div>
+      {reporting !== undefined && (
+        <FireReportSheet
+          fire={{
+            lat: reporting.lat,
+            lng: reporting.lng,
+            hoursAgo: reporting.hoursAgo,
+            frp: reporting.frp,
+          }}
+          onClose={() => {
+            setReporting(undefined);
+          }}
+        />
+      )}
     </div>
   );
 }

@@ -11,7 +11,7 @@ export const SPOT_LABELS: Readonly<Record<SpotKind, string>> = {
   home: 'Home',
   work: 'Work',
   school: 'School',
-  outdoor: 'Outdoor',
+  outdoor: 'Live outdoor location',
 };
 
 /** A place the person has set, and the hours they are usually there. `to` before `from` means it runs past midnight. */

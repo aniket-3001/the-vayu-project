@@ -204,7 +204,7 @@ export class VayuStack extends Stack {
     });
     // The routes that cost something or take a person's words get their own, tighter, throttle below.
     const limitedRoutes = [];
-    for (const path of ['/v1/assistant', '/v1/speech', '/v1/requests']) {
+    for (const path of ['/v1/assistant', '/v1/speech', '/v1/requests', '/v1/fire-reports']) {
       limitedRoutes.push(
         ...api.addRoutes({
           path,
@@ -236,6 +236,7 @@ export class VayuStack extends Stack {
       'POST /v1/assistant': { ThrottlingRateLimit: 3, ThrottlingBurstLimit: 6 },
       'POST /v1/speech': { ThrottlingRateLimit: 3, ThrottlingBurstLimit: 6 },
       'POST /v1/requests': { ThrottlingRateLimit: 1, ThrottlingBurstLimit: 3 },
+      'POST /v1/fire-reports': { ThrottlingRateLimit: 1, ThrottlingBurstLimit: 3 },
     };
 
     // Seeing that it works, and hearing when it does not.

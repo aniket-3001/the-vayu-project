@@ -11,7 +11,10 @@ const OUTER = 148;
 const INNER = 86;
 const SWEEP = 290; // degrees, with the gap at the bottom where 24 meets 0
 
-export const WHERE_LABELS: Readonly<Record<Where, string>> = { ...SPOT_LABELS, live: 'Live' };
+export const WHERE_LABELS: Readonly<Record<Where, string>> = {
+  ...SPOT_LABELS,
+  live: 'Live outdoor location',
+};
 
 /** The three rings of a day, outside in: home, work or school, and outdoors. */
 export const DIAL_RINGS = ['home', 'work', 'outdoor'] as const;
@@ -27,7 +30,7 @@ export function ringOf(cell: Cell): DialRing {
 export const RING_HELP: Readonly<Record<DialRing, string>> = {
   home: 'The hours you were at home',
   work: 'The hours you were at work or school',
-  outdoor: 'The hours you were outside: walks, play, the park',
+  outdoor: 'The hours your location, or a walk you logged, put you outside',
 };
 
 /**
@@ -135,6 +138,7 @@ const cellPath = arc();
 export function Dial({
   cells,
   names,
+  focus,
   nowHour,
   picked,
   onPick,
@@ -142,6 +146,8 @@ export function Dial({
   /** One cell for each hour: the place the person was in, and nothing for the places they were not. */
   readonly cells: readonly Cell[];
   readonly names: Readonly<Record<DialRing, string>>;
+  /** The ring the person is looking at: it is outlined and the others fade. Undefined shows all alike. */
+  readonly focus?: DialRing | undefined;
   /** The hour to mark as now, or undefined for a finished day. */
   readonly nowHour: number | undefined;
   readonly picked: number;
@@ -189,13 +195,25 @@ export function Dial({
       {rings.map((where, ringIndex) => {
         const outer = OUTER - ringIndex * thickness;
         const inner = outer - thickness + gap;
-        // Each ring is named in the gap at the bottom, where the day starts and ends, level with its own ring.
-        const labelX = C;
-        const labelY = C + (outer + inner) / 2;
+        const lifted = focus === where;
+        const faded = focus !== undefined && !lifted;
+        // Each ring is named in the gap at the bottom, where the day starts and ends, bent round its own ring.
+        const mid = (outer + inner) / 2;
+        const [x0, y0] = point(mid + 3, 0); // the start of the day, bottom left
+        const [x1, y1] = point(mid + 3, 24); // the end of the day, bottom right
+        const pathId = `ring-name-${where}`;
         return (
-          <g key={where} className="ring">
-            <text x={labelX} y={labelY + 3} textAnchor="middle" className="ring-name">
-              {names[where]}
+          <g key={where} className={faded ? 'ring faded' : lifted ? 'ring lifted' : 'ring'}>
+            {/* The name runs along the ring through the gap, from the left of the bottom to the right. */}
+            <path
+              id={pathId}
+              d={`M ${String(x0)} ${String(y0)} A ${String(mid + 3)} ${String(mid + 3)} 0 0 0 ${String(x1)} ${String(y1)}`}
+              fill="none"
+            />
+            <text className={`ring-name${lifted ? ' on' : ''}`} aria-hidden="true">
+              <textPath href={`#${pathId}`} startOffset="50%" textAnchor="middle">
+                {names[where]}
+              </textPath>
             </text>
             {Array.from({ length: 24 }, (_, hour) => {
               const cell = cells.find((c) => c.hour === hour && ringOf(c) === where);
@@ -219,6 +237,20 @@ export function Dial({
                 />
               );
             })}
+            {lifted && (
+              <path
+                d={
+                  cellPath({
+                    innerRadius: inner - 1,
+                    outerRadius: outer + 1,
+                    startAngle: angle(0),
+                    endAngle: angle(24),
+                  }) ?? ''
+                }
+                transform={`translate(${String(C)} ${String(C)})`}
+                className="ring-outline"
+              />
+            )}
           </g>
         );
       })}

@@ -1,3 +1,4 @@
+import { cigaretteFigure, cigarettesPerDay } from '../units/smoke';
 import type { FeatureCollection, Point } from 'geojson';
 import { seededRandom, usAqi } from '@vayu/core';
 import type { MapStation } from '@vayu/contracts';
@@ -94,6 +95,8 @@ export function monitorsGeoJson(monitors: readonly Monitor[]): FeatureCollection
         name: m.name,
         aqi: m.aqi,
         pm25: m.pm25,
+        // The label when the cigarette switch is on: the same air, said as cigarettes a day.
+        cigs: cigaretteFigure(cigarettesPerDay(m.pm25)),
         age: m.ageMinutes,
       },
     })),

@@ -9,7 +9,7 @@ import { AirError, AirLoading } from '../components/AirState';
 import { pinId, type Pin } from '../data/pins';
 import { usePins } from '../places/usePins';
 import { Progress } from '../tasks/ui/TipsCard';
-import { SmokeFigure } from '../units/AirUnits';
+import { ChipPair } from '../units/AirUnits';
 import { ASSUMPTION_NOTES } from './assumptions';
 import {
   today,
@@ -29,7 +29,7 @@ import { personaById } from './persona';
 import { DAY_LABELS, initials, MAX_PEOPLE, personaOf } from './people';
 import { loadAllSpots } from './spots';
 import { sourcesNote } from './sources';
-import { Dial, DialInfo, WHERE_LABELS, type DialRing } from './ui/Dial';
+import { DIAL_RINGS, Dial, DialInfo, WHERE_LABELS, ringOf, type DialRing } from './ui/Dial';
 import { Summary } from './ui/Summary';
 import { WeekStrip } from './ui/WeekStrip';
 import { allUnits } from './units';
@@ -141,22 +141,32 @@ export function ExposureScreen({
   );
   // At any hour a person is in one place, so one cell is kept for each hour: the others overlap it and are left out.
   const counted = useMemo(() => countedCells(cells), [cells]);
-  const summary = summarise(counted, openAirFor(counted, visible, live.log, date));
+  // The filter looks at one ring: its hours are what the dial lifts, what the readout lists and what is added up.
+  const [filter, setFilter] = useState<DialRing | undefined>(undefined);
+  const shown = useMemo(
+    () => (filter === undefined ? counted : counted.filter((cell) => ringOf(cell) === filter)),
+    [counted, filter],
+  );
+  const summary = summarise(shown, openAirFor(shown, visible, live.log, date));
   const week = useMemo(
     () => lastWeek().map((d) => ({ date: d, summary: daySummary(visible, units, {}, d, outings) })),
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [visible, units, outings, history],
   );
-  const atPicked = counted.filter((cell) => cell.hour === picked);
+  const atPicked = shown.filter((cell) => cell.hour === picked);
   const ringNames: Record<DialRing, string> = {
     home: 'Home',
     work: person.day === 'school' ? 'School' : person.day === 'work' ? 'Work' : 'Work / School',
-    outdoor: 'Outdoor',
+    outdoor: 'Live outdoor location',
   };
   const nothingSet = Object.keys(visible).length === 0 && counted.length === 0;
   const isToday = date === today();
   const span =
-    summary?.fullDay === false ? `so far today (${String(summary.hours)} hours)` : 'over the day';
+    filter !== undefined && summary !== undefined
+      ? `in the ${String(summary.hours)} ${summary.hours === 1 ? 'hour' : 'hours'} you were at ${ringNames[filter]}`
+      : summary?.fullDay === false
+        ? `so far today (${String(summary.hours)} hours)`
+        : 'over the day';
   const noData = view !== 'week' && !hasData(view);
 
   const open = (next: View): void => {
@@ -249,10 +259,10 @@ export function ExposureScreen({
           <label className="auto-switch">
             <LocateFixed size={18} strokeWidth={1.75} aria-hidden="true" />
             <span>
-              <strong>Work it out from where I am</strong>
+              <strong>Detect my location</strong>
               <span className="muted small">
                 {autoOn
-                  ? 'On, while this page is open.'
+                  ? 'On, while this page is open. Counted as live outdoor location.'
                   : 'Off. Counts the hours from where you are.'}
               </span>
             </span>
@@ -364,9 +374,24 @@ export function ExposureScreen({
 
         {view !== 'week' && !noData && (
           <>
+            <div className="ring-filters" role="group" aria-label="Show one place">
+              {DIAL_RINGS.map((ring) => (
+                <button
+                  key={ring}
+                  type="button"
+                  aria-pressed={filter === ring}
+                  onClick={() => {
+                    setFilter((current) => (current === ring ? undefined : ring));
+                  }}
+                >
+                  {ringNames[ring]}
+                </button>
+              ))}
+            </div>
             <div className="dial-wrap">
               <Dial
                 cells={counted}
+                focus={filter}
                 names={ringNames}
                 nowHour={isToday ? hoursSoFar(today()) + 0.5 : undefined}
                 picked={picked}
@@ -416,16 +441,17 @@ export function ExposureScreen({
                 <ul>
                   {atPicked.map((cell) => (
                     <li key={cell.where}>
-                      <span
-                        className="chip"
-                        style={{
-                          background: levelForAqi(cell.aqi).solid,
-                          color: levelForAqi(cell.aqi).onSolid,
-                        }}
-                      >
-                        {cell.aqi}
-                      </span>
-                      <SmokeFigure pm25={cell.pm25} variant="chip" />
+                      <ChipPair pm25={cell.pm25}>
+                        <span
+                          className="chip"
+                          style={{
+                            background: levelForAqi(cell.aqi).solid,
+                            color: levelForAqi(cell.aqi).onSolid,
+                          }}
+                        >
+                          {cell.aqi}
+                        </span>
+                      </ChipPair>
                       <span>
                         <strong>{WHERE_LABELS[cell.where]}</strong>,{' '}
                         {levelForAqi(cell.aqi).name.toLowerCase()}. {cell.pm25} µg/m³ PM
@@ -438,7 +464,7 @@ export function ExposureScreen({
                 </ul>
               )}
             </div>
-            <Summary summary={summary} cells={counted} span={span} />
+            <Summary summary={summary} cells={shown} span={span} />
           </>
         )}
       </main>

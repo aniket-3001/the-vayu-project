@@ -1,6 +1,6 @@
 import { createContext, useCallback, useContext, useMemo, useState } from 'react';
 import { CigaretteIcon } from './CigaretteIcon';
-import { cigarettesPerDay, describeCigarettesShort, SMOKE_CAVEAT } from './smoke';
+import { cigaretteFigure, cigarettesPerDay, describeCigarettesShort, SMOKE_CAVEAT } from './smoke';
 
 export const UNITS_STORAGE_KEY = 'vayu.units.v1';
 
@@ -71,12 +71,9 @@ export function SmokeToggle(): React.JSX.Element {
   );
 }
 
-const shownCigarettes = (perDay: number): string =>
-  perDay < 0.5 ? '<½' : perDay >= 10 ? String(Math.round(perDay)) : String(perDay);
-
 /**
  * The air as cigarettes a day, only while the cigarette switch is on. It always sits right beside the AQI and in
- * the same size:
+ * the same size, with the cigarette beside its number:
  * - `figure` is a number with a small label under it, as the AQI is on a place card;
  * - `badge` is a tile like the AQI tile on the Today screen;
  * - `chip` is a small chip like the AQI chip in a line of text.
@@ -93,7 +90,7 @@ export function SmokeFigure({
   const { smoke } = useAirUnits();
   if (!smoke) return null;
   const perDay = cigarettesPerDay(pm25);
-  const shown = shownCigarettes(perDay);
+  const shown = cigaretteFigure(perDay);
   const words = describeCigarettesShort(perDay);
   const group = {
     role: 'group',
@@ -109,44 +106,68 @@ export function SmokeFigure({
         </span>
       </span>
     );
-  if (variant === 'badge')
-    return (
-      <span className={`badge smoke-badge ${className}`.trim()} {...group}>
-        <span className="badge-num" aria-hidden="true">
-          {shown}
-        </span>
-        <span className="badge-unit" aria-hidden="true">
-          <CigaretteIcon size={16} lit /> a day
-        </span>
+  const body = (
+    <>
+      <span className={variant === 'badge' ? 'badge-num' : 'smoke-fig-num'} aria-hidden="true">
+        <CigaretteIcon size={30} lit />
+        <span className="tnum">{shown}</span>
       </span>
-    );
-  return (
+      <span className={variant === 'badge' ? 'badge-unit' : 'smoke-fig-label'} aria-hidden="true">
+        cigarettes a day
+      </span>
+    </>
+  );
+  return variant === 'badge' ? (
+    <span className={`badge smoke-badge ${className}`.trim()} {...group}>
+      {body}
+    </span>
+  ) : (
     <span className={`smoke-fig ${className}`.trim()} {...group}>
-      <strong className="tnum" aria-hidden="true">
-        {shown}
-      </strong>
-      <span className="smoke-fig-label" aria-hidden="true">
-        <CigaretteIcon size={16} lit /> a day
-      </span>
+      {body}
     </span>
   );
 }
 
-/** The AQI as a big number with its label, and the cigarettes beside it while that is switched on. */
+/**
+ * The AQI as a big number with its label and, while the cigarette switch is on, the cigarettes joined to it as a
+ * second tile of the same size. Where there is room across (a wide card) the tiles sit side by side; where there
+ * is room down (a narrow one) the AQI is on top and the cigarettes share its bottom edge.
+ */
 export function AirFigures({
   aqi,
   pm25,
+  layout = 'row',
 }: {
   readonly aqi: number;
   readonly pm25: number;
+  readonly layout?: 'row' | 'stack';
 }): React.JSX.Element {
+  const { smoke } = useAirUnits();
   return (
-    <span className="pc-aqi">
+    <span className={`pc-aqi${smoke ? ` pair ${layout}` : ''}`}>
       <span className="fig">
         <strong className="tnum">{aqi}</strong>
         <span>AQI</span>
       </span>
       <SmokeFigure pm25={pm25} />
+    </span>
+  );
+}
+
+/** An AQI chip and, with the cigarette switch on, the cigarette chip joined under it: for lines of text. */
+export function ChipPair({
+  children,
+  pm25,
+}: {
+  /** The AQI chip. */
+  readonly children: React.ReactNode;
+  readonly pm25: number;
+}): React.JSX.Element {
+  const { smoke } = useAirUnits();
+  return (
+    <span className={`chip-pair${smoke ? ' on' : ''}`}>
+      {children}
+      <SmokeFigure pm25={pm25} variant="chip" />
     </span>
   );
 }

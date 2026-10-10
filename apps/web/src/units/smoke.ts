@@ -28,3 +28,9 @@ export function describeCigarettesShort(perDay: number): string {
   const shown = perDay >= 10 ? String(Math.round(perDay)) : String(Math.round(perDay * 10) / 10);
   return `${shown} ${shown === '1' ? 'cigarette' : 'cigarettes'} a day`;
 }
+
+/** A figure for a place that is short of room: "3.2", "12", or "<½" when it is under half a cigarette. */
+export function cigaretteFigure(perDay: number): string {
+  if (perDay === 0) return '0';
+  return perDay < 0.5 ? '<½' : perDay >= 10 ? String(Math.round(perDay)) : String(perDay);
+}

@@ -542,4 +542,65 @@ describe('the best hour in the context', () => {
     expect(await screen.findByText(/I left it out/u)).toBeInTheDocument();
     expect(savedOutings().me).toBeUndefined();
   });
+
+  describe('reporting a fire', () => {
+    const savedReports = (): { lat: number; lng: number; note?: string }[] =>
+      JSON.parse(window.localStorage.getItem('vayu.fireReports.v1') ?? '[]') as {
+        lat: number;
+        lng: number;
+        note?: string;
+      }[];
+
+    it('asks where, then for a line to add, then keeps the report and says what happens to it', async () => {
+      window.localStorage.setItem('vayu.pins.v1', JSON.stringify(pins));
+      await openChat();
+      await typeIn('I want to report a fire');
+      expect(await screen.findByText(/Where is the fire/u)).toBeInTheDocument();
+      expect(savedReports()).toHaveLength(0);
+      await userEvent.click(
+        within(screen.getByRole('group', { name: 'Quick answers' })).getByRole('button', {
+          name: 'School',
+        }),
+      );
+      expect(await screen.findByText(/Anything to add/u)).toBeInTheDocument();
+      await typeIn('smoke is drifting across the road');
+      const reply = await screen.findByText(/Your report is saved|Saved on this device/u);
+      expect(reply).toHaveTextContent('not sent to any agency');
+      expect(savedReports()).toEqual([
+        expect.objectContaining({
+          lat: 28.57,
+          lng: 77.18,
+          note: 'smoke is drifting across the road',
+        }),
+      ]);
+    });
+
+    it('takes the place from the sentence and sends at once when there is nothing to add', async () => {
+      window.localStorage.setItem('vayu.pins.v1', JSON.stringify(pins));
+      await openChat();
+      await typeIn('I can see stubble burning near the park');
+      expect(await screen.findByText(/Anything to add/u)).toBeInTheDocument();
+      await userEvent.click(screen.getByRole('button', { name: 'Send it' }));
+      expect(
+        await screen.findByText(/Saved on this device|Your report is saved/u),
+      ).toBeInTheDocument();
+      expect(savedReports()[0]).toMatchObject({ lat: 28.63, lng: 77.22 });
+      expect(savedReports()[0]?.note).toBeUndefined();
+    });
+
+    it('leaves a question about the fires as a question, and lets someone back out', async () => {
+      window.localStorage.setItem('vayu.pins.v1', JSON.stringify(pins));
+      await openChat();
+      await typeIn('how many fires are there?');
+      expect(
+        await screen.findByText(/fires? (in|on|near|across)|fire count|Contact/iu),
+      ).toBeInTheDocument();
+      expect(screen.queryByText(/Where is the fire/u)).not.toBeInTheDocument();
+      await typeIn('report a fire');
+      await screen.findByText(/Where is the fire/u);
+      await typeIn('cancel');
+      expect(await screen.findByText(/did not send a report/u)).toBeInTheDocument();
+      expect(savedReports()).toHaveLength(0);
+    });
+  });
 });

@@ -1,4 +1,6 @@
 import { LEVELS } from '../design/levels';
+import { useAirUnits } from '../units/AirUnits';
+import { cigaretteFigure, cigarettesForAqi } from '../units/smoke';
 
 /** Where an AQI sits along the six equal colour steps, 0 to 1. Each step is its own level; 301 and up share the last. */
 export function scalePosition(aqi: number): number {
@@ -24,6 +26,8 @@ export function AqiScale({
   readonly aqi?: number;
   readonly className?: string;
 }): React.JSX.Element {
+  // With the cigarette switch on, the scale is in cigarettes a day, so the colours and the numbers agree.
+  const { smoke } = useAirUnits();
   return (
     <div
       className={`aqi-scale ${className}`.trim()}
@@ -43,12 +47,17 @@ export function AqiScale({
           <span key={level.name}>
             <b>{level.short}</b>
             <small>
-              {level.from}
+              {smoke ? cigaretteFigure(cigarettesForAqi(level.from)) : level.from}
               {i === LEVELS.length - 1 ? '+' : ''}
             </small>
           </span>
         ))}
       </div>
+      {smoke && (
+        <p className="aqi-scale-unit" aria-hidden="true">
+          cigarettes a day
+        </p>
+      )}
     </div>
   );
 }

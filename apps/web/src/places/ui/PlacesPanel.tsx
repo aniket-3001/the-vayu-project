@@ -109,6 +109,9 @@ export function PlacesPanel({
           </button>
         }
       />
+      <span className="locate-hint" aria-hidden="true">
+        Detect my location
+      </span>
       {note !== '' && (
         <p className="muted small" role="status">
           {note}

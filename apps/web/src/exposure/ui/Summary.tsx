@@ -1,7 +1,7 @@
 import { LEVELS } from '../../design/levels';
 import { AqiChip } from '../../today/ui/Chip';
 import { concentration } from '../../today/ui/format';
-import { SmokeFigure } from '../../units/AirUnits';
+import { ChipPair } from '../../units/AirUnits';
 import type { Cell, Summary as SummaryData } from '../model';
 
 const SOURCE_WORDS: Readonly<Record<Cell['source'], string>> = {
@@ -45,8 +45,10 @@ export function Summary({
     <section className="card" aria-labelledby="sum-title">
       <h2 id="sum-title">Your day in the air</h2>
       <p className="sum-lead">
-        <AqiChip aqi={summary.aqi} /> <SmokeFigure pm25={summary.meanPm25} variant="chip" /> You
-        breathed an average of AQI {summary.aqi}, {summary.level.name.toLowerCase()}, {span}.
+        <ChipPair pm25={summary.meanPm25}>
+          <AqiChip aqi={summary.aqi} />
+        </ChipPair>{' '}
+        You breathed an average of AQI {summary.aqi}, {summary.level.name.toLowerCase()}, {span}.
       </p>
       <p>
         {saved > 0

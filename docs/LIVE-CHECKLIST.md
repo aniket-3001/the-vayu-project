@@ -45,6 +45,10 @@ Unticked means not yet seen live.
 | Buttons        | Ask, cigarettes and live location are in the same column at the bottom right on all four tabs                   | [ ]  |
 | Map            | The live-location button drops a blue dot and flies to it; the scale at the top is centred                      | [ ]  |
 | Cards          | No arrow on a place card; the cigarettes sit beside the AQI at the same size on cards, Lens and Today           | [ ]  |
+| Fire report    | Press a flame on the map, send a report, and find it in the table; or tell the assistant "report a fire"        | [ ]  |
+| Exposure       | The three filters lift a ring; the curved names read round each ring                                            | [ ]  |
+| Lens           | The card folds; "See it live" and the place switch (with Live outdoor location) are in its top right corner     | [ ]  |
+| Map            | One card holds the scale and Detect my location; the cigarette switch turns the dot numbers into cigarettes     | [ ]  |
 | Laptop         | Every screen at a laptop width                                                                                  | [ ]  |
 | Offline        | Switch the phone to airplane mode: the last good readings stay and say how old they are                         | [ ]  |
 

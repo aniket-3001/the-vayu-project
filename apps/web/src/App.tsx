@@ -6,7 +6,6 @@ import { ExposureScreen } from './exposure/ExposureScreen';
 import { LensScreen } from './lens/LensScreen';
 import { MapScreen } from './map/MapScreen';
 import { MyAirScreen } from './myair/MyAirScreen';
-import { LiveToggle } from './nav/LiveToggle';
 import { TabBar } from './nav/TabBar';
 import { AssistantFab } from './assistant/AssistantFab';
 import { AirUnitsProvider, SmokeToggle } from './units/AirUnits';
@@ -90,7 +89,6 @@ function Frame(): React.JSX.Element {
       <div className="dock">
         <AssistantFab />
         <SmokeToggle />
-        <LiveToggle />
       </div>
       <TabBar />
     </div>

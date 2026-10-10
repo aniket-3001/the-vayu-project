@@ -1,9 +1,10 @@
 // @vitest-environment jsdom
-import { act, cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { PINS_STORAGE_KEY } from '../data/pins';
+import { setLiveLocation } from '../places/liveLocation';
 import { LensScreen } from './LensScreen';
 import { sceneFor } from './SampleScene';
 
@@ -34,7 +35,6 @@ describe('the AR Lens', () => {
     expect(card).toHaveTextContent(/You could see about \d/u);
     expect(card).toHaveTextContent('Estimate');
     expect(card).toHaveTextContent('Sample data');
-    expect(card).toHaveTextContent('An illustration stands in for the camera.');
   });
 
   it('says the cleanest daylight hour, or that there is none on a bad day', () => {
@@ -74,25 +74,46 @@ describe('the AR Lens', () => {
     expect(sceneFor('My flat')).toBe('home');
   });
 
-  it('puts the colour scale and two round buttons at the top, and the card and the slider together below', () => {
+  it('has the card and, under it, the slider with the colour scale in it; nothing at the top', () => {
     open();
-    const top = document.querySelector('.lens-top');
-    expect(Array.from(top?.children ?? []).map((el) => el.className.split(' ')[0])).toEqual([
-      'aqi-scale',
-      'lens-actions',
-    ]);
+    expect(document.querySelector('.lens-top')).not.toBeInTheDocument();
     const hud = document.querySelector('.lens-hud');
     const kids = Array.from(hud?.children ?? []);
     expect(kids).toHaveLength(2);
-    // The card is the home screen's place card, opened out; under it is the time slider.
     expect(kids[0]).toHaveClass('place-card', 'lens-card');
     expect(kids[1]).toHaveClass('lens-dial');
-    const round = Array.from(top?.querySelectorAll('.lens-round') ?? []);
-    expect(round).toHaveLength(2);
-    expect(round[0]).toHaveAccessibleName('Use camera');
-    expect(round[0]?.textContent).toBe('');
-    expect(round[1]?.querySelector('select')).toBeInTheDocument();
-    expect(round[1]).toHaveAccessibleName(/Place to look at/u);
+    expect(kids[1]?.querySelector('.aqi-scale')).toBeInTheDocument();
+  });
+
+  it('keeps the camera and the place switch in the top corner of the card', () => {
+    open();
+    const card = screen.getByRole('region', { name: 'The air here' });
+    const tools = card.querySelector('.lens-tools');
+    expect(within(card).getByRole('button', { name: /See it live/u })).toBeInTheDocument();
+    expect(tools?.querySelector('select')).toBeInTheDocument();
+    const names = Array.from(card.querySelectorAll('option')).map((o) => o.textContent);
+    expect(names[0]).toBe('Live outdoor location');
+    expect(names).toContain('Home');
+    expect(screen.queryByRole('button', { name: 'Use camera' })).not.toBeInTheDocument();
+  });
+
+  it('folds the card down to a line, and opens it again', async () => {
+    open();
+    const card = screen.getByRole('region', { name: 'The air here' });
+    expect(card.querySelector('.lens-facts')).toBeInTheDocument();
+    await userEvent.click(within(card).getByRole('button', { name: 'Fold the card' }));
+    expect(card).toHaveClass('folded');
+    expect(card.querySelector('.lens-facts')).not.toBeInTheDocument();
+    expect(card.querySelector('.pc-aqi strong')?.textContent).toMatch(/^\d+$/u);
+    await userEvent.click(within(card).getByRole('button', { name: 'Show the details' }));
+    expect(card.querySelector('.lens-facts')).toBeInTheDocument();
+  });
+
+  it('has no compass and no “About this view”', () => {
+    open();
+    expect(document.querySelector('.lens-more')).not.toBeInTheDocument();
+    expect(screen.queryByText(/About this view/u)).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /compass/u })).not.toBeInTheDocument();
   });
 
   it('says what each colour means, and marks where this air is', () => {
@@ -102,13 +123,6 @@ describe('the AR Lens', () => {
     expect(scale).toHaveAccessibleName(/Hazardous from 301 up/u);
     expect(scale.querySelectorAll('.aqi-scale-bar span')).toHaveLength(6);
     expect(scale.querySelector('.aqi-scale-mark')).toBeInTheDocument();
-  });
-
-  it('keeps the camera and compass words behind “About this view”, so the picture stays clear', () => {
-    open();
-    const more = document.querySelector('.lens-more');
-    expect(more).not.toHaveAttribute('open');
-    expect(more).toHaveTextContent('About this view');
   });
 
   it('has no opened-out view: the wind, how far you can see and the best hour are on the card itself', () => {
@@ -157,12 +171,11 @@ describe('the AR Lens', () => {
       value: { getUserMedia: vi.fn().mockResolvedValue(stream) },
     });
     open();
-    await userEvent.click(screen.getByRole('button', { name: 'Use camera' }));
-    expect(await screen.findByText('Camera on; nothing leaves this phone.')).toBeInTheDocument();
-    expect(screen.queryByRole('img', { name: /illustration of a home/u })).not.toBeInTheDocument();
-    await userEvent.click(screen.getByRole('button', { name: /Camera off/u }));
+    await userEvent.click(screen.getByRole('button', { name: /See it live/u }));
+    await userEvent.click(await screen.findByRole('button', { name: /Stop camera/u }));
     expect(stop).toHaveBeenCalled();
     expect(screen.getByRole('img', { name: /illustration of a home/u })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /See it live/u })).toBeInTheDocument();
   });
 
   it('carries on with an illustration when the camera is refused or missing', async () => {
@@ -171,35 +184,30 @@ describe('the AR Lens', () => {
       value: { getUserMedia: vi.fn().mockRejectedValue(new Error('no')) },
     });
     open();
-    await userEvent.click(screen.getByRole('button', { name: 'Use camera' }));
-    expect(await screen.findByText('Camera not allowed, so an illustration.')).toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: /See it live/u }));
+    expect(
+      await screen.findByText('Camera not allowed, so an illustration stands in.'),
+    ).toBeInTheDocument();
     cleanup();
     Reflect.deleteProperty(navigator, 'mediaDevices');
     open();
-    await userEvent.click(screen.getByRole('button', { name: 'Use camera' }));
-    expect(screen.getByText('No camera here, so an illustration.')).toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: /See it live/u }));
+    expect(screen.getByText('No camera here, so an illustration stands in.')).toBeInTheDocument();
   });
 
-  it('asks for the compass on a phone that needs a tap, and then follows where it points', async () => {
-    const request = vi.fn().mockResolvedValue('granted');
-    class FakeOrientation extends Event {
-      static requestPermission = request;
-    }
-    Object.defineProperty(window, 'DeviceOrientationEvent', {
-      configurable: true,
-      value: FakeOrientation,
+  it('asks the browser for where you are when the live outdoor location is chosen', () => {
+    const set = vi.fn();
+    const off = { enabled: false, status: 'off' } as const;
+    setLiveLocation({
+      get: () => off,
+      subscribe: () => () => undefined,
+      set,
+      resume: () => undefined,
     });
     open();
-    await userEvent.click(screen.getByText('About this view'));
-    await userEvent.click(screen.getByRole('button', { name: /Turn on the compass/u }));
-    expect(request).toHaveBeenCalled();
-    const turn = new Event('deviceorientation');
-    Object.assign(turn, { webkitCompassHeading: 315 });
-    await act(async () => {
-      window.dispatchEvent(turn);
-      await Promise.resolve();
-    });
-    expect(screen.getByText('Facing north-west.')).toBeInTheDocument();
+    fireEvent.change(screen.getByRole('combobox'), { target: { value: 'live' } });
+    expect(set).toHaveBeenCalledWith(true);
+    setLiveLocation(undefined);
   });
 
   it('says what to do when nothing is pinned', () => {

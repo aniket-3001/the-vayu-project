@@ -30,13 +30,13 @@ export function LiveCard({
   readonly onClear: () => void;
 }): React.JSX.Element {
   return (
-    <section className="spot spot-set" aria-label="Live location">
+    <section className="spot spot-set" aria-label="Live outdoor location">
       <div className="spot-head">
         <span className="dc-icon">
           <LocateFixed size={22} strokeWidth={1.75} aria-hidden="true" />
         </span>
         <div>
-          <h2 className="spot-title">Live location</h2>
+          <h2 className="spot-title">Live outdoor location</h2>
           <p className="muted small" role="status">
             {sample ? 'Showing a made-up day of movement.' : STATUS[state]}
           </p>
@@ -56,11 +56,11 @@ export function LiveCard({
       <div className="form-actions">
         {state === 'on' ? (
           <button type="button" className="primary" onClick={onStop}>
-            Turn off live location
+            Turn off detection
           </button>
         ) : (
           <button type="button" className="primary" onClick={onStart}>
-            Use live location
+            Detect my location
           </button>
         )}
         {onSample !== undefined && (

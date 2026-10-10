@@ -29,6 +29,7 @@ import { ssmSwitch } from './killSwitch';
 import { s3ReplayRepo } from './replayStore';
 import { clientAddress } from './clientAddress';
 import { dynamoQuota } from './quota';
+import { dynamoFireReportSave } from './fireReportsStore';
 import { dynamoRequestsSave } from './requestsStore';
 import { dynamoCacheReader, dynamoRoomStore } from './roomStores';
 import { SPEECH_LIMITS } from './speechRoute';
@@ -142,6 +143,12 @@ function buildRoute(): Promise<ReturnType<typeof createRouter>> {
         enabled: ssmSwitch(mustEnv('ASSISTANT_SWITCH_PARAM')),
         quota: dynamoQuota(mustEnv('WATCH_TABLE'), docClient),
         store: dynamoSpeechStore(mustEnv('WATCH_TABLE'), docClient),
+        clock: liveClock(),
+        salt: requestSalt,
+      },
+      fireReports: {
+        save: dynamoFireReportSave(mustEnv('WATCH_TABLE'), docClient),
+        quota: dynamoQuota(mustEnv('WATCH_TABLE'), docClient),
         clock: liveClock(),
         salt: requestSalt,
       },
