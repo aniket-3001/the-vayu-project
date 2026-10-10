@@ -1,0 +1,13 @@
+# Only what must never be committed: dependencies, build output and secrets.
+node_modules/
+dist/
+coverage/
+cdk.out/
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.crt
+.DS_Store
+site-out.json
