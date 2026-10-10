@@ -1,12 +1,14 @@
 import { Flame, Layers } from 'lucide-react';
 import type { Map as MapLibreMap } from 'maplibre-gl';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { LEVELS } from '../design/levels';
 import { Pill } from '../today/ui/Chip';
 import { useAirUnits } from '../units/AirUnits';
 import { LAYER_LABELS, defaultLayers, type Shown } from './layers';
 import { MapView, type MapMode } from './MapView';
 import { WindCanvas } from './WindCanvas';
+import { makeWindField } from './windTexture';
+import { useMapData } from './useMapData';
 
 const MODES: readonly { readonly id: MapMode; readonly label: string }[] = [
   { id: 'map', label: 'Map' },
@@ -22,6 +24,8 @@ export function MapScreen(): React.JSX.Element {
   const [open, setOpen] = useState(false);
   const [map, setMap] = useState<MapLibreMap>();
   const { smoke } = useAirUnits();
+  const data = useMapData();
+  const windField = useMemo(() => makeWindField(data.wind), [data.wind]);
 
   const choose = (next: MapMode): void => {
     setMode(next);
@@ -33,8 +37,8 @@ export function MapScreen(): React.JSX.Element {
 
   return (
     <div className="map-screen">
-      <MapView mode={mode} layers={shown} smoke={smoke} onReady={setMap} />
-      <WindCanvas map={map} enabled={shown.wind} />
+      <MapView mode={mode} layers={shown} smoke={smoke} air={data.air} onReady={setMap} />
+      <WindCanvas map={map} enabled={shown.wind} field={windField} />
 
       <div className="map-bottom">
         {open && (
@@ -106,14 +110,32 @@ export function MapScreen(): React.JSX.Element {
             <span>+</span>
           </div>
           <p className="legend-notes small">
-            <Pill>Sample data</Pill>
-            {shown.gradient && <span>Colour between monitors is an estimate.</span>}
-            {shown.fires && (
-              <span className="legend-fire">
-                <Flame size={14} strokeWidth={2} aria-hidden="true" /> Fires, last 24 hours
+            {(shown.monitors || data.fires === undefined) && <Pill>Sample data</Pill>}
+            {((shown.gradient && data.airLive) ||
+              (shown.wind && data.windLive) ||
+              data.fires !== undefined) && <Pill>Live</Pill>}
+            {shown.gradient && (
+              <span>
+                {data.airLive
+                  ? 'Air colour: the CAMS model via Open-Meteo, right now. An estimate, not a measurement.'
+                  : 'Colour between monitors is an estimate.'}
               </span>
             )}
-            {shown.wind && <span>Wind is a sample flow.</span>}
+            {shown.fires && (
+              <span className="legend-fire">
+                <Flame size={14} strokeWidth={2} aria-hidden="true" />{' '}
+                {data.fires === undefined
+                  ? 'Fires, last 24 hours'
+                  : `${String(data.fires)} fires in the last 24 hours (NASA satellite). Positions are a sample.`}
+              </span>
+            )}
+            {shown.wind && (
+              <span>
+                {data.windLive
+                  ? 'Wind: ICON and GFS models via Open-Meteo, right now.'
+                  : 'Wind is a sample flow.'}
+              </span>
+            )}
           </p>
         </div>
       </div>

@@ -76,3 +76,19 @@ describe('the rendered field', () => {
     expect(mercatorY(FIELD_BOUNDS.north)).toBeLessThan(mercatorY(FIELD_BOUNDS.south));
   });
 });
+
+describe('the edge of the field', () => {
+  it('fades to nothing at the corner of the data, so there is no hard box', () => {
+    const everywhere = Array.from({ length: 40 }, (_, i) =>
+      Array.from({ length: 40 }, (_, j) =>
+        at(FIELD_BOUNDS.south + i, FIELD_BOUNDS.west + j * 0.9, 100),
+      ),
+    ).flat();
+    const cols = 34;
+    const rows = 36;
+    const px = renderField(everywhere, cols, rows);
+    const alpha = (row: number, col: number): number => px[(row * cols + col) * 4 + 3] ?? 0;
+    expect(alpha(0, 0)).toBeLessThan(alpha(18, 17) / 3);
+    expect(alpha(18, 17)).toBeGreaterThan(150);
+  });
+});

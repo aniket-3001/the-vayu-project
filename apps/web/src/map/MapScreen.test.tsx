@@ -4,6 +4,12 @@ import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { defaultLayers } from './layers';
 
+const dataNow: { windLive: boolean; airLive: boolean; fires: number | undefined } = {
+  windLive: false,
+  airLive: false,
+  fires: undefined,
+};
+
 const seen: { mode?: string; layers?: Record<string, boolean>; windOn?: boolean } = {};
 
 vi.mock('./MapView', () => ({
@@ -12,6 +18,9 @@ vi.mock('./MapView', () => ({
     seen.layers = layers;
     return <div data-testid="map" />;
   },
+}));
+vi.mock('./useMapData', () => ({
+  useMapData: () => ({ wind: [], air: [], ...dataNow }),
 }));
 vi.mock('./WindCanvas', () => ({
   WindCanvas: ({ enabled }: { enabled: boolean }) => {
@@ -23,7 +32,12 @@ vi.mock('./WindCanvas', () => ({
 
 const { MapScreen } = await import('./MapScreen');
 
-afterEach(cleanup);
+afterEach(() => {
+  cleanup();
+  dataNow.windLive = false;
+  dataNow.airLive = false;
+  dataNow.fires = undefined;
+});
 
 describe('the Map screen', () => {
   it('opens on the flat map with monitors and fires, and says the data is a sample', () => {
@@ -74,5 +88,32 @@ describe('the Map screen', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Globe' }));
     await userEvent.click(screen.getByRole('button', { name: 'Map' }));
     expect(seen.layers).toMatchObject(defaultLayers('map'));
+  });
+});
+
+describe('what the map says about its data', () => {
+  it('names the live sources when it has them: the model and wind from Open-Meteo, the fire count from NASA', async () => {
+    dataNow.windLive = true;
+    dataNow.airLive = true;
+    dataNow.fires = 127;
+    render(<MapScreen />);
+    expect(
+      screen.getByText(
+        /127 fires in the last 24 hours \(NASA satellite\)\. Positions are a sample/u,
+      ),
+    ).toBeInTheDocument();
+    expect(screen.getByText('Live')).toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: 'Globe' }));
+    expect(screen.getByText(/the CAMS model via Open-Meteo, right now/u)).toBeInTheDocument();
+    expect(screen.getByText(/ICON and GFS models via Open-Meteo/u)).toBeInTheDocument();
+    expect(screen.queryByText(/sample flow/u)).not.toBeInTheDocument();
+  });
+
+  it('says sample, and not live, when the live data could not be reached', async () => {
+    render(<MapScreen />);
+    expect(screen.queryByText('Live')).not.toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: 'Globe' }));
+    expect(screen.getByText('Wind is a sample flow.')).toBeInTheDocument();
+    expect(screen.getByText(/Colour between monitors is an estimate/u)).toBeInTheDocument();
   });
 });

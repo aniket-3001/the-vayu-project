@@ -9,10 +9,16 @@ import workerUrl from 'maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import { useEffect, useMemo, useRef } from 'react';
 import { LEVELS } from '../design/levels';
+import type { Monitor } from './monitors';
 import { cigarettesPerDay, describeCigarettes } from '../units/smoke';
 import { FIELD_BOUNDS, renderField } from './field';
 import { firesGeoJson, sampleFires } from './fires';
 import { monitorsGeoJson, sampleMonitors } from './monitors';
+
+/** The part of MapLibre's image source that swaps the picture. */
+interface ImageUpdater {
+  updateImage: (options: { url: string }) => void;
+}
 
 export type MapMode = 'map' | 'globe';
 
@@ -40,9 +46,9 @@ const VIEWS = {
   globe: { center: [80, 22] as [number, number] },
 };
 
-/** A zoom at which the whole globe fills about 85% of the smaller side of the box. */
+/** A zoom a little closer than the whole globe, so south Asia fills the view and the rest curves away. */
 const globeZoom = (box: { width: number; height: number }): number =>
-  Math.log2((0.85 * Math.min(box.width, box.height) * Math.PI) / 512);
+  Math.log2((0.85 * Math.min(box.width, box.height) * Math.PI) / 512) + 0.9;
 
 const zoomFor = (mode: MapMode, box: { width: number; height: number }): number =>
   mode === 'globe' ? globeZoom(box) : 3.9;
@@ -55,7 +61,7 @@ const aqiColour = (value: unknown): unknown => [
   ...LEVELS.slice(1).flatMap((level) => [level.from, level.solid]),
 ];
 
-function fieldImage(): string {
+function fieldImage(air: readonly Monitor[]): string {
   const cols = 136;
   const rows = 144;
   const canvas = document.createElement('canvas');
@@ -64,7 +70,7 @@ function fieldImage(): string {
   const ctx = canvas.getContext('2d');
   if (ctx === null) return '';
   const data = ctx.createImageData(cols, rows);
-  data.data.set(renderField(sampleMonitors(), cols, rows));
+  data.data.set(renderField(air, cols, rows));
   ctx.putImageData(data, 0, 0);
   return canvas.toDataURL();
 }
@@ -74,19 +80,22 @@ export function MapView({
   mode,
   layers,
   smoke,
+  air,
   onReady,
 }: {
   readonly mode: MapMode;
   readonly layers: MapLayers;
   /** Whether popups also say cigarettes a day. */
   readonly smoke: boolean;
+  /** The grid of air quality that colours the map between monitors. */
+  readonly air: readonly Monitor[];
   readonly onReady: (map: MapLibreMap) => void;
 }): React.JSX.Element {
   const container = useRef<HTMLDivElement>(null);
   const map = useRef<MapLibreMap>();
   const ready = useRef(false);
-  const latest = useRef({ mode, layers, smoke });
-  latest.current = { mode, layers, smoke };
+  const latest = useRef({ mode, layers, smoke, air });
+  latest.current = { mode, layers, smoke, air };
   const monitors = useMemo(() => sampleMonitors(), []);
   const fires = useMemo(() => sampleFires(), []);
 
@@ -114,7 +123,7 @@ export function MapView({
       m.setProjection({ type: current === 'globe' ? 'globe' : 'mercator' });
       m.addSource('field', {
         type: 'image',
-        url: fieldImage(),
+        url: fieldImage(latest.current.air),
         coordinates: [
           [FIELD_BOUNDS.west, FIELD_BOUNDS.north],
           [FIELD_BOUNDS.east, FIELD_BOUNDS.north],
@@ -285,6 +294,15 @@ export function MapView({
     };
     apply();
   }, [layers]);
+
+  useEffect(() => {
+    const m = map.current;
+    if (m === undefined || !ready.current) return;
+    const source = m.getSource('field');
+    if (source !== undefined && 'updateImage' in source) {
+      (source as unknown as ImageUpdater).updateImage({ url: fieldImage(air) });
+    }
+  }, [air]);
 
   return <div ref={container} className="map-view" />;
 }

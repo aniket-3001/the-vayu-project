@@ -1,6 +1,7 @@
 import type { Map as MapLibreMap } from 'maplibre-gl';
 import { useEffect, useRef } from 'react';
-import { advect, speedOf, windAt } from './wind';
+import { GRID } from './live';
+import { advectWith, speedOf, type Wind } from './wind';
 
 /** About one streak for every this many square pixels of map. */
 const PIXELS_PER_PARTICLE = 130;
@@ -35,9 +36,12 @@ export function angleBetween(
 export function WindCanvas({
   map,
   enabled,
+  field,
 }: {
   readonly map: MapLibreMap | undefined;
   readonly enabled: boolean;
+  /** The wind at any point: live from Open-Meteo, or a sample if that could not be reached. */
+  readonly field: (lat: number, lng: number) => Wind;
 }): React.JSX.Element {
   const canvas = useRef<HTMLCanvasElement>(null);
 
@@ -47,17 +51,24 @@ export function WindCanvas({
     const ctx = el.getContext('2d');
     if (ctx === null) return;
     const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const inside = (lat: number, lng: number): boolean =>
+      lat >= GRID.south && lat <= GRID.north && lng >= GRID.west && lng <= GRID.east;
     const spawn = (): Particle => {
-      // A random spot on screen, so the streaks fill the view whatever the zoom; round the back of a globe is skipped.
-      for (let tries = 0; tries < 6; tries++) {
+      // A random spot on screen that the wind data covers, so streaks fill the view; round the back of a globe is skipped.
+      for (let tries = 0; tries < 24; tries++) {
         const at = map.unproject([Math.random() * el.clientWidth, Math.random() * el.clientHeight]);
         const onFront =
           map.getProjection().type !== 'globe' ||
           angleBetween({ lat: at.lat, lng: at.lng }, map.getCenter()) < HORIZON_DEG;
-        if (onFront)
+        if (onFront && inside(at.lat, at.lng)) {
           return { lat: at.lat, lng: at.lng, age: Math.floor(Math.random() * LIFE_FRAMES) };
+        }
       }
-      return { lat: map.getCenter().lat, lng: map.getCenter().lng, age: 0 };
+      return {
+        lat: GRID.south + Math.random() * (GRID.north - GRID.south),
+        lng: GRID.west + Math.random() * (GRID.east - GRID.west),
+        age: LIFE_FRAMES,
+      };
     };
     const count = Math.round(
       Math.min(
@@ -85,7 +96,7 @@ export function WindCanvas({
     const step = (): void => {
       const centre = map.getCenter();
       // Zoomed far out the whole region is a few hundred pixels, so streaks shrink with it.
-      const zoomScale = Math.min(1, 2 ** (map.getZoom() - 3.2));
+      const zoomScale = Math.min(1, 2 ** ((map.getZoom() - 3.2) * 0.5));
       const globe = map.getProjection().type === 'globe';
       const width = el.clientWidth;
       const height = el.clientHeight;
@@ -97,10 +108,10 @@ export function WindCanvas({
       ctx.lineWidth = 1.3;
       for (const p of particles) {
         const here = map.project([p.lng, p.lat]);
-        const wind = windAt(p.lat, p.lng);
+        const wind = field(p.lat, p.lng);
         const speed = speedOf(wind);
         // Which way the wind points on screen, from where a parcel of air would be in an hour.
-        const ahead = advect(p.lat, p.lng, 3600);
+        const ahead = advectWith(field, p.lat, p.lng, 3600);
         const probe = map.project([ahead.lng, ahead.lat]);
         const dx = probe.x - here.x;
         const dy = probe.y - here.y;
@@ -115,7 +126,7 @@ export function WindCanvas({
               HORIZON_DEG);
         if (length > 1e-6) {
           // Steps are a few pixels whatever the zoom, so the flow always looks alive; faster wind, longer step.
-          const stepPx = (0.6 + speed * 0.33) * zoomScale;
+          const stepPx = (1.1 + speed * 0.45) * zoomScale;
           const there = { x: here.x + (dx / length) * stepPx, y: here.y + (dy / length) * stepPx };
           if (visible) {
             const fade = Math.min(1, p.age / 12, (LIFE_FRAMES - p.age) / 12);
@@ -130,7 +141,7 @@ export function WindCanvas({
           p.lng = moved.lng;
         }
         p.age += 1;
-        if (p.age > LIFE_FRAMES || !visible) {
+        if (p.age > LIFE_FRAMES || !visible || !inside(p.lat, p.lng)) {
           Object.assign(p, spawn(), { age: 0 });
         }
       }
@@ -165,7 +176,7 @@ export function WindCanvas({
       map.off('projectiontransition', clear);
       clear();
     };
-  }, [map, enabled]);
+  }, [map, enabled, field]);
 
   return <canvas ref={canvas} className="wind-canvas" aria-hidden="true" />;
 }

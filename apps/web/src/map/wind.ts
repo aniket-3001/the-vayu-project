@@ -1,3 +1,5 @@
+import { gridPoints, type WindPoint } from './live';
+
 /** Wind in metres per second: `u` towards the east, `v` towards the north. */
 export interface Wind {
   readonly u: number;
@@ -32,5 +34,27 @@ export function advect(lat: number, lng: number, seconds: number): { lat: number
   const wind = windAt(lat, lng);
   const dLat = (wind.v * seconds) / 111_000;
   const dLng = (wind.u * seconds) / (111_000 * Math.max(0.2, Math.cos(rad(lat))));
+  return { lat: lat + dLat, lng: lng + dLng };
+}
+
+/** The sample wind laid out as grid points, in the same shape as the live wind, for when the live one cannot be had. */
+export function sampleWindGrid(): readonly WindPoint[] {
+  return gridPoints(3).map(({ lat, lng }) => {
+    const { u, v } = windAt(lat, lng);
+    const towards = ((Math.atan2(u, v) * 180) / Math.PI + 360) % 360;
+    return { lat, lng, speed: speedOf({ u, v }), fromDeg: (towards + 180) % 360 };
+  });
+}
+
+/** Where a parcel of air is after `seconds`, moving with whatever wind `field` gives. */
+export function advectWith(
+  field: (lat: number, lng: number) => Wind,
+  lat: number,
+  lng: number,
+  seconds: number,
+): { lat: number; lng: number } {
+  const wind = field(lat, lng);
+  const dLat = (wind.v * seconds) / 111_000;
+  const dLng = (wind.u * seconds) / (111_000 * Math.max(0.2, Math.cos((lat * Math.PI) / 180)));
   return { lat: lat + dLat, lng: lng + dLng };
 }

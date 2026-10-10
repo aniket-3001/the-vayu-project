@@ -108,7 +108,14 @@ export function renderField(
       pixels[i] = r;
       pixels[i + 1] = g;
       pixels[i + 2] = b;
-      pixels[i + 3] = Math.round(value.confidence * 215);
+      const edge = Math.min(
+        lat - FIELD_BOUNDS.south,
+        FIELD_BOUNDS.north - lat,
+        lng - FIELD_BOUNDS.west,
+        FIELD_BOUNDS.east - lng,
+      );
+      // Fade out towards the edge of the data, so the field does not end in a hard box.
+      pixels[i + 3] = Math.round(value.confidence * Math.min(1, edge / 5) * 215);
     }
   }
   return pixels;
