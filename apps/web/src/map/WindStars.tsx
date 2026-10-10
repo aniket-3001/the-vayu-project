@@ -10,9 +10,9 @@ const MAX_STARS = 700;
 /** How many frames a star lives, how long its tail is, in positions kept. */
 const LIFE_MIN = 90;
 const LIFE_MAX = 170;
-const TAIL = 40;
+const TAIL = 56;
 /** Half the widest the sliver gets, in pixels. */
-const WIDTH = 1.5;
+const WIDTH = 2.5;
 
 interface Star {
   lat: number;
@@ -108,7 +108,7 @@ export function WindStars({
       const length = Math.hypot(dx, dy);
       if (length > 1e-6) {
         // Slow and steady, about the pace of the specks in the AR Lens.
-        const px = (0.4 + Math.min(speed, 10) * 0.06) * zoomScale;
+        const px = (0.45 + Math.min(speed, 10) * 0.07) * zoomScale;
         const moved = map.unproject([here.x + (dx / length) * px, here.y + (dy / length) * px]);
         s.lat = moved.lat;
         s.lng = moved.lng;
@@ -123,39 +123,40 @@ export function WindStars({
       const speed = speedOf(field(s.lat, s.lng));
       const strength = Math.min(0.9, 0.5 + speed / 16) * envelope;
       const n = s.trail.length;
-      // A slim sliver, as Windy draws it: full width a little behind the head, tapering to a point at the tail.
-      const left: { x: number; y: number }[] = [];
-      const right: { x: number; y: number }[] = [];
-      for (let i = 0; i < n; i++) {
-        const here = s.trail[i];
-        const before = s.trail[Math.max(0, i - 1)];
-        const after = s.trail[Math.min(n - 1, i + 1)];
-        if (here === undefined || before === undefined || after === undefined) return;
-        const dx = before.x - after.x;
-        const dy = before.y - after.y;
-        const length = Math.hypot(dx, dy) || 1;
-        const along = i / (n - 1);
-        // Round at the head, a long taper behind it.
-        const half = WIDTH * (along < 0.12 ? 0.55 + along * 3.75 : (1 - along) ** 0.9);
-        left.push({ x: here.x - (dy / length) * half, y: here.y + (dx / length) * half });
-        right.push({ x: here.x + (dy / length) * half, y: here.y - (dx / length) * half });
-      }
-      ctx.beginPath();
-      left.forEach((p, i) => {
-        if (i === 0) ctx.moveTo(p.x, p.y);
-        else ctx.lineTo(p.x, p.y);
-      });
-      for (let i = right.length - 1; i >= 0; i--) {
-        const p = right[i];
-        if (p !== undefined) ctx.lineTo(p.x, p.y);
-      }
-      ctx.closePath();
-      ctx.fillStyle = `rgba(250, 252, 255, ${(strength * 0.92).toFixed(3)})`;
-      ctx.fill();
-      // A faint grey-blue edge keeps the white readable on a light map.
-      ctx.lineWidth = 0.7;
-      ctx.strokeStyle = `rgba(92, 116, 150, ${(strength * 0.45).toFixed(3)})`;
-      ctx.stroke();
+      // A sliver, as Windy draws it: full width a little behind the head, tapering to a point at the tail.
+      // Drawn twice: the grey-blue body, then a narrower pale shine down its middle.
+      const sliver = (scale: number, fill: string): void => {
+        const left: { x: number; y: number }[] = [];
+        const right: { x: number; y: number }[] = [];
+        for (let i = 0; i < n; i++) {
+          const here = s.trail[i];
+          const before = s.trail[Math.max(0, i - 1)];
+          const after = s.trail[Math.min(n - 1, i + 1)];
+          if (here === undefined || before === undefined || after === undefined) return;
+          const dx = before.x - after.x;
+          const dy = before.y - after.y;
+          const length = Math.hypot(dx, dy) || 1;
+          const along = i / (n - 1);
+          // Round at the head, a long taper behind it.
+          const half = WIDTH * scale * (along < 0.12 ? 0.55 + along * 3.75 : (1 - along) ** 0.9);
+          left.push({ x: here.x - (dy / length) * half, y: here.y + (dx / length) * half });
+          right.push({ x: here.x + (dy / length) * half, y: here.y - (dx / length) * half });
+        }
+        ctx.beginPath();
+        left.forEach((p, i) => {
+          if (i === 0) ctx.moveTo(p.x, p.y);
+          else ctx.lineTo(p.x, p.y);
+        });
+        for (let i = right.length - 1; i >= 0; i--) {
+          const p = right[i];
+          if (p !== undefined) ctx.lineTo(p.x, p.y);
+        }
+        ctx.closePath();
+        ctx.fillStyle = fill;
+        ctx.fill();
+      };
+      sliver(1, `rgba(102, 126, 160, ${(strength * 0.65).toFixed(3)})`);
+      sliver(0.38, `rgba(240, 246, 255, ${(strength * 0.85).toFixed(3)})`);
     };
 
     const tick = (): void => {
