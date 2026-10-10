@@ -1,5 +1,6 @@
 import { DEMO_PLACES } from '@vayu/contracts';
 import { pinId, type Pin } from '../data/pins';
+import { WEEKDAYS, isHoliday, weekdayOf } from './calendar';
 import type { Persona } from './persona';
 
 /** The kinds of place a person spends the day in. Outdoor is the park, or any open-air spot. */
@@ -19,8 +20,8 @@ export interface Spot {
   /** Hour of the day, 0 to 24. */
   readonly from: number;
   readonly to: number;
-  /** Outdoor places only: whether there are trees around. Cuts the estimate a little, and says it is assumed. */
-  readonly trees?: boolean;
+  /** School and work only: the days of the week it runs, 0 is Sunday. Monday to Friday when missing. */
+  readonly days?: readonly number[];
 }
 
 export type Spots = Readonly<Partial<Record<SpotKind, Spot>>>;
@@ -35,26 +36,24 @@ const pinOf = (id: string): Pin => {
 
 /**
  * What the prototype starts with for each kind of person, so the dial is never empty: a child at school
- * from 8 to 3, an adult at an office from 9 to 5, a senior at home with a morning walk in the park.
+ * from 8 to 3, an adult at an office from 9 to 5, a senior at home. Everyone is at home the rest of the time,
+ * and outdoor time is logged, never assumed.
  */
 export const sampleSpotsFor = (persona: Persona): Spots => {
   switch (persona) {
     case 'child':
       return {
-        home: { pin: pinOf('home'), from: 15, to: 8 },
+        home: { pin: pinOf('home'), from: 0, to: 24 },
         school: { pin: pinOf('school'), from: 8, to: 15 },
-        outdoor: { pin: pinOf('park'), from: 16, to: 17, trees: true },
       };
     case 'adult':
       return {
-        home: { pin: pinOf('home'), from: 19, to: 9 },
+        home: { pin: pinOf('home'), from: 0, to: 24 },
         work: { pin: pinOf('office'), from: 9, to: 17 },
-        outdoor: { pin: pinOf('park'), from: 17, to: 19, trees: true },
       };
     case 'senior':
       return {
-        home: { pin: pinOf('home'), from: 8, to: 6 },
-        outdoor: { pin: pinOf('park'), from: 6, to: 8, trees: true },
+        home: { pin: pinOf('home'), from: 0, to: 24 },
       };
   }
 };
@@ -63,7 +62,7 @@ export const sampleSpotsFor = (persona: Persona): Spots => {
 export const DEFAULT_HOURS: Readonly<
   Record<SpotKind, { readonly from: number; readonly to: number }>
 > = {
-  home: { from: 19, to: 9 },
+  home: { from: 0, to: 24 },
   work: { from: 9, to: 17 },
   school: { from: 8, to: 15 },
   outdoor: { from: 17, to: 18 },
@@ -124,4 +123,13 @@ export function isThere(spot: Spot, hour: number): boolean {
   return spot.from <= spot.to
     ? hour >= spot.from && hour < spot.to
     : hour >= spot.from || hour < spot.to;
+}
+
+/**
+ * Whether a place is in use on a date. Home always is. School and work run on their days of the week and
+ * not on public holidays.
+ */
+export function runsOn(kind: SpotKind, spot: Spot, date: string): boolean {
+  if (kind === 'home' || kind === 'outdoor') return true;
+  return (spot.days ?? WEEKDAYS).includes(weekdayOf(date)) && !isHoliday(date);
 }

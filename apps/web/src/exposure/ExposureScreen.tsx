@@ -1,4 +1,4 @@
-import { CalendarDays, Info, LocateFixed, Plus } from 'lucide-react';
+import { CalendarDays, Info, LocateFixed, Plus, TreePine } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import type { PlaceMatch } from '../data/geocode';
 import { useDevices } from '../devices/useDevices';
@@ -30,8 +30,9 @@ import { Dial, WHERE_LABELS } from './ui/Dial';
 import { Summary } from './ui/Summary';
 import { WeekStrip } from './ui/WeekStrip';
 import { allUnits } from './units';
-import { useHousehold, useLive, useSpots } from './useExposure';
+import { useHousehold, useLive, useOutings, useSpots } from './useExposure';
 import { AddPerson } from './ui/AddPerson';
+import { OutingSheet } from './ui/OutingSheet';
 import { PersonPanel } from './ui/PersonPanel';
 import { saveSpots } from './spots';
 
@@ -67,6 +68,8 @@ export function ExposureScreen({
   const { spots, set, clear } = useSpots(person);
   const [adding, setAdding] = useState(false);
   const [panel, setPanel] = useState(false);
+  const [logging, setLogging] = useState(false);
+  const { outings, add: addOuting, remove: removeOuting } = useOutings(person);
   const { devices } = useDevices();
   const { pins, add: addPin } = usePins();
   const live = useLive();
@@ -99,18 +102,19 @@ export function ExposureScreen({
   const shownTab: Tab = tab !== 'all' && !info.kinds.some((k) => k === tab) ? 'all' : tab;
 
   const cells = useMemo(
-    () => dayCells(visible, units, live.log, date),
-    [visible, units, live.log, date],
+    () => dayCells(visible, units, live.log, date, outings),
+    [visible, units, live.log, date, outings],
   );
   const shown = shownTab === 'all' ? cells : cells.filter((cell) => cell.where === shownTab);
   const counted = shownTab === 'all' ? countedCells(cells) : shown;
   const summary = summarise(counted, openAirFor(counted, visible, live.log, date));
   const week = useMemo(
-    () => lastWeek().map((d) => ({ date: d, summary: daySummary(visible, units, {}, d) })),
-    [visible, units],
+    () => lastWeek().map((d) => ({ date: d, summary: daySummary(visible, units, {}, d, outings) })),
+    [visible, units, outings],
   );
   const setKinds = new Set<Where>(info.kinds.filter((kind) => visible[kind] !== undefined));
   if (Object.keys(live.log).length > 0) setKinds.add('live');
+  if (cells.some((cell) => cell.where === 'outdoor')) setKinds.add('outdoor');
   const atPicked = shown.filter((cell) => cell.hour === picked);
   const isToday = date === TODAY;
   const span =
@@ -204,6 +208,23 @@ export function ExposureScreen({
             </button>
           )}
         </div>
+        {!isMe && (
+          <button
+            type="button"
+            className="log-outdoor"
+            onClick={() => {
+              setLogging(true);
+            }}
+          >
+            <TreePine size={18} strokeWidth={1.75} aria-hidden="true" />
+            <span>
+              <strong>Log outdoor time for {person.name}</strong>
+              <span className="muted small">
+                A walk, play or anything outside, and for how long
+              </span>
+            </span>
+          </button>
+        )}
         {isMe && (
           <label className="auto-switch">
             <LocateFixed size={18} strokeWidth={1.75} aria-hidden="true" />
@@ -327,7 +348,11 @@ export function ExposureScreen({
                 <p className="muted">
                   {isToday && picked >= hoursSoFar(TODAY)
                     ? 'That hour has not happened yet.'
-                    : 'No place set for this hour.'}
+                    : shownTab === 'outdoor'
+                      ? isMe
+                        ? 'No outdoor time counted for this hour. It comes from your location.'
+                        : `No outdoor time logged for this hour. Log it for ${person.name}.`
+                      : 'No place set for this hour.'}
                 </p>
               ) : (
                 <ul>
@@ -377,6 +402,11 @@ export function ExposureScreen({
             clear: live.clearLog,
           }}
           canRemove={household.people.length > 1}
+          outings={outings}
+          onLog={() => {
+            setLogging(true);
+          }}
+          onRemoveOuting={removeOuting}
           onSet={set}
           onClear={clear}
           onAddPin={addPin}
@@ -388,6 +418,22 @@ export function ExposureScreen({
             setPanel(false);
           }}
           {...(search !== undefined ? { search } : {})}
+        />
+      )}
+      {logging && (
+        <OutingSheet
+          person={person}
+          pins={pins}
+          onClose={() => {
+            setLogging(false);
+          }}
+          onSave={(details) => {
+            addOuting(details);
+            setLogging(false);
+            setTab('outdoor');
+            setView(details.date);
+            setPicked(Math.floor(details.start / 60));
+          }}
         />
       )}
       {adding && (

@@ -1,13 +1,16 @@
-import { Trash2, X } from 'lucide-react';
+import { Trash2, TreePine, X } from 'lucide-react';
 import { useEffect } from 'react';
 import type { PlaceMatch } from '../../data/geocode';
 import type { Pin } from '../../data/pins';
 import { DAY_LABELS, personaBlurb, type Person } from '../people';
+import { ACTIVITY_LABELS, clockOf, type Outing } from '../outings';
+import { formatDate } from '../model';
 import type { Spot, SpotKind, Spots } from '../spots';
 import type { Unit } from '../units';
 import type { LiveState } from '../useExposure';
 import { LiveCard } from './LiveCard';
 import { SpotSection } from './SpotSection';
+import { ActivityIcon } from './OutingSheet';
 
 /**
  * One person's timetable: where their day goes, and the hours at each place. Opened by pressing them in the
@@ -22,6 +25,9 @@ export function PersonPanel({
   isMe,
   live,
   canRemove,
+  outings,
+  onLog,
+  onRemoveOuting,
   onSet,
   onClear,
   onAddPin,
@@ -46,6 +52,10 @@ export function PersonPanel({
     readonly clear: () => void;
   };
   readonly canRemove: boolean;
+  /** What has been logged outdoors for this person. */
+  readonly outings: readonly Outing[];
+  readonly onLog: () => void;
+  readonly onRemoveOuting: (id: string) => void;
   readonly onSet: (kind: SpotKind, spot: Spot) => void;
   readonly onClear: (kind: SpotKind) => void;
   readonly onAddPin: (place: PlaceMatch) => void;
@@ -90,23 +100,80 @@ export function PersonPanel({
             <X size={20} aria-hidden="true" />
           </button>
         </div>
-        {kinds.map((kind) => (
-          <SpotSection
-            key={`${person.id}-${kind}`}
-            kind={kind}
-            spot={spots[kind]}
-            pins={pins}
-            units={units}
-            onSet={(spot) => {
-              onSet(kind, spot);
-            }}
-            onClear={() => {
-              onClear(kind);
-            }}
-            onAddPin={onAddPin}
-            {...(search !== undefined ? { search } : {})}
-          />
-        ))}
+        {kinds
+          .filter((kind) => kind !== 'outdoor')
+          .map((kind) => (
+            <SpotSection
+              key={`${person.id}-${kind}`}
+              kind={kind}
+              spot={spots[kind]}
+              pins={pins}
+              units={units}
+              onSet={(spot) => {
+                onSet(kind, spot);
+              }}
+              onClear={() => {
+                onClear(kind);
+              }}
+              onAddPin={onAddPin}
+              {...(search !== undefined ? { search } : {})}
+            />
+          ))}
+        {!isMe && (
+          <section className="spot spot-set" aria-label="Outdoor time">
+            <div className="spot-head">
+              <span className="dc-icon spot-outdoor">
+                <TreePine size={22} strokeWidth={1.75} aria-hidden="true" />
+              </span>
+              <div>
+                <h2 className="spot-title">Outdoor time</h2>
+                <p className="muted small">
+                  Walks, play, anything outside. Tell us where and for how long, or tell the
+                  assistant.
+                </p>
+              </div>
+            </div>
+            {outings.length > 0 && (
+              <ul className="outing-list">
+                {[...outings]
+                  .sort((a, b) =>
+                    a.date === b.date ? b.start - a.start : b.date.localeCompare(a.date),
+                  )
+                  .map((o) => (
+                    <li key={o.id}>
+                      <span className="outing-icon">
+                        <ActivityIcon activity={o.activity} />
+                      </span>
+                      <span className="outing-words">
+                        <strong>
+                          {ACTIVITY_LABELS[o.activity]} in {o.pin.name}
+                        </strong>
+                        <span className="muted small">
+                          {formatDate(o.date)}, {clockOf(o.start)}, {o.minutes} min
+                        </span>
+                      </span>
+                      <button
+                        type="button"
+                        className="icon-button"
+                        aria-label={`Remove ${ACTIVITY_LABELS[o.activity].toLowerCase()} in ${o.pin.name}, ${formatDate(o.date)}`}
+                        onClick={() => {
+                          onRemoveOuting(o.id);
+                        }}
+                      >
+                        <Trash2 size={16} strokeWidth={1.75} aria-hidden="true" />
+                      </button>
+                    </li>
+                  ))}
+              </ul>
+            )}
+            <button type="button" className="dashed" onClick={onLog}>
+              <span className="dashed-icon">
+                <TreePine size={20} strokeWidth={2} aria-hidden="true" />
+              </span>
+              Log outdoor time
+            </button>
+          </section>
+        )}
         {isMe && (
           <LiveCard
             state={live.state}

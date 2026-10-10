@@ -2,6 +2,7 @@
 import { describe, expect, it } from 'vitest';
 import type { Device } from '../devices/devices';
 import { INDOOR_SHARE, TREE_SHARE } from './assumptions';
+import type { Outing } from './outings';
 import {
   EARLIEST,
   TODAY,
@@ -30,7 +31,6 @@ const need = (spot: Spot | undefined): Spot => {
 const adult = sampleSpotsFor('adult');
 const child = sampleSpotsFor('child');
 const home = need(adult.home);
-const park = need(adult.outdoor);
 const monitor: Device = { id: 'd1', name: 'Vayu monitor', where: 'home' };
 const ownHome: Unit = {
   id: 'own',
@@ -83,45 +83,54 @@ describe('dates', () => {
 });
 
 describe('what a person breathes', () => {
-  it('is the open-air figure outdoors, a bit less with trees', () => {
-    expect(breathed('outdoor', { ...park, trees: false }, 80, [])).toEqual({
-      pm25: 80,
-      source: 'outdoor',
-    });
-    expect(breathed('outdoor', park, 80, [])).toEqual({ pm25: 68, source: 'trees' });
-    expect(TREE_SHARE).toBeLessThan(1);
-  });
-
   it('is a share of the outside figure indoors, assumed, until a unit is there', () => {
-    expect(breathed('home', home, 100, [])).toEqual({
+    expect(breathed(home, 100, [])).toEqual({
       pm25: 100 * INDOOR_SHARE,
       source: 'assumed',
     });
-    const own = breathed('home', home, 100, [ownHome]);
+    const own = breathed(home, 100, [ownHome]);
     expect(own.source).toBe('device');
     expect(own.pm25).toBeLessThan(100 * INDOOR_SHARE);
   });
 
   it('picks up a shared unit at a place automatically, without the person adding anything', () => {
     const school = need(child.school);
-    const got = breathed('school', school, 100, SAMPLE_UNITS);
+    const got = breathed(school, 100, SAMPLE_UNITS);
     expect(got.source).toBe('unit');
     expect(got.pm25).toBeLessThan(100 * INDOOR_SHARE);
   });
 
   it('uses a unit only at the place it is in', () => {
-    expect(breathed('work', need(adult.work), 100, [ownHome]).source).toBe('assumed');
+    expect(breathed(need(adult.work), 100, [ownHome]).source).toBe('assumed');
   });
 });
 
 describe('a day, hour by hour', () => {
-  it('puts each place’s cells in its own hours, across midnight too', () => {
+  it('puts work in its own hours, and home in every hour, so the rest of the day is at home', () => {
     const cells = dayCells(adult, [], {}, YESTERDAY);
     const hoursOf = (where: string): number[] =>
       cells.filter((c) => c.where === where).map((c) => c.hour);
     expect(hoursOf('work')).toEqual([9, 10, 11, 12, 13, 14, 15, 16]);
-    expect(hoursOf('outdoor')).toEqual([17, 18]);
-    expect(hoursOf('home')).toEqual([0, 1, 2, 3, 4, 5, 6, 7, 8, 19, 20, 21, 22, 23]);
+    expect(hoursOf('outdoor')).toEqual([]);
+    expect(hoursOf('home')).toHaveLength(24);
+    const counted = countedCells(cells);
+    expect(counted.filter((c) => c.where === 'work')).toHaveLength(8);
+    expect(counted.filter((c) => c.where === 'home')).toHaveLength(16);
+  });
+
+  it('keeps school and work off weekends and public holidays, and on only the days chosen', () => {
+    const hoursOf = (cells: ReturnType<typeof dayCells>, where: string): number =>
+      cells.filter((c) => c.where === where).length;
+    // Saturday 3 Oct, Sunday 4 Oct, and Friday 2 Oct, which is Gandhi Jayanti.
+    for (const date of ['2026-10-03', '2026-10-04', '2026-10-02'])
+      expect(hoursOf(dayCells(adult, [], {}, date), 'work'), date).toBe(0);
+    expect(hoursOf(dayCells(adult, [], {}, '2026-10-05'), 'work')).toBe(8);
+    expect(hoursOf(dayCells(child, [], {}, '2026-10-03'), 'school')).toBe(0);
+    const saturdays = { ...adult, work: { ...need(adult.work), days: [1, 2, 3, 4, 5, 6] } };
+    expect(hoursOf(dayCells(saturdays, [], {}, '2026-10-03'), 'work')).toBe(8);
+    const mwf = { ...adult, work: { ...need(adult.work), days: [1, 3, 5] } };
+    expect(hoursOf(dayCells(mwf, [], {}, '2026-10-06'), 'work')).toBe(0);
+    expect(hoursOf(dayCells(mwf, [], {}, '2026-10-07'), 'work')).toBe(8);
   });
 
   it('works for any past date, and gives nothing for a date with no data', () => {
@@ -228,5 +237,67 @@ describe('the summary', () => {
   it('gives different days different answers across a week', () => {
     const aqis = lastWeek().map((d) => daySummary(adult, [], {}, d)?.aqi);
     expect(new Set(aqis).size).toBeGreaterThan(2);
+  });
+});
+
+describe('outdoor time that was logged', () => {
+  const park = { id: 'p', name: 'Park', lat: 28.6, lng: 77.2 };
+  const walk = (patch: Partial<Outing> = {}): Outing => ({
+    id: 'o1',
+    date: YESTERDAY,
+    start: 17 * 60,
+    minutes: 60,
+    activity: 'walk',
+    pin: park,
+    trees: false,
+    ...patch,
+  });
+  const outdoorOf = (outings: readonly Outing[]): ReturnType<typeof dayCells> =>
+    dayCells(adult, [], {}, YESTERDAY, outings).filter((c) => c.where === 'outdoor');
+
+  it('is nothing until something is logged, and only on the day it happened', () => {
+    expect(outdoorOf([])).toEqual([]);
+    expect(outdoorOf([walk({ date: '2026-10-08' })])).toEqual([]);
+  });
+
+  it('is the open air for the hours it covered, a bit less with trees', () => {
+    const open = ambientByHour(park, YESTERDAY)[17] ?? 0;
+    const plain = outdoorOf([walk()]);
+    expect(plain.map((c) => c.hour)).toEqual([17]);
+    expect(plain[0]?.pm25).toBeCloseTo(open, 0);
+    expect(plain[0]?.source).toBe('outdoor');
+    const treed = outdoorOf([walk({ trees: true })]);
+    expect(treed[0]?.source).toBe('trees');
+    expect(treed[0]?.pm25).toBeCloseTo(open * TREE_SHARE, 0);
+  });
+
+  it('spreads a walk over the hours it touches, by the minutes in each', () => {
+    const cells = outdoorOf([walk({ start: 17 * 60 + 40, minutes: 50 })]);
+    expect(cells.map((c) => c.hour)).toEqual([17, 18]);
+    expect(cells.map((c) => c.share)).toEqual([20 / 60, 30 / 60]);
+  });
+
+  it('counts a part hour partly outside and partly where else the person was', () => {
+    const open = ambientByHour(park, YESTERDAY)[18] ?? 0;
+    const counted = countedCells(
+      dayCells(adult, [], {}, YESTERDAY, [walk({ start: 18 * 60, minutes: 20 })]),
+    ).find((c) => c.hour === 18);
+    const home = countedCells(dayCells(adult, [], {}, YESTERDAY)).find((c) => c.hour === 18);
+    expect(counted?.where).toBe('outdoor');
+    expect(counted?.pm25 ?? 0).toBeGreaterThan(home?.pm25 ?? 0);
+    expect(counted?.pm25 ?? 0).toBeLessThan(open);
+  });
+
+  it('takes the open air from where the walk was, not from home', () => {
+    const counted = countedCells(dayCells(adult, [], {}, YESTERDAY, [walk()]));
+    const open = openAirFor(counted, adult, {}, YESTERDAY);
+    expect(open.length).toBe(24);
+  });
+
+  it('leaves out hours that have not finished today', () => {
+    const cells = dayCells(adult, [], {}, TODAY, [
+      walk({ date: TODAY, start: 16 * 60 + 30, minutes: 60 }),
+    ]);
+    expect(cells.filter((c) => c.where === 'outdoor').map((c) => c.hour)).toEqual([16]);
   });
 });

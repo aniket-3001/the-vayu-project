@@ -12,7 +12,8 @@ import {
 import { dayMonth, hourOfDay, isoDate, weekday } from '../today/time';
 import { INDOOR_SHARE, TREE_SHARE } from './assumptions';
 import { AT_PLACE_KM, distanceKm } from './geo';
-import { SPOT_KINDS, isThere, type Spot, type SpotKind, type Spots } from './spots';
+import type { Outing } from './outings';
+import { SPOT_KINDS, isThere, runsOn, type Spot, type SpotKind, type Spots } from './spots';
 import { unitNear, type Unit } from './units';
 
 /** An India calendar date, "2026-10-10". */
@@ -39,6 +40,9 @@ export interface Cell {
   readonly pm25: number;
   readonly aqi: number;
   readonly source: Source;
+  /** Outdoor cells: where it was, and how much of the hour was spent outside (0 to 1). */
+  readonly pin?: Pin;
+  readonly share?: number;
 }
 
 /** Rings, from the outside in. */
@@ -90,16 +94,10 @@ const round1 = (value: number): number => Math.round(value * 10) / 10;
 
 /** What a person breathes at a set place, given the open-air figure, any unit there, and the assumptions. */
 export function breathed(
-  kind: SpotKind,
   spot: Spot,
   ambient: number,
   units: readonly Unit[],
 ): { readonly pm25: number; readonly source: Source } {
-  if (kind === 'outdoor') {
-    return spot.trees === true
-      ? { pm25: round1(ambient * TREE_SHARE), source: 'trees' }
-      : { pm25: ambient, source: 'outdoor' };
-  }
   const unit = unitNear(spot.pin, units);
   if (unit !== undefined)
     return { pm25: sampleIndoorPm25(ambient), source: unit.own ? 'device' : 'unit' };
@@ -136,29 +134,32 @@ export function placeOfFix(
 }
 
 /**
- * A day, hour by hour, for every ring. A set place has a cell for each hour in its window that has finished;
- * the live ring has a cell for each hour with a fix, today only. Hours with nothing are left out. A unit
- * near a place, or near a live fix, is used automatically, whoever put it there.
+ * A day, hour by hour, for every ring. Home is every hour; school and work are the hours in their window on
+ * the days they run, so a weekend or a holiday is all home. Outdoor cells come from logged outings: an hour
+ * the person spent partly outside counts the outside part. The live ring has a cell for each hour with a fix,
+ * today only. A unit near a place, or near a live fix, is used automatically, whoever put it there.
  */
 export function dayCells(
   spots: Spots,
   units: readonly Unit[],
   live: LiveLog,
   date: DateKey,
+  outings: readonly Outing[] = [],
 ): readonly Cell[] {
   const cells: Cell[] = [];
   const upTo = hoursSoFar(date);
   for (const kind of SPOT_KINDS) {
     const spot = spots[kind];
-    if (spot === undefined) continue;
+    if (spot === undefined || kind === 'outdoor' || !runsOn(kind, spot, date)) continue;
     const ambient = ambientByHour(spot.pin, date);
     for (let hour = 0; hour < upTo; hour++) {
       const open = ambient[hour];
-      if (open === undefined || !isThere(spot, hour)) continue;
-      const { pm25, source } = breathed(kind, spot, open, units);
+      if (open === undefined || (kind !== 'home' && !isThere(spot, hour))) continue;
+      const { pm25, source } = breathed(spot, open, units);
       cells.push(cellOf(hour, kind, pm25, source));
     }
   }
+  cells.push(...outdoorCells(outings, date, upTo));
   if (date === TODAY) {
     for (const [key, fix] of Object.entries(live)) {
       const hour = Number(key);
@@ -178,7 +179,7 @@ export function dayCells(
       if (open === undefined) continue;
       const near = unitNear(fix, units);
       let got: { pm25: number; source: Source };
-      if (here !== undefined && spot !== undefined) got = breathed(here, spot, open, units);
+      if (here !== undefined && spot !== undefined) got = breathed(spot, open, units);
       else if (near !== undefined)
         got = { pm25: sampleIndoorPm25(open), source: near.own ? 'device' : 'unit' };
       else got = { pm25: open, source: 'outdoor' };
@@ -188,17 +189,63 @@ export function dayCells(
   return cells;
 }
 
-/** The one cell that counts for each hour in the day's total, by priority. */
+/** The outdoor cells for a date: one for each hour an outing touches that has finished, weighted by minutes. */
+export function outdoorCells(
+  outings: readonly Outing[],
+  date: DateKey,
+  upTo: number,
+): readonly Cell[] {
+  const byHour = new Map<number, { share: number; weighted: number; pin: Pin; trees: boolean }>();
+  for (const outing of outings) {
+    if (outing.date !== date) continue;
+    const end = outing.start + outing.minutes;
+    for (let hour = Math.floor(outing.start / 60); hour * 60 < end && hour < upTo; hour++) {
+      const minutes = Math.min(end, hour * 60 + 60) - Math.max(outing.start, hour * 60);
+      const open = ambientByHour(outing.pin, date)[hour];
+      if (minutes <= 0 || open === undefined) continue;
+      const pm = outing.trees ? open * TREE_SHARE : open;
+      const share = minutes / 60;
+      const now = byHour.get(hour);
+      byHour.set(hour, {
+        share: (now?.share ?? 0) + share,
+        weighted: (now?.weighted ?? 0) + pm * share,
+        pin: now?.pin ?? outing.pin,
+        trees: (now?.trees ?? false) || outing.trees,
+      });
+    }
+  }
+  return [...byHour.entries()].map(([hour, got]) => ({
+    ...cellOf(hour, 'outdoor', round1(got.weighted / got.share), got.trees ? 'trees' : 'outdoor'),
+    pin: got.pin,
+    share: Math.min(1, got.share),
+  }));
+}
+
+/**
+ * The one cell that counts for each hour in the day's total, by priority. An hour only partly spent outside
+ * counts the outside part at the outside air and the rest at wherever else the person was.
+ */
 export function countedCells(cells: readonly Cell[]): readonly Cell[] {
   const counted: Cell[] = [];
   for (let hour = 0; hour < 24; hour++) {
     const here = cells.filter((cell) => cell.hour === hour);
     for (const where of PRIORITY) {
       const found = here.find((cell) => cell.where === where);
-      if (found !== undefined) {
-        counted.push(found);
-        break;
+      if (found === undefined) continue;
+      const share = found.share ?? 1;
+      if (where === 'outdoor' && share < 1) {
+        const restWhere = PRIORITY.find(
+          (w) => w !== 'outdoor' && here.some((cell) => cell.where === w),
+        );
+        const rest = here.find((cell) => cell.where === restWhere);
+        if (rest !== undefined) {
+          const pm25 = round1(found.pm25 * share + rest.pm25 * (1 - share));
+          counted.push({ ...found, pm25, aqi: usAqi(pm25)?.value ?? 0 });
+          break;
+        }
       }
+      counted.push(found);
+      break;
     }
   }
   return counted;
@@ -276,7 +323,7 @@ export function openAirFor(
         };
       }
     } else {
-      pin = spots[cell.where]?.pin;
+      pin = cell.pin ?? spots[cell.where]?.pin;
     }
     const open =
       pin === undefined
@@ -293,7 +340,8 @@ export function daySummary(
   units: readonly Unit[],
   live: LiveLog,
   date: DateKey,
+  outings: readonly Outing[] = [],
 ): Summary | undefined {
-  const counted = countedCells(dayCells(spots, units, live, date));
+  const counted = countedCells(dayCells(spots, units, live, date, outings));
   return summarise(counted, openAirFor(counted, spots, live, date));
 }

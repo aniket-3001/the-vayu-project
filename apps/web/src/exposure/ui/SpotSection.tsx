@@ -3,7 +3,6 @@ import {
   GraduationCap,
   House,
   Plus,
-  Sprout,
   Trash2,
   TreePine,
   type LucideIcon,
@@ -16,6 +15,7 @@ import { pinId } from '../../data/pins';
 import { PlaceSearch } from '../../places/ui/PlaceSearch';
 import { INDOOR_SHARE } from '../assumptions';
 import { unitNear, type Unit } from '../units';
+import { DAY_INITIALS, DAY_NAMES, DAY_ORDER, WEEKDAYS } from '../calendar';
 import { DEFAULT_HOURS, SPOT_LABELS, type Spot, type SpotKind } from '../spots';
 
 const ICONS: Readonly<Record<SpotKind, LucideIcon>> = {
@@ -55,6 +55,39 @@ function HourSelect({
   );
 }
 
+/** Which days of the week a school or work runs: seven small buttons. It is shut on public holidays too. */
+export function DaysPicker({
+  label,
+  days,
+  onChange,
+}: {
+  readonly label: string;
+  readonly days: readonly number[];
+  readonly onChange: (days: readonly number[]) => void;
+}): React.JSX.Element {
+  return (
+    <fieldset className="days-picker">
+      <legend>{label} days</legend>
+      <div className="days-row">
+        {DAY_ORDER.map((day) => (
+          <button
+            key={day}
+            type="button"
+            aria-pressed={days.includes(day)}
+            aria-label={DAY_NAMES[day]}
+            onClick={() => {
+              onChange(days.includes(day) ? days.filter((d) => d !== day) : [...days, day].sort());
+            }}
+          >
+            {DAY_INITIALS[day]}
+          </button>
+        ))}
+      </div>
+      <p className="muted small">Not on public holidays. The rest of the time: at home.</p>
+    </fieldset>
+  );
+}
+
 /** One kind of place: set it, change the hours you are usually there, see what is assumed about it. */
 export function SpotSection({
   kind,
@@ -82,7 +115,7 @@ export function SpotSection({
   const unit = spot === undefined ? undefined : unitNear(spot.pin, units);
 
   const choose = (pin: Pin): void => {
-    onSet({ pin, ...DEFAULT_HOURS[kind], ...(kind === 'outdoor' ? { trees: true } : {}) });
+    onSet({ pin, ...DEFAULT_HOURS[kind] });
     setPicking(false);
   };
 
@@ -171,35 +204,34 @@ export function SpotSection({
           <Trash2 size={18} strokeWidth={1.75} aria-hidden="true" />
         </button>
       </div>
-      <div className="hours-row">
-        <HourSelect
-          label={`${label} from`}
-          value={spot.from}
-          onChange={(from) => {
-            onSet({ ...spot, from });
-          }}
-        />
-        <HourSelect
-          label={`${label} until`}
-          value={spot.to}
-          onChange={(to) => {
-            onSet({ ...spot, to });
-          }}
-        />
-      </div>
-      {kind === 'outdoor' ? (
-        <label className="check">
-          <input
-            type="checkbox"
-            checked={spot.trees === true}
-            onChange={(event) => {
-              onSet({ ...spot, trees: event.target.checked });
+      {kind !== 'home' && (
+        <>
+          <div className="hours-row">
+            <HourSelect
+              label={`${label} from`}
+              value={spot.from}
+              onChange={(from) => {
+                onSet({ ...spot, from });
+              }}
+            />
+            <HourSelect
+              label={`${label} until`}
+              value={spot.to}
+              onChange={(to) => {
+                onSet({ ...spot, to });
+              }}
+            />
+          </div>
+          <DaysPicker
+            label={label}
+            days={spot.days ?? WEEKDAYS}
+            onChange={(days) => {
+              onSet({ ...spot, days });
             }}
           />
-          <Sprout size={18} strokeWidth={1.75} aria-hidden="true" />
-          Trees around. Assumed to cut exposure a little.
-        </label>
-      ) : unit !== undefined ? (
+        </>
+      )}
+      {unit !== undefined ? (
         <p className="small">
           <strong>{unit.name}</strong> is here.{' '}
           {unit.own

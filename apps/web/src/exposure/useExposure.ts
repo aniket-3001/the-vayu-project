@@ -13,6 +13,15 @@ import {
   type Household,
   type Person,
 } from './people';
+import {
+  OUTINGS_CHANGED,
+  addOuting,
+  loadOutings,
+  newOuting,
+  removeOuting,
+  saveOutings,
+  type Outing,
+} from './outings';
 import { loadSpots, saveSpots, type Spot, type SpotKind, type Spots } from './spots';
 
 /** The people being looked at, and who is selected. Kept in this browser. */
@@ -154,6 +163,38 @@ export function useLive(storage: Storage = window.localStorage): {
       setSample(false);
       setLog({});
       saveLive(storage, {});
+    },
+  };
+}
+
+/** What someone has logged doing outdoors. Shared by every screen, so the assistant can add one while Exposure is open. */
+export function useOutings(
+  person: Person,
+  storage: Storage = window.localStorage,
+): {
+  readonly outings: readonly Outing[];
+  readonly add: (details: Omit<Outing, 'id'>) => void;
+  readonly remove: (id: string) => void;
+} {
+  const [version, setVersion] = useState(0);
+  useEffect(() => {
+    const again = (): void => {
+      setVersion((n) => n + 1);
+    };
+    window.addEventListener(OUTINGS_CHANGED, again);
+    return () => {
+      window.removeEventListener(OUTINGS_CHANGED, again);
+    };
+  }, []);
+  // `version` is read so a change elsewhere reloads the list.
+  const outings = version >= 0 ? loadOutings(storage, person.id) : [];
+  return {
+    outings,
+    add: (details) => {
+      saveOutings(storage, person.id, addOuting(outings, newOuting(details, outings)));
+    },
+    remove: (id) => {
+      saveOutings(storage, person.id, removeOuting(outings, id));
     },
   };
 }

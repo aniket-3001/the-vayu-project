@@ -98,7 +98,8 @@ export const SCENARIOS: readonly Scenario[] = [
   {
     id: 'child',
     label: 'A child at school',
-    caption: 'Add a child: the school’s monitor is picked up on its own.',
+    caption:
+      'Add a child with school hours and days: the school’s monitor is picked up on its own.',
     route: '/exposure',
     seconds: 5,
     state: { day: 'dusty' },
@@ -122,11 +123,12 @@ export const SCENARIOS: readonly Scenario[] = [
   },
   {
     id: 'ask',
-    label: 'Ask Vayu',
-    caption: 'Ask in plain words, and hear the answer.',
-    route: '/',
+    label: 'Tell Vayu',
+    caption: 'Say what someone did outdoors: Asha’s walk is added to her day.',
+    route: '/exposure',
     seconds: 6,
-    state: { day: 'moderate', ask: 'When can I go for a walk?' },
+    state: { day: 'moderate', ask: 'Asha took a walk in the park for 40 minutes' },
+    saved: { [PEOPLE_STORAGE_KEY]: WITH_ASHA },
   },
 ];
 

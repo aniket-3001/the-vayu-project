@@ -242,4 +242,35 @@ describe('the best hour in the context', () => {
     const c = buildContext('Home', sampleDay('good'), [], undefined, []);
     expect(c.best?.span).toMatch(/ tomorrow$/u);
   });
+
+  it('adds an outdoor walk for someone on the list when it is told, and does not answer it as a question', async () => {
+    window.localStorage.setItem(
+      'vayu.people.v1',
+      JSON.stringify({
+        people: [
+          { id: 'me', name: 'Me', age: 30, day: 'work' },
+          { id: 'kid', name: 'Asha', age: 9, day: 'school' },
+        ],
+        current: 'me',
+      }),
+    );
+    render(
+      <MemoryRouter>
+        <AssistantFab source={localAssistant} />
+      </MemoryRouter>,
+    );
+    await userEvent.click(screen.getByRole('button', { name: 'Ask Vayu' }));
+    const box = screen.getByRole('textbox', { name: 'Your question' });
+    await userEvent.type(box, 'Asha took a walk in the park for 40 minutes{enter}');
+    const reply = await screen.findByText(/^Added to Asha’s day/u);
+    expect(reply).toHaveTextContent('40 minutes');
+    const saved = JSON.parse(window.localStorage.getItem('vayu.outings.v1') ?? '{}') as Record<
+      string,
+      { minutes: number }[]
+    >;
+    expect(saved.kid?.[0]?.minutes).toBe(40);
+    await userEvent.type(box, 'Asha went for a walk in the park{enter}');
+    expect(await screen.findByText(/For how long was Asha outside/u)).toBeInTheDocument();
+    expect(saved.kid).toHaveLength(1);
+  });
 });

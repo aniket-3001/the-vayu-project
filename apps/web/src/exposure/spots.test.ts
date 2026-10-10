@@ -18,7 +18,7 @@ beforeEach(() => {
 const pin = { id: 'x', name: 'X', lat: 28.6, lng: 77.2 };
 
 describe('the places for each kind of person', () => {
-  it('starts a child at school 8 to 3, an adult at work 9 to 5, and a senior at home with a morning walk', () => {
+  it('starts a child at school 8 to 3, an adult at work 9 to 5, and a senior at home', () => {
     const child = sampleSpotsFor('child');
     expect(child.school).toMatchObject({ from: 8, to: 15 });
     expect(child.work).toBeUndefined();
@@ -26,7 +26,7 @@ describe('the places for each kind of person', () => {
     expect(adult.work).toMatchObject({ from: 9, to: 17 });
     expect(adult.school).toBeUndefined();
     const senior = sampleSpotsFor('senior');
-    expect(senior.outdoor).toMatchObject({ from: 6, to: 8, trees: true });
+    expect(senior.outdoor).toBeUndefined();
     expect(senior.work).toBeUndefined();
     expect(senior.school).toBeUndefined();
   });

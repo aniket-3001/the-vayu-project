@@ -88,9 +88,13 @@ describe('the Exposure screen', () => {
   it('opens a person’s timetable when they are pressed, with a place for each part of their day', async () => {
     open();
     const panel = await openPanel('Me');
-    for (const name of ['Home', 'Work', 'Outdoor', 'Live location']) {
+    for (const name of ['Home', 'Work', 'Live location']) {
       expect(within(panel).getByRole('region', { name })).toBeInTheDocument();
     }
+    // Home has no hours: the rest of the time is at home. Work has its days. Your own outdoor time is automatic.
+    expect(within(panel).queryByLabelText('Home from')).not.toBeInTheDocument();
+    expect(within(panel).getByRole('group', { name: 'Work days' })).toBeInTheDocument();
+    expect(within(panel).queryByRole('region', { name: 'Outdoor time' })).not.toBeInTheDocument();
     expect(within(panel).queryByRole('region', { name: 'School' })).not.toBeInTheDocument();
     await closePanel();
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
@@ -234,13 +238,17 @@ describe('the Exposure screen', () => {
     expect(screen.getByRole('note')).toHaveTextContent(/made-up sample data/u);
   });
 
-  it('shows what each hour was when it is picked, and says when an hour is in the future', () => {
+  it('shows what each hour was when it is picked, and says when an hour is in the future', async () => {
     open();
+    // Today is a Saturday, when there is no work: the whole day is at home.
+    fireEvent.change(screen.getByRole('slider', { name: 'Hour' }), { target: { value: '12' } });
+    expect(document.querySelector('.readout')).toHaveTextContent(/Home, /u);
+    fireEvent.change(screen.getByRole('slider', { name: 'Hour' }), { target: { value: '22' } });
+    expect(screen.getByText('That hour has not happened yet.')).toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: 'Yesterday' }));
     fireEvent.change(screen.getByRole('slider', { name: 'Hour' }), { target: { value: '12' } });
     expect(screen.getByText('12:00 to 13:00')).toBeInTheDocument();
     expect(document.querySelector('.readout')).toHaveTextContent(/Work, /u);
-    fireEvent.change(screen.getByRole('slider', { name: 'Hour' }), { target: { value: '22' } });
-    expect(screen.getByText('That hour has not happened yet.')).toBeInTheDocument();
   });
 
   it('narrows the dial to one kind of place, with no tab for live location', async () => {
@@ -256,6 +264,7 @@ describe('the Exposure screen', () => {
 
   it('changes the hours a place is usually used from the timetable, and the dial follows', async () => {
     open();
+    await userEvent.click(screen.getByRole('button', { name: 'Yesterday' }));
     const before = cellsFilled();
     const panel = await openPanel('Me');
     await userEvent.selectOptions(
@@ -286,7 +295,7 @@ describe('the Exposure screen', () => {
   it('removes a place in the timetable and says there is nothing to add up when none are left', async () => {
     open();
     const panel = await openPanel('Me');
-    for (const name of ['Home', 'Work', 'Outdoor']) {
+    for (const name of ['Home', 'Work']) {
       await userEvent.click(within(panel).getByRole('button', { name: `Remove ${name}` }));
     }
     await closePanel();
@@ -398,5 +407,78 @@ describe('working it out from where I am', () => {
     await closePanel();
     fireEvent.change(screen.getByRole('slider', { name: 'Hour' }), { target: { value: '15' } });
     expect(document.querySelector('.readout')).toHaveTextContent(/Live, .*\(from a nearby unit\)/u);
+  });
+
+  it('adds a person with just school or work hours and the days it runs, and the rest is home', async () => {
+    open();
+    await addPerson('Asha', '9', async () => {
+      const sheet = screen.getByRole('dialog', { name: 'Add a person' });
+      expect(within(sheet).queryByLabelText(/Park|Outdoor|Home from/u)).not.toBeInTheDocument();
+      expect(within(sheet).getByRole('group', { name: 'School days' })).toBeInTheDocument();
+      // Monday to Friday to begin with; add Saturday, drop Friday.
+      await userEvent.click(within(sheet).getByRole('button', { name: 'Saturday' }));
+      await userEvent.click(within(sheet).getByRole('button', { name: 'Friday' }));
+    });
+    const saved = JSON.parse(window.localStorage.getItem(SPOTS_STORAGE_KEY) ?? '{}') as Record<
+      string,
+      { school?: { days?: number[] } }
+    >;
+    const school = Object.values(saved).find((s) => s.school !== undefined)?.school;
+    expect(school?.days).toEqual([1, 2, 3, 4, 6]);
+    const panel = await openPanel('Asha');
+    expect(within(panel).getByRole('button', { name: 'Saturday' })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    );
+    expect(within(panel).getByRole('button', { name: 'Friday' })).toHaveAttribute(
+      'aria-pressed',
+      'false',
+    );
+  });
+
+  it('will not add school or work with no day picked', async () => {
+    open();
+    await userEvent.click(screen.getByRole('button', { name: /Add person/u }));
+    const sheet = screen.getByRole('dialog', { name: 'Add a person' });
+    await userEvent.type(within(sheet).getByRole('textbox', { name: 'Name' }), 'Asha');
+    await userEvent.type(within(sheet).getByRole('spinbutton', { name: 'Age' }), '9');
+    for (const d of ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'])
+      await userEvent.click(within(sheet).getByRole('button', { name: d }));
+    await userEvent.click(within(sheet).getByRole('button', { name: 'Add person' }));
+    expect(within(sheet).getByRole('alert')).toHaveTextContent(/at least one day for school/u);
+  });
+
+  it('logs a walk for someone else, shows it on the Outdoor tab, and lets it be removed', async () => {
+    open();
+    expect(screen.queryByRole('button', { name: /Log outdoor time/u })).not.toBeInTheDocument();
+    await addPerson('Asha', '9');
+    await userEvent.click(screen.getByRole('button', { name: /Log outdoor time for Asha/u }));
+    const sheet = screen.getByRole('dialog', { name: /Outdoor time for Asha/u });
+    await userEvent.selectOptions(within(sheet).getByLabelText('Where'), 'Park');
+    await userEvent.selectOptions(within(sheet).getByLabelText('For how long'), '45 minutes');
+    await userEvent.click(within(sheet).getByRole('button', { name: /Add to Asha/u }));
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    expect(
+      within(screen.getByRole('group', { name: 'Show' })).getByRole('button', { name: 'Outdoor' }),
+    ).toHaveAttribute('aria-pressed', 'true');
+    expect(cellsFilled()).toBeGreaterThan(0);
+    const panel = await openPanel('Asha');
+    const outdoor = within(panel).getByRole('region', { name: 'Outdoor time' });
+    expect(outdoor).toHaveTextContent('Walk or run in Park');
+    expect(outdoor).toHaveTextContent('45 min');
+    await userEvent.click(
+      within(outdoor).getByRole('button', { name: /^Remove walk or run in Park/u }),
+    );
+    expect(within(panel).queryByText(/Walk or run in Park/u)).not.toBeInTheDocument();
+  });
+
+  it('will not log outdoor time that has not happened yet', async () => {
+    open();
+    await addPerson('Asha', '9');
+    await userEvent.click(screen.getByRole('button', { name: /Log outdoor time for Asha/u }));
+    const sheet = screen.getByRole('dialog', { name: /Outdoor time for Asha/u });
+    fireEvent.change(within(sheet).getByLabelText('Started at'), { target: { value: '19:00' } });
+    await userEvent.click(within(sheet).getByRole('button', { name: /Add to Asha/u }));
+    expect(within(sheet).getByRole('alert')).toHaveTextContent('has not happened yet');
   });
 });

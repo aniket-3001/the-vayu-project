@@ -11,6 +11,12 @@ import { apiAssistant } from './api';
 import { buildContext } from './context';
 import { localAssistant } from './local';
 import { RequestForm } from './RequestForm';
+import { addedText, parseOuting } from './outingParse';
+import { TODAY } from '../exposure/model';
+import { addOuting, loadOutings, newOuting, saveOutings } from '../exposure/outings';
+import { loadHousehold } from '../exposure/people';
+import { NOW_MINUTES } from '../exposure/ui/OutingSheet';
+import { loadPins } from '../data/pins';
 import { canListen, canSpeak, listen, speak, stopSpeaking } from './speech';
 import type { AssistantContext, AssistantSource } from './types';
 
@@ -30,7 +36,7 @@ const SUGGESTIONS = [
 ] as const;
 
 const GREETING =
-  'Ask about a walk, school, masks, windows, alerts or stubble burning. Answers come from today’s air for your first place.';
+  'Ask about a walk, school, masks, windows, alerts or stubble burning. Or tell me what someone did outdoors, like “Asha walked in the park for 40 minutes”, and I will add it to their day.';
 
 /** The deployed assistant, if one is set; otherwise the local answers. */
 const configured = (): AssistantSource => {
@@ -96,6 +102,37 @@ export function AssistantFab({
     const id = next.current++;
     setMessages((m) => [...m, { id, from: 'you', text }]);
     setDraft('');
+    // Something someone did outdoors is added to their day, not answered.
+    const people = loadHousehold(window.localStorage).people;
+    const logged = parseOuting(text, people, loadPins(window.localStorage), {
+      date: TODAY,
+      minutes: NOW_MINUTES,
+    });
+    if (logged !== undefined) {
+      let reply: string;
+      if (logged.kind === 'add') {
+        const mine = loadOutings(window.localStorage, logged.person.id);
+        saveOutings(
+          window.localStorage,
+          logged.person.id,
+          addOuting(mine, newOuting(logged.outing, mine)),
+        );
+        reply = addedText(logged.person, logged.outing);
+      } else if (logged.kind === 'problem') reply = logged.text;
+      else
+        reply =
+          'Your own outdoor time is counted from your location, so there is nothing to add. Turn on “Work it out from where I am” in Exposure. For someone else, tell me their name.';
+      setMessages((m) => [
+        ...m,
+        {
+          id: next.current++,
+          from: 'vayu',
+          text: reply,
+          basis: logged.kind === 'add' ? 'Added to Exposure' : 'Outdoor time',
+        },
+      ]);
+      return;
+    }
     if (context === undefined) {
       setMessages((m) => [
         ...m,
@@ -260,7 +297,13 @@ export function AssistantFab({
                   </button>
                 </section>
                 <div className="chips" role="group" aria-label="Suggested questions">
-                  {SUGGESTIONS.map((q) => (
+                  {[
+                    ...SUGGESTIONS,
+                    ...loadHousehold(window.localStorage)
+                      .people.filter((p) => p.id !== 'me')
+                      .slice(0, 1)
+                      .map((p) => `${p.name} walked in the park for 30 minutes`),
+                  ].map((q) => (
                     <button
                       key={q}
                       type="button"
