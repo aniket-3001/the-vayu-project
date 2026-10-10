@@ -1,11 +1,20 @@
 import { ChevronLeft } from 'lucide-react';
 import { useMemo } from 'react';
-import { HashRouter, Link, Route, Routes, useParams, useSearchParams } from 'react-router-dom';
+import {
+  HashRouter,
+  Link,
+  Route,
+  Routes,
+  useLocation,
+  useParams,
+  useSearchParams,
+} from 'react-router-dom';
 import { ExposureScreen } from './exposure/ExposureScreen';
 import { LensScreen } from './lens/LensScreen';
 import { MapScreen } from './map/MapScreen';
 import { MyAirScreen } from './myair/MyAirScreen';
 import { TabBar } from './nav/TabBar';
+import { AssistantFab } from './assistant/AssistantFab';
 import { AirUnitsProvider, SmokeToggle } from './units/AirUnits';
 import { readingForPin, sampleIdForPin } from './places/placeSample';
 import { usePins } from './places/usePins';
@@ -55,25 +64,36 @@ function PlaceRoute(): React.JSX.Element {
   );
 }
 
+/** The frame around every screen: the pinned bar, the screen, the tab bar and the assistant that stays put. */
+function Frame(): React.JSX.Element {
+  const route = useLocation().pathname.split('/')[1] ?? '';
+  return (
+    <div className="frame" data-route={route === '' ? 'home' : route}>
+      <div className="bar">
+        <Link to="/" className="wordmark">
+          Vayu Air
+        </Link>
+        <SmokeToggle />
+      </div>
+      <Routes>
+        <Route path="/" element={<MyAirScreen />} />
+        <Route path="/place/:id" element={<PlaceRoute />} />
+        <Route path="/exposure" element={<ExposureScreen />} />
+        <Route path="/map" element={<MapScreen />} />
+        <Route path="/lens" element={<LensScreen />} />
+        <Route path="*" element={<MyAirScreen />} />
+      </Routes>
+      <AssistantFab />
+      <TabBar />
+    </div>
+  );
+}
+
 export function App(): React.JSX.Element {
   return (
     <HashRouter>
       <AirUnitsProvider>
-        <div className="bar">
-          <Link to="/" className="wordmark">
-            Vayu Air
-          </Link>
-          <SmokeToggle />
-        </div>
-        <Routes>
-          <Route path="/" element={<MyAirScreen />} />
-          <Route path="/place/:id" element={<PlaceRoute />} />
-          <Route path="/map" element={<MapScreen />} />
-          <Route path="/exposure" element={<ExposureScreen />} />
-          <Route path="/lens" element={<LensScreen />} />
-          <Route path="*" element={<MyAirScreen />} />
-        </Routes>
-        <TabBar />
+        <Frame />
       </AirUnitsProvider>
     </HashRouter>
   );

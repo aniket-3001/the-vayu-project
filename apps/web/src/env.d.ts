@@ -1,6 +1,8 @@
 interface ImportMetaEnv {
   /** Base URL of the deployed API, e.g. https://example.execute-api.ap-south-1.amazonaws.com. Unset means sample data. */
   readonly VITE_API_URL?: string;
+  /** Base URL of the deployed assistant (Bedrock and Polly behind our API). Unset means local answers. */
+  readonly VITE_ASSISTANT_URL?: string;
   /** True while running the dev server. */
   readonly DEV: boolean;
 }

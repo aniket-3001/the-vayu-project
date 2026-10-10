@@ -111,19 +111,22 @@ export function MapScreen(): React.JSX.Element {
               </button>
             ))}
           </div>
-          <button type="button" className="map-layers-button" onClick={findMe}>
-            <LocateFixed size={18} strokeWidth={1.75} aria-hidden="true" /> Find me
+          <button type="button" className="map-layers-button" aria-label="Find me" onClick={findMe}>
+            <LocateFixed size={18} strokeWidth={1.75} aria-hidden="true" />{' '}
+            <span className="btn-label">Find me</span>
           </button>
           <button
             type="button"
             className="map-layers-button"
+            aria-label="Layers"
             aria-expanded={open}
             aria-controls="map-layers"
             onClick={() => {
               setOpen((v) => !v);
             }}
           >
-            <Layers size={18} strokeWidth={1.75} aria-hidden="true" /> Layers
+            <Layers size={18} strokeWidth={1.75} aria-hidden="true" />{' '}
+            <span className="btn-label">Layers</span>
           </button>
         </div>
 
