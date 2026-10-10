@@ -1,75 +1,12 @@
-import { Cpu, Plus, Trash2 } from 'lucide-react';
+import { Cpu, Plus } from 'lucide-react';
 import { useState } from 'react';
-import { levelForAqi } from '../../design/levels';
-import { SPOT_KINDS, SPOT_LABELS, sampleSpotsFor, type SpotKind } from '../../exposure/spots';
-import { readingForPin } from '../../places/placeSample';
-import { usAqi } from '@vayu/core';
-import { Pill } from '../../today/ui/Chip';
-import { concentration, levelVars } from '../../today/ui/format';
-import { sampleIndoorPm25, type Device } from '../devices';
+import { SPOT_KINDS, SPOT_LABELS, type SpotKind } from '../../exposure/spots';
+import { DeviceCard } from './DeviceCard';
 import { useDevices } from '../useDevices';
-
-/** The outdoor PM2.5 near where a device sits: the pinned place for that kind, or a Delhi default. */
-function outdoorPm25(where: SpotKind): number {
-  const pin = (sampleSpotsFor('adult')[where] ?? sampleSpotsFor('child')[where])?.pin;
-  return pin === undefined ? 70 : readingForPin(pin).pm25;
-}
-
-function DeviceCard({
-  device,
-  onRemove,
-}: {
-  readonly device: Device;
-  readonly onRemove: () => void;
-}): React.JSX.Element {
-  const outside = outdoorPm25(device.where);
-  const inside = sampleIndoorPm25(outside);
-  const level = levelForAqi(usAqi(inside)?.value ?? 0);
-  return (
-    <li className="device-card" style={levelVars(level)}>
-      <div className="dc-top">
-        <span className="dc-icon">
-          <Cpu size={22} strokeWidth={1.75} aria-hidden="true" />
-        </span>
-        <div>
-          <h2>{device.name}</h2>
-          <p className="muted small">In your {SPOT_LABELS[device.where].toLowerCase()}</p>
-        </div>
-        <button
-          type="button"
-          className="icon-button"
-          aria-label={`Remove ${device.name}`}
-          onClick={onRemove}
-        >
-          <Trash2 size={18} strokeWidth={1.75} aria-hidden="true" />
-        </button>
-      </div>
-      <dl className="dc-readings">
-        <div>
-          <dt>Indoors</dt>
-          <dd>
-            <strong className="tnum">{concentration(inside)}</strong> µg/m³ PM<sub>2.5</sub>
-          </dd>
-          <dd className="dc-level">{level.name}</dd>
-        </div>
-        <div>
-          <dt>Outside</dt>
-          <dd>
-            <strong className="tnum">{concentration(outside)}</strong> µg/m³ PM<sub>2.5</sub>
-          </dd>
-        </div>
-      </dl>
-      <p className="small dc-note">
-        <Pill>Sample reading</Pill> The monitor is not built yet, so this is made up from the
-        outside air.
-      </p>
-    </li>
-  );
-}
 
 /** Your monitors, and a way to add one and say where it lives. */
 export function DevicesPanel(): React.JSX.Element {
-  const { devices, add, remove } = useDevices();
+  const { devices, add, remove, update } = useDevices();
   const [adding, setAdding] = useState(false);
   const [name, setName] = useState('');
   const [where, setWhere] = useState<SpotKind>('home');
@@ -97,6 +34,9 @@ export function DevicesPanel(): React.JSX.Element {
               device={device}
               onRemove={() => {
                 remove(device.id);
+              }}
+              onChange={(patch) => {
+                update(device.id, patch);
               }}
             />
           ))}

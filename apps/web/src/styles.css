@@ -2902,3 +2902,252 @@ button.alert-card {
   top: 10px;
   bottom: auto;
 }
+
+/* A device: a big reading, a fan line, a day chart, the filter. */
+.dev-online {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  color: #2e9d57;
+  font-weight: 700;
+}
+.dev-now {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 14px;
+  align-items: center;
+  margin-top: 12px;
+}
+.dev-aqi {
+  display: grid;
+  justify-items: start;
+  padding: 10px 14px;
+  border-radius: 14px;
+  background: var(--level);
+  color: var(--on-level);
+  line-height: 1.15;
+}
+.dev-aqi strong {
+  font-size: 40px;
+}
+.dev-aqi span {
+  font-size: 12px;
+  font-weight: 600;
+}
+.dev-aqi .dc-level {
+  font-size: 14px;
+  font-weight: 800;
+}
+.dev-facts {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+}
+.dev-facts dt {
+  font-size: 12px;
+  color: var(--muted);
+}
+.dev-facts dd {
+  margin: 0;
+  font-weight: 700;
+}
+.dev-fanrow {
+  display: grid;
+  gap: 10px;
+  margin-top: 14px;
+}
+.dev-fan-state {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: var(--card);
+  color: #6b7a8d;
+}
+.dev-fan-state > span {
+  display: grid;
+  line-height: 1.3;
+}
+.dev-fan-state strong {
+  color: var(--text);
+}
+.dev-fan-state.on {
+  background: #d9f2e0;
+  color: #2e9d57;
+}
+.dev-fan-state.on svg {
+  animation: dev-spin 1.6s linear infinite;
+}
+@keyframes dev-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .dev-fan-state.on svg {
+    animation: none;
+  }
+}
+.dev-auto {
+  margin-top: 10px;
+}
+.dev-day h3 {
+  margin: 14px 0 4px;
+  font-size: 15px;
+}
+.dev-chart {
+  width: 100%;
+  height: auto;
+}
+.dev-fan {
+  fill: #bfe8cc;
+  opacity: 0.55;
+}
+.dev-grid {
+  stroke: rgb(51 65 85 / 0.12);
+}
+.dev-axis {
+  fill: #6b7a8d;
+  font-size: 9px;
+}
+.dev-wash {
+  fill: rgb(47 127 208 / 0.16);
+}
+.dev-in {
+  fill: none;
+  stroke: #2f7fd0;
+  stroke-width: 2.25;
+}
+.dev-out {
+  fill: none;
+  stroke: #e0953f;
+  stroke-width: 1.75;
+  stroke-dasharray: 4 3;
+}
+.dev-key {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 12px;
+  margin: 0;
+  color: var(--muted);
+}
+.dev-key .k {
+  display: inline-block;
+  width: 14px;
+  height: 4px;
+  margin-right: 4px;
+  border-radius: 2px;
+  vertical-align: middle;
+}
+.k-in {
+  background: #2f7fd0;
+}
+.k-out {
+  background: #e0953f;
+}
+.k-fan {
+  height: 10px !important;
+  background: #bfe8cc;
+}
+.dev-stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  margin: 12px 0 0;
+  padding: 0;
+  list-style: none;
+}
+.dev-stats li {
+  display: grid;
+  gap: 2px;
+  padding: 10px;
+  border-radius: 12px;
+  background: var(--card);
+  font-size: 12px;
+  line-height: 1.25;
+}
+.dev-stats strong {
+  font-size: 20px;
+}
+.dev-effect {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+  margin: 10px 0 0;
+  font-size: 14px;
+}
+.dev-link {
+  margin: 8px 0 0;
+}
+.panel,
+.device-list,
+.device-card {
+  min-width: 0;
+}
+.dev-auto select {
+  width: 100%;
+  min-width: 0;
+}
+.dev-modes {
+  justify-self: start;
+}
+
+/* Asking for a demo or for monitors, from the Ask sheet. */
+.ask-cta {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 10px;
+  margin: 8px 0;
+  padding: 10px 12px;
+  border-radius: 14px;
+  background: #fdf1de;
+  color: #9a4c1b;
+}
+.ask-cta > span {
+  display: grid;
+  line-height: 1.3;
+}
+.ask-cta strong {
+  color: var(--text);
+  font-size: 14px;
+}
+.ask-cta .primary {
+  min-height: 40px;
+  padding: 0 16px;
+}
+.request-form {
+  display: grid;
+  gap: 12px;
+  padding-top: 4px;
+}
+.request-form h3,
+.request-done h3 {
+  margin: 0;
+}
+.request-form legend {
+  margin-bottom: 6px;
+  padding: 0;
+  font-weight: 600;
+}
+.request-form .primary {
+  min-height: 48px;
+}
+.request-done {
+  display: grid;
+  justify-items: center;
+  gap: 10px;
+  padding: 24px 8px;
+  text-align: center;
+}
+.request-tick {
+  display: grid;
+  place-items: center;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: #d9f2e0;
+  color: #2e9d57;
+}

@@ -49,7 +49,7 @@ export const SCENARIOS: readonly Scenario[] = [
     label: 'GRAP Stage IV',
     caption: 'Hazardous air: our unofficial GRAP stage, and what to do.',
     route: '/',
-    seconds: 6,
+    seconds: 5,
     state: { day: 'hazardous', openAlert: 'grap-today' },
   },
   {
@@ -57,7 +57,7 @@ export const SCENARIOS: readonly Scenario[] = [
     label: 'Stubble burning',
     caption: 'Heavy fires nearby: an alert with a way to reach the authorities.',
     route: '/',
-    seconds: 6,
+    seconds: 5,
     state: { day: 'unhealthy', fires: 140, openAlert: 'stubble' },
   },
   {
@@ -78,11 +78,20 @@ export const SCENARIOS: readonly Scenario[] = [
     state: { day: 'rainy' },
   },
   {
+    id: 'monitor',
+    label: 'My monitor',
+    caption: 'The monitor at home: air now, the cleaner switching itself on, the day.',
+    route: '/?tab=devices',
+    seconds: 6,
+    state: { day: 'unhealthy' },
+    saved: { [DEVICES_STORAGE_KEY]: HOME_MONITOR },
+  },
+  {
     id: 'exposure',
     label: 'My exposure',
     caption: 'A monitor at home and a day out: where the air got to you.',
     route: '/exposure',
-    seconds: 7,
+    seconds: 6,
     state: { day: 'unhealthy', live: true },
     saved: { [DEVICES_STORAGE_KEY]: HOME_MONITOR, [UNITS_STORAGE_KEY]: 'smoke' },
   },
@@ -100,7 +109,7 @@ export const SCENARIOS: readonly Scenario[] = [
     label: 'Map and wind',
     caption: 'Monitors, fires and the wind, on one globe.',
     route: '/map',
-    seconds: 6,
+    seconds: 5,
     state: { day: 'unhealthy', fires: 127 },
   },
   {

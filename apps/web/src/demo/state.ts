@@ -1,3 +1,4 @@
+import { REQUESTS_STORAGE_KEY } from '../assistant/requests';
 import { PINS_STORAGE_KEY } from '../data/pins';
 import { DEVICES_STORAGE_KEY } from '../devices/devices';
 import { LIVE_STORAGE_KEY } from '../exposure/live';
@@ -37,6 +38,7 @@ export const APP_KEYS: readonly string[] = [
   LIVE_STORAGE_KEY,
   TASKS_STORAGE_KEY,
   UNITS_STORAGE_KEY,
+  REQUESTS_STORAGE_KEY,
   DEMO_STORAGE_KEY,
 ];
 

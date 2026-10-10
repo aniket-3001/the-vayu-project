@@ -98,9 +98,9 @@ describe('the prototype shell', () => {
   it('plays the tour: the first scenario at once, with a caption, and stops when asked', async () => {
     render(<DeviceShell />);
     await userEvent.click(screen.getByRole('button', { name: /Play the \d+-second tour/u }));
-    expect(screen.getByRole('status')).toHaveTextContent(/1 of 11/u);
+    expect(screen.getByRole('status')).toHaveTextContent(/1 of 12/u);
     expect(window.localStorage.getItem('vayu.demo.v1')).toContain('"id":"good"');
     await userEvent.click(screen.getByRole('button', { name: 'Stop the tour' }));
-    expect(screen.queryByText(/1 of 11/u)).not.toBeInTheDocument();
+    expect(screen.queryByText(/1 of 12/u)).not.toBeInTheDocument();
   });
 });

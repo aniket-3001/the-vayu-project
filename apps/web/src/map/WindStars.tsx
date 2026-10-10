@@ -8,9 +8,9 @@ import { advectWith, speedOf, type Wind } from './wind';
 const PIXELS_PER_STAR = 900;
 const MAX_STARS = 700;
 /** How many frames a star lives, how long its tail is, in positions kept. */
-const LIFE_MIN = 34;
-const LIFE_MAX = 78;
-const TAIL = 16;
+const LIFE_MIN = 90;
+const LIFE_MAX = 170;
+const TAIL = 24;
 
 interface Star {
   lat: number;
@@ -105,7 +105,8 @@ export function WindStars({
       const dy = probe.y - here.y;
       const length = Math.hypot(dx, dy);
       if (length > 1e-6) {
-        const px = (1.4 + speed * 0.55) * zoomScale;
+        // Slow and steady, about the pace of the specks in the AR Lens.
+        const px = (0.4 + Math.min(speed, 10) * 0.06) * zoomScale;
         const moved = map.unproject([here.x + (dx / length) * px, here.y + (dy / length) * px]);
         s.lat = moved.lat;
         s.lng = moved.lng;
@@ -118,26 +119,33 @@ export function WindStars({
       const envelope = Math.sin(Math.PI * Math.min(1, s.age / s.life));
       if (envelope <= 0.02 || s.trail.length < 2) return;
       const speed = speedOf(field(s.lat, s.lng));
-      const strength = Math.min(0.85, 0.35 + speed / 14) * envelope;
+      const strength = Math.min(0.8, 0.4 + speed / 16) * envelope;
       const head = s.trail[0];
       if (head === undefined) return;
-      // The tail, from the tip backwards: each piece thinner and fainter than the one before.
+      // The tail, from the tip backwards, in two passes: a soft grey-blue body, then a thin pale shine along it.
       for (let i = 1; i < s.trail.length; i++) {
         const from = s.trail[i - 1];
         const to = s.trail[i];
         if (from === undefined || to === undefined) continue;
         const along = 1 - i / s.trail.length;
-        ctx.strokeStyle = `rgba(40, 78, 140, ${(strength * along * along).toFixed(3)})`;
-        ctx.lineWidth = 0.8 + 3.4 * along;
+        const fade = strength * along * along;
         ctx.beginPath();
         ctx.moveTo(from.x, from.y);
         ctx.lineTo(to.x, to.y);
+        ctx.strokeStyle = `rgba(102, 126, 160, ${(fade * 0.6).toFixed(3)})`;
+        ctx.lineWidth = 0.8 + 3.2 * along;
+        ctx.stroke();
+        ctx.strokeStyle = `rgba(240, 246, 255, ${(fade * 0.75).toFixed(3)})`;
+        ctx.lineWidth = 0.4 + 1.1 * along;
         ctx.stroke();
       }
-      // A bright point at the head makes it a star and not just a streak.
-      ctx.fillStyle = `rgba(255, 255, 255, ${(strength * 0.9).toFixed(3)})`;
+      // A soft glint at the head.
+      const glint = ctx.createRadialGradient(head.x, head.y, 0, head.x, head.y, 4);
+      glint.addColorStop(0, `rgba(255, 255, 255, ${(strength * 0.95).toFixed(3)})`);
+      glint.addColorStop(1, 'rgba(255, 255, 255, 0)');
+      ctx.fillStyle = glint;
       ctx.beginPath();
-      ctx.arc(head.x, head.y, 1.5, 0, Math.PI * 2);
+      ctx.arc(head.x, head.y, 4, 0, Math.PI * 2);
       ctx.fill();
     };
 

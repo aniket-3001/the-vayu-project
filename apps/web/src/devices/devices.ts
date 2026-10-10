@@ -5,7 +5,32 @@ export interface Device {
   readonly id: string;
   readonly name: string;
   readonly where: SpotKind;
+  /** Auto switches the cleaner on and off by the air; On and Off are the person's say. Auto when missing. */
+  readonly mode?: DeviceMode;
+  /** The indoor PM2.5, in µg/m³, above which Auto switches the cleaner on. */
+  readonly autoAbove?: number;
 }
+
+export type DeviceMode = 'auto' | 'on' | 'off';
+export const DEVICE_MODES: readonly DeviceMode[] = ['auto', 'on', 'off'];
+
+/** How touchy Auto is. The numbers are PM2.5 in µg/m³; the EPA's "good" ends at 12 and "moderate" at 35. */
+export const AUTO_LEVELS = [
+  { pm25: 12, label: 'Sensitive', note: 'above Good' },
+  { pm25: 35, label: 'Balanced', note: 'above Moderate' },
+  { pm25: 55, label: 'Relaxed', note: 'above Unhealthy for some' },
+] as const;
+export const DEFAULT_AUTO_ABOVE = 35;
+
+export const modeOf = (device: Device): DeviceMode => device.mode ?? 'auto';
+export const autoAboveOf = (device: Device): number => device.autoAbove ?? DEFAULT_AUTO_ABOVE;
+
+export const changeDevice = (
+  devices: readonly Device[],
+  id: string,
+  patch: { readonly mode?: DeviceMode; readonly autoAbove?: number },
+): readonly Device[] =>
+  devices.map((device) => (device.id === id ? { ...device, ...patch } : device));
 
 export const DEVICES_STORAGE_KEY = 'vayu.devices.v1';
 export const MAX_DEVICES = 6;

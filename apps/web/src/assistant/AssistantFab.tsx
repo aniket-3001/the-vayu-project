@@ -1,4 +1,4 @@
-import { Mic, SendHorizontal, Sparkles, Volume2, X } from 'lucide-react';
+import { Mic, SendHorizontal, Sparkles, Store, Volume2, X } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { alertsFor } from '../alerts/model';
 import { useFires } from '../alerts/useFires';
@@ -10,6 +10,7 @@ import { Pill } from '../today/ui/Chip';
 import { apiAssistant } from './api';
 import { buildContext } from './context';
 import { localAssistant } from './local';
+import { RequestForm } from './RequestForm';
 import { canListen, canSpeak, listen, speak, stopSpeaking } from './speech';
 import type { AssistantContext, AssistantSource } from './types';
 
@@ -53,6 +54,7 @@ export function AssistantFab({
   const [draft, setDraft] = useState('');
   const [busy, setBusy] = useState(false);
   const [listening, setListening] = useState(false);
+  const [view, setView] = useState<'chat' | 'request'>('chat');
   const input = useRef<HTMLInputElement>(null);
   const end = useRef<HTMLDivElement>(null);
   const next = useRef(1);
@@ -167,6 +169,7 @@ export function AssistantFab({
         aria-label="Ask Vayu"
         aria-haspopup="dialog"
         onClick={() => {
+          setView('chat');
           setOpen(true);
         }}
       >
@@ -209,82 +212,110 @@ export function AssistantFab({
                 <X size={20} aria-hidden="true" />
               </button>
             </div>
-            <div className="chat" aria-live="polite">
-              <p className="bubble vayu">{GREETING}</p>
-              {messages.map((m) => (
-                <div key={m.id} className={`bubble ${m.from}`}>
-                  <p>{m.text}</p>
-                  {m.from === 'vayu' && m.basis !== undefined && (
-                    <p className="small muted bubble-foot">
-                      {m.basis}
-                      {canSpeak() || m.audioUrl !== undefined ? (
-                        <button
-                          type="button"
-                          className="link-button"
-                          aria-label="Listen to this answer"
-                          onClick={() => {
-                            speak(m.text, m.audioUrl);
-                          }}
-                        >
-                          <Volume2 size={14} aria-hidden="true" /> Listen
-                        </button>
-                      ) : null}
-                    </p>
-                  )}
+            {view === 'chat' ? (
+              <>
+                <div className="chat" aria-live="polite">
+                  <p className="bubble vayu">{GREETING}</p>
+                  {messages.map((m) => (
+                    <div key={m.id} className={`bubble ${m.from}`}>
+                      <p>{m.text}</p>
+                      {m.from === 'vayu' && m.basis !== undefined && (
+                        <p className="small muted bubble-foot">
+                          {m.basis}
+                          {canSpeak() || m.audioUrl !== undefined ? (
+                            <button
+                              type="button"
+                              className="link-button"
+                              aria-label="Listen to this answer"
+                              onClick={() => {
+                                speak(m.text, m.audioUrl);
+                              }}
+                            >
+                              <Volume2 size={14} aria-hidden="true" /> Listen
+                            </button>
+                          ) : null}
+                        </p>
+                      )}
+                    </div>
+                  ))}
+                  {busy && <p className="bubble vayu muted">Checking the monitors nearby…</p>}
+                  <div ref={end} />
                 </div>
-              ))}
-              {busy && <p className="bubble vayu muted">Checking the monitors nearby…</p>}
-              <div ref={end} />
-            </div>
-            <div className="chips" role="group" aria-label="Suggested questions">
-              {SUGGESTIONS.map((q) => (
-                <button
-                  key={q}
-                  type="button"
-                  className="choice"
-                  onClick={() => {
-                    ask(q);
+                <section className="ask-cta" aria-label="Get Vayu at your place">
+                  <Store size={22} strokeWidth={1.75} aria-hidden="true" />
+                  <span>
+                    <strong>Want Vayu at your school, society or home?</strong>
+                    <span className="muted small">
+                      Ask for a demo, or for air monitors at your place.
+                    </span>
+                  </span>
+                  <button
+                    type="button"
+                    className="primary"
+                    onClick={() => {
+                      setView('request');
+                    }}
+                  >
+                    Request
+                  </button>
+                </section>
+                <div className="chips" role="group" aria-label="Suggested questions">
+                  {SUGGESTIONS.map((q) => (
+                    <button
+                      key={q}
+                      type="button"
+                      className="choice"
+                      onClick={() => {
+                        ask(q);
+                      }}
+                    >
+                      {q}
+                    </button>
+                  ))}
+                </div>
+                <form
+                  className="ask-form"
+                  onSubmit={(event) => {
+                    event.preventDefault();
+                    ask(draft);
                   }}
                 >
-                  {q}
-                </button>
-              ))}
-            </div>
-            <form
-              className="ask-form"
-              onSubmit={(event) => {
-                event.preventDefault();
-                ask(draft);
-              }}
-            >
-              <label className="sr-only" htmlFor="ask-input">
-                Your question
-              </label>
-              <input
-                id="ask-input"
-                ref={input}
-                value={draft}
-                placeholder="Ask a question"
-                autoComplete="off"
-                onChange={(event) => {
-                  setDraft(event.target.value);
+                  <label className="sr-only" htmlFor="ask-input">
+                    Your question
+                  </label>
+                  <input
+                    id="ask-input"
+                    ref={input}
+                    value={draft}
+                    placeholder="Ask a question"
+                    autoComplete="off"
+                    onChange={(event) => {
+                      setDraft(event.target.value);
+                    }}
+                  />
+                  {canListen() && (
+                    <button
+                      type="button"
+                      className="icon-button"
+                      aria-label={listening ? 'Listening…' : 'Ask by voice'}
+                      aria-pressed={listening}
+                      onClick={byVoice}
+                    >
+                      <Mic size={20} aria-hidden="true" />
+                    </button>
+                  )}
+                  <button type="submit" className="primary send" aria-label="Send" disabled={busy}>
+                    <SendHorizontal size={18} aria-hidden="true" />
+                  </button>
+                </form>
+              </>
+            ) : (
+              <RequestForm
+                onBack={() => {
+                  setView('chat');
                 }}
               />
-              {canListen() && (
-                <button
-                  type="button"
-                  className="icon-button"
-                  aria-label={listening ? 'Listening…' : 'Ask by voice'}
-                  aria-pressed={listening}
-                  onClick={byVoice}
-                >
-                  <Mic size={20} aria-hidden="true" />
-                </button>
-              )}
-              <button type="submit" className="primary send" aria-label="Send" disabled={busy}>
-                <SendHorizontal size={18} aria-hidden="true" />
-              </button>
-            </form>
+            )}
           </div>
         </div>
       )}

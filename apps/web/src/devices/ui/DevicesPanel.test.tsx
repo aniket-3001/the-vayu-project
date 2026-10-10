@@ -3,75 +3,59 @@ import { cleanup, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { MyAirScreen } from '../../myair/MyAirScreen';
+import { DEVICES_STORAGE_KEY } from '../devices';
+import { DevicesPanel } from './DevicesPanel';
 
 beforeEach(() => {
   window.localStorage.clear();
+  window.localStorage.setItem(
+    DEVICES_STORAGE_KEY,
+    JSON.stringify([{ id: 'd1', name: 'Living room', where: 'home' }]),
+  );
 });
 afterEach(cleanup);
 
-const openDevices = async (): Promise<void> => {
+const open = (): HTMLElement => {
   render(
-    <MemoryRouter initialEntries={['/']}>
-      <MyAirScreen />
+    <MemoryRouter>
+      <DevicesPanel />
     </MemoryRouter>,
   );
-  await userEvent.click(screen.getByRole('tab', { name: 'Devices' }));
+  return screen.getByRole('list', { name: 'Your devices' });
 };
 
-describe('the Devices tab', () => {
-  it('opens on Places, and switches to Devices and back', async () => {
-    await openDevices();
-    expect(screen.getByRole('tab', { name: 'Devices' })).toHaveAttribute('aria-selected', 'true');
-    expect(screen.getByRole('heading', { name: 'Vayu monitor' })).toBeInTheDocument();
-    await userEvent.click(screen.getByRole('tab', { name: 'Places' }));
-    expect(screen.getByRole('list', { name: 'Your places' })).toBeInTheDocument();
+describe('a device on the Devices tab', () => {
+  it('shows the air in the room now, the outside air, and whether the cleaner is running', () => {
+    const list = open();
+    expect(within(list).getByText('AQI in the room')).toBeInTheDocument();
+    expect(within(list).getByText(/^Outside$/u)).toBeInTheDocument();
+    expect(within(list).getByText(/Cleaner (running|idle)/u)).toBeInTheDocument();
+    expect(within(list).getByText('Sample reading')).toBeInTheDocument();
+    expect(within(list).getByRole('img', { name: /Today so far, PM2.5/u })).toBeInTheDocument();
   });
 
-  it('is only about the devices: no alerts, no tips, no streak', async () => {
-    await openDevices();
-    expect(screen.queryByRole('region', { name: 'Alerts' })).not.toBeInTheDocument();
-    expect(screen.queryByRole('region', { name: 'Breathe better today' })).not.toBeInTheDocument();
-    expect(screen.queryByText(/streak/u)).not.toBeInTheDocument();
-    await userEvent.click(screen.getByRole('tab', { name: 'Places' }));
-    expect(screen.getByRole('region', { name: 'Breathe better today' })).toBeInTheDocument();
+  it('starts in Auto, and keeps the cleaner on or off when the person says so, remembering it', async () => {
+    const list = open();
+    const modes = within(list).getByRole('group', { name: 'Living room mode' });
+    expect(within(modes).getByRole('button', { name: 'Auto' })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    );
+    expect(within(list).getByLabelText('Switch on when the room is')).toBeInTheDocument();
+    await userEvent.click(within(modes).getByRole('button', { name: 'Off' }));
+    expect(within(list).getByText('Cleaner idle')).toBeInTheDocument();
+    expect(within(list).getByText('Kept off by you.')).toBeInTheDocument();
+    expect(within(list).queryByLabelText('Switch on when the room is')).not.toBeInTheDocument();
+    expect(window.localStorage.getItem(DEVICES_STORAGE_KEY)).toContain('"mode":"off"');
+    await userEvent.click(within(modes).getByRole('button', { name: 'On' }));
+    expect(within(list).getByText('Cleaner running')).toBeInTheDocument();
   });
 
-  it('is honest that the monitor is not built or for sale', async () => {
-    await openDevices();
-    expect(screen.getByText(/In development. Not for sale yet/u)).toBeInTheDocument();
-  });
-
-  it('adds a device at a chosen place, with a sample reading it labels as made up', async () => {
-    await openDevices();
-    await userEvent.click(screen.getByRole('button', { name: 'Add first device' }));
-    await userEvent.type(screen.getByRole('textbox', { name: 'Name' }), 'Bedroom unit');
-    await userEvent.click(screen.getByRole('button', { name: 'School' }));
-    await userEvent.click(screen.getByRole('button', { name: 'Add device' }));
-    const list = screen.getByRole('list', { name: 'Your devices' });
-    expect(within(list).getByRole('heading', { name: 'Bedroom unit' })).toBeInTheDocument();
-    expect(list).toHaveTextContent('In your school');
-    expect(list).toHaveTextContent('Sample reading');
-    expect(list).toHaveTextContent('Indoors');
-  });
-
-  it('shows indoor air cleaner than outside, remembers the device, and lets it be removed', async () => {
-    await openDevices();
-    await userEvent.click(screen.getByRole('button', { name: 'Add first device' }));
-    await userEvent.click(screen.getByRole('button', { name: 'Add device' }));
-    const readings = screen
-      .getAllByText(/µg\/m³/u)
-      .map((el) => el.parentElement?.querySelector('strong')?.textContent);
-    const [indoors, outside] = readings.map(Number);
-    expect(indoors).toBeLessThan(outside ?? 0);
-    cleanup();
-    await openDevices();
-    expect(
-      within(screen.getByRole('list', { name: 'Your devices' })).getByRole('heading', {
-        name: 'Vayu monitor',
-      }),
-    ).toBeInTheDocument();
-    await userEvent.click(screen.getByRole('button', { name: 'Remove Vayu monitor' }));
-    expect(screen.getByRole('button', { name: 'Add first device' })).toBeInTheDocument();
+  it('says how the monitor feeds Exposure, with a link', () => {
+    const list = open();
+    expect(within(list).getByRole('link', { name: 'Exposure' })).toHaveAttribute(
+      'href',
+      '/exposure',
+    );
   });
 });
