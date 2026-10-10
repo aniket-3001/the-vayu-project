@@ -16,6 +16,8 @@ export interface Voice {
   /** Reads the words aloud; resolves when it has finished or could not. Starting again stops what was playing. */
   speak(text: string): Promise<void>;
   stop(): void;
+  /** Called from a tap, before the answer arrives, so a phone lets the answer be spoken. */
+  unlock?(): void;
 }
 
 export const canSpeak = (): boolean => typeof window !== 'undefined' && 'speechSynthesis' in window;
@@ -48,65 +50,136 @@ export function browserVoice(): Voice {
     stop() {
       if (canSpeak()) window.speechSynthesis.cancel();
     },
+    unlock() {
+      // Phones allow speech only once a tap has started some; an empty word does that without a sound.
+      if (!canSpeak()) return;
+      const utterance = new SpeechSynthesisUtterance(' ');
+      utterance.volume = 0;
+      window.speechSynthesis.speak(utterance);
+    },
   };
+}
+
+/** A tenth of a second of silence as a WAV file, to start an audio element from a tap so it may play later. */
+function silence(): Blob {
+  const samples = 800;
+  const buffer = new ArrayBuffer(44 + samples * 2);
+  const view = new DataView(buffer);
+  const text = (at: number, value: string): void => {
+    for (let i = 0; i < value.length; i++) view.setUint8(at + i, value.charCodeAt(i));
+  };
+  text(0, 'RIFF');
+  view.setUint32(4, 36 + samples * 2, true);
+  text(8, 'WAVEfmt ');
+  view.setUint32(16, 16, true);
+  view.setUint16(20, 1, true);
+  view.setUint16(22, 1, true);
+  view.setUint32(24, 8000, true);
+  view.setUint32(28, 16000, true);
+  view.setUint16(32, 2, true);
+  view.setUint16(34, 16, true);
+  text(36, 'data');
+  view.setUint32(40, samples * 2, true);
+  return new Blob([buffer], { type: 'audio/wav' });
+}
+
+/** MP3 bytes from base64, as a `blob:` address: the page's content policy allows media from blob: and not data:. */
+function mp3Address(base64: string): string {
+  const binary = atob(base64);
+  const bytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+  return URL.createObjectURL(new Blob([bytes], { type: 'audio/mpeg' }));
 }
 
 /**
  * Amazon Polly's Kajal, a woman's voice, through our API (`POST /v1/speech`). If the API cannot be reached, is
- * switched off or has reached its limit for the day, the browser's voice reads it instead, so an answer is never silent.
+ * switched off or has reached its limit for the day, or the browser will not play it, the browser's voice reads it
+ * instead, so an answer is never silent.
+ *
+ * Phones only let a page play sound that a tap started, and a spoken answer arrives after a wait. So `unlock()`,
+ * which the screen calls from the tap itself, starts one audio element on a moment of silence; later answers are
+ * played on that same element.
  */
 export function pollyVoice(
   baseUrl: string,
   fetchImpl: typeof fetch = (input, init) => fetch(input, init),
   fallback: Voice = browserVoice(),
-  makeAudio: (src: string) => HTMLAudioElement = (src) => new Audio(src),
+  makeAudio: () => HTMLAudioElement = () => new Audio(),
 ): Voice {
-  let playing: HTMLAudioElement | undefined;
+  let element: HTMLAudioElement | undefined;
+  let address: string | undefined;
   let turn = 0;
+  const audio = (): HTMLAudioElement => {
+    element ??= makeAudio();
+    return element;
+  };
+  const release = (): void => {
+    if (address !== undefined) URL.revokeObjectURL(address);
+    address = undefined;
+  };
   const stop = (): void => {
     turn += 1;
-    playing?.pause();
-    playing = undefined;
+    element?.pause();
+    release();
     fallback.stop();
   };
   return {
     stop,
+    unlock() {
+      const el = audio();
+      const quiet = URL.createObjectURL(silence());
+      el.src = quiet;
+      void el
+        .play()
+        .catch(() => undefined)
+        .finally(() => {
+          URL.revokeObjectURL(quiet);
+        });
+      fallback.unlock?.();
+    },
     async speak(text) {
       stop();
       const mine = turn;
       const words = spokenPart(text);
       if (words === '') return;
-      let audio: string | undefined;
+      let base64: string | undefined;
       try {
         const res = await fetchImpl(`${baseUrl.replace(/\/$/u, '')}/v1/speech`, {
           method: 'POST',
           headers: { 'content-type': 'application/json' },
           body: JSON.stringify({ text: words }),
         });
-        if (res.ok) audio = SpeechReply.parse(await res.json()).audio;
+        if (res.ok) base64 = SpeechReply.parse(await res.json()).audio;
       } catch {
-        audio = undefined;
+        base64 = undefined;
       }
       // Something else was started, or it was stopped, while this was on its way.
       if (mine !== turn) return;
-      if (audio === undefined) {
+      if (base64 === undefined) {
         await fallback.speak(words);
         return;
       }
-      const element = makeAudio(`data:audio/mpeg;base64,${audio}`);
-      playing = element;
-      await new Promise<void>((resolve) => {
-        element.onended = () => {
-          resolve();
-        };
-        element.onerror = () => {
-          resolve();
-        };
-        element.play().catch(() => {
-          resolve();
+      const el = audio();
+      const state = { played: false };
+      try {
+        release();
+        address = mp3Address(base64);
+        el.src = address;
+        await new Promise<void>((resolve, reject) => {
+          el.onended = () => {
+            resolve();
+          };
+          el.onerror = () => {
+            reject(new Error('The audio could not be played'));
+          };
+          el.play().then(() => {
+            state.played = true;
+          }, reject);
         });
-      });
-      if (playing === element) playing = undefined;
+      } catch {
+        // The browser would not play it. Read it with the browser's own voice instead of staying silent.
+        if (!state.played && mine === turn) await fallback.speak(words);
+      }
     },
   };
 }

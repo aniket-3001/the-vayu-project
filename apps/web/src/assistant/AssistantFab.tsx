@@ -141,6 +141,8 @@ export function AssistantFab({
   const ask = (question: string): void => {
     const text = question.trim();
     if (text === '' || busy) return;
+    // From the tap itself, so the phone lets the answer be spoken when it arrives.
+    voice.unlock?.();
     const id = next.current++;
     setMessages((m) => [...m, { id, from: 'you', text }]);
     setDraft('');
@@ -249,6 +251,7 @@ export function AssistantFab({
       return;
     }
     voice.stop();
+    voice.unlock?.();
     setTranscript('');
     setListening(true);
     hearing.current = listenLive({
@@ -368,6 +371,7 @@ export function AssistantFab({
                             className="link-button"
                             aria-label="Listen to this answer"
                             onClick={() => {
+                              voice.unlock?.();
                               void voice.speak(m.text);
                             }}
                           >

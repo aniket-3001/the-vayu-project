@@ -23,47 +23,94 @@ const answer = (audio = 'QUJD', ok = true): Response =>
     json: () => Promise.resolve({ audio, voice: 'Kajal', characters: 5, cached: false }),
   }) as Response;
 
-function player(): { make: (src: string) => HTMLAudioElement; sources: string[]; pauses: number } {
-  const state = { sources: [] as string[], pauses: 0 };
+/** One audio element that records what it was given, and plays to the end at once, or refuses. */
+function player(refuse = false): {
+  make: () => HTMLAudioElement;
+  sources: string[];
+  plays: number;
+  pauses: number;
+} {
+  const state = { sources: [] as string[], plays: 0, pauses: 0 };
+  const element = {
+    onended: null as (() => void) | null,
+    onerror: null as (() => void) | null,
+    set src(value: string) {
+      state.sources.push(value);
+    },
+    pause: () => {
+      state.pauses += 1;
+    },
+    play: () => {
+      state.plays += 1;
+      if (refuse) return Promise.reject(new Error('NotAllowedError'));
+      queueMicrotask(() => element.onended?.());
+      return Promise.resolve();
+    },
+  };
   return {
-    ...state,
     get sources() {
       return state.sources;
+    },
+    get plays() {
+      return state.plays;
     },
     get pauses() {
       return state.pauses;
     },
-    make: (src: string) => {
-      state.sources.push(src);
-      const element = {
-        onended: null as (() => void) | null,
-        onerror: null as (() => void) | null,
-        pause: () => {
-          state.pauses += 1;
-        },
-        play: () => {
-          queueMicrotask(() => element.onended?.());
-          return Promise.resolve();
-        },
-      };
-      return element as unknown as HTMLAudioElement;
-    },
+    make: () => element as unknown as HTMLAudioElement,
   };
 }
 
+const quiet = (): Voice & { said: string[] } => {
+  const said: string[] = [];
+  return {
+    said,
+    speak: (text) => {
+      said.push(text);
+      return Promise.resolve();
+    },
+    stop: () => undefined,
+  };
+};
+
 describe('the Polly voice', () => {
-  it('posts the words to /v1/speech and plays the MP3 it gets back', async () => {
+  beforeEach(() => {
+    vi.stubGlobal('URL', {
+      createObjectURL: vi.fn(() => 'blob:answer'),
+      revokeObjectURL: vi.fn(),
+    });
+  });
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it('posts the words to /v1/speech and plays the MP3 from a blob address, which the page’s policy allows', async () => {
     const fetchImpl = vi.fn(() => Promise.resolve(answer()));
     const audio = player();
-    const spoke = vi.fn(() => Promise.resolve());
-    const fallback: Voice = { speak: spoke, stop: vi.fn() };
+    const fallback = quiet();
     await pollyVoice('https://x.test/', fetchImpl, fallback, audio.make).speak('Do wear a mask.');
     const [url, init] = (fetchImpl.mock.calls[0] ?? []) as unknown as [string, RequestInit];
     expect(url).toBe('https://x.test/v1/speech');
     expect(init.method).toBe('POST');
     expect(JSON.parse(init.body as string)).toEqual({ text: 'Do wear a mask.' });
-    expect(audio.sources).toEqual(['data:audio/mpeg;base64,QUJD']);
-    expect(spoke).not.toHaveBeenCalled();
+    expect(audio.sources).toEqual(['blob:answer']);
+    expect(audio.plays).toBe(1);
+    expect(fallback.said).toEqual([]);
+  });
+
+  it('starts one audio element from a tap with a moment of silence, so a phone lets the answer play later', async () => {
+    const audio = player();
+    const voice = pollyVoice(
+      'https://x.test',
+      () => Promise.resolve(answer()),
+      quiet(),
+      audio.make,
+    );
+    voice.unlock?.();
+    expect(audio.plays).toBe(1);
+    await voice.speak('Open the windows after four.');
+    // The answer was played on the same element that was unlocked.
+    expect(audio.plays).toBe(2);
   });
 
   it('reads it with the browser’s voice when the service is off, over its limit, down or sends rubbish', async () => {
@@ -74,11 +121,21 @@ describe('the Polly voice', () => {
         Promise.resolve({ ok: true, json: () => Promise.resolve({ nope: 1 }) } as Response),
       ),
     ]) {
-      const spoke = vi.fn(() => Promise.resolve());
-      const fallback = { speak: spoke, stop: vi.fn() };
+      const fallback = quiet();
       await pollyVoice('https://x.test', fetchImpl, fallback, player().make).speak('Hello there.');
-      expect(spoke).toHaveBeenCalledWith('Hello there.');
+      expect(fallback.said).toEqual(['Hello there.']);
     }
+  });
+
+  it('reads it with the browser’s voice when the browser refuses to play the audio, and is never silent', async () => {
+    const fallback = quiet();
+    await pollyVoice(
+      'https://x.test',
+      () => Promise.resolve(answer()),
+      fallback,
+      player(true).make,
+    ).speak('Wear a mask outside.');
+    expect(fallback.said).toEqual(['Wear a mask outside.']);
   });
 
   it('does not play an answer that was overtaken: starting again or stopping wins', async () => {
@@ -87,27 +144,19 @@ describe('the Polly voice', () => {
       release = resolve;
     });
     const audio = player();
-    const voice = pollyVoice(
-      'https://x.test',
-      () => slow,
-      { speak: () => Promise.resolve(), stop: () => undefined },
-      audio.make,
-    );
+    const fallback = quiet();
+    const voice = pollyVoice('https://x.test', () => slow, fallback, audio.make);
     const first = voice.speak('Old answer.');
     voice.stop();
     release(answer());
     await first;
     expect(audio.sources).toEqual([]);
+    expect(fallback.said).toEqual([]);
   });
 
   it('says nothing for empty words and asks for no more than 400 characters', async () => {
     const fetchImpl = vi.fn(() => Promise.resolve(answer()));
-    const voice = pollyVoice(
-      'https://x.test',
-      fetchImpl,
-      { speak: () => Promise.resolve(), stop: () => undefined },
-      player().make,
-    );
+    const voice = pollyVoice('https://x.test', fetchImpl, quiet(), player().make);
     await voice.speak('   ');
     expect(fetchImpl).not.toHaveBeenCalled();
     await voice.speak('Word. '.repeat(200));
