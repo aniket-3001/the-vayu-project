@@ -625,3 +625,258 @@ h2 {
     transition: none;
   }
 }
+
+/* Top bar on its own: just the name, linking home */
+
+.wordmark {
+  color: var(--text);
+  text-decoration: none;
+}
+.bar-switcher {
+  padding-top: 8px;
+}
+
+/* Back link on a place page */
+
+.back {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  min-height: 44px;
+  margin-left: -6px;
+  padding: 0 6px;
+  color: var(--text);
+  font-weight: 600;
+  text-decoration: none;
+}
+.back:hover {
+  text-decoration: underline;
+}
+
+/* Places */
+
+.places-main {
+  max-width: 1120px;
+  margin: 0 auto;
+  display: grid;
+  gap: 12px;
+}
+.search-form {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 6px 6px 14px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--card);
+}
+.search-form:focus-within {
+  border-color: var(--text);
+}
+.search-icon {
+  color: var(--muted);
+  flex: none;
+}
+.search-form input {
+  flex: 1;
+  min-width: 0;
+  min-height: 44px;
+  border: 0;
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  outline: none;
+}
+.search-form button,
+.matches button,
+.locate {
+  min-height: 44px;
+  padding: 0 18px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--text);
+  color: #fff;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+.locate {
+  justify-self: start;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--card);
+  color: var(--text);
+  border: 1px solid var(--line);
+}
+.matches {
+  display: grid;
+  margin-top: 8px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--card);
+}
+.matches li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 8px 8px 16px;
+  border-top: 1px solid var(--line);
+}
+.matches li:first-child {
+  border-top: 0;
+}
+.matches button {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 0 14px;
+}
+.empty {
+  padding: 24px;
+  border: 1px dashed var(--line);
+  border-radius: var(--radius);
+  background: var(--card);
+}
+
+.place-grid {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: minmax(0, 1fr);
+}
+@media (min-width: 640px) {
+  .place-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@media (min-width: 1000px) {
+  .place-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+.place-card {
+  position: relative;
+  display: grid;
+  gap: 14px;
+  padding: 16px 16px 14px;
+  border-radius: var(--radius);
+  background: var(--level);
+  color: var(--on-level);
+  transition: transform 160ms ease;
+}
+.place-card:hover {
+  transform: translateY(-2px);
+}
+.pc-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 8px;
+}
+.pc-name {
+  font-size: 22px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+}
+.pc-link {
+  color: inherit;
+  text-decoration: none;
+}
+/* The whole card is the link; the remove button sits above it. */
+.pc-link::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: var(--radius);
+}
+.pc-link:focus-visible {
+  outline: none;
+}
+.pc-link:focus-visible::after {
+  outline: 3px solid var(--text);
+  outline-offset: 2px;
+}
+.pc-detail {
+  font-size: 14px;
+}
+.pc-remove {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  margin: -8px -8px 0 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+}
+.pc-remove:hover {
+  background: rgb(255 255 255 / 0.4);
+}
+.pc-main {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 12px;
+}
+.pc-level {
+  font-size: 17px;
+  font-weight: 700;
+}
+.pc-sky {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 4px;
+  font-size: 14px;
+}
+.place-card .wx {
+  color: currentColor;
+}
+.pc-aqi {
+  display: grid;
+  justify-items: end;
+  line-height: 1;
+}
+.pc-aqi strong {
+  font-size: 52px;
+  font-weight: 800;
+  letter-spacing: -0.04em;
+}
+.pc-aqi span {
+  margin-top: 2px;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+.pc-source {
+  padding-top: 10px;
+  border-top: 1px solid color-mix(in srgb, var(--on-level) 24%, transparent);
+  font-size: 13px;
+}
+.places-note {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .place-card {
+    transition: none;
+  }
+  .place-card:hover {
+    transform: none;
+  }
+}
+
+/* The Places page has no air colour of its own, so its wash is a quiet blue-grey. */
+.page.places {
+  --level: #a9bdd6;
+}

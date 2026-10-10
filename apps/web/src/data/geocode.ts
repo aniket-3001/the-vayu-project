@@ -14,7 +14,7 @@ interface GeocodeResult {
 }
 
 /** The area our monitors and fire box cover; matches the API's own limit. */
-const inCoverage = (lat: number, lng: number): boolean =>
+export const inCoverage = (lat: number, lng: number): boolean =>
   lat >= 20 && lat <= 35 && lng >= 70 && lng <= 90;
 
 /**

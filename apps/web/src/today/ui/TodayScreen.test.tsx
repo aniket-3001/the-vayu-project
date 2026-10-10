@@ -15,9 +15,7 @@ describe('the Today screen', () => {
     render(<TodayScreen data={day} />);
     const hero = screen.getByRole('region', { name: levelForAqi(day.aqi).name });
     expect(within(hero).getByText(`AQI ${String(day.aqi)}`)).toBeInTheDocument();
-    expect(
-      screen.getByRole('heading', { level: 1, name: /Air quality in Delhi/u }),
-    ).toBeInTheDocument();
+    expect(screen.getByRole('heading', { level: 1, name: 'Delhi' })).toBeInTheDocument();
     expect(screen.getByRole('region', { name: 'Where this comes from' })).toHaveTextContent(
       'Sample data',
     );
@@ -77,13 +75,18 @@ describe('the Today screen', () => {
 });
 
 describe('the sample switcher', () => {
-  it('changes the whole screen to another made-up day and says so in the address', async () => {
-    window.history.replaceState(null, '', '/');
+  const openHome = (search = ''): void => {
+    window.location.hash = `#/place/${encodeURIComponent('28.59,77.05')}${search}`;
+  };
+
+  it('opens a place on its own made-up day, and changes the whole screen when another is picked', async () => {
+    window.localStorage.clear();
+    openHome();
     render(<App />);
     expect(screen.getByRole('region', { name: 'Unhealthy' })).toBeInTheDocument();
     await userEvent.click(screen.getByRole('button', { name: /Winter smog/u }));
     expect(screen.getByRole('region', { name: 'Hazardous' })).toBeInTheDocument();
-    expect(window.location.search).toBe('?day=hazardous');
+    expect(window.location.hash).toContain('day=hazardous');
     expect(screen.getByRole('button', { name: /Winter smog/u })).toHaveAttribute(
       'aria-pressed',
       'true',
@@ -91,11 +94,12 @@ describe('the sample switcher', () => {
   });
 
   it('opens on the day named in the address, and falls back when the name is nonsense', () => {
-    window.history.replaceState(null, '', '/?day=good');
+    window.localStorage.clear();
+    openHome('?day=good');
     const { unmount } = render(<App />);
     expect(screen.getByRole('region', { name: 'Good' })).toBeInTheDocument();
     unmount();
-    window.history.replaceState(null, '', '/?day=nope');
+    openHome('?day=nope');
     render(<App />);
     expect(screen.getByRole('region', { name: 'Unhealthy' })).toBeInTheDocument();
   });
