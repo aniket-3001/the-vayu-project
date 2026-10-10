@@ -1,0 +1,6 @@
+{
+  "minDropPct": 20,
+  "maxTries": 3,
+  "minWaitSeconds": 30,
+  "maxWaitSeconds": 900
+}

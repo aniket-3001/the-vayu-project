@@ -1,0 +1,14 @@
+{
+  "schemaVersion": 1,
+  "id": "a1",
+  "ruleId": "grap_early_warning",
+  "audience": { "groupId": "demo-school", "role": "principal" },
+  "title": "[Replay] Air is at Stage IV level (unofficial)",
+  "body": "[Replay] Air is at Stage IV level. An official order may follow. Until then: assembly and PE indoors, no outdoor sports. Official orders come first.",
+  "facts": { "aqi24h": 462, "forecastAqi24h": 471 },
+  "createdAt": "2025-12-13T07:00:00.000Z",
+  "mode": "replay",
+  "unofficial": true,
+  "actions": ["seen", "planned", "done"],
+  "policyId": "policy_school_grap"
+}

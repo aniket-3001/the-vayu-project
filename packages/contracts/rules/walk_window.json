@@ -1,0 +1,9 @@
+{
+  "minutes": 60,
+  "earliest": "05:00",
+  "latest": "21:00",
+  "maxUsAqi": 150,
+  "maxUsAqiSensitive": 100,
+  "usualStart": "08:00",
+  "horizonHours": 24
+}

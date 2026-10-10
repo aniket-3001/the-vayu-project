@@ -1,0 +1,20 @@
+{
+  "note": "CPCB National AQI breakpoints on 24-hour means, written as contiguous intervals [bpLo, bpHi) so the sub-index is continuous. PM2.5 confirmed with CPCB sources; PM10 bounds MUST be checked against the CPCB document (see tracker/TODO.md).",
+  "minValidHours": 16,
+  "pm25": [
+    { "bpLo": 0, "bpHi": 30, "iLo": 0, "iHi": 50, "band": "good" },
+    { "bpLo": 30, "bpHi": 60, "iLo": 50, "iHi": 100, "band": "satisfactory" },
+    { "bpLo": 60, "bpHi": 90, "iLo": 100, "iHi": 200, "band": "moderate" },
+    { "bpLo": 90, "bpHi": 120, "iLo": 200, "iHi": 300, "band": "poor" },
+    { "bpLo": 120, "bpHi": 250, "iLo": 300, "iHi": 400, "band": "very_poor" },
+    { "bpLo": 250, "bpHi": 380, "iLo": 400, "iHi": 500, "band": "severe" }
+  ],
+  "pm10": [
+    { "bpLo": 0, "bpHi": 50, "iLo": 0, "iHi": 50, "band": "good" },
+    { "bpLo": 50, "bpHi": 100, "iLo": 50, "iHi": 100, "band": "satisfactory" },
+    { "bpLo": 100, "bpHi": 250, "iLo": 100, "iHi": 200, "band": "moderate" },
+    { "bpLo": 250, "bpHi": 350, "iLo": 200, "iHi": 300, "band": "poor" },
+    { "bpLo": 350, "bpHi": 430, "iLo": 300, "iHi": 400, "band": "very_poor" },
+    { "bpLo": 430, "bpHi": 510, "iLo": 400, "iHi": 500, "band": "severe" }
+  ]
+}

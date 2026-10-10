@@ -1,0 +1,9 @@
+{
+  "id": "policy_school_grap",
+  "steps": [
+    { "action": "send", "to": "principal", "waitMin": 30 },
+    { "action": "remind", "to": "principal", "waitMin": 30 },
+    { "action": "escalate", "to": "vice_principal", "waitMin": 0 }
+  ],
+  "demoTimeScale": 60
+}

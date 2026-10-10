@@ -1,0 +1,10 @@
+{
+  "workingWellPct": 50,
+  "redBelowPct": 30,
+  "minOutsidePm25": 100,
+  "maxRhPct": 80,
+  "maxInsideAgeMin": 10,
+  "maxOutsideAgeMin": 180,
+  "maxDisagreePct": 25,
+  "offlineAfterMin": 2
+}

@@ -1,0 +1,7 @@
+{
+  "penetration": 0.85,
+  "airChangesPerHour": { "closed": 0.5, "typical": 1.5, "classroom": 3, "windows_open": 6 },
+  "deposition": { "pm25": 0.2, "pm10": 1.0 },
+  "targetAch": { "classroom": 5, "home": 3 },
+  "stepMinutes": 5
+}
