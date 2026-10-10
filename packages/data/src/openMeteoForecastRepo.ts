@@ -30,7 +30,7 @@ export function openMeteoForecastRepo(options: OpenMeteoClientOptions = {}): For
     async forecastFor(point: Point, asOf: string): Promise<readonly RawHour[]> {
       const url =
         `${baseUrl}?latitude=${point.lat}&longitude=${point.lng}` +
-        `&hourly=pm2_5,pm10&timezone=Asia%2FKolkata&past_days=1&forecast_days=5`;
+        `&hourly=pm2_5,pm10&timezone=Asia%2FKolkata&past_days=1&forecast_days=7`;
       const res = await doFetch(url);
       if (!res.ok) {
         throw new Error(`Open-Meteo request failed: ${res.status} ${res.statusText}`);

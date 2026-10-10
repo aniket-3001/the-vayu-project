@@ -135,9 +135,7 @@ describe('the map’s monitors, worldwide', () => {
   });
 
   it('fails when the list cannot be read, so the schedule shows the failure', async () => {
-    const fetchImpl = vi
-      .fn()
-      .mockResolvedValue({ ok: false, status: 500, headers: new Headers() });
+    const fetchImpl = vi.fn().mockResolvedValue({ ok: false, status: 500, headers: new Headers() });
     await expect(openAqMapStationRepo({ ...quick, fetchImpl }).latest(AS_OF)).rejects.toThrow(
       /500/u,
     );

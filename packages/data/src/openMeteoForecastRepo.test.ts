@@ -70,6 +70,18 @@ describe('openMeteoForecastRepo', () => {
     expect(url).toContain('timezone=Asia%2FKolkata');
   });
 
+  it('asks for seven forecast days, so the daily forecast has seven days and not five', async () => {
+    const fetchImpl = vi
+      .fn()
+      .mockResolvedValue(jsonResponse({ hourly: { time: [], pm2_5: [], pm10: [] } }));
+    await openMeteoForecastRepo({ fetchImpl }).forecastFor(
+      { lat: 28.6, lng: 77.2 },
+      '2026-10-05T00:00:00Z',
+    );
+    const [url] = fetchImpl.mock.calls[0] as [string];
+    expect(url).toContain('forecast_days=7');
+  });
+
   it('throws a clear error on a failed request', async () => {
     const fetchImpl = vi.fn().mockResolvedValue(jsonResponse({}, false));
     const repo = openMeteoForecastRepo({ fetchImpl });
