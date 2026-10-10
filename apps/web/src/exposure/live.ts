@@ -1,5 +1,5 @@
-import { hoursSoFar, type LiveLog } from './model';
-import { SAMPLE_SPOTS } from './spots';
+import { TODAY, hoursSoFar, type LiveLog } from './model';
+import { sampleSpotsFor } from './spots';
 
 export const LIVE_STORAGE_KEY = 'vayu.live.v1';
 
@@ -28,7 +28,7 @@ export function saveLive(storage: Storage, log: LiveLog): void {
 }
 
 /** The hour a fix belongs to. All the prototype's data is for the sample moment, so a fix lands on its hour. */
-export const currentHour = (): number => hoursSoFar('today');
+export const currentHour = (): number => hoursSoFar(TODAY);
 
 /** Records where the person is for the current hour; a later fix in the same hour replaces the earlier one. */
 export function recordFix(
@@ -41,7 +41,7 @@ export function recordFix(
 }
 
 const spotPin = (kind: 'work' | 'outdoor'): { lat: number; lng: number } => {
-  const pin = SAMPLE_SPOTS[kind]?.pin;
+  const pin = sampleSpotsFor('adult')[kind]?.pin;
   return { lat: pin?.lat ?? 28.6, lng: pin?.lng ?? 77.2 };
 };
 

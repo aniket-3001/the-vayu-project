@@ -147,3 +147,44 @@ describe('the sample days', () => {
     }
   });
 });
+
+describe('the sample air for any date', () => {
+  it('has 24 hours for each of the past 14 days, hours so far for today, and nothing beyond', async () => {
+    const { sampleAmbientPm25, SAMPLE_TODAY, SAMPLE_HISTORY_DAYS } = await import('./sample');
+    const key = (offset: number): string =>
+      new Date(Date.parse(SAMPLE_TODAY + 'T12:00:00+05:30') + offset * 86_400_000)
+        .toISOString()
+        .slice(0, 10);
+    const full = (a: readonly (number | undefined)[]): boolean =>
+      a.every((v) => typeof v === 'number');
+    expect(full(sampleAmbientPm25('unhealthy', key(-1)))).toBe(true);
+    expect(full(sampleAmbientPm25('unhealthy', key(-SAMPLE_HISTORY_DAYS)))).toBe(true);
+    const today = sampleAmbientPm25('unhealthy', SAMPLE_TODAY);
+    expect(today.slice(0, 17).every((v) => typeof v === 'number')).toBe(true);
+    expect(today.slice(17).every((v) => v === undefined)).toBe(true);
+    expect(sampleAmbientPm25('unhealthy', key(1)).every((v) => v === undefined)).toBe(true);
+    expect(
+      sampleAmbientPm25('unhealthy', key(-SAMPLE_HISTORY_DAYS - 4)).every((v) => v === undefined),
+    ).toBe(true);
+  });
+
+  it('agrees with the 48-hour history, and lets earlier days differ from each other', async () => {
+    const { sampleAmbientPm25, SAMPLE_TODAY } = await import('./sample');
+    const day = sampleDay('moderate');
+    const today = sampleAmbientPm25('moderate', SAMPLE_TODAY);
+    const last = day.history.at(-1);
+    expect(today[17 - 1]).toBeDefined();
+    expect(last?.pm25).toBeDefined();
+    const key = (n: number): string =>
+      new Date(Date.parse(SAMPLE_TODAY + 'T12:00:00+05:30') + n * 86_400_000)
+        .toISOString()
+        .slice(0, 10);
+    const mean = (n: number): number => {
+      const hours = sampleAmbientPm25('moderate', key(n)).filter(
+        (v): v is number => v !== undefined,
+      );
+      return hours.reduce((a, b) => a + b, 0) / hours.length;
+    };
+    expect(new Set([-2, -3, -4, -5].map((n) => Math.round(mean(n)))).size).toBeGreaterThan(1);
+  });
+});

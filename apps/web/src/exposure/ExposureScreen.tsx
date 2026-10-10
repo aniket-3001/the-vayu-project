@@ -1,65 +1,125 @@
-import { Info } from 'lucide-react';
+import { Armchair, Baby, Briefcase, CalendarDays, Info } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import type { PlaceMatch } from '../data/geocode';
 import { useDevices } from '../devices/useDevices';
+import { levelForAqi } from '../design/levels';
 import { usePins } from '../places/usePins';
+import { SmokeNote } from '../units/AirUnits';
 import { ASSUMPTION_NOTES } from './assumptions';
 import {
+  TODAY,
+  YESTERDAY,
   countedCells,
   dayCells,
+  daySummary,
+  formatDate,
+  hasData,
   hoursSoFar,
+  lastWeek,
   openAirFor,
   summarise,
-  type Day,
+  type DateKey,
   type Where,
 } from './model';
-import { SPOT_KINDS, SPOT_LABELS, type SpotKind } from './spots';
+import { PERSONAS, personaById, type Persona } from './persona';
+import { SPOT_LABELS, loadAllSpots, type SpotKind } from './spots';
+import { SAMPLE_SOURCES } from './sources';
 import { Dial, WHERE_LABELS } from './ui/Dial';
 import { LiveCard } from './ui/LiveCard';
 import { SpotSection } from './ui/SpotSection';
 import { Summary } from './ui/Summary';
-import { useLive, useSpots } from './useExposure';
-import { levelForAqi } from '../design/levels';
-import { SAMPLE_SOURCES } from './sources';
+import { WeekStrip } from './ui/WeekStrip';
+import { allUnits } from './units';
+import { useLive, usePersona, useSpots } from './useExposure';
 
+/** The week overview, or one date. */
+type View = DateKey;
+const WEEK = 'week';
 type Tab = 'all' | SpotKind;
+
+const PERSONA_ICONS = { child: Baby, adult: Briefcase, senior: Armchair } as const;
 
 const hourSpan = (hour: number): string =>
   `${String(hour).padStart(2, '0')}:00 to ${String((hour + 1) % 24).padStart(2, '0')}:00`;
 
-/** Today's exposure: a 24-hour dial, what it adds up to, and the places and live location behind it. */
+const titleFor = (view: View): string =>
+  view === WEEK
+    ? 'The past week'
+    : view === TODAY
+      ? 'Today’s exposure'
+      : view === YESTERDAY
+        ? 'Yesterday’s exposure'
+        : `Exposure on ${formatDate(view)}`;
+
+/**
+ * Your exposure: choose who it is for (a child at school, an adult at work, a senior at home), then the
+ * past week, yesterday or today, or any date. Three or four places at most, and a monitor or unit
+ * near any of them is picked up automatically.
+ */
 export function ExposureScreen({
   search,
 }: {
   readonly search?: (query: string) => Promise<readonly PlaceMatch[]>;
 }): React.JSX.Element {
-  const { spots, set, clear } = useSpots();
+  const [persona, setPersona] = usePersona();
+  const { spots, set, clear } = useSpots(persona);
   const { devices } = useDevices();
   const { pins, add: addPin } = usePins();
   const live = useLive();
-  const [day, setDay] = useState<Day>('today');
+  const [view, setView] = useState<View>(TODAY);
   const [tab, setTab] = useState<Tab>('all');
-  const [picked, setPicked] = useState(Math.max(0, hoursSoFar('today') - 1));
+  const [picked, setPicked] = useState(12);
   const [showInfo, setShowInfo] = useState(false);
 
-  const cells = useMemo(
-    () => dayCells(spots, devices, live.log, day),
-    [spots, devices, live.log, day],
+  const info = personaById(persona);
+  const visible = useMemo(
+    () =>
+      Object.fromEntries(
+        Object.entries(spots).filter(([kind]) => info.kinds.some((k) => k === kind)),
+      ),
+    [spots, info],
   );
-  const shown = tab === 'all' ? cells : cells.filter((cell) => cell.where === tab);
-  const counted = tab === 'all' ? countedCells(cells) : shown;
-  const summary = summarise(counted, openAirFor(counted, spots, live.log, day));
-  const setKinds = new Set<Where>(SPOT_KINDS.filter((kind) => spots[kind] !== undefined));
+  const units = useMemo(
+    () => allUnits(devices, [spots, ...loadAllSpots(window.localStorage)]),
+    [devices, spots],
+  );
+  const rings: readonly Where[] = [...info.kinds, 'live'];
+  const date = view === WEEK ? TODAY : view;
+  const shownTab: Tab = tab !== 'all' && !info.kinds.some((k) => k === tab) ? 'all' : tab;
+
+  const cells = useMemo(
+    () => dayCells(visible, units, live.log, date),
+    [visible, units, live.log, date],
+  );
+  const shown = shownTab === 'all' ? cells : cells.filter((cell) => cell.where === shownTab);
+  const counted = shownTab === 'all' ? countedCells(cells) : shown;
+  const summary = summarise(counted, openAirFor(counted, visible, live.log, date));
+  const week = useMemo(
+    () => lastWeek().map((d) => ({ date: d, summary: daySummary(visible, units, {}, d) })),
+    [visible, units],
+  );
+  const setKinds = new Set<Where>(info.kinds.filter((kind) => visible[kind] !== undefined));
   if (Object.keys(live.log).length > 0) setKinds.add('live');
   const atPicked = shown.filter((cell) => cell.hour === picked);
-  const now = day === 'today' ? hoursSoFar('today') + 0.5 : undefined;
-  const kinds = tab === 'all' ? SPOT_KINDS : [tab];
+  const isToday = date === TODAY;
+  const span =
+    summary?.fullDay === false ? `so far today (${String(summary.hours)} hours)` : 'over the day';
+  const noData = view !== 'week' && !hasData(view);
+
+  const open = (next: View): void => {
+    setView(next);
+    setPicked(next === TODAY ? Math.max(0, hoursSoFar(TODAY) - 1) : 12);
+  };
+  const choosePersona = (next: Persona): void => {
+    setPersona(next);
+    setTab('all');
+  };
 
   return (
     <div className="page places">
       <header className="place">
         <div className="title-row">
-          <h1>{day === 'today' ? 'Today’s exposure' : 'Yesterday’s exposure'}</h1>
+          <h1>{titleFor(view)}</h1>
           <button
             type="button"
             className="icon-button"
@@ -86,110 +146,178 @@ export function ExposureScreen({
             <p className="muted small">{SAMPLE_SOURCES}</p>
           </div>
         )}
-        <div className="segmented wide" role="group" aria-label="Day">
-          {(['today', 'yesterday'] as const).map((d) => (
-            <button
-              key={d}
-              type="button"
-              aria-pressed={day === d}
-              onClick={() => {
-                setDay(d);
-                setPicked(d === 'today' ? Math.max(0, hoursSoFar('today') - 1) : 12);
-              }}
-            >
-              {d === 'today' ? 'Today' : 'Yesterday'}
-            </button>
-          ))}
+
+        <div className="persona-row" role="group" aria-label="Who is this for">
+          {PERSONAS.map((p) => {
+            const Icon = PERSONA_ICONS[p.id];
+            return (
+              <button
+                key={p.id}
+                type="button"
+                className="persona"
+                aria-pressed={persona === p.id}
+                onClick={() => {
+                  choosePersona(p.id);
+                }}
+              >
+                <Icon size={20} strokeWidth={1.75} aria-hidden="true" />
+                <span>
+                  <strong>{p.label}</strong>
+                  <span className="muted small">{p.blurb}</span>
+                </span>
+              </button>
+            );
+          })}
         </div>
-        <div className="segmented wide kinds" role="group" aria-label="Show">
-          {(['all', ...SPOT_KINDS] as const).map((t) => (
-            <button
-              key={t}
-              type="button"
-              aria-pressed={tab === t}
-              onClick={() => {
-                setTab(t);
-              }}
-            >
-              {t === 'all' ? 'All' : SPOT_LABELS[t]}
-            </button>
-          ))}
+
+        <div className="segmented wide" role="group" aria-label="Span">
+          <button
+            type="button"
+            aria-pressed={view === WEEK}
+            onClick={() => {
+              open(WEEK);
+            }}
+          >
+            Past week
+          </button>
+          <button
+            type="button"
+            aria-pressed={view === YESTERDAY}
+            onClick={() => {
+              open(YESTERDAY);
+            }}
+          >
+            Yesterday
+          </button>
+          <button
+            type="button"
+            aria-pressed={view === TODAY}
+            onClick={() => {
+              open(TODAY);
+            }}
+          >
+            Today
+          </button>
         </div>
-      </header>
-      <main className="exposure-main">
-        <div className="dial-wrap">
-          <Dial
-            cells={shown}
-            show={tab}
-            nowHour={now}
-            picked={picked}
-            onPick={setPicked}
-            set={setKinds}
-          />
-        </div>
-        <div className="hour-picker">
-          <label htmlFor="hour">Hour</label>
+        <label className="date-pick">
+          <CalendarDays size={18} strokeWidth={1.75} aria-hidden="true" />
+          <span>Another date</span>
           <input
-            id="hour"
-            type="range"
-            min={0}
-            max={23}
-            value={picked}
+            type="date"
+            value={view === WEEK ? '' : view}
             onChange={(event) => {
-              setPicked(Number(event.target.value));
+              if (event.target.value !== '') open(event.target.value);
             }}
           />
-          <output htmlFor="hour">{hourSpan(picked)}</output>
-        </div>
-        <div className="readout" aria-live="polite">
-          {atPicked.length === 0 ? (
-            <p className="muted">
-              {picked >= hoursSoFar(day) && day === 'today'
-                ? 'That hour has not happened yet.'
-                : 'No place set for this hour.'}
-            </p>
-          ) : (
-            <ul>
-              {atPicked.map((cell) => (
-                <li key={cell.where}>
-                  <span
-                    className="chip"
-                    style={{
-                      background: levelForAqi(cell.aqi).solid,
-                      color: levelForAqi(cell.aqi).onSolid,
-                    }}
-                  >
-                    {cell.aqi}
-                  </span>
-                  <span>
-                    <strong>{WHERE_LABELS[cell.where]}</strong>,{' '}
-                    {levelForAqi(cell.aqi).name.toLowerCase()}. {cell.pm25} µg/m³ PM<sub>2.5</sub>
-                    {cell.source === 'assumed' || cell.source === 'trees' ? ' (assumed)' : ''}
-                  </span>
-                </li>
+        </label>
+      </header>
+
+      <main className="exposure-main">
+        {noData && (
+          <p className="banner" role="status">
+            No data for {formatDate(view)}. We only keep the last two weeks.
+          </p>
+        )}
+
+        {view === WEEK && <WeekStrip days={week} onOpen={open} />}
+
+        {view !== 'week' && !noData && (
+          <>
+            <div className="segmented wide kinds" role="group" aria-label="Show">
+              {(['all', ...info.kinds] as const).map((t) => (
+                <button
+                  key={t}
+                  type="button"
+                  aria-pressed={shownTab === t}
+                  onClick={() => {
+                    setTab(t);
+                  }}
+                >
+                  {t === 'all' ? 'All' : SPOT_LABELS[t]}
+                </button>
               ))}
-            </ul>
-          )}
-        </div>
-        <Summary summary={summary} cells={counted} day={day} />
-        {kinds.map((kind) => (
-          <SpotSection
-            key={kind}
-            kind={kind}
-            spot={spots[kind]}
-            pins={pins}
-            devices={devices}
-            onSet={(spot) => {
-              set(kind, spot);
-            }}
-            onClear={() => {
-              clear(kind);
-            }}
-            onAddPin={addPin}
-            {...(search !== undefined ? { search } : {})}
-          />
-        ))}
-        {tab === 'all' && (
+            </div>
+            <div className="dial-wrap">
+              <Dial
+                cells={shown}
+                rings={rings}
+                show={shownTab}
+                nowHour={isToday ? hoursSoFar(TODAY) + 0.5 : undefined}
+                picked={picked}
+                onPick={setPicked}
+                set={setKinds}
+              />
+            </div>
+            <div className="hour-picker">
+              <label htmlFor="hour">Hour</label>
+              <input
+                id="hour"
+                type="range"
+                min={0}
+                max={23}
+                value={picked}
+                onChange={(event) => {
+                  setPicked(Number(event.target.value));
+                }}
+              />
+              <output htmlFor="hour">{hourSpan(picked)}</output>
+            </div>
+            <div className="readout" aria-live="polite">
+              {atPicked.length === 0 ? (
+                <p className="muted">
+                  {isToday && picked >= hoursSoFar(TODAY)
+                    ? 'That hour has not happened yet.'
+                    : 'No place set for this hour.'}
+                </p>
+              ) : (
+                <ul>
+                  {atPicked.map((cell) => (
+                    <li key={cell.where}>
+                      <span
+                        className="chip"
+                        style={{
+                          background: levelForAqi(cell.aqi).solid,
+                          color: levelForAqi(cell.aqi).onSolid,
+                        }}
+                      >
+                        {cell.aqi}
+                      </span>
+                      <span>
+                        <strong>{WHERE_LABELS[cell.where]}</strong>,{' '}
+                        {levelForAqi(cell.aqi).name.toLowerCase()}. {cell.pm25} µg/m³ PM
+                        <sub>2.5</sub>
+                        {cell.source === 'assumed' || cell.source === 'trees' ? ' (assumed)' : ''}
+                        {cell.source === 'unit' ? ' (from a nearby unit)' : ''}
+                        <SmokeNote pm25={cell.pm25} className="readout-smoke" />
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+            <Summary summary={summary} cells={counted} span={span} />
+          </>
+        )}
+
+        {(view === WEEK || !noData) &&
+          (shownTab === 'all' ? info.kinds : [shownTab]).map((kind) => (
+            <SpotSection
+              key={`${persona}-${kind}`}
+              kind={kind}
+              spot={spots[kind]}
+              pins={pins}
+              units={units}
+              onSet={(spot) => {
+                set(kind, spot);
+              }}
+              onClear={() => {
+                clear(kind);
+              }}
+              onAddPin={addPin}
+              {...(search !== undefined ? { search } : {})}
+            />
+          ))}
+        {shownTab === 'all' && (view === TODAY || view === WEEK) && (
           <LiveCard
             state={live.state}
             sample={live.sample}

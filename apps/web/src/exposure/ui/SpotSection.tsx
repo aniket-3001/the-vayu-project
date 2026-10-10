@@ -12,10 +12,10 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import type { PlaceMatch } from '../../data/geocode';
 import type { Pin } from '../../data/pins';
-import type { Device } from '../../devices/devices';
 import { pinId } from '../../data/pins';
 import { PlaceSearch } from '../../places/ui/PlaceSearch';
 import { INDOOR_SHARE } from '../assumptions';
+import { unitNear, type Unit } from '../units';
 import { DEFAULT_HOURS, SPOT_LABELS, type Spot, type SpotKind } from '../spots';
 
 const ICONS: Readonly<Record<SpotKind, LucideIcon>> = {
@@ -60,7 +60,7 @@ export function SpotSection({
   kind,
   spot,
   pins,
-  devices,
+  units,
   onSet,
   onClear,
   onAddPin,
@@ -69,7 +69,8 @@ export function SpotSection({
   readonly kind: SpotKind;
   readonly spot: Spot | undefined;
   readonly pins: readonly Pin[];
-  readonly devices: readonly Device[];
+  /** Every Vayu unit that can help, the person's own and the shared ones. */
+  readonly units: readonly Unit[];
   readonly onSet: (spot: Spot) => void;
   readonly onClear: () => void;
   readonly onAddPin: (place: PlaceMatch) => void;
@@ -78,7 +79,7 @@ export function SpotSection({
   const [picking, setPicking] = useState(false);
   const label = SPOT_LABELS[kind];
   const Icon = ICONS[kind];
-  const monitor = devices.find((device) => device.where === kind);
+  const unit = spot === undefined ? undefined : unitNear(spot.pin, units);
 
   const choose = (pin: Pin): void => {
     onSet({ pin, ...DEFAULT_HOURS[kind], ...(kind === 'outdoor' ? { trees: true } : {}) });
@@ -198,13 +199,17 @@ export function SpotSection({
           <Sprout size={18} strokeWidth={1.75} aria-hidden="true" />
           Trees around. Assumed to cut exposure a little.
         </label>
-      ) : monitor !== undefined ? (
+      ) : unit !== undefined ? (
         <p className="small">
-          <strong>{monitor.name}</strong> is here, so the indoor reading is used (sample for now).
+          <strong>{unit.name}</strong> is here.{' '}
+          {unit.own
+            ? 'It is yours, so its indoor reading is used.'
+            : 'It is not yours, and you did not have to add it: anyone here gets its reading.'}{' '}
+          <span className="muted">(Sample for now.)</span>
         </p>
       ) : (
         <p className="small muted">
-          No monitor here, so indoor air is assumed at {String(Math.round(INDOOR_SHARE * 100))}% of
+          No unit here, so indoor air is assumed at {String(Math.round(INDOOR_SHARE * 100))}% of
           outside. <Link to="/?tab=devices">Add a monitor</Link>
         </p>
       )}

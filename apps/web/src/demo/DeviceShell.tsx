@@ -12,7 +12,11 @@ import {
 import { useRef, useState } from 'react';
 import { PINS_STORAGE_KEY } from '../data/pins';
 import { DEVICES_STORAGE_KEY } from '../devices/devices';
+import { LIVE_STORAGE_KEY } from '../exposure/live';
+import { PERSONA_STORAGE_KEY } from '../exposure/persona';
 import { SPOTS_STORAGE_KEY } from '../exposure/spots';
+import { TASKS_STORAGE_KEY } from '../tasks/store';
+import { UNITS_STORAGE_KEY } from '../units/AirUnits';
 import { SAMPLE_AS_OF } from '../today/sample';
 import { clock24 } from '../today/time';
 import { DEVICES, deviceById, fitScale, geometry, type DeviceId } from './devices';
@@ -20,7 +24,15 @@ import { useSize } from './useSize';
 import './demo.css';
 
 /** Everything the app saves on the device, so "Start over" really starts over. */
-const RESETTABLE = [PINS_STORAGE_KEY, SPOTS_STORAGE_KEY, DEVICES_STORAGE_KEY];
+const RESETTABLE = [
+  PINS_STORAGE_KEY,
+  SPOTS_STORAGE_KEY,
+  DEVICES_STORAGE_KEY,
+  PERSONA_STORAGE_KEY,
+  LIVE_STORAGE_KEY,
+  TASKS_STORAGE_KEY,
+  UNITS_STORAGE_KEY,
+];
 
 const fromUrl = (): DeviceId =>
   deviceById(new URLSearchParams(window.location.search).get('device')).id;

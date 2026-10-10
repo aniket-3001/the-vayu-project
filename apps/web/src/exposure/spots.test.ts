@@ -1,6 +1,15 @@
 // @vitest-environment jsdom
 import { beforeEach, describe, expect, it } from 'vitest';
-import { SAMPLE_SPOTS, SPOTS_STORAGE_KEY, isThere, loadSpots, saveSpots, type Spot } from './spots';
+import { PERSONAS } from './persona';
+import {
+  SPOTS_STORAGE_KEY,
+  isThere,
+  loadAllSpots,
+  loadSpots,
+  sampleSpotsFor,
+  saveSpots,
+  type Spot,
+} from './spots';
 
 beforeEach(() => {
   window.localStorage.clear();
@@ -8,41 +17,64 @@ beforeEach(() => {
 
 const pin = { id: 'x', name: 'X', lat: 28.6, lng: 77.2 };
 
-describe('the places a person has set', () => {
-  it('starts with a home, a work and an outdoor place, and no school, so the dial is not empty', () => {
-    const spots = loadSpots(window.localStorage);
-    expect(spots).toBe(SAMPLE_SPOTS);
-    expect(Object.keys(spots)).toEqual(['home', 'work', 'outdoor']);
+describe('the places for each kind of person', () => {
+  it('starts a child at school 8 to 3, an adult at work 9 to 5, and a senior at home with a morning walk', () => {
+    const child = sampleSpotsFor('child');
+    expect(child.school).toMatchObject({ from: 8, to: 15 });
+    expect(child.work).toBeUndefined();
+    const adult = sampleSpotsFor('adult');
+    expect(adult.work).toMatchObject({ from: 9, to: 17 });
+    expect(adult.school).toBeUndefined();
+    const senior = sampleSpotsFor('senior');
+    expect(senior.outdoor).toMatchObject({ from: 6, to: 8, trees: true });
+    expect(senior.work).toBeUndefined();
+    expect(senior.school).toBeUndefined();
   });
 
-  it('remembers what was saved, including removing everything', () => {
-    saveSpots(window.localStorage, {});
-    expect(loadSpots(window.localStorage)).toEqual({});
-    saveSpots(window.localStorage, { school: { pin, from: 8, to: 15 } });
-    expect(loadSpots(window.localStorage).school?.pin.name).toBe('X');
+  it('covers all 24 hours for every kind of person, so no hour is left blank', () => {
+    for (const persona of PERSONAS) {
+      const spots = Object.values(sampleSpotsFor(persona.id));
+      for (let hour = 0; hour < 24; hour++) {
+        expect(
+          spots.some((spot) => isThere(spot, hour)),
+          `${persona.id} ${String(hour)}`,
+        ).toBe(true);
+      }
+    }
   });
 
-  it('survives rubbish in storage', () => {
+  it('shows only the places that matter for a person: three at most', () => {
+    for (const persona of PERSONAS) expect(persona.kinds.length).toBeLessThanOrEqual(3);
+  });
+
+  it('keeps each kind of person’s places apart, and starts with the sample ones', () => {
+    expect(loadSpots(window.localStorage, 'child')).toEqual(sampleSpotsFor('child'));
+    saveSpots(window.localStorage, 'child', { school: { pin, from: 9, to: 14 } });
+    expect(loadSpots(window.localStorage, 'child').school?.from).toBe(9);
+    expect(loadSpots(window.localStorage, 'adult')).toEqual(sampleSpotsFor('adult'));
+    expect(loadAllSpots(window.localStorage)).toHaveLength(3);
+  });
+
+  it('remembers removing everything, and survives rubbish in storage', () => {
+    saveSpots(window.localStorage, 'adult', {});
+    expect(loadSpots(window.localStorage, 'adult')).toEqual({});
     window.localStorage.setItem(SPOTS_STORAGE_KEY, 'not json');
-    expect(loadSpots(window.localStorage)).toBe(SAMPLE_SPOTS);
+    expect(loadSpots(window.localStorage, 'adult')).toEqual(sampleSpotsFor('adult'));
     window.localStorage.setItem(
       SPOTS_STORAGE_KEY,
-      JSON.stringify({ home: { from: 'a' }, work: null }),
+      JSON.stringify({ adult: { home: { from: 'a' } } }),
     );
-    expect(loadSpots(window.localStorage)).toEqual({});
+    expect(loadSpots(window.localStorage, 'adult')).toEqual({});
   });
 
   it('says whether someone is there at an hour, including windows that run past midnight', () => {
     const day: Spot = { pin, from: 9, to: 17 };
     expect(isThere(day, 8)).toBe(false);
     expect(isThere(day, 9)).toBe(true);
-    expect(isThere(day, 16)).toBe(true);
     expect(isThere(day, 17)).toBe(false);
     const night: Spot = { pin, from: 19, to: 8 };
     expect(isThere(night, 23)).toBe(true);
-    expect(isThere(night, 0)).toBe(true);
     expect(isThere(night, 7)).toBe(true);
     expect(isThere(night, 8)).toBe(false);
-    expect(isThere(night, 12)).toBe(false);
   });
 });

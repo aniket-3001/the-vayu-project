@@ -1777,3 +1777,126 @@ h2 {
 .lens-smoke {
   font-size: 13px;
 }
+
+/* Exposure: who it is for, the span, the calendar, the week */
+
+.persona-row {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: 12px;
+}
+.persona {
+  display: grid;
+  justify-items: start;
+  gap: 4px;
+  min-height: 64px;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--card);
+  color: var(--text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.persona span {
+  display: grid;
+  line-height: 1.2;
+}
+.persona svg {
+  color: #3b82c4;
+}
+.persona[aria-pressed='true'] {
+  border-color: #3b82c4;
+  background: color-mix(in srgb, #3b82c4 9%, var(--card));
+  box-shadow: inset 0 0 0 1px #3b82c4;
+}
+@media (max-width: 420px) {
+  .persona .small {
+    display: none;
+  }
+  .persona {
+    min-height: 56px;
+  }
+}
+.date-pick {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 10px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--muted);
+}
+.date-pick svg {
+  color: #3b82c4;
+}
+.date-pick input {
+  min-height: 44px;
+  margin-left: auto;
+  padding: 0 12px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--card);
+  color: var(--text);
+  font: inherit;
+}
+.banner {
+  padding: 14px 16px;
+  border: 1px solid #e3c98b;
+  border-radius: var(--radius);
+  background: #fdf6dd;
+  font-weight: 600;
+}
+.week-bars {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 6px;
+}
+.week-day {
+  display: grid;
+  justify-items: center;
+  gap: 4px;
+  width: 100%;
+  padding: 8px 2px;
+  border: 1px solid transparent;
+  border-radius: 12px;
+  background: transparent;
+  color: var(--text);
+  font: inherit;
+  cursor: pointer;
+}
+.week-day:hover:not(:disabled) {
+  border-color: var(--line);
+  background: color-mix(in srgb, var(--text) 4%, var(--card));
+}
+.week-day:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+.week-num {
+  font-weight: 800;
+}
+.week-track {
+  display: flex;
+  align-items: flex-end;
+  width: 100%;
+  max-width: 34px;
+  height: 120px;
+  border-radius: 8px;
+  background: #e6ecf4;
+  overflow: hidden;
+}
+.week-fill {
+  display: block;
+  width: 100%;
+  border-radius: 8px 8px 0 0;
+}
+.week-name {
+  font-weight: 700;
+  font-size: 13px;
+}
+.readout-smoke {
+  margin-left: 8px;
+}

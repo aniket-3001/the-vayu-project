@@ -1,24 +1,27 @@
 import { LEVELS } from '../../design/levels';
 import { AqiChip } from '../../today/ui/Chip';
 import { concentration } from '../../today/ui/format';
+import { SmokeNote } from '../../units/AirUnits';
 import type { Cell, Summary as SummaryData } from '../model';
 
 const SOURCE_WORDS: Readonly<Record<Cell['source'], string>> = {
   outdoor: 'open air from the nearest monitor',
   trees: 'open air, scaled for trees (assumed)',
   assumed: 'indoors, scaled by an assumption',
-  device: 'indoors, from your monitor (sample)',
+  device: 'indoors, from your own monitor (sample for now)',
+  unit: 'indoors, from a Vayu unit nearby, picked up automatically (sample for now)',
 };
 
 /** The answer first, then the reasons: what you breathed, what open air would have been, and how sure we are. */
 export function Summary({
   summary,
   cells,
-  day,
+  span,
 }: {
   readonly summary: SummaryData | undefined;
   readonly cells: readonly Cell[];
-  readonly day: 'today' | 'yesterday';
+  /** Words for the span: "so far today (17 hours)", "over the day". */
+  readonly span: string;
 }): React.JSX.Element {
   if (summary === undefined) {
     return (
@@ -37,7 +40,6 @@ export function Summary({
     1,
     summary.hoursByLevel.reduce((a, b) => a + b, 0),
   );
-  const span = summary.fullDay ? 'over the day' : `so far today (${String(summary.hours)} hours)`;
   const saved = summary.openAirAqi - summary.aqi;
   return (
     <section className="card" aria-labelledby="sum-title">
@@ -46,6 +48,7 @@ export function Summary({
         <AqiChip aqi={summary.aqi} /> You breathed an average of AQI {summary.aqi},{' '}
         {summary.level.name.toLowerCase()}, {span}.
       </p>
+      <SmokeNote pm25={summary.meanPm25} />
       <p>
         {saved > 0
           ? `The same hours in open air would have averaged AQI ${String(summary.openAirAqi)}. Where you spent your time kept ${String(saved)} points off.`
@@ -75,7 +78,6 @@ export function Summary({
         .
         {assumed > 0 &&
           ` ${String(assumed)} of ${String(summary.hours)} hours rest on an assumption.`}
-        {day === 'today' ? '' : ' A finished day.'}
       </p>
       <details className="how">
         <summary>How each hour is worked out</summary>

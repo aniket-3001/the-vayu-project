@@ -1,7 +1,7 @@
 import { arc } from 'd3-shape';
 import { UserRound } from 'lucide-react';
 import { levelForAqi } from '../../design/levels';
-import { RINGS, type Cell, type Where } from '../model';
+import type { Cell, Where } from '../model';
 import { SPOT_LABELS } from '../spots';
 
 const SIZE = 372;
@@ -28,6 +28,7 @@ const cellPath = arc();
  */
 export function Dial({
   cells,
+  rings: allRings,
   show,
   nowHour,
   picked,
@@ -35,6 +36,8 @@ export function Dial({
   set,
 }: {
   readonly cells: readonly Cell[];
+  /** Every ring that can be shown, outside in. */
+  readonly rings: readonly Where[];
   /** `all` for every ring, or one kind for a single thick ring. */
   readonly show: 'all' | Where;
   /** The hour to mark as now, or undefined for a finished day. */
@@ -44,7 +47,7 @@ export function Dial({
   /** Which kinds have been set, so the others show faint in the centre. */
   readonly set: ReadonlySet<Where>;
 }): React.JSX.Element {
-  const rings = show === 'all' ? RINGS : [show];
+  const rings = show === 'all' ? allRings : [show];
   const thickness = (OUTER - INNER) / rings.length;
   const gap = rings.length > 1 ? 2 : 0;
 
@@ -146,11 +149,11 @@ export function Dial({
         className="dial-person"
         aria-hidden="true"
       />
-      {RINGS.map((where, i) => (
+      {allRings.map((where, i) => (
         <text
           key={where}
           x={C}
-          y={C - 4 + i * 11}
+          y={C - 2 + i * 12}
           textAnchor="middle"
           className={`dial-name${show === where ? ' on' : ''}${set.has(where) ? '' : ' unset'}`}
         >

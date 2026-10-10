@@ -1,24 +1,45 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { loadLive, recordFix, saveLive, SAMPLE_TRACK } from './live';
 import type { LiveLog } from './model';
+import { loadPersona, savePersona, type Persona } from './persona';
 import { loadSpots, saveSpots, type Spot, type SpotKind, type Spots } from './spots';
 
-/** The person's set places, kept in this browser. */
-export function useSpots(storage: Storage = window.localStorage): {
+/** Which kind of person this is for, kept in this browser. */
+export function usePersona(
+  storage: Storage = window.localStorage,
+): readonly [Persona, (next: Persona) => void] {
+  const [persona, setPersona] = useState<Persona>(() => loadPersona(storage));
+  return [
+    persona,
+    (next) => {
+      savePersona(storage, next);
+      setPersona(next);
+    },
+  ];
+}
+
+/** The set places for one kind of person, kept in this browser. Each kind of person has their own. */
+export function useSpots(
+  persona: Persona,
+  storage: Storage = window.localStorage,
+): {
   readonly spots: Spots;
   readonly set: (kind: SpotKind, spot: Spot) => void;
   readonly clear: (kind: SpotKind) => void;
 } {
-  const [spots, setSpots] = useState<Spots>(() => loadSpots(storage));
+  const [saved, setSaved] = useState<{ readonly persona: Persona; readonly spots: Spots }>(() => ({
+    persona,
+    spots: loadSpots(storage, persona),
+  }));
+  // Switching person loads that person's places; the state is derived, not copied in an effect.
+  const spots = saved.persona === persona ? saved.spots : loadSpots(storage, persona);
   const change = useCallback(
     (next: (current: Spots) => Spots) => {
-      setSpots((current) => {
-        const updated = next(current);
-        saveSpots(storage, updated);
-        return updated;
-      });
+      const updated = next(spots);
+      saveSpots(storage, persona, updated);
+      setSaved({ persona, spots: updated });
     },
-    [storage],
+    [spots, persona, storage],
   );
   return {
     spots,

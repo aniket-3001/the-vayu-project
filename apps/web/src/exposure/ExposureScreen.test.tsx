@@ -1,10 +1,12 @@
 // @vitest-environment jsdom
-import { cleanup, fireEvent, render, screen, within } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { DEVICES_STORAGE_KEY } from '../devices/devices';
+import { AirUnitsProvider, UNITS_STORAGE_KEY } from '../units/AirUnits';
 import { ExposureScreen } from './ExposureScreen';
+import { PERSONA_STORAGE_KEY } from './persona';
 import { SPOTS_STORAGE_KEY } from './spots';
 
 beforeEach(() => {
@@ -18,25 +20,88 @@ afterEach(() => {
 const open = (): void => {
   render(
     <MemoryRouter>
-      <ExposureScreen />
+      <AirUnitsProvider>
+        <ExposureScreen />
+      </AirUnitsProvider>
     </MemoryRouter>,
   );
 };
 
+const cellsFilled = (): number => document.querySelectorAll('.cell:not(.empty)').length;
+
 describe('the Exposure screen', () => {
-  it('opens on Today with a dial, an answer, and a section for each kind of place', () => {
+  it('opens on Today, for an adult, with a dial, an answer, and only the places that matter', () => {
     open();
     expect(screen.getByRole('heading', { level: 1, name: 'Today’s exposure' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Adult/u })).toHaveAttribute('aria-pressed', 'true');
     expect(screen.getByRole('img', { name: /24-hour dial/u })).toBeInTheDocument();
-    for (const name of ['Home', 'Work', 'School', 'Outdoor', 'Live location']) {
+    for (const name of ['Home', 'Work', 'Outdoor', 'Live location']) {
       expect(screen.getByRole('region', { name })).toBeInTheDocument();
     }
+    expect(screen.queryByRole('region', { name: 'School' })).not.toBeInTheDocument();
     expect(screen.getByText(/You breathed an average of AQI/u)).toHaveTextContent(
       'so far today (17 hours)',
     );
   });
 
-  it('gives a full day for yesterday, with the WHO line', async () => {
+  it('keeps the tabs to four at most: All, Home, Work, Outdoor', () => {
+    open();
+    const group = screen.getByRole('group', { name: 'Show' });
+    expect(
+      within(group)
+        .getAllByRole('button')
+        .map((b) => b.textContent),
+    ).toEqual(['All', 'Home', 'Work', 'Outdoor']);
+  });
+
+  it('switches to a child, who goes to school instead of work, with school hours of 8 to 3', async () => {
+    open();
+    await userEvent.click(screen.getByRole('button', { name: /Child/u }));
+    expect(screen.getByRole('region', { name: 'School' })).toBeInTheDocument();
+    expect(screen.queryByRole('region', { name: 'Work' })).not.toBeInTheDocument();
+    expect(
+      within(screen.getByRole('group', { name: 'Show' })).getByRole('button', { name: 'School' }),
+    ).toBeInTheDocument();
+    expect(screen.getByLabelText('School from')).toHaveValue('8');
+    expect(screen.getByLabelText('School until')).toHaveValue('15');
+    expect(window.localStorage.getItem(PERSONA_STORAGE_KEY)).toBe('child');
+  });
+
+  it('switches to a senior, who has only home and a walk: three tabs', async () => {
+    open();
+    await userEvent.click(screen.getByRole('button', { name: /Senior/u }));
+    const group = screen.getByRole('group', { name: 'Show' });
+    expect(
+      within(group)
+        .getAllByRole('button')
+        .map((b) => b.textContent),
+    ).toEqual(['All', 'Home', 'Outdoor']);
+  });
+
+  it('gives a child the school’s unit automatically, with nothing added, and says so', () => {
+    window.localStorage.setItem(PERSONA_STORAGE_KEY, 'child');
+    open();
+    const school = screen.getByRole('region', { name: 'School' });
+    expect(school).toHaveTextContent('Vayu unit at the school');
+    expect(school).toHaveTextContent(/you did not have to add it/u);
+    expect(screen.getByRole('button', { name: 'How this is worked out' })).toBeInTheDocument();
+  });
+
+  it('puts the span in the order Past week, Yesterday, Today', () => {
+    open();
+    const group = screen.getByRole('group', { name: 'Span' });
+    expect(
+      within(group)
+        .getAllByRole('button')
+        .map((b) => b.textContent),
+    ).toEqual(['Past week', 'Yesterday', 'Today']);
+    expect(within(group).getByRole('button', { name: 'Today' })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    );
+  });
+
+  it('shows a full day for yesterday, with the WHO line', async () => {
     open();
     await userEvent.click(screen.getByRole('button', { name: 'Yesterday' }));
     expect(
@@ -44,6 +109,37 @@ describe('the Exposure screen', () => {
     ).toBeInTheDocument();
     expect(screen.getByText(/You breathed an average of AQI/u)).toHaveTextContent('over the day');
     expect(screen.getByText(/times the WHO 24-hour guideline of 15/u)).toBeInTheDocument();
+  });
+
+  it('shows the past week as seven days, and opens a day when it is tapped', async () => {
+    open();
+    await userEvent.click(screen.getByRole('button', { name: 'Past week' }));
+    expect(screen.getByRole('heading', { level: 1, name: 'The past week' })).toBeInTheDocument();
+    const week = screen.getByRole('region', { name: 'The past week' });
+    expect(within(week).getAllByRole('button')).toHaveLength(7);
+    expect(week).toHaveTextContent(/Cleanest day: .* Worst: /u);
+    await userEvent.click(
+      within(week).getByRole('button', { name: /Sat 3 Oct: AQI \d+.*Open this day/u }),
+    );
+    expect(
+      screen.getByRole('heading', { level: 1, name: 'Exposure on Sat 3 Oct' }),
+    ).toBeInTheDocument();
+    expect(screen.getByText(/You breathed an average of AQI/u)).toHaveTextContent('over the day');
+  });
+
+  it('opens any date from the calendar when we have it, and says plainly when we do not', () => {
+    open();
+    const date = screen.getByLabelText('Another date');
+    fireEvent.change(date, { target: { value: '2026-10-01' } });
+    expect(
+      screen.getByRole('heading', { level: 1, name: 'Exposure on Thu 1 Oct' }),
+    ).toBeInTheDocument();
+    expect(screen.queryByRole('status', { name: '' })?.textContent ?? '').not.toMatch(/No data/u);
+    fireEvent.change(date, { target: { value: '2026-03-01' } });
+    expect(screen.getByRole('status')).toHaveTextContent('No data for Sun 1 Mar.');
+    expect(screen.queryByRole('img', { name: /24-hour dial/u })).not.toBeInTheDocument();
+    fireEvent.change(date, { target: { value: '2026-10-20' } });
+    expect(screen.getByRole('status')).toHaveTextContent('No data for Tue 20 Oct.');
   });
 
   it('says how much rests on an assumption, and lists the assumptions on request', async () => {
@@ -54,12 +150,11 @@ describe('the Exposure screen', () => {
     expect(screen.getByRole('note')).toHaveTextContent(/made-up sample data/u);
   });
 
-  it('shows what each hour was when the hour is picked, and says when an hour is in the future', () => {
+  it('shows what each hour was when it is picked, and says when an hour is in the future', () => {
     open();
     fireEvent.change(screen.getByRole('slider', { name: 'Hour' }), { target: { value: '12' } });
     expect(screen.getByText('12:00 to 13:00')).toBeInTheDocument();
-    const readout = document.querySelector('.readout');
-    expect(readout).toHaveTextContent(/Work, moderate/u);
+    expect(document.querySelector('.readout')).toHaveTextContent(/Work, /u);
     fireEvent.change(screen.getByRole('slider', { name: 'Hour' }), { target: { value: '22' } });
     expect(screen.getByText('That hour has not happened yet.')).toBeInTheDocument();
   });
@@ -67,35 +162,33 @@ describe('the Exposure screen', () => {
   it('narrows to one kind of place, and has no tab for live location', async () => {
     open();
     expect(screen.queryByRole('button', { name: 'Live' })).not.toBeInTheDocument();
-    await userEvent.click(screen.getByRole('button', { name: 'Home' }));
+    await userEvent.click(
+      within(screen.getByRole('group', { name: 'Show' })).getByRole('button', { name: 'Home' }),
+    );
     expect(screen.getByRole('region', { name: 'Home' })).toBeInTheDocument();
     expect(screen.queryByRole('region', { name: 'Work' })).not.toBeInTheDocument();
     expect(screen.queryByRole('region', { name: 'Live location' })).not.toBeInTheDocument();
   });
 
-  it('sets School from the places already pinned, and keeps it after a reload', async () => {
-    open();
-    await userEvent.click(screen.getByRole('button', { name: 'Set School' }));
-    await userEvent.click(
-      within(screen.getByRole('region', { name: 'School' })).getByRole('button', {
-        name: 'School',
-      }),
-    );
-    expect(
-      within(screen.getByRole('region', { name: 'School' })).getByLabelText('School from'),
-    ).toBeInTheDocument();
-    expect(window.localStorage.getItem(SPOTS_STORAGE_KEY)).toContain('"school"');
-    cleanup();
-    open();
-    expect(screen.queryByRole('button', { name: 'Set School' })).not.toBeInTheDocument();
-  });
-
   it('changes the hours a place is usually used, and the dial follows', async () => {
     open();
     const work = screen.getByRole('region', { name: 'Work' });
-    const before = document.querySelectorAll('.cell:not(.empty)').length;
+    const before = cellsFilled();
     await userEvent.selectOptions(within(work).getByLabelText('Work until'), '12:00');
-    expect(document.querySelectorAll('.cell:not(.empty)').length).toBeLessThan(before);
+    expect(cellsFilled()).toBeLessThan(before);
+    expect(window.localStorage.getItem(SPOTS_STORAGE_KEY)).toContain('"to":12');
+  });
+
+  it('keeps each kind of person’s changes apart', async () => {
+    open();
+    await userEvent.selectOptions(
+      within(screen.getByRole('region', { name: 'Work' })).getByLabelText('Work until'),
+      '12:00',
+    );
+    await userEvent.click(screen.getByRole('button', { name: /Child/u }));
+    expect(screen.getByLabelText('School until')).toHaveValue('15');
+    await userEvent.click(screen.getByRole('button', { name: /Adult/u }));
+    expect(screen.getByLabelText('Work until')).toHaveValue('12');
   });
 
   it('removes a place and says there is nothing to add up when none are left', async () => {
@@ -106,22 +199,37 @@ describe('the Exposure screen', () => {
     expect(screen.getByText(/Nothing to add up yet/u)).toBeInTheDocument();
   });
 
-  it('uses a monitor’s reading at home once one is added, and says so', () => {
+  it('uses a monitor at home for every kind of person who lives there, and says so', async () => {
     window.localStorage.setItem(
       DEVICES_STORAGE_KEY,
       JSON.stringify([{ id: 'd1', name: 'Bedroom unit', where: 'home' }]),
     );
     open();
-    const home = screen.getByRole('region', { name: 'Home' });
-    expect(home).toHaveTextContent('Bedroom unit is here');
-    expect(screen.getByRole('region', { name: 'Work' })).toHaveTextContent(/No monitor here/u);
+    expect(screen.getByRole('region', { name: 'Home' })).toHaveTextContent(
+      'Bedroom unit is here. It is yours',
+    );
+    await userEvent.click(screen.getByRole('button', { name: /Child/u }));
+    expect(screen.getByRole('region', { name: 'Home' })).toHaveTextContent(
+      'Bedroom unit is here. It is yours',
+    );
+    expect(screen.getByRole('region', { name: 'School' })).toHaveTextContent(
+      'Vayu unit at the school',
+    );
   });
 
-  it('shows a made-up day of live movement on request, labelled as a sample', async () => {
+  it('adds cigarettes a day to the answer when the relatable measure is on', () => {
+    window.localStorage.setItem(UNITS_STORAGE_KEY, 'smoke');
+    open();
+    expect(screen.getAllByText(/cigarettes? a day/u).length).toBeGreaterThan(0);
+  });
+
+  it('shows a made-up day of live movement on request, and picks up a friend’s unit by itself', async () => {
     open();
     await userEvent.click(screen.getByRole('button', { name: 'Show a sample day' }));
     expect(screen.getByText('Sample track')).toBeInTheDocument();
     expect(screen.getByText(/10 hours logged today/u)).toBeInTheDocument();
+    fireEvent.change(screen.getByRole('slider', { name: 'Hour' }), { target: { value: '15' } });
+    expect(document.querySelector('.readout')).toHaveTextContent(/Live, .*\(from a nearby unit\)/u);
     await userEvent.click(screen.getByRole('button', { name: 'Clear' }));
     expect(screen.getByText('No hours logged yet.')).toBeInTheDocument();
   });
@@ -145,10 +253,6 @@ describe('the Exposure screen', () => {
     expect(screen.getByRole('region', { name: 'Live location' })).toHaveTextContent(
       'Asking your browser',
     );
-    await vi.waitFor(() => {
-      expect(succeed).toBeDefined();
-    });
-    const { act } = await import('@testing-library/react');
     act(() => {
       succeed?.({ coords: { latitude: 28.6, longitude: 77.2 } } as GeolocationPosition);
     });

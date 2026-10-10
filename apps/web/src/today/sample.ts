@@ -55,9 +55,14 @@ interface Spec {
 const clamp = (value: number, low: number, high: number): number =>
   Math.min(high, Math.max(low, value));
 const wave = (h: number, peakAt: number): number => Math.cos(((h - peakAt) / 24) * 2 * Math.PI);
-/** Days after today drift a little, so a week does not look stamped out of one mould. */
-const drift = (seed: number, i: number, scale: number): number =>
-  i < 24 ? 0 : scale * Math.sin(Math.floor(i / 24) * 1.9 + seed * 2.7);
+/** Whole calendar days from today (India time) that sample hour `i` falls on: 0 today, -1 yesterday, 1 tomorrow. */
+const dayOffsetOf = (i: number): number => Math.floor((hourOfDay(AS_OF) + i) / 24);
+
+/** Other days drift a little from today's recipe, so a week does not look stamped out of one mould. */
+const drift = (seed: number, i: number, scale: number): number => {
+  const day = dayOffsetOf(i);
+  return day === 0 ? 0 : scale * Math.sin(day * 1.9 + seed * 2.7);
+};
 const round1 = (value: number): number => Math.round(value * 10) / 10;
 
 const SPECS: Readonly<Record<SampleId, Spec>> = {
@@ -302,3 +307,24 @@ export function sampleDay(id: SampleId): TodayData {
 export const sampleSource = (id: SampleId): TodaySource => ({
   load: () => Promise.resolve(sampleDay(id)),
 });
+
+/** How many whole days back the sample air reaches, not counting today. */
+export const SAMPLE_HISTORY_DAYS = 14;
+
+/**
+ * PM2.5 for each hour of one India calendar date, for a made-up day, as far back as the sample reaches.
+ * The hour in progress, hours that have not happened, and dates outside the window are `undefined`: we have
+ * no finished reading for them.
+ */
+export function sampleAmbientPm25(id: SampleId, date: string): readonly (number | undefined)[] {
+  const spec = SPECS[id];
+  const hours: (number | undefined)[] = Array.from({ length: 24 }, () => undefined);
+  for (let i = -(SAMPLE_HISTORY_DAYS + 1) * 24; i < 0; i++) {
+    const at = atHour(i);
+    if (isoDate(at) === date) hours[Math.floor(hourOfDay(at))] = pmAt(spec, i);
+  }
+  return hours;
+}
+
+/** The India calendar date of the sample moment, "2026-10-10". */
+export const SAMPLE_TODAY = isoDate(SAMPLE_AS_OF);
