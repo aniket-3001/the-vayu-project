@@ -10,7 +10,9 @@ const MAX_STARS = 700;
 /** How many frames a star lives, how long its tail is, in positions kept. */
 const LIFE_MIN = 90;
 const LIFE_MAX = 170;
-const TAIL = 24;
+const TAIL = 40;
+/** Half the widest the sliver gets, in pixels. */
+const WIDTH = 1.5;
 
 interface Star {
   lat: number;
@@ -119,34 +121,41 @@ export function WindStars({
       const envelope = Math.sin(Math.PI * Math.min(1, s.age / s.life));
       if (envelope <= 0.02 || s.trail.length < 2) return;
       const speed = speedOf(field(s.lat, s.lng));
-      const strength = Math.min(0.8, 0.4 + speed / 16) * envelope;
-      const head = s.trail[0];
-      if (head === undefined) return;
-      // The tail, from the tip backwards, in two passes: a soft grey-blue body, then a thin pale shine along it.
-      for (let i = 1; i < s.trail.length; i++) {
-        const from = s.trail[i - 1];
-        const to = s.trail[i];
-        if (from === undefined || to === undefined) continue;
-        const along = 1 - i / s.trail.length;
-        const fade = strength * along * along;
-        ctx.beginPath();
-        ctx.moveTo(from.x, from.y);
-        ctx.lineTo(to.x, to.y);
-        ctx.strokeStyle = `rgba(102, 126, 160, ${(fade * 0.6).toFixed(3)})`;
-        ctx.lineWidth = 0.8 + 3.2 * along;
-        ctx.stroke();
-        ctx.strokeStyle = `rgba(240, 246, 255, ${(fade * 0.75).toFixed(3)})`;
-        ctx.lineWidth = 0.4 + 1.1 * along;
-        ctx.stroke();
+      const strength = Math.min(0.9, 0.5 + speed / 16) * envelope;
+      const n = s.trail.length;
+      // A slim sliver, as Windy draws it: full width a little behind the head, tapering to a point at the tail.
+      const left: { x: number; y: number }[] = [];
+      const right: { x: number; y: number }[] = [];
+      for (let i = 0; i < n; i++) {
+        const here = s.trail[i];
+        const before = s.trail[Math.max(0, i - 1)];
+        const after = s.trail[Math.min(n - 1, i + 1)];
+        if (here === undefined || before === undefined || after === undefined) return;
+        const dx = before.x - after.x;
+        const dy = before.y - after.y;
+        const length = Math.hypot(dx, dy) || 1;
+        const along = i / (n - 1);
+        // Round at the head, a long taper behind it.
+        const half = WIDTH * (along < 0.12 ? 0.55 + along * 3.75 : (1 - along) ** 0.9);
+        left.push({ x: here.x - (dy / length) * half, y: here.y + (dx / length) * half });
+        right.push({ x: here.x + (dy / length) * half, y: here.y - (dx / length) * half });
       }
-      // A soft glint at the head.
-      const glint = ctx.createRadialGradient(head.x, head.y, 0, head.x, head.y, 4);
-      glint.addColorStop(0, `rgba(255, 255, 255, ${(strength * 0.95).toFixed(3)})`);
-      glint.addColorStop(1, 'rgba(255, 255, 255, 0)');
-      ctx.fillStyle = glint;
       ctx.beginPath();
-      ctx.arc(head.x, head.y, 4, 0, Math.PI * 2);
+      left.forEach((p, i) => {
+        if (i === 0) ctx.moveTo(p.x, p.y);
+        else ctx.lineTo(p.x, p.y);
+      });
+      for (let i = right.length - 1; i >= 0; i--) {
+        const p = right[i];
+        if (p !== undefined) ctx.lineTo(p.x, p.y);
+      }
+      ctx.closePath();
+      ctx.fillStyle = `rgba(250, 252, 255, ${(strength * 0.92).toFixed(3)})`;
       ctx.fill();
+      // A faint grey-blue edge keeps the white readable on a light map.
+      ctx.lineWidth = 0.7;
+      ctx.strokeStyle = `rgba(92, 116, 150, ${(strength * 0.45).toFixed(3)})`;
+      ctx.stroke();
     };
 
     const tick = (): void => {
