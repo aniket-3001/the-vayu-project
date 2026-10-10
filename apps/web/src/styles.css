@@ -4157,3 +4157,57 @@ button.alert-card {
 .here-found {
   margin: 0;
 }
+
+/* Layout pass: one line for a place's name and where it is, so nothing spills out of a card */
+.pc-name,
+.pc-detail {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.pc-detail {
+  line-height: 1.35;
+}
+/* The first place: the add square takes the whole row, with room to say what it is for */
+.add-place:only-child {
+  grid-column: 1 / -1;
+  aspect-ratio: auto;
+  min-height: 190px;
+}
+/* Every empty place to fill in is the same dotted blue, wherever it is */
+.slot.empty {
+  border-color: #3b82c4;
+  background: #eef5fc;
+}
+.slot.empty .slot-hint {
+  color: #2f5fb3;
+  font-weight: 700;
+}
+.dashed {
+  border: 2px dashed #3b82c4;
+  background: #eef5fc;
+}
+
+/* A place still to set, inside a person's day: a wide dotted row, not a big square */
+.spot > .slot {
+  aspect-ratio: auto;
+  min-height: 72px;
+  width: 100%;
+  grid-auto-flow: column;
+  justify-content: start;
+  justify-items: start;
+  align-content: center;
+  gap: 4px 14px;
+  padding: 10px 14px;
+  text-align: left;
+}
+.spot > .slot .slot-icon {
+  grid-row: span 2;
+}
+
+/* Three squares in a row must hold their icon, name and hint whatever the width */
+.slots .slot {
+  aspect-ratio: auto;
+  min-height: 118px;
+  padding: 12px 6px;
+}

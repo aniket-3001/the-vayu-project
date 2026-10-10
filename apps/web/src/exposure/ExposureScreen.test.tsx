@@ -53,7 +53,9 @@ const fillSlot = async (kind: string, pinName: string): Promise<void> => {
 /** Presses a person in the list, which opens their timetable. */
 const openPanel = async (name: string): Promise<HTMLElement> => {
   await userEvent.click(screen.getByRole('button', { name: new RegExp(`^${name}\\b`, 'u') }));
-  return screen.getByRole('dialog', { name: new RegExp(`${name}’s day`, 'u') });
+  return screen.getByRole('dialog', {
+    name: name === 'Me' ? /My day/u : new RegExp(`${name}’s day`, 'u'),
+  });
 };
 
 const closePanel = async (): Promise<void> => {

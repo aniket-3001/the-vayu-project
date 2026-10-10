@@ -91,7 +91,7 @@ export function PersonPanel({
       >
         <div className="sheet-head">
           <div>
-            <h2 id="person-title">{person.name}’s day</h2>
+            <h2 id="person-title">{person.id === 'me' ? 'My day' : `${person.name}’s day`}</h2>
             <p className="muted small">
               {person.age}, {DAY_LABELS[person.day].toLowerCase()}. {personaBlurb(person)}.
             </p>
