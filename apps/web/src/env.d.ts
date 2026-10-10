@@ -8,3 +8,9 @@ interface ImportMetaEnv {
 interface ImportMeta {
   readonly env: ImportMetaEnv;
 }
+
+/** A worker bundled by Vite, imported as the URL it is served from. */
+declare module '*?worker&url' {
+  const url: string;
+  export default url;
+}

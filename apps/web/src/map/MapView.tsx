@@ -1,4 +1,11 @@
-import { Map as MapLibreMap, NavigationControl, Popup, type StyleSpecification } from 'maplibre-gl';
+import {
+  Map as MapLibreMap,
+  NavigationControl,
+  Popup,
+  setWorkerUrl,
+  type StyleSpecification,
+} from 'maplibre-gl';
+import workerUrl from 'maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import { useEffect, useMemo, useRef } from 'react';
 import { LEVELS } from '../design/levels';
@@ -13,6 +20,9 @@ export interface MapLayers {
   readonly gradient: boolean;
   readonly fires: boolean;
 }
+
+// The worker is its own file, which the build has to bundle and serve; say where it ends up.
+setWorkerUrl(workerUrl);
 
 /** A light, free, keyless vector style. If it cannot be reached, the map falls back to plain ground. */
 const STYLE_URL = 'https://tiles.openfreemap.org/styles/positron';
