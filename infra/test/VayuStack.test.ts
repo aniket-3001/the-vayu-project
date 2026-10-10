@@ -1,0 +1,701 @@
+import { runInNewContext } from 'node:vm';
+import { App } from 'aws-cdk-lib';
+import { Match, Template } from 'aws-cdk-lib/assertions';
+import { describe, expect, it } from 'vitest';
+import {
+  ARCHIVE_CHECK_SQL,
+  DEVICE_HISTORY_SQL,
+  FORECAST_ERROR_SQL,
+  HARVEST_COVERAGE_SQL,
+} from '../lib/queries';
+import { DIRECTORY_INDEX_FUNCTION, VayuStack, type VayuStackProps } from '../lib/VayuStack';
+
+const synth = (alertEmail?: string): Template =>
+  Template.fromStack(
+    new VayuStack(new App(), 'Test', alertEmail === undefined ? {} : { alertEmail }),
+  );
+
+const synthWith = (props: VayuStackProps): Template =>
+  Template.fromStack(new VayuStack(new App(), 'Test', props));
+
+describe('the Vayu stack', () => {
+  const template = synth();
+
+  it('has three tables whose old items expire by themselves', () => {
+    template.resourceCountIs('AWS::DynamoDB::Table', 3);
+    const tables = Object.values(template.findResources('AWS::DynamoDB::Table'));
+    for (const table of tables) {
+      expect(table.Properties).toMatchObject({
+        TimeToLiveSpecification: { AttributeName: 'expiresAt', Enabled: true },
+      });
+    }
+  });
+
+  it('keeps every bucket private and encrypted', () => {
+    const buckets = Object.values(template.findResources('AWS::S3::Bucket'));
+    expect(buckets).toHaveLength(2);
+    for (const bucket of buckets) {
+      expect(bucket.Properties).toMatchObject({
+        PublicAccessBlockConfiguration: {
+          BlockPublicAcls: true,
+          BlockPublicPolicy: true,
+          IgnorePublicAcls: true,
+          RestrictPublicBuckets: true,
+        },
+      });
+    }
+  });
+
+  it('rule I15: throttles the public API so a demo cannot run up a bill', () => {
+    template.hasResourceProperties('AWS::ApiGatewayV2::Stage', {
+      DefaultRouteSettings: { ThrottlingRateLimit: 50, ThrottlingBurstLimit: 100 },
+    });
+  });
+
+  it('runs the API on Node.js 22 and keeps its logs for a month', () => {
+    template.hasResourceProperties('AWS::Lambda::Function', { Runtime: 'nodejs22.x' });
+    template.hasResourceProperties('AWS::Logs::LogGroup', { RetentionInDays: 30 });
+  });
+
+  it('serves the site over HTTPS only', () => {
+    template.hasResourceProperties('AWS::CloudFront::Distribution', {
+      DistributionConfig: { DefaultCacheBehavior: { ViewerProtocolPolicy: 'redirect-to-https' } },
+    });
+  });
+
+  it('rule I15: creates a budget alert only when given an email', () => {
+    template.resourceCountIs('AWS::Budgets::Budget', 0);
+    synth('someone@example.com').hasResourceProperties('AWS::Budgets::Budget', {
+      NotificationsWithSubscribers: Match.arrayWith([
+        Match.objectLike({
+          Subscribers: [{ Address: 'someone@example.com', SubscriptionType: 'EMAIL' }],
+        }),
+      ]),
+    });
+  });
+
+  it('accepts POST (the Telegram webhook) alongside GET on the same route', () => {
+    template.hasResourceProperties('AWS::ApiGatewayV2::Route', {
+      RouteKey: 'GET /v1/{proxy+}',
+    });
+    template.hasResourceProperties('AWS::ApiGatewayV2::Route', {
+      RouteKey: 'POST /v1/{proxy+}',
+    });
+  });
+
+  it('creates its own webhook secret and references the hand-created bot token secret, both readable by the API', () => {
+    template.resourceCountIs('AWS::SecretsManager::Secret', 1); // the webhook secret; the bot token is looked up, not created
+    template.hasResourceProperties('AWS::SecretsManager::Secret', {
+      GenerateSecretString: Match.objectLike({ ExcludePunctuation: true, PasswordLength: 32 }),
+    });
+    const policies = template.findResources('AWS::IAM::Policy') as Record<
+      string,
+      { Properties: { PolicyDocument: { Statement: unknown[] } } }
+    >;
+    const statements = Object.values(policies).flatMap(
+      (policy) => policy.Properties.PolicyDocument.Statement,
+    );
+    const secretReads = statements.filter(
+      (statement) =>
+        Match.objectLike({
+          Action: ['secretsmanager:GetSecretValue', 'secretsmanager:DescribeSecret'],
+        }).test(statement).isSuccess,
+    );
+    expect(secretReads).toHaveLength(6); // the webhook secret, the bot token (API and Send), the FIRMS key, and the OpenAQ key (API and harvest)
+  });
+
+  describe('the alert loop', () => {
+    const statements = (): { Action: unknown; Resource: unknown; Effect: string }[] =>
+      Object.values(
+        template.findResources('AWS::IAM::Policy') as Record<
+          string,
+          {
+            Properties: {
+              PolicyDocument: {
+                Statement: { Action: unknown; Resource: unknown; Effect: string }[];
+              };
+            };
+          }
+        >,
+      ).flatMap((policy) => policy.Properties.PolicyDocument.Statement);
+
+    it('keeps sends OFF by default: the kill switch parameter is "false"', () => {
+      template.hasResourceProperties('AWS::SSM::Parameter', {
+        Name: '/vayu/watch/sends-enabled',
+        Value: 'false',
+      });
+    });
+
+    it('is a Standard state machine with a 24-hour ceiling that waits for a task token with a timeout', () => {
+      // Two machines: this one and FixCheck, which has its own tests.
+      template.resourceCountIs('AWS::StepFunctions::StateMachine', 2);
+      template.hasResourceProperties('AWS::StepFunctions::StateMachine', {
+        StateMachineType: 'STANDARD',
+        DefinitionString: Match.anyValue(),
+      });
+      const machine = Object.values(
+        template.findResources('AWS::StepFunctions::StateMachine') as Record<
+          string,
+          { Properties: { DefinitionString: unknown } }
+        >,
+      ).find((candidate) =>
+        JSON.stringify(candidate.Properties.DefinitionString).includes('waitForTaskToken'),
+      );
+      const definition = JSON.stringify(machine?.Properties.DefinitionString);
+      expect(definition).toContain('lambda:invoke.waitForTaskToken');
+      expect(definition).toContain('TimeoutSecondsPath');
+      expect(definition).toContain('SendsDisabledError');
+    });
+
+    it('gives the Send function exactly: the Watch table, the bot token, the kill switch parameter', () => {
+      template.hasResourceProperties('AWS::Lambda::Function', {
+        Environment: {
+          Variables: Match.objectLike({
+            SENDS_ENABLED_PARAM: Match.anyValue(), // a reference to the parameter above
+            DEMO_GROUP_IDS: 'school-demo,parents-demo,walkers-demo',
+          }),
+        },
+      });
+      const ssmReads = statements().filter((s) =>
+        JSON.stringify(s.Action).includes('ssm:GetParameter'),
+      );
+      expect(ssmReads).toHaveLength(1);
+      expect(JSON.stringify(ssmReads[0]?.Resource)).toContain('parameter');
+    });
+
+    it('lets the Send function call exactly one Bedrock model, via its inference profile', () => {
+      const bedrock = statements().filter((s) => JSON.stringify(s.Action).includes('bedrock:'));
+      expect(bedrock).toHaveLength(1);
+      expect(bedrock[0]?.Action).toBe('bedrock:InvokeModel');
+      const resources = JSON.stringify(bedrock[0]?.Resource);
+      expect(resources).toContain('inference-profile/apac.amazon.nova-micro-v1:0');
+      expect(resources).toContain('foundation-model/amazon.nova-micro-v1:0');
+      expect(resources).not.toMatch(/foundation-model\/\*/);
+      template.hasResourceProperties('AWS::Lambda::Function', {
+        Environment: {
+          Variables: Match.objectLike({
+            PHRASING: 'on',
+            PHRASING_MODEL_ID: 'apac.amazon.nova-micro-v1:0',
+          }),
+        },
+      });
+    });
+
+    it('lets only three roles invoke a function: the alert loop (Send), FixCheck and the scheduler (harvest)', () => {
+      const invokes = statements().filter((s) =>
+        JSON.stringify(s.Action).includes('lambda:InvokeFunction'),
+      );
+      expect(invokes).toHaveLength(3);
+    });
+
+    it('puts states:SendTaskSuccess on exactly one policy (the API function, whose resource must be "*")', () => {
+      const resumes = statements().filter((s) =>
+        JSON.stringify(s.Action).includes('states:SendTaskSuccess'),
+      );
+      expect(resumes).toHaveLength(1);
+      expect(resumes[0]?.Resource).toBe('*');
+    });
+  });
+
+  it('grants the API read and write on the Watch table (rule I8 relies on a conditional write there)', () => {
+    template.hasResourceProperties('AWS::IAM::Policy', {
+      PolicyDocument: {
+        Statement: Match.arrayWith([
+          Match.objectLike({
+            Action: Match.arrayWith(['dynamodb:PutItem', 'dynamodb:DeleteItem']),
+          }),
+        ]),
+      },
+    });
+  });
+
+  it('serves /app/ from the site bucket: a viewer-request function adds index.html and redirects /app to /app/', () => {
+    template.resourceCountIs('AWS::CloudFront::Function', 1);
+    template.hasResourceProperties('AWS::CloudFront::Function', {
+      FunctionConfig: { Runtime: 'cloudfront-js-2.0' },
+      FunctionCode: Match.stringLikeRegexp('index.html'),
+    });
+    template.hasResourceProperties('AWS::CloudFront::Distribution', {
+      DistributionConfig: Match.objectLike({
+        DefaultCacheBehavior: Match.objectLike({
+          FunctionAssociations: [Match.objectLike({ EventType: 'viewer-request' })],
+          ViewerProtocolPolicy: 'redirect-to-https',
+        }),
+      }),
+    });
+  });
+
+  it('can skip the CloudFront site while an account awaits verification, without touching the data/API layer', () => {
+    const withoutSite = synthWith({ includeSite: false });
+    withoutSite.resourceCountIs('AWS::CloudFront::Distribution', 0);
+    withoutSite.resourceCountIs('AWS::CloudFront::Function', 0);
+    withoutSite.resourceCountIs('AWS::S3::Bucket', 1); // DataBucket only, no SiteBucket
+    withoutSite.resourceCountIs('AWS::DynamoDB::Table', 3);
+    withoutSite.hasResourceProperties('AWS::Lambda::Function', { Runtime: 'nodejs22.x' });
+    withoutSite.hasOutput('ApiUrl', {});
+  });
+});
+
+describe('the CloudFront directory-index function', () => {
+  interface Result {
+    uri?: string;
+    statusCode?: number;
+    headers?: { location: { value: string } };
+  }
+  const handler = runInNewContext(`${DIRECTORY_INDEX_FUNCTION}; handler`) as (e: unknown) => Result;
+  const run = (uri: string): Result => handler({ request: { uri } });
+
+  it('serves index.html for a trailing slash', () => {
+    expect(run('/app/').uri).toBe('/app/index.html');
+    expect(run('/').uri).toBe('/index.html');
+  });
+
+  it('redirects a bare directory to its slash form so relative asset paths resolve', () => {
+    const result = run('/app');
+    expect(result.statusCode).toBe(301);
+    expect(result.headers?.location.value).toBe('/app/');
+  });
+
+  it('leaves real files alone', () => {
+    for (const uri of [
+      '/app/assets/index-abc.js',
+      '/landing.css',
+      '/og-image.svg',
+      '/app/index.html',
+    ]) {
+      expect(run(uri).uri).toBe(uri);
+    }
+  });
+
+  describe('the harvest', () => {
+    const template = synth();
+    const harvestStatements = (): { Action: unknown; Resource: unknown }[] =>
+      Object.values(
+        template.findResources('AWS::IAM::Policy') as Record<
+          string,
+          {
+            Properties: { PolicyDocument: { Statement: { Action: unknown; Resource: unknown }[] } };
+          }
+        >,
+      ).flatMap((policy) => policy.Properties.PolicyDocument.Statement);
+
+    it('runs every 15 minutes through EventBridge Scheduler, with retries off so a bad run cannot pile up', () => {
+      template.hasResourceProperties('AWS::Scheduler::Schedule', {
+        ScheduleExpression: 'rate(15 minutes)',
+        State: 'ENABLED',
+        FlexibleTimeWindow: { Mode: 'OFF' },
+        Target: Match.objectLike({ RetryPolicy: { MaximumRetryAttempts: 0 } }),
+      });
+    });
+
+    it('can be switched off without removing it', () => {
+      synthWith({ harvestEnabled: false }).hasResourceProperties('AWS::Scheduler::Schedule', {
+        State: 'DISABLED',
+      });
+    });
+
+    it('lets the API read only replay/ in the data bucket', () => {
+      const reads = harvestStatements().filter((s) =>
+        JSON.stringify(s.Action).includes('s3:GetObject'),
+      );
+      const dataReads = reads.filter((s) => JSON.stringify(s.Resource).includes('DataBucket'));
+      expect(dataReads).toHaveLength(1);
+      expect(JSON.stringify(dataReads[0]?.Resource)).toContain('/replay/*');
+    });
+
+    it('lets the harvest only put items in the Cache table', () => {
+      const writes = harvestStatements().filter(
+        (s) =>
+          JSON.stringify(s.Action).includes('dynamodb:PutItem') &&
+          !JSON.stringify(s.Action).includes('dynamodb:DeleteItem') &&
+          JSON.stringify(s.Resource).includes('Cache'),
+      );
+      expect(writes).toHaveLength(1);
+      expect(JSON.stringify(writes[0]?.Action)).toBe('"dynamodb:PutItem"');
+    });
+
+    it('rule I9: gives the harvest a two-minute limit', () => {
+      template.hasResourceProperties('AWS::Lambda::Function', {
+        Timeout: 120,
+        Environment: {
+          Variables: Match.objectLike({
+            OPENAQ_API_KEY_ARN: Match.anyValue(),
+            CACHE_TABLE: Match.anyValue(),
+          }),
+        },
+      });
+    });
+
+    it('may put objects only under harvest/ in the data bucket, and never delete or read them', () => {
+      const puts = harvestStatements().filter(
+        (s) =>
+          JSON.stringify(s.Action).includes('s3:PutObject') &&
+          JSON.stringify(s.Resource).includes('/harvest/*'),
+      );
+      expect(puts).toHaveLength(1);
+      expect(JSON.stringify(puts[0]?.Resource)).toContain('/harvest/*');
+      expect(JSON.stringify(puts[0]?.Action)).not.toContain('s3:Delete');
+    });
+  });
+
+  describe('device messaging', () => {
+    const template = synth();
+
+    it('hands every reading topic message to the ingest Lambda, adding the unit name from the topic', () => {
+      template.hasResourceProperties('AWS::IoT::TopicRule', {
+        RuleName: 'vayu_readings',
+        TopicRulePayload: Match.objectLike({
+          Sql: "SELECT *, topic(3) AS thingId FROM 'vayu/v1/+/readings'",
+          RuleDisabled: false,
+          Actions: Match.arrayWith([{ Lambda: { FunctionArn: Match.anyValue() } }]),
+        }),
+      });
+    });
+
+    it('can be switched off without removing it', () => {
+      synthWith({ ingestEnabled: false }).hasResourceProperties('AWS::IoT::TopicRule', {
+        TopicRulePayload: Match.objectLike({ RuleDisabled: true }),
+      });
+    });
+
+    it('lets only the IoT service, for this rule, call the ingest function', () => {
+      template.hasResourceProperties('AWS::Lambda::Permission', {
+        Principal: 'iot.amazonaws.com',
+        SourceArn: Match.anyValue(),
+        SourceAccount: Match.anyValue(),
+      });
+    });
+
+    it('rule I9: gives the ingest a ten-second limit and only PutItem on the Rooms table', () => {
+      template.hasResourceProperties('AWS::Lambda::Function', {
+        Timeout: 10,
+        Environment: { Variables: Match.objectLike({ ROOMS_TABLE: Match.anyValue() }) },
+      });
+      const policies = Object.values(
+        template.findResources('AWS::IAM::Policy') as Record<
+          string,
+          { Properties: { PolicyDocument: { Statement: { Action: unknown }[] } } }
+        >,
+      ).flatMap((policy) => policy.Properties.PolicyDocument.Statement);
+      const putOnly = policies.filter((s) => JSON.stringify(s.Action) === '"dynamodb:PutItem"');
+      expect(putOnly).toHaveLength(2); // the harvest (Cache) and the ingest (Rooms)
+    });
+
+    it('also sends every reading to Firehose, one line each, so history is kept in S3 without code', () => {
+      template.hasResourceProperties('AWS::KinesisFirehose::DeliveryStream', {
+        DeliveryStreamType: 'DirectPut',
+        ExtendedS3DestinationConfiguration: Match.objectLike({
+          Prefix: 'device/readings/dt=!{timestamp:yyyy-MM-dd}/',
+          CompressionFormat: 'GZIP',
+          BufferingHints: { IntervalInSeconds: 300, SizeInMBs: 5 },
+        }),
+      });
+      template.hasResourceProperties('AWS::IoT::TopicRule', {
+        TopicRulePayload: Match.objectLike({
+          Actions: Match.arrayWith([
+            Match.objectLike({ Firehose: Match.objectLike({ Separator: '\n' }) }),
+          ]),
+        }),
+      });
+    });
+
+    it('lets Firehose write only under device/, and IoT put records only on that stream', () => {
+      const statements = Object.values(
+        template.findResources('AWS::IAM::Policy') as Record<
+          string,
+          {
+            Properties: { PolicyDocument: { Statement: { Action: unknown; Resource: unknown }[] } };
+          }
+        >,
+      ).flatMap((policy) => policy.Properties.PolicyDocument.Statement);
+      const firehoseWrite = statements.filter((s) =>
+        JSON.stringify(s.Action).includes('s3:AbortMultipartUpload'),
+      );
+      expect(firehoseWrite).toHaveLength(1);
+      expect(JSON.stringify(firehoseWrite[0]?.Resource)).toContain('/device/*');
+      expect(JSON.stringify(firehoseWrite[0]?.Action)).not.toContain('s3:Delete');
+      const putRecord = statements.filter(
+        (s) => JSON.stringify(s.Action) === '"firehose:PutRecord"',
+      );
+      expect(putRecord).toHaveLength(1);
+    });
+
+    it('rule I7-style: a device may connect only as itself and publish only under its own name', () => {
+      const [policy] = Object.values(
+        template.findResources('AWS::IoT::Policy') as Record<
+          string,
+          { Properties: { PolicyDocument: { Statement: { Action: string; Resource: string }[] } } }
+        >,
+      );
+      const statements = policy?.Properties.PolicyDocument.Statement ?? [];
+      expect(statements.map((s) => s.Action).sort()).toEqual(['iot:Connect', 'iot:Publish']);
+      for (const statement of statements) {
+        expect(JSON.stringify(statement.Resource)).toContain('${iot:Connection.Thing.ThingName}');
+      }
+    });
+  });
+
+  describe('analytics (Athena and Glue)', () => {
+    const template = synth();
+
+    it('rule I15: refuses any query that would scan more than a gigabyte, and the setting cannot be overridden', () => {
+      template.hasResourceProperties('AWS::Athena::WorkGroup', {
+        Name: 'vayu',
+        WorkGroupConfiguration: Match.objectLike({
+          BytesScannedCutoffPerQuery: 1_073_741_824,
+          EnforceWorkGroupConfiguration: true,
+          EngineVersion: { SelectedEngineVersion: 'Athena engine version 3' },
+        }),
+      });
+    });
+
+    it('has a table for the harvest stations, the harvest forecasts and the public archive', () => {
+      template.resourceCountIs('AWS::Glue::Table', 4);
+      for (const name of [
+        'harvest_station',
+        'harvest_forecast',
+        'openaq_archive',
+        'device_readings',
+      ]) {
+        template.hasResourceProperties('AWS::Glue::Table', {
+          TableInput: Match.objectLike({ Name: name }),
+        });
+      }
+    });
+
+    it('finds partitions by projection, so nothing needs to be crawled or repaired', () => {
+      template.hasResourceProperties('AWS::Glue::Table', {
+        TableInput: Match.objectLike({
+          Name: 'openaq_archive',
+          Parameters: Match.objectLike({
+            'projection.enabled': 'true',
+            // A numeric range over millions of locations made the first real query hang.
+            'projection.locationid.type': 'injected',
+            'storage.location.template': Match.stringLikeRegexp(
+              'openaq-data-archive/records/csv.gz/locationid=',
+            ),
+          }),
+        }),
+      });
+    });
+
+    it('keeps query results for a week, then deletes them', () => {
+      template.hasResourceProperties('AWS::S3::Bucket', {
+        LifecycleConfiguration: {
+          Rules: Match.arrayWith([
+            Match.objectLike({ Prefix: 'athena-results/', ExpirationInDays: 7, Status: 'Enabled' }),
+          ]),
+        },
+      });
+    });
+
+    it('saves four queries, each bounded by a partition column so it cannot read a whole table', () => {
+      template.resourceCountIs('AWS::Athena::NamedQuery', 4);
+      expect(ARCHIVE_CHECK_SQL).toMatch(/locationid IN \(/);
+      expect(ARCHIVE_CHECK_SQL).toMatch(/year = 2025 AND month = 12/);
+      expect(FORECAST_ERROR_SQL).toMatch(/dt >= '/);
+      expect(HARVEST_COVERAGE_SQL).toMatch(/dt >= '/);
+      expect(DEVICE_HISTORY_SQL).toMatch(/dt >= '/);
+    });
+
+    it('only names tables that exist', () => {
+      const known = new Set([
+        'harvest_station',
+        'harvest_forecast',
+        'openaq_archive',
+        'device_readings',
+      ]);
+      for (const sql of [
+        ARCHIVE_CHECK_SQL,
+        FORECAST_ERROR_SQL,
+        HARVEST_COVERAGE_SQL,
+        DEVICE_HISTORY_SQL,
+      ]) {
+        const used = [...sql.matchAll(/vayu\.(\w+)/g)].map((match) => match[1] ?? '');
+        expect(used.length).toBeGreaterThan(0);
+        for (const table of used) expect(known.has(table)).toBe(true);
+      }
+    });
+  });
+
+  describe('operations', () => {
+    const template = synth();
+    const alarms = (): Record<string, { Properties: Record<string, unknown> }> =>
+      template.findResources('AWS::CloudWatch::Alarm') as Record<
+        string,
+        { Properties: Record<string, unknown> }
+      >;
+    const alarmFor = (
+      namespace: string,
+      metric: string,
+    ): { Properties: Record<string, unknown> }[] =>
+      Object.values(alarms()).filter(
+        (a) => a.Properties.Namespace === namespace && a.Properties.MetricName === metric,
+      );
+
+    it('has one alarm for each thing that can quietly stop', () => {
+      template.resourceCountIs('AWS::CloudWatch::Alarm', 7);
+      expect(alarmFor('AWS/Lambda', 'Errors')).toHaveLength(4); // API, harvest, ingest, send
+      expect(alarmFor('AWS/ApiGateway', '5xx')).toHaveLength(1);
+      expect(alarmFor('AWS/States', 'ExecutionsFailed')).toHaveLength(1);
+    });
+
+    it('treats a harvest that never runs as an alarm, since it would never report an error', () => {
+      const [stopped] = alarmFor('AWS/Lambda', 'Invocations');
+      expect(stopped?.Properties).toMatchObject({
+        ComparisonOperator: 'LessThanThreshold',
+        Threshold: 1,
+        Period: 2700,
+        TreatMissingData: 'breaching',
+      });
+    });
+
+    it('sends every alarm to one topic, and mails it only when given an address', () => {
+      template.resourceCountIs('AWS::SNS::Topic', 1);
+      for (const a of Object.values(alarms())) {
+        expect(a.Properties.AlarmActions).toHaveLength(1);
+      }
+      template.resourceCountIs('AWS::SNS::Subscription', 0);
+      synth('someone@example.com').hasResourceProperties('AWS::SNS::Subscription', {
+        Protocol: 'email',
+        Endpoint: 'someone@example.com',
+      });
+    });
+
+    it('has a dashboard', () => {
+      template.hasResourceProperties('AWS::CloudWatch::Dashboard', { DashboardName: 'Vayu' });
+    });
+  });
+
+  describe('rules I9, I14 and I15, for every function', () => {
+    const template = synth();
+    const functions = (): {
+      Properties: { Timeout?: number; Environment?: { Variables?: Record<string, unknown> } };
+    }[] => Object.values(template.findResources('AWS::Lambda::Function')) as never;
+    // The CDK adds helper functions (for example to empty a bucket on delete); only ours are checked.
+    const ours = (): ReturnType<typeof functions> =>
+      functions().filter((f) => f.Properties.Environment?.Variables !== undefined);
+
+    it('rule I9 and I15: every function has a time limit of at most two minutes', () => {
+      expect(ours().length).toBeGreaterThanOrEqual(4);
+      for (const f of ours()) {
+        expect(f.Properties.Timeout).toBeDefined();
+        expect(f.Properties.Timeout).toBeLessThanOrEqual(120);
+      }
+    });
+
+    it('rule I14: no function holds a secret value, only the address of where it is kept', () => {
+      for (const f of ours()) {
+        for (const name of Object.keys(f.Properties.Environment?.Variables ?? {})) {
+          if (/KEY|TOKEN|SECRET|PASSWORD/.test(name)) expect(name).toMatch(/_ARN$|_PARAM$/);
+        }
+      }
+    });
+  });
+
+  describe('FixCheck ("did it work?")', () => {
+    const template = synth();
+    const fixCheckMachine = (): { Properties: { DefinitionString: unknown } } | undefined =>
+      Object.values(
+        template.findResources('AWS::StepFunctions::StateMachine') as Record<
+          string,
+          { Properties: { DefinitionString: unknown } }
+        >,
+      ).find((machine) =>
+        JSON.stringify(machine.Properties.DefinitionString).includes('WaitToLook'),
+      );
+    const statements = (): { Action: unknown; Resource: unknown }[] =>
+      Object.values(
+        template.findResources('AWS::IAM::Policy') as Record<
+          string,
+          {
+            Properties: { PolicyDocument: { Statement: { Action: unknown; Resource: unknown }[] } };
+          }
+        >,
+      ).flatMap((policy) => policy.Properties.PolicyDocument.Statement);
+
+    it('is a Standard state machine with a one-hour limit', () => {
+      expect(fixCheckMachine()).toBeDefined();
+      template.resourceCountIs('AWS::StepFunctions::StateMachine', 2); // the alert loop and this
+    });
+
+    it('lets the API start this machine, and only this one', () => {
+      const starts = statements().filter((s) =>
+        JSON.stringify(s.Action).includes('states:StartExecution'),
+      );
+      expect(starts).toHaveLength(1);
+      expect(JSON.stringify(starts[0]?.Resource)).toContain('FixCheck');
+      template.hasResourceProperties('AWS::Lambda::Function', {
+        Environment: {
+          Variables: Match.objectLike({ FIXCHECK_STATE_MACHINE_ARN: Match.anyValue() }),
+        },
+      });
+    });
+
+    it('lets its step function read and write only single answer records in the Watch table', () => {
+      const watchWrites = statements().filter(
+        (s) => JSON.stringify(s.Action) === '["dynamodb:GetItem","dynamodb:PutItem"]',
+      );
+      expect(watchWrites).toHaveLength(1);
+    });
+
+    it('accepts POST with a JSON body from the app, as well as GET', () => {
+      template.hasResourceProperties('AWS::ApiGatewayV2::Api', {
+        CorsConfiguration: Match.objectLike({
+          AllowMethods: Match.arrayWith(['GET', 'POST']),
+          AllowHeaders: ['content-type'],
+        }),
+      });
+    });
+  });
+
+  describe('tracing (X-Ray)', () => {
+    const template = synth();
+    it('traces every function of ours, so the service map shows who called what', () => {
+      const ours = Object.values(template.findResources('AWS::Lambda::Function')).filter(
+        (f) => (f.Properties as { Environment?: unknown }).Environment !== undefined,
+      );
+      expect(ours.length).toBeGreaterThanOrEqual(4);
+      for (const f of ours) {
+        expect(f.Properties).toMatchObject({ TracingConfig: { Mode: 'Active' } });
+      }
+    });
+    it('traces the alert loop state machine too', () => {
+      template.hasResourceProperties('AWS::StepFunctions::StateMachine', {
+        TracingConfiguration: { Enabled: true },
+      });
+    });
+  });
+
+  describe('the Hindi voice note (Polly)', () => {
+    const polly = (t: Template): { Action: unknown; Resource: unknown }[] =>
+      Object.values(
+        t.findResources('AWS::IAM::Policy') as Record<
+          string,
+          {
+            Properties: { PolicyDocument: { Statement: { Action: unknown; Resource: unknown }[] } };
+          }
+        >,
+      )
+        .flatMap((policy) => policy.Properties.PolicyDocument.Statement)
+        .filter((s) => JSON.stringify(s.Action).includes('polly:'));
+
+    it('is off by default: alerts stay text only, and nothing may call Polly', () => {
+      const t = synth();
+      t.hasResourceProperties('AWS::Lambda::Function', {
+        Environment: { Variables: Match.objectLike({ VOICE: 'off' }) },
+      });
+      expect(polly(t)).toHaveLength(0);
+    });
+
+    it('when switched on, gives only the Send function the one Polly action, SynthesizeSpeech', () => {
+      const t = synthWith({ voiceEnabled: true });
+      t.hasResourceProperties('AWS::Lambda::Function', {
+        Environment: { Variables: Match.objectLike({ VOICE: 'on' }) },
+      });
+      const statements = polly(t);
+      expect(statements).toHaveLength(1);
+      expect(statements[0]?.Action).toBe('polly:SynthesizeSpeech');
+    });
+  });
+});

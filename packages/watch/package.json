@@ -1,0 +1,23 @@
+{
+  "name": "@vayu/watch",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc -p ."
+  },
+  "dependencies": {
+    "@aws-sdk/client-bedrock-runtime": "^3.1146.0",
+    "@aws-sdk/client-dynamodb": "^3.1146.0",
+    "@aws-sdk/client-polly": "^3.1147.0",
+    "@aws-sdk/client-sfn": "^3.1146.0",
+    "@aws-sdk/client-ssm": "^3.1146.0",
+    "@aws-sdk/lib-dynamodb": "^3.1146.0",
+    "@vayu/contracts": "*",
+    "@vayu/core": "*",
+    "zod": "^3.23.8"
+  }
+}

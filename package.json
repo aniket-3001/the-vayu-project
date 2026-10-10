@@ -9,7 +9,11 @@
   "workspaces": [
     "packages/contracts",
     "packages/core",
-    "apps/web"
+    "packages/data",
+    "packages/watch",
+    "apps/api",
+    "apps/web",
+    "infra"
   ],
   "scripts": {
     "lint": "eslint .",
