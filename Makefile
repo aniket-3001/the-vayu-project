@@ -1,4 +1,4 @@
-.PHONY: install lint format typecheck test synth prove deploy-diff smoke
+.PHONY: install lint format typecheck test synth bundle prove deploy-diff smoke
 
 install:
 	npm install
@@ -19,9 +19,15 @@ test:
 synth:
 	cd infra && npx cdk synth --quiet
 
+# The deployed app must hold no prototype code (device frames, scenarios, the tour); the prototype build must still have it.
+bundle:
+	npm run build -w @vayu/web
+	npm run build:demo -w @vayu/web
+	node scripts/check-bundle.mjs
+
 # One command that proves the claims: lint, types, tests and the stack, and it fails closed.
-prove: lint typecheck test synth
-	@echo "prove: lint, types, tests and cdk synth passed"
+prove: lint typecheck test synth bundle
+	@echo "prove: lint, types, tests, cdk synth and the bundle check passed"
 
 # ---- AWS (only run these on purpose: they touch a real account) ----
 # Read what would change before anything is deployed.

@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { readDemo } from '../demo/state';
 import { fetchFireCount, recall, remember } from '../map/live';
-import { API_URL } from '../map/useMapData';
+import { API_URL } from '../config';
 
 /** The number of fires our API counted in the last 24 hours, or undefined while it loads or if it cannot be reached. */
 export function useFires(fetchImpl: typeof fetch = fetch): number | undefined {

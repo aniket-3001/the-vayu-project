@@ -7,13 +7,10 @@ import {
   remember,
   type WindPoint,
 } from './live';
+import { API_URL } from '../config';
 import { readDemo } from '../demo/state';
 import { sampleMonitors, type Monitor } from './monitors';
 import { sampleWindGrid } from './wind';
-
-/** Our deployed API, which counts the fires NASA's satellites saw. Public and read-only. */
-export const API_URL =
-  import.meta.env.VITE_API_URL ?? 'https://niu33luxo8.execute-api.ap-south-1.amazonaws.com';
 
 export interface MapData {
   readonly wind: readonly WindPoint[];

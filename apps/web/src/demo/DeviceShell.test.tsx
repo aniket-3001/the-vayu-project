@@ -1,17 +1,22 @@
 // @vitest-environment jsdom
 import { cleanup, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { PINS_STORAGE_KEY } from '../data/pins';
 import { DEVICES_STORAGE_KEY } from '../devices/devices';
 import { SPOTS_STORAGE_KEY } from '../exposure/spots';
 import { DeviceShell } from './DeviceShell';
 
+// The shell exists only in the prototype build.
 beforeEach(() => {
+  vi.stubEnv('VITE_DEMO', '1');
   window.history.replaceState(null, '', '/');
   window.localStorage.clear();
 });
-afterEach(cleanup);
+afterEach(() => {
+  cleanup();
+  vi.unstubAllEnvs();
+});
 
 const appFrame = (): HTMLIFrameElement => screen.getByTitle('Vayu Air app');
 

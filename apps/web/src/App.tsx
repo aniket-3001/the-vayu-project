@@ -78,7 +78,7 @@ function Frame(): React.JSX.Element {
         <Route path="/lens" element={<LensScreen />} />
         <Route path="*" element={<MyAirScreen />} />
       </Routes>
-      <DemoPill />
+      {import.meta.env.VITE_DEMO === '1' && <DemoPill />}
       <div className="dock">
         <SmokeToggle />
         <AssistantFab />

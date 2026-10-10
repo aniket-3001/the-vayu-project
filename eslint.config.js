@@ -5,7 +5,16 @@ import jsxA11y from 'eslint-plugin-jsx-a11y';
 import reactHooks from 'eslint-plugin-react-hooks';
 
 export default tseslint.config(
-  { ignores: ['**/node_modules/**', '**/dist/**', '**/cdk.out/**', '**/coverage/**', 'docs/**'] },
+  {
+    ignores: [
+      '**/node_modules/**',
+      '**/dist/**',
+      '**/dist-demo/**',
+      '**/cdk.out/**',
+      '**/coverage/**',
+      'docs/**',
+    ],
+  },
   js.configs.recommended,
   ...tseslint.configs.strictTypeChecked,
   ...tseslint.configs.stylisticTypeChecked,

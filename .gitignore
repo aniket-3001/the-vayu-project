@@ -11,3 +11,4 @@ cdk.out/
 *.crt
 .DS_Store
 site-out.json
+dist-demo/

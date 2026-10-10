@@ -1,12 +1,14 @@
 // @vitest-environment jsdom
-import { beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { alertsFor } from '../alerts/model';
 import { loadPins } from '../data/pins';
 import { readingForPin } from '../places/placeSample';
 import { applyScenario, SCENARIOS, scenarioById, TOUR_SECONDS } from './scenarios';
 import { clearDemo, readDemo } from './state';
 
+// Scenarios exist only in the prototype build.
 beforeEach(() => {
+  vi.stubEnv('VITE_DEMO', '1');
   window.localStorage.clear();
 });
 
@@ -15,6 +17,10 @@ const staged = (id: string): void => {
   if (scenario === undefined) throw new Error(`no scenario ${id}`);
   applyScenario(window.localStorage, scenario);
 };
+
+afterEach(() => {
+  vi.unstubAllEnvs();
+});
 
 describe('demo scenarios', () => {
   it('takes about a minute to play through, and covers every tab and alert', () => {
@@ -62,5 +68,14 @@ describe('demo scenarios', () => {
     expect(window.localStorage.getItem('vayu.units.v1')).toBeNull();
     staged('child');
     expect(window.localStorage.getItem('vayu.people.v1')).toContain('Asha');
+  });
+});
+
+describe('the deployed app', () => {
+  it('cannot be switched into a scenario: the state is ignored unless this is the prototype build', () => {
+    staged('grap');
+    expect(readDemo()?.id).toBe('grap');
+    vi.stubEnv('VITE_DEMO', '');
+    expect(readDemo()).toBeUndefined();
   });
 });

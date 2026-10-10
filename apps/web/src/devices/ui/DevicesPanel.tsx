@@ -1,6 +1,7 @@
 import { Cpu, Plus } from 'lucide-react';
 import { useState } from 'react';
 import { SPOT_KINDS, SPOT_LABELS, type SpotKind } from '../../exposure/spots';
+import { ToBeImplemented } from '../../components/ToBeImplemented';
 import { DeviceCard } from './DeviceCard';
 import { useDevices } from '../useDevices';
 
@@ -25,6 +26,11 @@ export function DevicesPanel(): React.JSX.Element {
           <Cpu size={44} strokeWidth={1.25} />
         </span>
       </section>
+
+      <ToBeImplemented>
+        The Vayu monitor is not built yet, so nothing here is measured. Any device you add shows
+        made-up readings from the outside air, to show what this page will do.
+      </ToBeImplemented>
 
       {devices.length > 0 && (
         <ul className="device-list" aria-label="Your devices">

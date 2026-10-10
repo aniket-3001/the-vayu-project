@@ -43,6 +43,8 @@ export const APP_KEYS: readonly string[] = [
 ];
 
 export function readDemo(storage?: Storage): DemoState | undefined {
+  // Scenarios exist only in the prototype build. In the deployed app nothing can switch them on.
+  if (import.meta.env.VITE_DEMO !== '1') return undefined;
   try {
     const raw = (storage ?? window.localStorage).getItem(DEMO_STORAGE_KEY);
     if (raw === null) return undefined;

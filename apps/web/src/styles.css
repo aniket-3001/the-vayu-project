@@ -2857,39 +2857,6 @@ button.alert-card {
   color: #1f9aa8;
 }
 
-.demo-pill {
-  position: fixed;
-  bottom: 100px;
-  left: 10px;
-  z-index: 30;
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 4px 6px 4px 12px;
-  border-radius: 999px;
-  background: rgb(255 255 255 / 0.92);
-  box-shadow: 0 4px 14px -6px rgb(51 65 85 / 0.45);
-  color: var(--text);
-  font-size: 12px;
-  font-weight: 700;
-}
-.demo-pill button {
-  display: grid;
-  place-items: center;
-  width: 24px;
-  height: 24px;
-  border: 0;
-  border-radius: 50%;
-  background: #fde2c6;
-  color: #9a4c1b;
-  cursor: pointer;
-}
-[data-route='map'] .demo-pill,
-[data-route='lens'] .demo-pill {
-  top: 10px;
-  bottom: auto;
-}
-
 /* A device: a big reading, a fan line, a day chart, the filter. */
 .dev-online {
   display: inline-flex;
@@ -3292,4 +3259,22 @@ button.alert-card {
   opacity: 0;
   cursor: pointer;
   box-shadow: none;
+}
+
+/* Anything not real yet says so. */
+.tbi {
+  display: grid;
+  gap: 2px;
+  padding: 10px 14px;
+  border: 1px dashed #e0953f;
+  border-radius: 14px;
+  background: #fdf1de;
+  color: #6b3a12;
+  font-size: 14px;
+  line-height: 1.35;
+}
+.tbi strong {
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
 }
