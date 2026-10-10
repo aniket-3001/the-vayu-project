@@ -7,7 +7,7 @@ export function AqiChip({ aqi }: { readonly aqi: number }): React.JSX.Element {
   return (
     <span className="chip" style={levelVars(level)}>
       {aqi}
-      <span className="sr-only"> US AQI, {level.name}</span>
+      <span className="sr-only"> AQI, {level.name}</span>
     </span>
   );
 }

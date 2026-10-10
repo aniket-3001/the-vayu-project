@@ -14,7 +14,7 @@ describe('the Today screen', () => {
     const day = sampleDay(id);
     render(<TodayScreen data={day} />);
     const hero = screen.getByRole('region', { name: levelForAqi(day.aqi).name });
-    expect(within(hero).getByText(`US AQI ${String(day.aqi)}`)).toBeInTheDocument();
+    expect(within(hero).getByText(`AQI ${String(day.aqi)}`)).toBeInTheDocument();
     expect(
       screen.getByRole('heading', { level: 1, name: /Air quality in Delhi/u }),
     ).toBeInTheDocument();

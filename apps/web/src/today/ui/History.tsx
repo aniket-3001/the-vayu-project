@@ -42,14 +42,14 @@ export function History({ data }: { readonly data: TodayData }): React.JSX.Eleme
     <section className="card" aria-labelledby="history-title">
       <div className="card-head">
         <h2 id="history-title">Last 48 hours</h2>
-        <span className="muted small">US AQI</span>
+        <span className="muted small">AQI</span>
       </div>
       <div ref={ref} className="chart">
         <svg
           width={width}
           height={HEIGHT}
           role="img"
-          aria-label={`US AQI over the last 48 hours: low ${String(low)}, high ${String(peak)}, now ${String(last.aqi)}`}
+          aria-label={`AQI over the last 48 hours: low ${String(low)}, high ${String(peak)}, now ${String(last.aqi)}`}
         >
           {LEVELS.map((level, i) => {
             const from = level.from;

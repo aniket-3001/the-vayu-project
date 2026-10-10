@@ -616,11 +616,11 @@ h2 {
   display: block;
 }
 .band {
-  opacity: 0.22;
+  opacity: 0.5;
 }
 .area {
   fill: var(--text);
-  opacity: 0.08;
+  opacity: 0.12;
 }
 .trace {
   fill: none;

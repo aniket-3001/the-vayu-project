@@ -47,7 +47,7 @@ export function Hourly({ data }: { readonly data: TodayData }): React.JSX.Elemen
             </tr>
           </thead>
           <tbody>
-            <Row label="US AQI" points={points} cell={(p) => <AqiChip aqi={p.aqi} />} />
+            <Row label="AQI" points={points} cell={(p) => <AqiChip aqi={p.aqi} />} />
             <Row
               label="Sky"
               points={points}

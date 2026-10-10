@@ -19,12 +19,12 @@ export function Hero({ data }: { readonly data: TodayData }): React.JSX.Element 
     <section className="hero" aria-labelledby="hero-title">
       <div className="hero-top">
         <div className="badge">
-          <span className="sr-only">US AQI {data.aqi}</span>
+          <span className="sr-only">AQI {data.aqi}</span>
           <span className="badge-num" aria-hidden="true">
             {shown}
           </span>
           <span className="badge-unit" aria-hidden="true">
-            US AQI
+            AQI
           </span>
         </div>
         <div className="hero-words">
