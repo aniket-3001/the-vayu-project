@@ -4077,3 +4077,29 @@ button.alert-card {
   min-height: 0;
   height: auto;
 }
+
+/* Exposure with no places yet: blue dotted squares, as on the home screen */
+.setup-day {
+  display: grid;
+  gap: 8px;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--card);
+}
+.setup-day h2,
+.setup-day p {
+  margin: 0;
+}
+.slots.blue .slot {
+  border: 2.5px dashed #3b82c4;
+  background: #eef5fc;
+}
+.slots.blue .slot-hint {
+  color: #2f5fb3;
+  font-size: 13px;
+  font-weight: 700;
+}
+.slots.blue .slot strong {
+  font-size: 16px;
+}

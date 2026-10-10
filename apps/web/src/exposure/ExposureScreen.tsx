@@ -28,7 +28,7 @@ import {
 } from './model';
 import { personaById } from './persona';
 import { DAY_LABELS, initials, MAX_PEOPLE, personaOf } from './people';
-import { SPOT_LABELS, loadAllSpots, type SpotKind } from './spots';
+import { DEFAULT_HOURS, SPOT_LABELS, loadAllSpots, type SpotKind } from './spots';
 import { sourcesNote } from './sources';
 import { Dial, DialKey, WHERE_LABELS } from './ui/Dial';
 import { Summary } from './ui/Summary';
@@ -36,6 +36,7 @@ import { WeekStrip } from './ui/WeekStrip';
 import { allUnits } from './units';
 import { useHousehold, useLive, useOutings, useSpots } from './useExposure';
 import { AddPerson } from './ui/AddPerson';
+import { SetUpDay } from './ui/SetUpDay';
 import { OutingSheet } from './ui/OutingSheet';
 import { PersonPanel } from './ui/PersonPanel';
 import { saveSpots } from './spots';
@@ -256,8 +257,8 @@ export function ExposureScreen({
               <strong>Work it out from where I am</strong>
               <span className="muted small">
                 {autoOn
-                  ? 'On. Using your location while this page is open.'
-                  : 'Off. Turn on to count the hours from your location.'}
+                  ? 'On, while this page is open.'
+                  : 'Off. Counts the hours from where you are.'}
               </span>
             </span>
             <input
@@ -336,6 +337,19 @@ export function ExposureScreen({
         )}
 
         {view === WEEK && <WeekStrip days={week} onOpen={open} />}
+
+        {view !== 'week' && !noData && Object.keys(visible).length === 0 && (
+          <SetUpDay
+            name={isMe ? 'your' : `${person.name}’s`}
+            kinds={info.kinds}
+            pins={pins}
+            onAddPin={addPin}
+            {...(search !== undefined ? { search } : {})}
+            onSet={(kind, pin) => {
+              set(kind, { pin, ...DEFAULT_HOURS[kind] });
+            }}
+          />
+        )}
 
         {view !== 'week' && !noData && (
           <>

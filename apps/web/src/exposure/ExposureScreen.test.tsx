@@ -169,6 +169,24 @@ describe('the Exposure screen', () => {
     expect(within(panel).getByLabelText('School until')).toHaveValue('14');
   });
 
+  it('asks where the day is spent with blue dotted squares while no place is set, and draws the place once it is', async () => {
+    window.localStorage.setItem(SPOTS_STORAGE_KEY, JSON.stringify({ me: {} }));
+    open();
+    const ask = screen.getByRole('region', { name: 'Set where the day is spent' });
+    for (const name of ['Set Home', 'Set Office'])
+      expect(within(ask).getByRole('button', { name })).toBeInTheDocument();
+    await userEvent.click(within(ask).getByRole('button', { name: 'Set Home' }));
+    const picker = ask.querySelector<HTMLElement>('.picker');
+    if (picker === null) throw new Error('The place picker did not open');
+    await userEvent.click(within(picker).getByRole('button', { name: 'Home' }));
+    expect(
+      screen.queryByRole('region', { name: 'Set where the day is spent' }),
+    ).not.toBeInTheDocument();
+    expect(JSON.parse(window.localStorage.getItem(SPOTS_STORAGE_KEY) ?? '{}')).toMatchObject({
+      me: { home: { pin: { name: 'Home' } } },
+    });
+  });
+
   it('lifts the chosen ring on the same dial instead of drawing another, and labels every ring', async () => {
     open();
     const rings = (): NodeListOf<Element> => document.querySelectorAll('.dial .ring');
@@ -441,7 +459,7 @@ describe('working it out from where I am', () => {
     await userEvent.click(toggle);
     expect(toggle).toBeChecked();
     location.succeed();
-    expect(screen.getByText(/On\. Using your location/u)).toBeInTheDocument();
+    expect(screen.getByText(/On, while this page is open/u)).toBeInTheDocument();
     const panel = await openPanel('Me');
     expect(within(panel).getByRole('region', { name: 'Live location' })).toHaveTextContent(
       /1 hour logged today/u,
