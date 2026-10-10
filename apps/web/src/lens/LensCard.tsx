@@ -1,45 +1,28 @@
-import {
-  Camera,
-  CameraOff,
-  ChevronDown,
-  Eye,
-  Navigation,
-  Sunrise,
-  type LucideIcon,
-} from 'lucide-react';
-import { useId, useState } from 'react';
+import { Camera, CameraOff, ChevronDown, type LucideIcon } from 'lucide-react';
 import type { Pin } from '../data/pins';
 import { levelForAqi } from '../design/levels';
-import { clock24, dayMonth, weekday } from '../today/time';
-import { Pill } from '../today/ui/Chip';
+import { dayMonth, hourOfDay, hourRange, isoDate, weekday, clock12 } from '../today/time';
 import { CONDITION_LABELS, FaceIcon, WeatherIcon } from '../today/ui/icons';
 import { levelVars } from '../today/ui/format';
-import { compassPoint } from '../today/wind';
 import type { TodayData } from '../today/types';
 import { AirFigures } from '../units/AirUnits';
-import { formatDistance, type LensHour } from './model';
-
-const age = (minutes: number): string =>
-  minutes < 60 ? `${String(minutes)} min ago` : `${String(Math.round(minutes / 60))} h ago`;
+import type { LensHour } from './model';
 
 /** The name the place switch gives the live place, everywhere it is named. */
 export const LIVE_OUTDOOR_NAME = 'Live outdoor location';
 
 /**
  * The air at the place and hour being looked at, as the same card the home screen uses for a place: the name, the
- * AQI (with the cigarettes joined to it when that is on), the face, the weather, and the things worth knowing from
- * here (wind, how far you can see, the best hour to go out). The two things you do to the view sit in its top right
- * corner: see it live through the camera, and switch to another place (or to where you are). The arrow folds the
- * card down to one line so the picture behind it is clear.
+ * AQI (with the cigarettes joined to it when that is on), the face, and one line: the weather, then the cleanest
+ * daylight hour with the AQI it will have. Nothing else. The two things you do to the view sit in its top right
+ * corner: see it live through the camera, and switch to another place (or to where you are).
  */
 export function LensCard({
   pin,
   data,
   hour,
   step,
-  sight,
-  arrow,
-  advice,
+  best,
   camera,
   places,
   cameraWords,
@@ -50,11 +33,8 @@ export function LensCard({
   readonly hour: LensHour;
   /** Hours from now: 0 is now. */
   readonly step: number;
-  /** How far you could see, in kilometres. */
-  readonly sight: number;
-  /** The wind's arrow, in degrees. */
-  readonly arrow: number;
-  readonly advice: string | undefined;
+  /** The cleanest daylight hour ahead, if there is one. */
+  readonly best: LensHour | undefined;
   readonly camera: { readonly on: boolean; readonly toggle: () => void };
   readonly places: {
     readonly options: readonly { readonly id: string; readonly name: string }[];
@@ -65,21 +45,20 @@ export function LensCard({
   readonly cameraWords: string | undefined;
   readonly icon: LucideIcon;
 }): React.JSX.Element {
-  const [folded, setFolded] = useState(false);
-  const bodyId = useId();
   const level = levelForAqi(hour.aqi);
-  const p = data.provenance;
   const point = data.hourly.find((h) => h.at === hour.at);
   const w = point?.weather ?? (step === 0 ? data.weather : undefined);
-  const when = step === 0 ? 'Now' : `${weekday(hour.at)} ${dayMonth(hour.at)}, ${clock24(hour.at)}`;
+  const when = step === 0 ? 'Now' : `${weekday(hour.at)} ${dayMonth(hour.at)}, ${clock12(hour.at)}`;
   const name = pin.id === 'live' ? LIVE_OUTDOOR_NAME : pin.name;
   const active = places.options.find((o) => o.id === places.activeId);
+  const bestWords =
+    best === undefined
+      ? undefined
+      : best.aqi > 150
+        ? 'No clean hour today'
+        : `Cleanest ${hourRange(Math.floor(hourOfDay(best.at)))}${isoDate(best.at) === isoDate(data.asOf) ? '' : ' tomorrow'} (AQI ${String(best.aqi)})`;
   return (
-    <section
-      className={`place-card lens-card${folded ? ' folded' : ''}`}
-      style={levelVars(level)}
-      aria-label="The air here"
-    >
+    <section className="place-card lens-card" style={levelVars(level)} aria-label="The air here">
       <div className="lens-head">
         <div className="lens-title">
           <span className="pc-name">{name}</span>
@@ -117,23 +96,6 @@ export function LensCard({
               ))}
             </select>
           </label>
-          <button
-            type="button"
-            className="pc-icon-button lens-fold"
-            aria-expanded={!folded}
-            aria-controls={bodyId}
-            aria-label={folded ? 'Show the details' : 'Fold the card'}
-            onClick={() => {
-              setFolded((v) => !v);
-            }}
-          >
-            <ChevronDown
-              size={22}
-              strokeWidth={2.25}
-              aria-hidden="true"
-              className={folded ? '' : 'flip'}
-            />
-          </button>
         </div>
       </div>
       {cameraWords !== undefined && (
@@ -141,7 +103,7 @@ export function LensCard({
           {cameraWords}
         </p>
       )}
-      <div className="lens-body" id={bodyId}>
+      <div className="lens-body">
         <div className="pc-hit lens-main">
           <AirFigures aqi={hour.aqi} pm25={hour.pm25} />
           <span className="pc-line">
@@ -155,52 +117,19 @@ export function LensCard({
                 <span className="sr-only">{CONDITION_LABELS[w.condition]}</span>
               </span>
             )}
-          </span>
-          {!folded && (
-            <span className="pc-face" aria-hidden="true">
-              <FaceIcon face={level.face} size={72} />
-            </span>
-          )}
-        </div>
-        {!folded && (
-          <>
-            <ul className="lens-facts">
-              {hour.wind !== undefined && (
-                <li>
-                  <Navigation
-                    size={18}
-                    strokeWidth={2}
-                    aria-hidden="true"
-                    style={{ transform: `rotate(${String(arrow)}deg)` }}
-                  />
-                  <span>
-                    Wind from the <strong>{compassPoint(hour.wind.fromDeg)}</strong>,{' '}
-                    {hour.wind.kmh} km/h
-                  </span>
-                </li>
-              )}
-              <li>
-                <Eye size={18} strokeWidth={2} aria-hidden="true" />
-                <span>
-                  You could see about <strong>{formatDistance(sight)}</strong> <Pill>Estimate</Pill>
+            {bestWords !== undefined && (
+              <span className="lens-best-wrap">
+                <span className="lens-bar" aria-hidden="true">
+                  |
                 </span>
-              </li>
-              {advice !== undefined && (
-                <li className="lens-advice">
-                  <Sunrise size={18} strokeWidth={2} aria-hidden="true" />
-                  <span>{advice}</span>
-                </li>
-              )}
-            </ul>
-            <p className="pc-source">
-              {p.mode === 'sample' ? 'Sample data' : p.label}
-              {p.stationName !== undefined && p.distanceKm !== undefined
-                ? ` · ${p.stationName}, ${String(Math.round(p.distanceKm * 10) / 10)} km`
-                : ''}{' '}
-              · {age(p.ageMinutes)}
-            </p>
-          </>
-        )}
+                <span className="lens-best">{bestWords}</span>
+              </span>
+            )}
+          </span>
+          <span className="pc-face" aria-hidden="true">
+            <FaceIcon face={level.face} size={72} />
+          </span>
+        </div>
       </div>
     </section>
   );

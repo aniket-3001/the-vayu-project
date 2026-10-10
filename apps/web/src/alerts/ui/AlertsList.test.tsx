@@ -4,37 +4,49 @@ import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it } from 'vitest';
 import { sampleDay } from '../../today/sample';
 import { alertsFor } from '../model';
-import { AlertsStrip } from './AlertsStrip';
+import { AlertsList } from './AlertsList';
 
 afterEach(cleanup);
 
 const open = (id: Parameters<typeof sampleDay>[0], fires?: number): void => {
   const data = sampleDay(id);
-  render(<AlertsStrip alerts={alertsFor(data, fires)} data={data} />);
+  render(<AlertsList alerts={alertsFor(data, fires)} data={data} />);
 };
 
-describe('the alerts strip', () => {
+describe('the alerts list', () => {
   it('shows nothing when there is nothing to warn about', () => {
     open('good');
-    expect(screen.queryByRole('region', { name: 'Alerts' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('list', { name: 'Alerts' })).not.toBeInTheDocument();
   });
 
-  it('shows small cards in a row, with the day on each, and a glow on today’s', () => {
+  it('is a list down the page, with the day on each, and today’s lit', () => {
     open('hazardous', 127);
-    const strip = screen.getByRole('region', { name: 'Alerts' });
-    const cards = within(strip).getAllByRole('button');
-    expect(cards.length).toBeGreaterThanOrEqual(3);
-    expect(cards[0]).toHaveTextContent('Today');
-    expect(cards[0]).toHaveClass('now');
-    expect(strip).toHaveTextContent('GRAP Stage IV likely today');
-    expect(strip).toHaveTextContent('Heavy stubble burning nearby');
-    expect(strip).toHaveTextContent('Tomorrow');
+    const list = screen.getByRole('list', { name: 'Alerts' });
+    const rows = within(list).getAllByRole('button');
+    expect(rows.length).toBeGreaterThanOrEqual(3);
+    expect(rows[0]).toHaveClass('now');
+    expect(list).toHaveTextContent('GRAP Stage IV likely today');
+    expect(list).toHaveTextContent('Heavy stubble burning nearby');
+    expect(list).toHaveTextContent('Tomorrow');
   });
 
-  it('has no fold and unfold: the row is the row', () => {
+  it('puts the severe ones first, glowing red, and the cautions after them in soft yellow', () => {
     open('hazardous', 127);
-    expect(screen.queryByRole('button', { name: /See all|Fold/u })).not.toBeInTheDocument();
-    expect(screen.getByRole('list')).not.toHaveClass('expanded');
+    const rows = within(screen.getByRole('list', { name: 'Alerts' })).getAllByRole('button');
+    const severities = rows.map((row) => (row.classList.contains('severe') ? 'severe' : 'caution'));
+    expect(severities[0]).toBe('severe');
+    expect(rows[0]).toHaveTextContent('GRAP Stage IV likely today');
+    const firstCaution = severities.indexOf('caution');
+    expect(firstCaution).toBeGreaterThan(0);
+    expect(severities.slice(firstCaution)).not.toContain('severe');
+    for (const row of rows.filter((r) => !r.classList.contains('severe')))
+      expect(row).toHaveClass('caution');
+  });
+
+  it('calls a walk warning a caution, until the air is hazardous', () => {
+    const moderate = sampleDay('unhealthy');
+    const walk = alertsFor(moderate, undefined).find((a) => a.kind === 'walk');
+    expect(walk?.severity).toBe('caution');
   });
 
   it('opens an alert up close, with a short reason and what to do, and closes it again', async () => {

@@ -26,30 +26,29 @@ const open = (): void => {
 };
 
 describe('the AR Lens', () => {
-  it('opens on the first place with the air, the wind, how far you can see, and says what is sample', () => {
+  it('opens on the first place with the air, the weather and the cleanest hour, and says what is sample', () => {
     open();
     expect(screen.getByRole('img', { name: /illustration of a home/u })).toBeInTheDocument();
     const card = screen.getByRole('region', { name: 'The air here' });
     expect(card).toHaveTextContent('Unhealthy');
-    expect(card).toHaveTextContent(/Wind from the north-west, \d+ km\/h/u);
-    expect(card).toHaveTextContent(/You could see about \d/u);
-    expect(card).toHaveTextContent('Estimate');
-    expect(card).toHaveTextContent('Sample data');
+    expect(card).toHaveTextContent(/\d+°/u);
   });
 
-  it('says the cleanest daylight hour, or that there is none on a bad day', () => {
+  it('says the cleanest daylight hour, in am and pm with its AQI in brackets, or that there is none', () => {
     open();
-    expect(
-      screen.getByText('No clean hour outside today. If you can stay in, do.'),
-    ).toBeInTheDocument();
+    const card = screen.getByRole('region', { name: 'The air here' });
+    expect(card).toHaveTextContent('No clean hour today');
     cleanup();
     open();
     fireEvent.change(screen.getByRole('combobox'), {
       target: { value: screen.getByRole('option', { name: 'Park' }).getAttribute('value') },
     });
-    expect(
-      screen.getByText(/Cleanest daylight hour: \d\d:\d\d( tomorrow)?, AQI \d+\./u),
-    ).toBeInTheDocument();
+    const park = screen.getByRole('region', { name: 'The air here' });
+    expect(park).toHaveTextContent(
+      /Cleanest \d{1,2}( [ap]m)?–\d{1,2} [ap]m( tomorrow)? \(AQI \d+\)/u,
+    );
+    expect(park.querySelector('.lens-bar')).toHaveTextContent('|');
+    expect(park.textContent).not.toMatch(/\d\d:\d\d/u);
   });
 
   it('shows a scene that matches the place: a room for Home, a school, an office, a park, a street for anywhere else', () => {
@@ -97,16 +96,16 @@ describe('the AR Lens', () => {
     expect(screen.queryByRole('button', { name: 'Use camera' })).not.toBeInTheDocument();
   });
 
-  it('folds the card down to a line, and opens it again', async () => {
+  it('is the plain card: no fold, no wind, no sight, no source line', () => {
     open();
     const card = screen.getByRole('region', { name: 'The air here' });
-    expect(card.querySelector('.lens-facts')).toBeInTheDocument();
-    await userEvent.click(within(card).getByRole('button', { name: 'Fold the card' }));
-    expect(card).toHaveClass('folded');
+    expect(
+      within(card).queryByRole('button', { name: /Fold|Show the details/u }),
+    ).not.toBeInTheDocument();
     expect(card.querySelector('.lens-facts')).not.toBeInTheDocument();
+    expect(card).not.toHaveTextContent(/Wind from|You could see|Sample data/u);
     expect(card.querySelector('.pc-aqi strong')?.textContent).toMatch(/^\d+$/u);
-    await userEvent.click(within(card).getByRole('button', { name: 'Show the details' }));
-    expect(card.querySelector('.lens-facts')).toBeInTheDocument();
+    expect(card.querySelector('.pc-face svg')).toBeInTheDocument();
   });
 
   it('has no compass and no “About this view”', () => {
@@ -123,23 +122,6 @@ describe('the AR Lens', () => {
     expect(scale).toHaveAccessibleName(/Hazardous from 301 up/u);
     expect(scale.querySelectorAll('.aqi-scale-bar span')).toHaveLength(6);
     expect(scale.querySelector('.aqi-scale-mark')).toBeInTheDocument();
-  });
-
-  it('has no opened-out view: the wind, how far you can see and the best hour are on the card itself', () => {
-    open();
-    const card = screen.getByRole('region', { name: 'The air here' });
-    expect(screen.queryByRole('button', { name: /Show more/u })).not.toBeInTheDocument();
-    expect(card.querySelector('.lens-facts')).toBeVisible();
-    expect(card.querySelectorAll('.lens-facts li').length).toBeGreaterThanOrEqual(2);
-  });
-
-  it('shows the face, the number, the wind, how far you can see and where the reading came from', () => {
-    open();
-    const card = screen.getByRole('region', { name: 'The air here' });
-    expect(card.querySelector('.pc-face svg')).toBeInTheDocument();
-    expect(card.querySelector('.pc-aqi strong')?.textContent).toMatch(/^\d+$/u);
-    expect(card).toHaveTextContent(/You could see about/u);
-    expect(card.querySelector('.pc-source')).toBeInTheDocument();
   });
 
   it('changes place, and the air with it', () => {
@@ -160,7 +142,7 @@ describe('the AR Lens', () => {
     fireEvent.change(dial, { target: { value: '5' } });
     expect(screen.getByText('in 5 h')).toBeInTheDocument();
     expect(screen.queryByText('Now')).not.toBeInTheDocument();
-    expect(dial.getAttribute('aria-valuetext')).toMatch(/Sat 10 Oct, 22:30/u);
+    expect(dial.getAttribute('aria-valuetext')).toMatch(/Sat 10 Oct, 10:30 pm/u);
   });
 
   it('turns on the camera when asked, and turns it off again', async () => {

@@ -1,5 +1,5 @@
 import { levelForAqi } from '../../design/levels';
-import { clock24, dayMonth, weekday } from '../time';
+import { clock12, dayMonth, weekday } from '../time';
 import type { TodayData } from '../types';
 import { Attribution } from './Attribution';
 import { Daily } from './Daily';
@@ -28,7 +28,7 @@ export function TodayScreen({
         </p>
         <h1>{data.place.name}</h1>
         <p className="muted">
-          Air quality · {weekday(data.asOf)} {dayMonth(data.asOf)}, {clock24(data.asOf)} India time
+          Air quality · {weekday(data.asOf)} {dayMonth(data.asOf)}, {clock12(data.asOf)} India time
         </p>
       </header>
       <main className="layout">

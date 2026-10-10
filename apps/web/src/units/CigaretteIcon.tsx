@@ -1,6 +1,8 @@
 /**
- * A cigarette, lying at an angle. Grey outline when it is off; when `lit`, a white body, an orange filter and
- * a glowing ember.
+ * A cigarette, lying at an angle, with smoke curling up from its ember. It is always moving: the ember glows and
+ * three puffs rise and fade. Grey outline when it is off, with only a faint wisp; when `lit`, a white body, an
+ * orange filter and a glowing ember with fuller smoke. Still, with the smoke held, for people who ask for less
+ * motion.
  */
 export function CigaretteIcon({
   size = 22,
@@ -17,7 +19,7 @@ export function CigaretteIcon({
       viewBox="0 0 24 24"
       fill="none"
       aria-hidden="true"
-      className="cig-icon"
+      className={`cig-icon${lit ? ' lit' : ' idle'}`}
       style={{ overflow: 'visible' }}
     >
       <g transform="rotate(-35 12 12)" strokeLinejoin="round" strokeWidth="1.6">
@@ -41,6 +43,10 @@ export function CigaretteIcon({
           stroke={lit ? '#d9481a' : stroke}
         />
       </g>
+      {lit && <circle cx="20.4" cy="6.2" r="1.7" className="cig-ember" />}
+      <circle cx="20.6" cy="5.6" r="1.7" className="cig-puff p1" />
+      <circle cx="20.2" cy="5.2" r="1.3" className="cig-puff p2" />
+      <circle cx="20.8" cy="5.8" r="1.5" className="cig-puff p3" />
     </svg>
   );
 }

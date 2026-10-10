@@ -1,3 +1,4 @@
+import { hourName } from '../../today/time';
 import { X } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { WEEKDAYS } from '../calendar';
@@ -9,7 +10,7 @@ import { PlacePicker } from './PlacePicker';
 import { PlaceSlot, SLOT_NAMES } from './PlaceSlot';
 import { DaysPicker } from './SpotSection';
 
-const hourLabel = (hour: number): string => `${String(hour).padStart(2, '0')}:00`;
+const hourLabel = (hour: number): string => hourName(hour);
 
 function HourSelect({
   label,

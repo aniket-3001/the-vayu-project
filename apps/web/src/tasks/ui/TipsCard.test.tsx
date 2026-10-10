@@ -79,4 +79,30 @@ describe('the Breathe better tips on My Air', () => {
     open();
     expect(screen.queryByRole('region', { name: 'Breathe better today' })).not.toBeInTheDocument();
   });
+
+  it('hold the alerts and the tips together: alerts down the page above, tips as cards that swipe', () => {
+    open();
+    const card = screen.getByRole('region', { name: 'Breathe better today' });
+    expect(screen.queryByRole('heading', { name: 'Alerts', level: 2 })).not.toBeInTheDocument();
+    const alerts = card.querySelector('.alert-list');
+    const tips = card.querySelector('.tips-row');
+    expect(alerts).toBeInTheDocument();
+    expect(tips).toBeInTheDocument();
+    // The alerts come first in the card, then the tips, then the totals.
+    if (alerts === null || tips === null) throw new Error('missing');
+    expect(alerts.compareDocumentPosition(tips) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(screen.queryByRole('button', { name: /See all|Fold/u })).not.toBeInTheDocument();
+    // Each tip shows its reason in full beside its coin, with no unfolding.
+    const first = tips?.querySelector('li');
+    expect(first?.querySelector('.task-words .muted')).toBeInTheDocument();
+  });
+
+  it('show the points on a gold coin', () => {
+    open();
+    const card = screen.getByRole('region', { name: 'Breathe better today' });
+    const coins = card.querySelectorAll('.coin');
+    expect(coins.length).toBeGreaterThanOrEqual(2);
+    for (const coin of coins) expect(coin).toHaveTextContent(/^\+\d+$/u);
+    expect(within(card).getAllByRole('img', { name: /\d+ points/u }).length).toBe(coins.length);
+  });
 });

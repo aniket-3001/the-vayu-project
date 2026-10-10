@@ -4,6 +4,7 @@ import { Link, useSearchParams } from 'react-router-dom';
 import type { PlaceMatch } from '../data/geocode';
 import { useDevices } from '../devices/useDevices';
 import { levelForAqi } from '../design/levels';
+import { hourName } from '../today/time';
 import { airStore, useHistory } from '../air/store';
 import { AirError, AirLoading } from '../components/AirState';
 import { pinId, type Pin } from '../data/pins';
@@ -43,8 +44,7 @@ import { saveSpots } from './spots';
 type View = DateKey;
 const WEEK = 'week';
 
-const hourSpan = (hour: number): string =>
-  `${String(hour).padStart(2, '0')}:00 to ${String((hour + 1) % 24).padStart(2, '0')}:00`;
+const hourSpan = (hour: number): string => `${hourName(hour)} to ${hourName(hour + 1)}`;
 
 const titleFor = (view: View): string =>
   view === WEEK
@@ -156,7 +156,8 @@ export function ExposureScreen({
   const atPicked = shown.filter((cell) => cell.hour === picked);
   const ringNames: Record<DialRing, string> = {
     home: 'Home',
-    work: person.day === 'school' ? 'School' : person.day === 'work' ? 'Work' : 'Work / School',
+    // Said both ways, whoever it is: the ring holds school hours or work hours, whichever the timetable has.
+    work: 'School / Work',
     outdoor: 'Live outdoor location',
   };
   const nothingSet = Object.keys(visible).length === 0 && counted.length === 0;

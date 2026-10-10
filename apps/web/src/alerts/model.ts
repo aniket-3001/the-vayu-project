@@ -5,9 +5,13 @@ import type { TodayData } from '../today/types';
 
 export type AlertKind = 'grap' | 'smog' | 'walk' | 'stubble';
 
+/** How loud an alert is: a severe one glows red and comes first; the rest are cautions, in soft yellow. */
+export type AlertSeverity = 'severe' | 'caution';
+
 export interface Alert {
   readonly id: string;
   readonly kind: AlertKind;
+  readonly severity: AlertSeverity;
   /** 0 is today, 1 tomorrow, 2 the day after. */
   readonly day: 0 | 1 | 2;
   readonly title: string;
@@ -46,6 +50,7 @@ export function alertsFor(data: TodayData, fires: number | undefined): readonly 
     alerts.push({
       id: 'grap-today',
       kind: 'grap',
+      severity: stage >= 3 ? 'severe' : 'caution',
       day: 0,
       title: `GRAP Stage ${ROMAN[stage]} likely today`,
       body: 'Unofficial: our estimate, not an order. Check the official order at caqm.nic.in.',
@@ -62,6 +67,7 @@ export function alertsFor(data: TodayData, fires: number | undefined): readonly 
     alerts.push({
       id: 'walk-today',
       kind: 'walk',
+      severity: data.aqi >= 301 ? 'severe' : 'caution',
       day: 0,
       title: 'Avoid park walks today',
       body: `AQI ${String(data.aqi)}, ${levelForAqi(data.aqi).name.toLowerCase()}. Walk indoors if you can.`,
@@ -80,8 +86,9 @@ export function alertsFor(data: TodayData, fires: number | undefined): readonly 
       alerts.push({
         id: `smog-${String(offset)}`,
         kind: 'smog',
+        severity: 'severe',
         day: offset,
-        title: `Smog likely ${dayWord(offset, data).toLowerCase()}`,
+        title: `Smog likely ${offset === 1 ? 'tomorrow' : dayWord(offset, data)}`,
         body: `AQI near ${String(day.aqi)}, ${levelForAqi(day.aqi).name.toLowerCase()}. Plan outdoor time before then.`,
         reason: `Our forecast puts ${dayWord(offset, data).toLowerCase()}’s air near AQI ${String(day.aqi)}, ${String(day.aqi - data.aqi)} points worse than today’s ${String(data.aqi)}. It is a forecast, so it can change.`,
         todo: [
@@ -97,6 +104,7 @@ export function alertsFor(data: TodayData, fires: number | undefined): readonly 
     alerts.push({
       id: 'stubble',
       kind: 'stubble',
+      severity: 'caution',
       day: 1,
       title: 'Heavy stubble burning nearby',
       body: `${String(fires)} fires seen by satellite in the last 24 hours, near here or upwind. Smoke can reach you within a day or two.`,
@@ -109,7 +117,9 @@ export function alertsFor(data: TodayData, fires: number | undefined): readonly 
       authorities: true,
     });
   }
-  return alerts.sort((a, b) => a.day - b.day);
+  // The worst first, and within that today before tomorrow.
+  const rank = (a: Alert): number => (a.severity === 'severe' ? 0 : 1);
+  return alerts.sort((a, b) => rank(a) - rank(b) || a.day - b.day);
 }
 
 /** Alerts as they will read when `later` days have passed: tomorrow's become today's. */

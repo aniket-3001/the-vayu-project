@@ -1,4 +1,4 @@
-import { ChevronDown, Flame } from 'lucide-react';
+import { Flame } from 'lucide-react';
 import { Marker, type Map as MapLibreMap } from 'maplibre-gl';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
@@ -23,7 +23,6 @@ import { useMapData } from './useMapData';
 export function MapScreen(): React.JSX.Element {
   // Everything is always on: the monitors, the air colour, the fires and the wind.
   const shown = useMemo(defaultLayers, []);
-  const [open, setOpen] = useState(true);
   const [reporting, setReporting] = useState<Fire | undefined>(undefined);
   const [map, setMap] = useState<MapLibreMap>();
   const { smoke } = useAirUnits();
@@ -128,7 +127,7 @@ export function MapScreen(): React.JSX.Element {
       <WindStars map={map} enabled={shown.wind} field={windField} />
 
       <div className="map-bottom" ref={bottom}>
-        <div className={`map-legend${open ? ' open' : ''}`}>
+        <div className="map-legend">
           <div className="legend-head">
             <p className="legend-pills">
               {sample && data.fires === undefined && <Pill>Sample data</Pill>}
@@ -137,30 +136,11 @@ export function MapScreen(): React.JSX.Element {
               )}
             </p>
             <DetectLocation />
-            <button
-              type="button"
-              className="pc-icon-button legend-fold"
-              aria-expanded={open}
-              aria-controls="map-legend-body"
-              aria-label={
-                open ? 'Fold the colour scale and notes' : 'Show the colour scale and notes'
-              }
-              onClick={() => {
-                setOpen((v) => !v);
-              }}
-            >
-              <ChevronDown
-                size={20}
-                strokeWidth={2.25}
-                aria-hidden="true"
-                className={open ? '' : 'flip'}
-              />
-            </button>
           </div>
           <p className="small" role="status">
             {where}
           </p>
-          <div id="map-legend-body" hidden={!open} className="legend-body">
+          <div className="legend-body">
             <AqiScale />
             <details className="legend-about">
               <summary>About this data</summary>

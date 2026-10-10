@@ -1856,10 +1856,7 @@ h2 {
   display: grid;
   line-height: 1.3;
 }
-.task-points {
-  font-weight: 800;
-  color: #2f6a3c;
-}
+
 .tasks-foot {
   display: flex;
   flex-wrap: wrap;
@@ -1901,85 +1898,7 @@ h2 {
   display: grid;
   gap: 12px;
 }
-.carousel-section {
-  display: grid;
-  gap: 8px;
-}
-.carousel-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-}
-.carousel-toggle {
-  display: flex;
-  flex: 1;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  min-height: 44px;
-  padding: 0;
-  border: 0;
-  background: transparent;
-  color: var(--text);
-  font: inherit;
-  text-align: left;
-  cursor: pointer;
-}
-.carousel-toggle h2 {
-  display: block;
-}
-.carousel-more {
-  display: inline-flex;
-  align-items: center;
-  gap: 2px;
-  font-size: 14px;
-  font-weight: 700;
-  color: #2f5fb3;
-}
-.carousel-more .flip {
-  transform: rotate(180deg);
-}
-.carousel {
-  display: flex;
-  gap: 10px;
-  margin: 0 calc(var(--gutter) * -1);
-  padding: 4px var(--gutter) 8px;
-  overflow-x: auto;
-  scroll-snap-type: x mandatory;
-  scroll-padding-inline: var(--gutter);
-  scrollbar-width: none;
-}
-.carousel::-webkit-scrollbar {
-  display: none;
-}
-.carousel > li {
-  flex: 0 0 min(78%, 270px);
-  scroll-snap-align: start;
-}
-.carousel.expanded {
-  flex-direction: column;
-  margin: 0;
-  padding: 4px 0 8px;
-  overflow: visible;
-}
-.carousel.expanded > li {
-  flex: none;
-}
 
-.alert-card {
-  display: grid;
-  grid-template-columns: auto 1fr;
-  gap: 10px;
-  padding: 12px;
-  border: 1.5px solid #f0c9a0;
-  border-radius: 16px;
-  background: #fff8ee;
-}
-.alert-card.now {
-  border-color: #e9965a;
-  animation: glow 2.8s ease-in-out infinite;
-}
 @keyframes glow {
   0%,
   100% {
@@ -2005,9 +1924,7 @@ h2 {
   gap: 3px;
   line-height: 1.3;
 }
-.alert-day {
-  display: flex;
-}
+
 .alert-call {
   justify-self: start;
   display: inline-flex;
@@ -2050,9 +1967,7 @@ h2 {
   align-content: center;
   padding: 0 6px;
 }
-.carousel.expanded .tips-foot {
-  padding: 4px 0 0;
-}
+
 .tasks-foot {
   display: flex;
   flex-wrap: wrap;
@@ -2118,23 +2033,9 @@ h2 {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .alert-card.now,
   .sheet {
     animation: none;
   }
-}
-
-.carousel:not(.expanded) .task-icon {
-  display: none;
-}
-.carousel:not(.expanded) .tip {
-  grid-template-columns: auto 1fr auto;
-  align-items: start;
-  min-height: 108px;
-}
-.carousel:not(.expanded) .task-words strong {
-  font-size: 14px;
-  line-height: 1.25;
 }
 
 .exposure-progress {
@@ -2295,20 +2196,6 @@ h2 {
 
 /* An alert is a button now: press it for the reason */
 
-button.alert-card {
-  width: 100%;
-  min-height: 112px;
-  align-items: start;
-  grid-template-columns: auto 1fr auto;
-  text-align: left;
-  font: inherit;
-  color: inherit;
-  cursor: pointer;
-}
-.alert-go {
-  align-self: center;
-  color: #9a4c1b;
-}
 .alert-sheet {
   position: relative;
   gap: 14px;
@@ -3372,44 +3259,13 @@ button.alert-card {
 .places .tasks-wrap {
   gap: 4px;
 }
-.places .carousel-section {
-  gap: 2px;
-}
-.places .carousel-toggle {
-  min-height: 36px;
-}
-.places .carousel-toggle h2 {
-  font-size: 16px;
-}
-.places .alert-card {
-  grid-template-columns: auto 1fr auto;
-  align-items: center;
-  gap: 8px;
-  padding: 8px 10px;
-}
+
 .places .alert-icon {
   width: 30px;
   height: 30px;
   border-radius: 10px;
 }
-.places .alert-words .small {
-  display: none;
-}
-.places .alert-words strong {
-  font-size: 14px;
-  line-height: 1.2;
-}
-.places .alerts .carousel > li {
-  flex-basis: min(72%, 240px);
-}
-.places .carousel:not(.expanded) .tip {
-  min-height: 0;
-  align-items: center;
-  padding: 8px 10px;
-}
-.places .carousel:not(.expanded) .task-words .muted {
-  display: none;
-}
+
 .places .tips .tips-foot,
 .places .tips .tasks-foot {
   font-size: 13px;
@@ -3612,35 +3468,6 @@ button.alert-card {
 }
 
 /* Alerts: a row as short as a tip's, with the title first and the day small beside it */
-.places .alert-words {
-  display: contents;
-}
-.places .alert-card {
-  grid-template-columns: auto 1fr auto auto;
-  min-height: 0;
-  padding: 10px;
-  border-radius: 16px;
-}
-.places .alert-words strong {
-  grid-column: 2;
-  grid-row: 1;
-  font-size: 14px;
-  line-height: 1.25;
-}
-.places .alert-words .alert-day {
-  grid-column: 3;
-  grid-row: 1;
-}
-.places .alert-card .alert-go {
-  grid-column: 4;
-  grid-row: 1;
-}
-.places .alert-card .alert-icon {
-  grid-row: 1;
-}
-.places .alerts .carousel > li {
-  flex-basis: min(80%, 300px);
-}
 
 /* The dial: the info button sits at its bottom right corner, and the card pops up like an alert */
 .dial-wrap {
@@ -4318,4 +4145,384 @@ button.alert-card {
   border-color: #3b82c4;
   background: #3b82c4;
   color: #fff;
+}
+
+/* The cigarette is always alive: the ember glows and the smoke rises and fades */
+.cig-icon .cig-puff {
+  fill: rgb(150 138 128 / 0.8);
+  opacity: 0;
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: cig-rise 2.4s ease-out infinite;
+}
+.cig-icon.idle .cig-puff {
+  fill: rgb(150 138 128 / 0.5);
+  animation-duration: 3.6s;
+}
+.cig-icon .cig-puff.p2 {
+  animation-delay: 0.8s;
+}
+.cig-icon .cig-puff.p3 {
+  animation-delay: 1.6s;
+}
+.cig-icon .cig-ember {
+  fill: #ff7a2e;
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: cig-glow 1.3s ease-in-out infinite;
+}
+@keyframes cig-rise {
+  0% {
+    opacity: 0;
+    transform: translate(0, 0) scale(0.5);
+  }
+  25% {
+    opacity: 0.85;
+  }
+  100% {
+    opacity: 0;
+    transform: translate(3px, -11px) scale(1.7);
+  }
+}
+@keyframes cig-glow {
+  0%,
+  100% {
+    opacity: 0.9;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.45;
+    transform: scale(0.7);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .cig-icon .cig-puff {
+    animation: none;
+    opacity: 0.4;
+    transform: translate(1px, -5px);
+  }
+  .cig-icon .cig-ember {
+    animation: none;
+  }
+}
+
+/* The map card sits in the middle of the screen, on a laptop as on a phone */
+[data-route='map'] .map-bottom {
+  left: 50%;
+  right: auto;
+  width: min(460px, calc(100% - 24px));
+  max-width: none;
+  transform: translateX(-50%);
+}
+
+/* ---- Place cards with nothing to open: the details fill the lower half ---- */
+.place-card {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  container-type: inline-size;
+}
+.place-card.pending {
+  display: grid;
+}
+.place-card .pc-hit {
+  flex: 0 0 auto;
+  height: auto;
+}
+.place-card > .pc-more {
+  margin-top: auto;
+  padding: 6px 10px 10px;
+  gap: 6px;
+}
+.place-card .pc-days {
+  gap: 5px;
+}
+.place-card .pc-days li {
+  gap: 2px;
+  padding: 5px 2px;
+  border-radius: 10px;
+  font-size: 11.5px;
+}
+.place-card .pc-days .chip {
+  height: 22px;
+  min-width: 36px;
+  padding: 0 6px;
+  border-radius: 7px;
+  font-size: 13px;
+}
+.place-card .pc-day-name {
+  font-size: 11px;
+}
+.pc-day-temps {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  white-space: nowrap;
+}
+.place-card .pc-source {
+  padding-top: 5px;
+  display: -webkit-box;
+  overflow: hidden;
+  font-size: 11px;
+  line-height: 1.3;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+/* The figures stack in a narrow card and sit side by side in a wide one */
+.pc-aqi.pair.auto {
+  flex-direction: column;
+  align-items: stretch;
+  width: max-content;
+  font-size: 26px;
+}
+.pc-aqi.pair.auto .fig {
+  border-radius: 14px 14px 0 0;
+}
+.pc-aqi.pair.auto .smoke-fig {
+  border-radius: 0 0 14px 14px;
+  border-top: 1px solid rgb(122 63 20 / 0.18);
+}
+.pc-aqi.pair.auto .fig,
+.pc-aqi.pair.auto .smoke-fig {
+  grid-auto-flow: column;
+  align-items: baseline;
+  justify-content: start;
+  gap: 0 5px;
+  padding: 3px 9px;
+}
+.pc-aqi.pair.auto .smoke-fig-label {
+  display: none;
+}
+@container (min-width: 300px) {
+  .place-card .pc-aqi {
+    font-size: 48px;
+  }
+  .pc-aqi.pair.auto {
+    flex-direction: row;
+    align-items: stretch;
+    font-size: 48px;
+  }
+  .pc-aqi.pair.auto .fig {
+    border-radius: 14px 0 0 14px;
+  }
+  .pc-aqi.pair.auto .smoke-fig {
+    border-radius: 0 14px 14px 0;
+    border-top: 0;
+  }
+  .pc-aqi.pair.auto .fig,
+  .pc-aqi.pair.auto .smoke-fig {
+    display: grid;
+    grid-auto-flow: row;
+    gap: 3px;
+    padding: 6px 10px;
+  }
+  .pc-aqi.pair.auto .smoke-fig-label {
+    display: inline-flex;
+  }
+  .place-card .pc-face svg {
+    width: 84px;
+    height: 84px;
+  }
+  .place-card .pc-name {
+    font-size: 20px;
+  }
+  .place-card .pc-level {
+    font-size: 16px;
+  }
+  .place-card .pc-days li,
+  .place-card .pc-source {
+    font-size: 13px;
+  }
+  .place-card .pc-days .chip {
+    height: 26px;
+    min-width: 44px;
+    font-size: 15px;
+  }
+}
+
+/* ---- The Lens card is one line short ---- */
+.lens-main .pc-line {
+  gap: 4px 8px;
+}
+.lens-bar {
+  color: color-mix(in srgb, var(--on-level) 55%, transparent);
+  font-weight: 400;
+}
+.lens-best {
+  font-size: 13px;
+  font-weight: 700;
+}
+.lens-body {
+  padding-bottom: 14px;
+}
+
+/* ---- Breathe better today: alerts as a short list, tips as cards you swipe ---- */
+.alert-list {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.alert-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid #efe09a;
+  border-radius: 14px;
+  background: #fff9d9;
+  color: var(--text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.alert-row .alert-words {
+  display: grid;
+  flex: 1 1 auto;
+  min-width: 0;
+  line-height: 1.3;
+}
+.alert-row .alert-words .small {
+  color: var(--muted);
+}
+.alert-row .alert-icon {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: #fff;
+}
+.alert-row .pill {
+  flex: none;
+}
+.alert-row.severe {
+  border: 2.5px dotted #d92d20;
+  background: #ffe4e1;
+  box-shadow:
+    0 0 0 0 rgb(217 45 32 / 0.55),
+    0 0 16px 2px rgb(217 45 32 / 0.45);
+  animation: alert-glow 1.5s ease-in-out infinite;
+}
+.alert-row.severe .alert-words .small {
+  color: #7a1d16;
+}
+@keyframes alert-glow {
+  0%,
+  100% {
+    border-color: #d92d20;
+    box-shadow:
+      0 0 0 0 rgb(217 45 32 / 0.5),
+      0 0 10px 1px rgb(217 45 32 / 0.35);
+  }
+  50% {
+    border-color: rgb(217 45 32 / 0.25);
+    box-shadow:
+      0 0 0 5px rgb(217 45 32 / 0),
+      0 0 24px 5px rgb(217 45 32 / 0.6);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .alert-row.severe {
+    animation: none;
+  }
+}
+.tips-row {
+  display: flex;
+  gap: 10px;
+  margin: 0;
+  padding: 2px 2px 6px;
+  overflow-x: auto;
+  list-style: none;
+  scroll-snap-type: x mandatory;
+  scrollbar-width: none;
+}
+.tips-row::-webkit-scrollbar {
+  display: none;
+}
+.tip-card {
+  display: flex;
+  flex: 0 0 min(86%, 340px);
+  align-items: center;
+  gap: 10px;
+  min-height: 0;
+  padding: 10px 12px;
+  scroll-snap-align: start;
+}
+.tip-card .task-words {
+  flex: 1 1 auto;
+  min-width: 0;
+  line-height: 1.3;
+}
+.tip-card .task-words .muted {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+}
+.coin {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border: 2px solid #c98a00;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #ffe27a 0%, #f7b500 62%, #d99100 100%);
+  box-shadow:
+    inset 0 -2px 0 rgb(160 100 0 / 0.35),
+    0 2px 6px -2px rgb(160 100 0 / 0.6);
+  color: #5a3a00;
+  font-size: 12.5px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+.tip.done .coin {
+  filter: saturate(0.4);
+  opacity: 0.7;
+}
+
+/* Breathe better today: one section, with the heading and the progress ring on one line */
+.breathe {
+  display: grid;
+  gap: 10px;
+}
+.breathe-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.breathe-head h2 {
+  font-size: 17px;
+}
+.alert-row .alert-words strong {
+  font-size: 15px;
+}
+/* The dotted fields are as tall as a card, no more, on a wide screen as on a phone */
+.add-place,
+.starter-slot,
+.setup-field {
+  aspect-ratio: auto;
+  min-height: 150px;
+}
+
+/* In a narrow card each day has room for its high only; a wide one shows the low too */
+.place-card .pc-day-temps .pc-lo {
+  display: none;
+}
+@container (min-width: 300px) {
+  .place-card .pc-day-temps .pc-lo {
+    display: inline;
+  }
+}
+
+.lens-best-wrap {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 8px;
+  white-space: nowrap;
 }

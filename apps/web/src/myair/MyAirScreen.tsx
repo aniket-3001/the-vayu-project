@@ -5,7 +5,7 @@ import { useToday } from '../air/store';
 import { useLivePin } from '../places/liveLocation';
 import { usePins } from '../places/usePins';
 import { tasksFor } from '../tasks/model';
-import { AlertsStrip } from '../alerts/ui/AlertsStrip';
+import { AlertsList } from '../alerts/ui/AlertsList';
 import { alertsFor } from '../alerts/model';
 import { useFires } from '../alerts/useFires';
 import { TipsCard } from '../tasks/ui/TipsCard';
@@ -65,8 +65,13 @@ export function MyAirScreen({ search, locate, address }: Props): React.JSX.Eleme
       </header>
       {tab === 'places' && first !== undefined && reading !== undefined && (
         <div className="places-main tasks-wrap">
-          <AlertsStrip alerts={alerts} data={reading} />
-          {tips.length > 0 && <TipsCard tips={tips} placeName={first.name} />}
+          {(tips.length > 0 || alerts.length > 0) && (
+            <TipsCard
+              tips={tips}
+              placeName={first.name}
+              alerts={alerts.length > 0 ? <AlertsList alerts={alerts} data={reading} /> : undefined}
+            />
+          )}
         </div>
       )}
       <main

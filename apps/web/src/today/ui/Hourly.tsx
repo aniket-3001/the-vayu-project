@@ -1,6 +1,6 @@
 import { CloudRain, Droplet } from 'lucide-react';
 import { Fragment } from 'react';
-import { isoDate, clock24, weekday, dayMonth } from '../time';
+import { isoDate, clock12, weekday, dayMonth } from '../time';
 import type { TodayData } from '../types';
 import { AqiChip } from './Chip';
 import { WeatherIcon, WindArrow } from './icons';
@@ -44,7 +44,7 @@ export function Hourly({ data }: { readonly data: TodayData }): React.JSX.Elemen
                       {weekday(point.at)} {dayMonth(point.at).split(' ')[0]}
                     </span>
                   )}
-                  {index === 0 ? 'Now' : clock24(point.at)}
+                  {index === 0 ? 'Now' : clock12(point.at)}
                 </th>
               ))}
             </tr>

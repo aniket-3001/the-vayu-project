@@ -1,6 +1,6 @@
 import { aqi24h } from '@vayu/core';
 import { bestHour, lensSeries } from '../lens/model';
-import { clock24, isoDate } from '../today/time';
+import { hourName, hourOfDay, hourRange, isoDate } from '../today/time';
 import type { TodayData } from '../today/types';
 
 export type TaskKind = 'walk' | 'stay-in' | 'windows' | 'mask' | 'purifier' | 'grap';
@@ -52,12 +52,10 @@ export const POINTS: Readonly<Record<TaskKind, number>> = {
 
 const ROMAN = ['', 'I', 'II', 'III', 'IV'] as const;
 
-/** "16:00 to 17:00", and "tomorrow" when that hour is not on the same India day as `asOf`. */
+/** "4–5 pm", and "tomorrow" when that hour is not on the same India day as `asOf`. */
 const range = (at: string, asOf: string): string => {
-  const start = clock24(at);
-  const hour = Number(start.slice(0, 2));
   const day = isoDate(at) === isoDate(asOf) ? '' : ' tomorrow';
-  return `${start} to ${String((hour + 1) % 24).padStart(2, '0')}${start.slice(2)}${day}`;
+  return `${hourRange(Math.floor(hourOfDay(at)))}${day}`;
 };
 
 /**
@@ -108,7 +106,7 @@ export function tasksFor(data: TodayData): readonly Task[] {
     tasks.push({
       id: 'windows',
       kind: 'windows',
-      title: `Air the room at ${clock24(best.at)}`,
+      title: `Air the room at ${hourName(Math.floor(hourOfDay(best.at)))}`,
       why: 'Ten minutes with the windows open, while the air is clean.',
       points: POINTS.windows,
     });

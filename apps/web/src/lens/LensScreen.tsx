@@ -7,18 +7,10 @@ import { AirError, AirLoading } from '../components/AirState';
 import { AqiScale } from '../components/AqiScale';
 import { liveLocation, useLivePin } from '../places/liveLocation';
 import { usePins } from '../places/usePins';
-import { clock24, dayMonth, isoDate, weekday } from '../today/time';
+import { clock12, dayMonth, weekday } from '../today/time';
 import { HazeCanvas } from './HazeCanvas';
 import { LIVE_OUTDOOR_NAME, LensCard } from './LensCard';
-import {
-  DIAL_HOURS,
-  bestHour,
-  hazeFor,
-  isNight,
-  lensSeries,
-  visibilityKm,
-  windOnScreen,
-} from './model';
+import { DIAL_HOURS, bestHour, hazeFor, isNight, lensSeries, windOnScreen } from './model';
 import { SampleScene, sceneFor, type ScenePlace } from './SampleScene';
 
 const SCENE_ICONS: Readonly<Record<ScenePlace, LucideIcon>> = {
@@ -130,24 +122,16 @@ export function LensScreen(): React.JSX.Element {
 
   const PlaceIcon = SCENE_ICONS[sceneFor(pin.name)];
   const haze = hazeFor(hour.pm25, hour.aqi);
-  const sight = visibilityKm(hour.pm25);
   const best = bestHour(series);
   // North is up: with no compass, the wind's arrow points the way it blows on a map.
   const arrow = hour.wind === undefined ? 0 : windOnScreen(hour.wind.fromDeg, 0);
-  const when = step === 0 ? 'Now' : `${weekday(hour.at)} ${dayMonth(hour.at)}, ${clock24(hour.at)}`;
+  const when = step === 0 ? 'Now' : `${weekday(hour.at)} ${dayMonth(hour.at)}, ${clock12(hour.at)}`;
   const track = `linear-gradient(to right, ${series
     .map(
       (h, i) =>
         `${levelForAqi(h.aqi).solid} ${String((i / series.length) * 100)}% ${String(((i + 1) / series.length) * 100)}%`,
     )
     .join(', ')})`;
-
-  const advice =
-    best === undefined
-      ? undefined
-      : best.aqi > 150
-        ? 'No clean hour outside today. If you can stay in, do.'
-        : `Cleanest daylight hour: ${clock24(best.at)}${isoDate(best.at) === isoDate(data.asOf) ? '' : ' tomorrow'}, AQI ${String(best.aqi)}.`;
 
   return (
     <div className="lens-screen">
@@ -166,9 +150,7 @@ export function LensScreen(): React.JSX.Element {
           data={data}
           hour={hour}
           step={step}
-          sight={sight}
-          arrow={arrow}
-          advice={advice}
+          best={best}
           camera={{
             on: camera.state === 'on',
             toggle: camera.state === 'on' ? camera.stop : camera.start,

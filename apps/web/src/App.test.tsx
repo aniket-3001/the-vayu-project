@@ -27,17 +27,19 @@ describe('the frame around every screen', () => {
     expect(document.querySelector('.dock')).toBeInTheDocument();
   });
 
-  it('lights the cigarette up in colour with a little smoke when it is on, and goes plain when it is off', async () => {
+  it('has a cigarette that is always alive: smoke rises either way, and when it is on it is lit, with an ember', async () => {
     render(<App />);
     const toggle = screen.getByRole('button', { name: /Relatable measure/u });
-    expect(toggle.querySelector('.smoke-puffs')).not.toBeInTheDocument();
+    expect(toggle.querySelectorAll('.cig-puff')).toHaveLength(3);
+    expect(toggle.querySelector('.cig-ember')).not.toBeInTheDocument();
     expect(toggle.querySelector('rect[fill="#ff6a2b"]')).not.toBeInTheDocument();
     await userEvent.click(toggle);
-    expect(toggle.querySelectorAll('.smoke-puffs i')).toHaveLength(3);
+    expect(toggle.querySelectorAll('.cig-puff')).toHaveLength(3);
+    expect(toggle.querySelector('.cig-ember')).toBeInTheDocument();
     expect(toggle.querySelector('rect[fill="#ff6a2b"]')).toBeInTheDocument();
     expect(toggle.querySelector('rect[fill="#e0953f"]')).toBeInTheDocument();
     expect(toggle.querySelector('rect[fill="#ffffff"]')).toBeInTheDocument();
     await userEvent.click(toggle);
-    expect(toggle.querySelector('.smoke-puffs')).not.toBeInTheDocument();
+    expect(toggle.querySelector('.cig-ember')).not.toBeInTheDocument();
   });
 });

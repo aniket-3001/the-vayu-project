@@ -1,7 +1,7 @@
 import { scaleLinear } from 'd3-scale';
 import { area, curveMonotoneX, line } from 'd3-shape';
 import { LEVELS, levelForAqi } from '../../design/levels';
-import { clock24 } from '../time';
+import { clock12 } from '../time';
 import type { TodayData } from '../types';
 import { levelVars } from './format';
 import { useWidth } from './hooks';
@@ -93,7 +93,7 @@ export function History({ data }: { readonly data: TodayData }): React.JSX.Eleme
               textAnchor={i === 0 ? 'start' : i === ticks.length - 1 ? 'end' : 'middle'}
               className="axis"
             >
-              {clock24(p.at)}
+              {clock12(p.at)}
             </text>
           ))}
         </svg>

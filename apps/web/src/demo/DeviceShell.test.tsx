@@ -63,9 +63,9 @@ describe('the prototype shell', () => {
 
   it('shows the sample clock on a phone and a browser bar on a laptop', async () => {
     render(<DeviceShell />);
-    expect(screen.getByText('17:30')).toBeInTheDocument();
+    expect(screen.getByText('5:30 pm')).toBeInTheDocument();
     await userEvent.click(screen.getByRole('button', { name: 'Laptop' }));
-    expect(screen.queryByText('17:30')).not.toBeInTheDocument();
+    expect(screen.queryByText('5:30 pm')).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Reload the app' })).toBeInTheDocument();
     expect(screen.getByText(/vayuair\.in/u)).toBeInTheDocument();
   });

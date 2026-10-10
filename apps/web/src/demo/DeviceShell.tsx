@@ -13,7 +13,7 @@ import {
 } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { SAMPLE_AS_OF } from '../today/sample';
-import { clock24 } from '../today/time';
+import { clock12 } from '../today/time';
 import { DEVICES, deviceById, fitScale, geometry, type DeviceId } from './devices';
 import { applyScenario, SCENARIOS, scenarioById, TOUR_SECONDS, type Scenario } from './scenarios';
 import { APP_KEYS, readDemo } from './state';
@@ -24,7 +24,7 @@ const fromUrl = (): DeviceId =>
   deviceById(new URLSearchParams(window.location.search).get('device')).id;
 
 /** The time on the frame's status bar: the moment the sample data describes, so the two agree. */
-const SAMPLE_CLOCK = clock24(SAMPLE_AS_OF);
+const SAMPLE_CLOCK = clock12(SAMPLE_AS_OF);
 
 function StatusBar({ kind }: { readonly kind: DeviceId }): React.JSX.Element | null {
   if (kind === 'laptop') return null;

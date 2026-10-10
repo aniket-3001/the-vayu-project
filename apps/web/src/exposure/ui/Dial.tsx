@@ -28,8 +28,8 @@ export function ringOf(cell: Cell): DialRing {
 
 /** What each ring is, in a few words, for the card that explains the dial. */
 export const RING_HELP: Readonly<Record<DialRing, string>> = {
-  home: 'The hours you were at home',
-  work: 'The hours you were at work or school',
+  home: 'The hours you were at home, which is where the rest of the day is assumed to be',
+  work: 'The hours you were at school or work, from your timetable',
   outdoor: 'The hours your location, or a walk you logged, put you outside',
 };
 

@@ -43,12 +43,16 @@ describe('today’s tasks', () => {
   it('suggest a good hour for a walk on a clean day, with a reason and points', () => {
     const tasks = tasksFor(sampleDay('good'));
     const walk = tasks.find((t) => t.id === 'walk');
-    expect(walk?.title).toMatch(/^A good hour for a walk: \d\d:\d\d to \d\d:\d\d( tomorrow)?$/u);
+    expect(walk?.title).toMatch(
+      /^A good hour for a walk: \d{1,2}( [ap]m)?–\d{1,2} [ap]m( tomorrow)?$/u,
+    );
     expect(walk?.points).toBe(POINTS.walk);
     for (const id of SAMPLE_IDS) {
       for (const t of tasksFor(sampleDay(id))) expect(t.points).toBe(POINTS[t.kind]);
     }
-    expect(tasks.find((t) => t.id === 'windows')?.title).toMatch(/^Air the room at \d\d:\d\d$/u);
+    expect(tasks.find((t) => t.id === 'windows')?.title).toMatch(
+      /^Air the room at \d{1,2} [ap]m$/u,
+    );
     expect(tasks.some((t) => t.kind === 'grap' || t.kind === 'mask')).toBe(false);
   });
 

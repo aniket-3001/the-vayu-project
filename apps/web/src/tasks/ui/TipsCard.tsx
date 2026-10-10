@@ -12,7 +12,6 @@ import {
 import { motion, useReducedMotion } from 'motion/react';
 import { MaskIcon } from '../../today/ui/icons';
 import { POINTS, type Task, type TaskKind } from '../model';
-import { Carousel } from '../../alerts/ui/Carousel';
 import { useTasks } from '../useTasks';
 
 const ICONS: Readonly<Record<Exclude<TaskKind, 'mask'>, LucideIcon>> = {
@@ -86,65 +85,86 @@ export function Progress({
   );
 }
 
-/** Small things worth doing today to breathe better, given the air. Tick them off for points and a streak. */
+/** A game coin in gold with the points on it, for a task. */
+function Coin({ points }: { readonly points: number }): React.JSX.Element {
+  return (
+    <span className="coin tnum" role="img" aria-label={`${String(points)} points`}>
+      <span aria-hidden="true">+{points}</span>
+    </span>
+  );
+}
+
+/**
+ * Breathe better today: what to watch for (the alerts, worst first, as a short list) and small things worth
+ * doing given the air, as cards you swipe sideways, each with its reason and a gold coin of points. Tick them off
+ * for points and a streak.
+ */
 export function TipsCard({
   tips,
   placeName,
+  alerts,
 }: {
   readonly tips: readonly Task[];
   readonly placeName: string;
+  /** The alerts list, shown above the tips. */
+  readonly alerts?: React.ReactNode;
 }): React.JSX.Element {
   const progress = useTasks();
   const reduced = useReducedMotion() === true;
   const doneCount = tips.filter((t) => progress.done.has(t.id)).length;
 
   return (
-    <Carousel
-      title="Breathe better today"
-      hint={`Tips for ${placeName}, given the air`}
-      className="tips"
-      aside={<Ring done={doneCount} total={tips.length} />}
-      footer={
-        <div className="tips-footer">
-          <Progress progress={progress} />
+    <section className="breathe tips" aria-labelledby="tips-title">
+      <div className="breathe-head">
+        <div>
+          <h2 id="tips-title">Breathe better today</h2>
+          <span className="muted small">Tips for {placeName}, given the air</span>
         </div>
-      }
-    >
-      {tips.map((task) => {
-        const checked = progress.done.has(task.id);
-        const Icon = task.kind === 'mask' ? undefined : ICONS[task.kind];
-        return (
-          <li key={task.id} className={checked ? 'tip done' : 'tip'}>
-            <motion.button
-              type="button"
-              className="task-check"
-              role="checkbox"
-              aria-checked={checked}
-              aria-label={`${task.title}. ${String(POINTS[task.kind])} points`}
-              onClick={() => {
-                progress.toggle(task.id);
-              }}
-              {...(reduced || !checked
-                ? {}
-                : { animate: { scale: [1, 1.18, 1] }, transition: { duration: 0.28 } })}
-            >
-              {checked && <Check size={18} strokeWidth={3} aria-hidden="true" />}
-            </motion.button>
-            <span className={`task-icon task-${task.kind}`}>
-              {Icon === undefined ? (
-                <MaskIcon size={20} />
-              ) : (
-                <Icon size={20} strokeWidth={1.75} aria-hidden="true" />
-              )}
-            </span>
-            <span className="task-words">
-              <strong>{task.title}</strong>
-              <span className="muted small">{task.why}</span>
-            </span>
-            <span className="task-points tnum">+{task.points}</span>
-          </li>
-        );
-      })}
-    </Carousel>
+        {tips.length > 0 && <Ring done={doneCount} total={tips.length} />}
+      </div>
+      {alerts}
+      {tips.length > 0 && (
+        <ul className="tips-row" aria-label="Tips, swipe for more">
+          {tips.map((task) => {
+            const checked = progress.done.has(task.id);
+            const Icon = task.kind === 'mask' ? undefined : ICONS[task.kind];
+            return (
+              <li key={task.id} className={checked ? 'tip tip-card done' : 'tip tip-card'}>
+                <motion.button
+                  type="button"
+                  className="task-check"
+                  role="checkbox"
+                  aria-checked={checked}
+                  aria-label={`${task.title}. ${String(POINTS[task.kind])} points`}
+                  onClick={() => {
+                    progress.toggle(task.id);
+                  }}
+                  {...(reduced || !checked
+                    ? {}
+                    : { animate: { scale: [1, 1.18, 1] }, transition: { duration: 0.28 } })}
+                >
+                  {checked && <Check size={18} strokeWidth={3} aria-hidden="true" />}
+                </motion.button>
+                <span className={`task-icon task-${task.kind}`}>
+                  {Icon === undefined ? (
+                    <MaskIcon size={20} />
+                  ) : (
+                    <Icon size={20} strokeWidth={1.75} aria-hidden="true" />
+                  )}
+                </span>
+                <span className="task-words">
+                  <strong>{task.title}</strong>
+                  <span className="muted small">{task.why}</span>
+                </span>
+                <Coin points={task.points} />
+              </li>
+            );
+          })}
+        </ul>
+      )}
+      <div className="tips-footer">
+        <Progress progress={progress} />
+      </div>
+    </section>
   );
 }

@@ -33,7 +33,7 @@ describe('the relatable measure on the screens', () => {
     expect(square).toHaveTextContent(/^\d/u);
     expect(screen.getByText(/Berkeley Earth/u)).toBeInTheDocument();
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
-    expect(document.querySelector('.wisp, .cig-ember')).not.toBeInTheDocument();
+    expect(document.querySelector('.wisp')).not.toBeInTheDocument();
   });
 
   it('shows none of it when the measure is off', () => {

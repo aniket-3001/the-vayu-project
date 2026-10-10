@@ -1,3 +1,4 @@
+import { hourName } from '../../today/time';
 import { Cpu, Droplets, Fan, Trash2, Wifi } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { usAqi } from '@vayu/core';
@@ -24,7 +25,7 @@ import { DeviceChart } from './DeviceChart';
 
 const MODE_LABELS: Readonly<Record<DeviceMode, string>> = { auto: 'Auto', on: 'On', off: 'Off' };
 
-const clock = (hour: number): string => `${String(hour).padStart(2, '0')}:00`;
+const clock = (hour: number): string => hourName(hour);
 
 /** The outside air near a device, hour by hour so far today, ending with the reading now. */
 function outsideToday(pin: Pin, nowPm25: number): readonly number[] {

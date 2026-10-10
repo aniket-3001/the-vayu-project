@@ -104,7 +104,7 @@ describe('the Map screen', () => {
     expect(seen.layers).toEqual({ monitors: true, gradient: true, fires: true, wind: true });
   });
 
-  it('keeps the colour scale, detection and the notes in one card that folds', async () => {
+  it('keeps the colour scale, detection and the notes in one card, which does not fold', () => {
     render(
       <MemoryRouter>
         <MapScreen />
@@ -115,11 +115,10 @@ describe('the Map screen', () => {
     expect(
       within(card as HTMLElement).getByRole('button', { name: /Detect my location/u }),
     ).toBeVisible();
+    expect(
+      screen.queryByRole('button', { name: /Fold|Show the colour scale/u }),
+    ).not.toBeInTheDocument();
     expect(document.querySelector('.lens-top')).not.toBeInTheDocument();
-    await userEvent.click(screen.getByRole('button', { name: /Fold the colour scale/u }));
-    expect(document.querySelector('.legend-body')).not.toBeVisible();
-    await userEvent.click(screen.getByRole('button', { name: /Show the colour scale/u }));
-    expect(document.querySelector('.legend-body')).toBeVisible();
   });
 
   it('opens a report for a fire pressed on the map, and says plainly what happens to it', async () => {

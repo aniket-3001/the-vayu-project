@@ -60,13 +60,6 @@ export function SmokeToggle(): React.JSX.Element {
       onClick={toggle}
     >
       <CigaretteIcon size={26} lit={smoke} />
-      {smoke && (
-        <span className="smoke-puffs" aria-hidden="true">
-          <i />
-          <i />
-          <i />
-        </span>
-      )}
     </button>
   );
 }
@@ -140,7 +133,8 @@ export function AirFigures({
 }: {
   readonly aqi: number;
   readonly pm25: number;
-  readonly layout?: 'row' | 'stack';
+  /** `auto` stacks them in a narrow card and puts them side by side in a wide one. */
+  readonly layout?: 'row' | 'stack' | 'auto';
 }): React.JSX.Element {
   const { smoke } = useAirUnits();
   return (

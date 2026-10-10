@@ -23,7 +23,7 @@ describe('alerts for the next three days', () => {
     expect(smog.length).toBeGreaterThanOrEqual(0);
     for (const a of smog) {
       expect(a.day).toBeGreaterThan(0);
-      expect(a.title).toMatch(/^Smog likely (tomorrow|[a-z]+)$/u);
+      expect(a.title).toMatch(/^Smog likely (tomorrow|[A-Z][a-z]+)$/u);
     }
     expect(alertsFor(sampleDay('unhealthy'), undefined).some((a) => a.kind === 'smog')).toBe(false);
   });
@@ -38,9 +38,12 @@ describe('alerts for the next three days', () => {
     expect(alertsFor(sampleDay('good'), undefined)).toEqual([]);
   });
 
-  it('are in date order, and only the stubble one offers the authorities', () => {
+  it('are worst first, then in date order, and only the stubble one offers the authorities', () => {
     const alerts = alertsFor(sampleDay('hazardous'), 127);
-    expect(alerts.map((a) => a.day)).toEqual([...alerts.map((a) => a.day)].sort((a, b) => a - b));
+    const rank = (severity: string): number => (severity === 'severe' ? 0 : 1);
+    const keys = alerts.map((a) => [rank(a.severity), a.day] as const);
+    expect(keys).toEqual([...keys].sort((a, b) => a[0] - b[0] || a[1] - b[1]));
+    expect(alerts[0]?.severity).toBe('severe');
     expect(alerts.filter((a) => a.authorities).map((a) => a.kind)).toEqual(['stubble']);
   });
 

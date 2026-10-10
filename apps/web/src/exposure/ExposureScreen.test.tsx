@@ -90,7 +90,7 @@ describe('the Exposure screen', () => {
     expect(document.querySelectorAll('.dial .ring')).toHaveLength(3);
     expect(
       Array.from(document.querySelectorAll('.dial .ring-name')).map((el) => el.textContent),
-    ).toEqual(['Home', 'Work', 'Live outdoor location']);
+    ).toEqual(['Home', 'School / Work', 'Live outdoor location']);
     // The circle holds the person icon and no words.
     expect(document.querySelector('.dial .dial-name')).not.toBeInTheDocument();
     expect(document.querySelector('.dial .dial-person')).toBeInTheDocument();
@@ -102,7 +102,7 @@ describe('the Exposure screen', () => {
     const names = within(group)
       .getAllByRole('button')
       .map((b) => b.textContent);
-    expect(names).toEqual(['Home', 'Work', 'Live outdoor location']);
+    expect(names).toEqual(['Home', 'School / Work', 'Live outdoor location']);
     expect(document.querySelector('.dial .ring.lifted')).not.toBeInTheDocument();
     await userEvent.click(within(group).getByRole('button', { name: 'Home' }));
     expect(within(group).getByRole('button', { name: 'Home' })).toHaveAttribute(
@@ -161,7 +161,7 @@ describe('the Exposure screen', () => {
     // The middle ring is School for a child, and Work is not offered.
     expect(
       Array.from(document.querySelectorAll('.dial .ring-name')).map((el) => el.textContent),
-    ).toEqual(['Home', 'School', 'Live outdoor location']);
+    ).toEqual(['Home', 'School / Work', 'Live outdoor location']);
     const panel = await openPanel('Asha');
     expect(within(panel).getByLabelText('School from')).toHaveValue('8');
     expect(within(panel).getByLabelText('School until')).toHaveValue('15');
@@ -177,7 +177,7 @@ describe('the Exposure screen', () => {
     expect(document.querySelectorAll('.dial .ring')).toHaveLength(3);
     expect(
       Array.from(document.querySelectorAll('.dial .ring-name')).map((el) => el.textContent),
-    ).toEqual(['Home', 'Work / School', 'Live outdoor location']);
+    ).toEqual(['Home', 'School / Work', 'Live outdoor location']);
   });
 
   it('lets the hours be changed before adding, and uses them', async () => {
@@ -185,7 +185,7 @@ describe('the Exposure screen', () => {
     await addPerson('Asha', '9', async () => {
       await fillSlot('School', 'School');
       const sheet = screen.getByRole('dialog', { name: 'Add a person' });
-      await userEvent.selectOptions(within(sheet).getByLabelText('School until'), '14:00');
+      await userEvent.selectOptions(within(sheet).getByLabelText('School until'), '2 pm');
     });
     const panel = await openPanel('Asha');
     expect(within(panel).getByLabelText('School until')).toHaveValue('14');
@@ -342,7 +342,7 @@ describe('the Exposure screen', () => {
     expect(screen.getByText('That hour has not happened yet.')).toBeInTheDocument();
     await userEvent.click(screen.getByRole('button', { name: 'Yesterday' }));
     fireEvent.change(screen.getByRole('slider', { name: 'Hour' }), { target: { value: '12' } });
-    expect(screen.getByText('12:00 to 13:00')).toBeInTheDocument();
+    expect(screen.getByText('12 pm to 1 pm')).toBeInTheDocument();
     expect(document.querySelector('.readout')).toHaveTextContent(/Work, /u);
   });
 
@@ -357,7 +357,7 @@ describe('the Exposure screen', () => {
     const panel = await openPanel('Me');
     await userEvent.selectOptions(
       within(within(panel).getByRole('region', { name: 'Work' })).getByLabelText('Work until'),
-      '12:00',
+      '12 pm',
     );
     await closePanel();
     // The hours after twelve are home now, so the work ring has fewer.
@@ -370,7 +370,7 @@ describe('the Exposure screen', () => {
     const mine = await openPanel('Me');
     await userEvent.selectOptions(
       within(within(mine).getByRole('region', { name: 'Work' })).getByLabelText('Work until'),
-      '12:00',
+      '12 pm',
     );
     await closePanel();
     await addPerson('Asha', '9', async () => {

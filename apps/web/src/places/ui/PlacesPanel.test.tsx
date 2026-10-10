@@ -62,30 +62,21 @@ describe('the Places screen', () => {
     expect(screen.getByRole('link', { name: 'Open School' })).toBeInTheDocument();
   });
 
-  it('opens a card out to today and the next two days with an arrow beside the cross, and folds it again', async () => {
+  it('shows today and the next two days on the card itself, with no arrow to open it', () => {
     screenWith();
     const home = cardOf('Home');
-    expect(
-      within(home).queryByRole('list', { name: 'Today and the next two days' }),
-    ).not.toBeInTheDocument();
     const actions = home.querySelector('.pc-actions');
-    expect(actions?.querySelectorAll('button')).toHaveLength(2);
-    expect(actions?.querySelectorAll('button')[1]).toHaveAccessibleName('Remove Home');
-    await userEvent.click(within(home).getByRole('button', { name: 'Show Home for three days' }));
+    expect(actions?.querySelectorAll('button')).toHaveLength(1);
+    expect(actions?.querySelector('button')).toHaveAccessibleName('Remove Home');
+    expect(
+      within(home).queryByRole('button', { name: /three days|Fold/u }),
+    ).not.toBeInTheDocument();
     const days = within(
       within(home).getByRole('list', { name: 'Today and the next two days' }),
     ).getAllByRole('listitem');
     expect(days).toHaveLength(3);
     expect(days[0]).toHaveTextContent('Today');
     expect(home).toHaveTextContent('Sample data');
-    expect(within(home).getByRole('button', { name: 'Fold Home' })).toHaveAttribute(
-      'aria-expanded',
-      'true',
-    );
-    await userEvent.click(within(home).getByRole('button', { name: 'Fold Home' }));
-    expect(
-      within(home).queryByRole('list', { name: 'Today and the next two days' }),
-    ).not.toBeInTheDocument();
   });
 
   it('has the face, and the number with its label, on the card', () => {

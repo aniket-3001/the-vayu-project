@@ -1,3 +1,4 @@
+import { hourName } from '../../today/time';
 import { Briefcase, GraduationCap, House, Trash2, TreePine, type LucideIcon } from 'lucide-react';
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
@@ -17,7 +18,7 @@ const ICONS: Readonly<Record<SpotKind, LucideIcon>> = {
   outdoor: TreePine,
 };
 
-const hourLabel = (hour: number): string => `${String(hour).padStart(2, '0')}:00`;
+const hourLabel = (hour: number): string => hourName(hour);
 
 function HourSelect({
   label,

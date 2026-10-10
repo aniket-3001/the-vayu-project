@@ -23,6 +23,31 @@ export function clock24(iso: string): string {
   return india(iso).toISOString().slice(11, 16);
 }
 
+const twelve = (hour: number): string => String(hour % 12 === 0 ? 12 : hour % 12);
+const meridiem = (hour: number): string => (hour % 24 < 12 ? 'am' : 'pm');
+
+/** "4 pm", "12 am", or "4:30 pm" when there are minutes: an hour of the day (0 to 23) as a person says it. */
+export function hourName(hour: number, minutes = 0): string {
+  const h = ((hour % 24) + 24) % 24;
+  const m = minutes === 0 ? '' : `:${String(minutes).padStart(2, '0')}`;
+  return `${twelve(h)}${m} ${meridiem(h)}`;
+}
+
+/** "4–5 pm", or "11 am–12 pm" when the hour crosses noon or midnight. */
+export function hourRange(hour: number): string {
+  const h = ((hour % 24) + 24) % 24;
+  const end = (h + 1) % 24;
+  return meridiem(h) === meridiem(end)
+    ? `${twelve(h)}–${twelve(end)} ${meridiem(end)}`
+    : `${twelve(h)} ${meridiem(h)}–${twelve(end)} ${meridiem(end)}`;
+}
+
+/** "4 pm", India time, 12-hour, with minutes only when there are some. */
+export function clock12(iso: string): string {
+  const d = india(iso);
+  return hourName(d.getUTCHours(), d.getUTCMinutes());
+}
+
 /** The hour of the day in India time, 0 to 23.99. */
 export function hourOfDay(iso: string): number {
   const d = india(iso);

@@ -19,38 +19,41 @@ Unticked means not yet seen live.
 
 ## Checked by hand
 
-| Screen         | What was checked                                                                                                | Seen |
-| -------------- | --------------------------------------------------------------------------------------------------------------- | ---- |
-| My Air         | Four places show a live AQI, the weather, and the nearest monitor's name, distance and age                      | [x]  |
-| My Air         | Alerts and tips read the real air and the real fire count                                                       | [x]  |
-| My Air Devices | Says "To be implemented", shows no measured numbers, and nothing counts in Exposure                             | [x]  |
-| Exposure       | The dial is drawn from the real last 24 hours; hours in each level add up; no unit readings are counted         | [x]  |
-| Map            | The air colours and the wind load from Open-Meteo; fire points come from our API                                | [x]  |
-| Map            | Monitor dots appear once the stations job has run                                                               | [x]  |
-| Assistant      | A question gets an answer from the rules, reworded by Bedrock, with "Wording by AI, checked against the facts"  | [x]  |
-| Assistant      | The answer names the monitor, its distance and its age                                                          | [x]  |
-| AR Lens        | Camera, location and microphone prompts, on a real phone                                                        | [ ]  |
-| Request form   | Sending a real request, then reading it in the table                                                            | [ ]  |
-| Live location  | The switch is on every screen, is remembered after a reload, and a Here card follows the device                 | [ ]  |
-| Detect me      | Asks live or pin with a name; a pinned place keeps its name                                                     | [ ]  |
-| Search         | "DAV Public School Sector 49 Gurugram" is found, and shows a reading with its monitor's distance or an Estimate | [ ]  |
-| Voice          | Every answer is read in Kajal's voice; the mic shows listening, then the words, and lets go after a few seconds | [ ]  |
-| AR Lens        | Particles have a black outline and spray; the colour scale is at the top; the whole scene fits on a laptop      | [ ]  |
-| Set-up         | A new profile shows Home, Work or school and Park as dotted fields; setting one puts a card over it             | [ ]  |
-| Exposure       | Three rings only; an hour fills one ring; "i" opens the guide card; the centre has only the person icon         | [ ]  |
-| Assistant      | "I took a walk" asks where, then how long; "at school" with no school set says to add one on My Air first       | [ ]  |
-| Map            | Flames show where the alerts say fires are, and stay at every zoom                                              | [ ]  |
-| My Air         | Alerts first, then Breathe better today, then the cards; a card's label is its heading, the address under it    | [ ]  |
-| Exposure       | A new home fills the day so far at once, including the hour in progress                                         | [ ]  |
-| Buttons        | Ask, cigarettes and live location are in the same column at the bottom right on all four tabs                   | [ ]  |
-| Map            | The live-location button drops a blue dot and flies to it; the scale at the top is centred                      | [ ]  |
-| Cards          | No arrow on a place card; the cigarettes sit beside the AQI at the same size on cards, Lens and Today           | [ ]  |
-| Fire report    | Press a flame on the map, send a report, and find it in the table; or tell the assistant "report a fire"        | [ ]  |
-| Exposure       | The three filters lift a ring; the curved names read round each ring                                            | [ ]  |
-| Lens           | The card folds; "See it live" and the place switch (with Live outdoor location) are in its top right corner     | [ ]  |
-| Map            | One card holds the scale and Detect my location; the cigarette switch turns the dot numbers into cigarettes     | [ ]  |
-| Laptop         | Every screen at a laptop width                                                                                  | [ ]  |
-| Offline        | Switch the phone to airplane mode: the last good readings stay and say how old they are                         | [ ]  |
+| Screen         | What was checked                                                                                                 | Seen |
+| -------------- | ---------------------------------------------------------------------------------------------------------------- | ---- |
+| My Air         | Four places show a live AQI, the weather, and the nearest monitor's name, distance and age                       | [x]  |
+| My Air         | Alerts and tips read the real air and the real fire count                                                        | [x]  |
+| My Air Devices | Says "To be implemented", shows no measured numbers, and nothing counts in Exposure                              | [x]  |
+| Exposure       | The dial is drawn from the real last 24 hours; hours in each level add up; no unit readings are counted          | [x]  |
+| Map            | The air colours and the wind load from Open-Meteo; fire points come from our API                                 | [x]  |
+| Map            | Monitor dots appear once the stations job has run                                                                | [x]  |
+| Assistant      | A question gets an answer from the rules, reworded by Bedrock, with "Wording by AI, checked against the facts"   | [x]  |
+| Assistant      | The answer names the monitor, its distance and its age                                                           | [x]  |
+| AR Lens        | Camera, location and microphone prompts, on a real phone                                                         | [ ]  |
+| Request form   | Sending a real request, then reading it in the table                                                             | [ ]  |
+| Live location  | The switch is on every screen, is remembered after a reload, and a Here card follows the device                  | [ ]  |
+| Detect me      | Asks live or pin with a name; a pinned place keeps its name                                                      | [ ]  |
+| Search         | "DAV Public School Sector 49 Gurugram" is found, and shows a reading with its monitor's distance or an Estimate  | [ ]  |
+| Voice          | Every answer is read in Kajal's voice; the mic shows listening, then the words, and lets go after a few seconds  | [ ]  |
+| AR Lens        | Particles have a black outline and spray; the colour scale is at the top; the whole scene fits on a laptop       | [ ]  |
+| Set-up         | A new profile shows Home, Work or school and Park as dotted fields; setting one puts a card over it              | [ ]  |
+| Exposure       | Three rings only; an hour fills one ring; "i" opens the guide card; the centre has only the person icon          | [ ]  |
+| Assistant      | "I took a walk" asks where, then how long; "at school" with no school set says to add one on My Air first        | [ ]  |
+| Map            | Flames show where the alerts say fires are, and stay at every zoom                                               | [ ]  |
+| My Air         | Alerts first, then Breathe better today, then the cards; a card's label is its heading, the address under it     | [ ]  |
+| Exposure       | A new home fills the day so far at once, including the hour in progress                                          | [ ]  |
+| Buttons        | Ask, cigarettes and live location are in the same column at the bottom right on all four tabs                    | [ ]  |
+| Map            | The live-location button drops a blue dot and flies to it; the scale at the top is centred                       | [ ]  |
+| Cards          | No arrow on a place card; the cigarettes sit beside the AQI at the same size on cards, Lens and Today            | [ ]  |
+| Fire report    | Press a flame on the map, send a report, and find it in the table; or tell the assistant "report a fire"         | [ ]  |
+| Exposure       | The three filters lift a ring; the curved names read round each ring                                             | [ ]  |
+| Lens           | The card folds; "See it live" and the place switch (with Live outdoor location) are in its top right corner      | [ ]  |
+| Map            | One card holds the scale and Detect my location; the cigarette switch turns the dot numbers into cigarettes      | [ ]  |
+| My Air         | Alerts sit in Breathe better today: a red one pulses, yellow ones are calm; tips swipe, points are on gold coins | [ ]  |
+| My Air         | A place card shows its three days and source with no arrow; the cigarette tile sits under the AQI                | [ ]  |
+| Times          | Every time reads in am and pm                                                                                    | [ ]  |
+| Laptop         | Every screen at a laptop width                                                                                   | [ ]  |
+| Offline        | Switch the phone to airplane mode: the last good readings stay and say how old they are                          | [ ]  |
 
 ## What changed on the way (each found by looking, then fixed and tested)
 
