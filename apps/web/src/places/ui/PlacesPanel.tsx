@@ -10,16 +10,22 @@ import { usePins } from '../usePins';
 import { PlaceCard } from './PlaceCard';
 import { browserLocate, type Locate } from '../locate';
 import { PlaceSearch } from './PlaceSearch';
+import { addressOf } from '../../data/geocode';
+import { assignRole, clearRole, pinForRole } from '../roles';
 import { AddPlaceSheet, type FoundPlace } from './AddPlaceSheet';
+import { SETUP_KINDS, SetupField, type SetupKind } from './SetupField';
 
 /** Your places, each a card in the colour of its air. Tap one for its day. */
 export function PlacesPanel({
   search,
   locate = browserLocate,
+  address = addressOf,
   children,
 }: {
   readonly search?: (query: string) => Promise<readonly PlaceMatch[]>;
   readonly locate?: Locate;
+  /** Turns a point into an address, for a place found by location. */
+  readonly address?: (lat: number, lng: number) => Promise<string | undefined>;
   /** What follows the places on the page: today's alerts and tips, kept below so the places come first. */
   readonly children?: React.ReactNode;
 }): React.JSX.Element {
@@ -27,8 +33,45 @@ export function PlacesPanel({
   const live = useLiveLocation();
   const livePin = useLivePin();
   const [note, setNote] = useState('');
-  // Adding a place: a search result waiting for a name, or the empty add card opened.
-  const [adding, setAdding] = useState<{ readonly place?: FoundPlace } | undefined>(undefined);
+  // Adding a place: a search result waiting for a name, the empty add card opened, or one of the set-up fields.
+  const [adding, setAdding] = useState<
+    { readonly place?: FoundPlace; readonly setup?: SetupKind } | undefined
+  >(undefined);
+  const [skipped, setSkipped] = useState(() => {
+    try {
+      return window.localStorage.getItem('vayu.setup.skipped') === 'yes';
+    } catch {
+      return false;
+    }
+  });
+  // The first set-up asks for home, work or school, and a park, until they are given or put off.
+  const unset = SETUP_KINDS.filter((kind) =>
+    kind === 'home'
+      ? pinForRole('home', pins) === undefined
+      : kind === 'park'
+        ? pinForRole('outdoor', pins) === undefined
+        : pinForRole('work', pins) === undefined && pinForRole('school', pins) === undefined,
+  );
+  const settingUp = !skipped && unset.length > 0;
+
+  /** Pins a place under its name, with its address, and makes it count in the day if the name is a role. */
+  const pinPlace = async (label: string, place: FoundPlace): Promise<void> => {
+    // A place found by location has no address yet: look one up, and keep our words if there is none.
+    const looked =
+      place.detail === 'Your location' ? await address(place.lat, place.lng) : undefined;
+    const detail = [
+      place.name !== label && place.detail !== 'Your location' ? place.name : undefined,
+      looked ?? place.detail,
+    ]
+      .filter((part): part is string => part !== undefined && part !== '')
+      .join(', ');
+    const pin = { name: label, detail, lat: place.lat, lng: place.lng };
+    add(pin);
+    assignRole(window.localStorage, label, {
+      ...pin,
+      id: `${place.lat.toFixed(2)},${place.lng.toFixed(2)}`,
+    });
+  };
   const [found, setFound] = useState<{ readonly lat: number; readonly lng: number } | undefined>(
     undefined,
   );
@@ -90,9 +133,9 @@ export function PlacesPanel({
             setFound(undefined);
           }}
           onPin={(label) => {
-            add({
+            void pinPlace(label, {
               name: label,
-              detail: 'Pinned from your location',
+              detail: 'Your location',
               lat: found.lat,
               lng: found.lng,
             });
@@ -111,17 +154,17 @@ export function PlacesPanel({
       {adding !== undefined && (
         <AddPlaceSheet
           initial={adding.place}
+          {...(adding.setup === 'home'
+            ? { title: 'Where is home?', fixedLabel: 'Home' }
+            : adding.setup === 'park'
+              ? { title: 'Where is the park you go to?', fixedLabel: 'Park' }
+              : adding.setup === 'workschool'
+                ? { title: 'Where do you work or study?', choices: ['Work', 'School'] }
+                : {})}
           {...(search !== undefined ? { search } : {})}
           locate={locate}
           onSave={(label, place) => {
-            add({
-              name: label,
-              detail: [place.name !== label ? place.name : undefined, place.detail]
-                .filter((part): part is string => part !== undefined && part !== '')
-                .join(', '),
-              lat: place.lat,
-              lng: place.lng,
-            });
+            void pinPlace(label, place);
             setAdding(undefined);
           }}
           onCancel={() => {
@@ -137,9 +180,20 @@ export function PlacesPanel({
             pin={pin}
             onRemove={(p) => {
               remove(p.id);
+              clearRole(window.localStorage, p.name);
             }}
           />
         ))}
+        {settingUp &&
+          unset.map((kind) => (
+            <SetupField
+              key={kind}
+              kind={kind}
+              onPress={() => {
+                setAdding({ setup: kind });
+              }}
+            />
+          ))}
         {pins.length < MAX_PINS && (
           <li className="add-place">
             <button
@@ -158,6 +212,22 @@ export function PlacesPanel({
           </li>
         )}
       </ul>
+      {settingUp && (
+        <button
+          type="button"
+          className="plain skip-setup"
+          onClick={() => {
+            setSkipped(true);
+            try {
+              window.localStorage.setItem('vayu.setup.skipped', 'yes');
+            } catch {
+              // Best effort.
+            }
+          }}
+        >
+          Skip set-up for now
+        </button>
+      )}
       {children}
       <p className="muted small places-note">
         {airStore().kind === 'sample' ? (

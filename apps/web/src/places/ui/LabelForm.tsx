@@ -11,9 +11,15 @@ export const LABEL_SUGGESTIONS = ['Home', 'School', 'Office', 'Park'] as const;
 export function LabelForm({
   onSave,
   submit = 'Pin it',
+  choices = LABEL_SUGGESTIONS,
+  custom = true,
 }: {
   readonly onSave: (label: string) => void;
   readonly submit?: string;
+  /** The names offered as buttons. */
+  readonly choices?: readonly string[];
+  /** Whether a name of your own may be typed too. */
+  readonly custom?: boolean;
 }): React.JSX.Element {
   const [label, setLabel] = useState('');
   const clean = label.trim();
@@ -26,7 +32,7 @@ export function LabelForm({
       }}
     >
       <div className="here-chips" role="group" aria-label="Suggested names">
-        {LABEL_SUGGESTIONS.map((name) => (
+        {choices.map((name) => (
           <button
             key={name}
             type="button"
@@ -40,19 +46,23 @@ export function LabelForm({
         ))}
       </div>
       <div className="here-name">
-        <label className="sr-only" htmlFor="place-label">
-          Name for this place
-        </label>
-        <input
-          id="place-label"
-          value={label}
-          maxLength={40}
-          placeholder="Or type a name, like Gym"
-          autoComplete="off"
-          onChange={(event) => {
-            setLabel(event.target.value);
-          }}
-        />
+        {custom && (
+          <>
+            <label className="sr-only" htmlFor="place-label">
+              Name for this place
+            </label>
+            <input
+              id="place-label"
+              value={label}
+              maxLength={40}
+              placeholder="Or type a name, like Gym"
+              autoComplete="off"
+              onChange={(event) => {
+                setLabel(event.target.value);
+              }}
+            />
+          </>
+        )}
         <button type="submit" disabled={clean === ''}>
           <Check size={18} strokeWidth={2.25} aria-hidden="true" /> {submit}
         </button>

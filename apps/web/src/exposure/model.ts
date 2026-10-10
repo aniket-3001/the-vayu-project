@@ -30,6 +30,8 @@ export type Source =
   | 'unit';
 
 export interface Cell {
+  /** For a cell from the phone's location: the set place it was in, or outdoors if it was in none. */
+  readonly at?: SpotKind;
   readonly hour: number;
   readonly where: Where;
   readonly pm25: number;
@@ -181,7 +183,7 @@ export function dayCells(
       else if (near !== undefined)
         got = { pm25: sampleIndoorPm25(open), source: near.own ? 'device' : 'unit' };
       else got = { pm25: open, source: 'outdoor' };
-      cells.push(cellOf(hour, 'live', got.pm25, got.source));
+      cells.push({ ...cellOf(hour, 'live', got.pm25, got.source), at: here ?? 'outdoor' });
     }
   }
   return cells;

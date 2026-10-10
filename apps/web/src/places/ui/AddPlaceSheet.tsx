@@ -22,8 +22,17 @@ export function AddPlaceSheet({
   locate,
   onSave,
   onCancel,
+  title = 'Add a place',
+  fixedLabel,
+  choices,
 }: {
   readonly initial?: FoundPlace | undefined;
+  /** What the sheet is for, when it is for one thing: “Where is home?”. */
+  readonly title?: string;
+  /** A name that is already decided, so the sheet asks only where. */
+  readonly fixedLabel?: string;
+  /** Only these names may be chosen, and none of your own: “Work” or “School”. */
+  readonly choices?: readonly string[];
   readonly search?: (query: string) => Promise<readonly PlaceMatch[]>;
   readonly locate?: Locate;
   readonly onSave: (label: string, place: FoundPlace) => void;
@@ -45,11 +54,11 @@ export function AddPlaceSheet({
         className="sheet here-sheet"
         role="dialog"
         aria-modal="true"
-        aria-label={found === undefined ? 'Add a place' : 'Name this place'}
+        aria-label={found === undefined ? title : 'Name this place'}
       >
         {found === undefined ? (
           <>
-            <h2>Add a place</h2>
+            <h2>{title}</h2>
             <p className="muted">Use where you are, or search for it.</p>
             <PlacePicker
               name="Here"
@@ -57,14 +66,19 @@ export function AddPlaceSheet({
               {...(search !== undefined ? { search } : {})}
               {...(locate !== undefined ? { locate } : {})}
               onPick={(pin) => {
-                setFound({
+                const place: FoundPlace = {
                   name: pin.name,
                   ...(pin.detail === undefined || pin.detail === 'Detected'
                     ? { detail: 'Your location' }
                     : { detail: pin.detail }),
                   lat: pin.lat,
                   lng: pin.lng,
-                });
+                };
+                if (fixedLabel !== undefined) {
+                  onSave(fixedLabel, place);
+                  return;
+                }
+                setFound(place);
               }}
               onCancel={onCancel}
             />
@@ -79,6 +93,7 @@ export function AddPlaceSheet({
               )}
             </p>
             <LabelForm
+              {...(choices !== undefined ? { choices, custom: false } : {})}
               onSave={(label) => {
                 onSave(label, found);
               }}

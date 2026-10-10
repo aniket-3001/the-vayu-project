@@ -16,6 +16,7 @@ import type { PlaceMatch } from '../data/geocode';
 interface Props {
   readonly search?: (query: string) => Promise<readonly PlaceMatch[]>;
   readonly locate?: React.ComponentProps<typeof PlacesPanel>['locate'];
+  readonly address?: React.ComponentProps<typeof PlacesPanel>['address'];
 }
 
 const TABS = [
@@ -24,7 +25,7 @@ const TABS = [
 ] as const;
 
 /** The home tab: your places and your devices. */
-export function MyAirScreen({ search, locate }: Props): React.JSX.Element {
+export function MyAirScreen({ search, locate, address }: Props): React.JSX.Element {
   const [params, setParams] = useSearchParams();
   const tab = params.get('tab') === 'devices' ? 'devices' : 'places';
   const { pins } = usePins();
@@ -62,6 +63,12 @@ export function MyAirScreen({ search, locate }: Props): React.JSX.Element {
           ))}
         </div>
       </header>
+      {tab === 'places' && first !== undefined && reading !== undefined && (
+        <div className="places-main tasks-wrap">
+          <AlertsStrip alerts={alerts} data={reading} />
+          {tips.length > 0 && <TipsCard tips={tips} placeName={first.name} />}
+        </div>
+      )}
       <main
         className="places-main"
         role="tabpanel"
@@ -72,14 +79,8 @@ export function MyAirScreen({ search, locate }: Props): React.JSX.Element {
           <PlacesPanel
             {...(search !== undefined ? { search } : {})}
             {...(locate !== undefined ? { locate } : {})}
-          >
-            {first !== undefined && reading !== undefined && (
-              <div className="tasks-wrap">
-                <AlertsStrip alerts={alerts} data={reading} />
-                {tips.length > 0 && <TipsCard tips={tips} placeName={first.name} />}
-              </div>
-            )}
-          </PlacesPanel>
+            {...(address !== undefined ? { address } : {})}
+          />
         ) : (
           <DevicesPanel />
         )}

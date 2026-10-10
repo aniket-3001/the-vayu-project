@@ -1,6 +1,6 @@
 import { CalendarDays, Info, LocateFixed, Plus } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import type { PlaceMatch } from '../data/geocode';
 import { useDevices } from '../devices/useDevices';
 import { levelForAqi } from '../design/levels';
@@ -24,19 +24,17 @@ import {
   openAirFor,
   summarise,
   type DateKey,
-  type Where,
 } from './model';
 import { personaById } from './persona';
 import { DAY_LABELS, initials, MAX_PEOPLE, personaOf } from './people';
-import { DEFAULT_HOURS, SPOT_LABELS, loadAllSpots, type SpotKind } from './spots';
+import { loadAllSpots } from './spots';
 import { sourcesNote } from './sources';
-import { Dial, DialKey, WHERE_LABELS } from './ui/Dial';
+import { Dial, DialInfo, WHERE_LABELS, type DialRing } from './ui/Dial';
 import { Summary } from './ui/Summary';
 import { WeekStrip } from './ui/WeekStrip';
 import { allUnits } from './units';
 import { useHousehold, useLive, useOutings, useSpots } from './useExposure';
 import { AddPerson } from './ui/AddPerson';
-import { SetUpDay } from './ui/SetUpDay';
 import { OutingSheet } from './ui/OutingSheet';
 import { PersonPanel } from './ui/PersonPanel';
 import { saveSpots } from './spots';
@@ -44,7 +42,6 @@ import { saveSpots } from './spots';
 /** The week overview, or one date. */
 type View = DateKey;
 const WEEK = 'week';
-type Tab = 'all' | SpotKind;
 
 const hourSpan = (hour: number): string =>
   `${String(hour).padStart(2, '0')}:00 to ${String((hour + 1) % 24).padStart(2, '0')}:00`;
@@ -81,11 +78,7 @@ export function ExposureScreen({
   const [view, setView] = useState<View>(today());
   // A link from elsewhere (the assistant, after logging an outing) can open a person, a tab and an hour.
   const [params] = useSearchParams();
-  const wantedTab = params.get('tab');
   const wantedHour = Number(params.get('hour'));
-  const [tab, setTab] = useState<Tab>(
-    wantedTab === 'outdoor' || wantedTab === 'home' || wantedTab === 'work' ? wantedTab : 'all',
-  );
   // The hour shown starts at the latest one so far today, not noon, so what was just logged is what you see.
   const [picked, setPicked] = useState(() =>
     params.has('hour') && Number.isInteger(wantedHour) && wantedHour >= 0 && wantedHour < 24
@@ -120,9 +113,7 @@ export function ExposureScreen({
       ]),
     [devices, spots, household.people],
   );
-  const rings: readonly Where[] = [...info.kinds, 'live'];
   const date = view === WEEK ? today() : view;
-  const shownTab: Tab = tab !== 'all' && !info.kinds.some((k) => k === tab) ? 'all' : tab;
 
   // The air at every place this person's day touches: where they are set, where they went outside, and where
   // their location put them. It loads, and the dial fills in as it arrives.
@@ -146,18 +137,21 @@ export function ExposureScreen({
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [visible, units, live.log, date, outings, history],
   );
-  const shown = shownTab === 'all' ? cells : cells.filter((cell) => cell.where === shownTab);
-  const counted = shownTab === 'all' ? countedCells(cells) : shown;
+  // At any hour a person is in one place, so one cell is kept for each hour: the others overlap it and are left out.
+  const counted = useMemo(() => countedCells(cells), [cells]);
   const summary = summarise(counted, openAirFor(counted, visible, live.log, date));
   const week = useMemo(
     () => lastWeek().map((d) => ({ date: d, summary: daySummary(visible, units, {}, d, outings) })),
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [visible, units, outings, history],
   );
-  const setKinds = new Set<Where>(info.kinds.filter((kind) => visible[kind] !== undefined));
-  if (Object.keys(live.log).length > 0) setKinds.add('live');
-  if (cells.some((cell) => cell.where === 'outdoor')) setKinds.add('outdoor');
-  const atPicked = shown.filter((cell) => cell.hour === picked);
+  const atPicked = counted.filter((cell) => cell.hour === picked);
+  const ringNames: Record<DialRing, string> = {
+    home: 'Home',
+    work: person.day === 'school' ? 'School' : person.day === 'work' ? 'Work' : 'Work / School',
+    outdoor: 'Outdoor',
+  };
+  const nothingSet = Object.keys(visible).length === 0 && counted.length === 0;
   const isToday = date === today();
   const span =
     summary?.fullDay === false ? `so far today (${String(summary.hours)} hours)` : 'over the day';
@@ -169,7 +163,6 @@ export function ExposureScreen({
   };
   const choosePerson = (id: string): void => {
     select(id);
-    setTab('all');
     setPanel(true);
   };
   const isMe = person.id === 'me';
@@ -338,47 +331,47 @@ export function ExposureScreen({
 
         {view === WEEK && <WeekStrip days={week} onOpen={open} />}
 
-        {view !== 'week' && !noData && Object.keys(visible).length === 0 && (
-          <SetUpDay
-            name={isMe ? 'your' : `${person.name}’s`}
-            kinds={info.kinds}
-            pins={pins}
-            onAddPin={addPin}
-            {...(search !== undefined ? { search } : {})}
-            onSet={(kind, pin) => {
-              set(kind, { pin, ...DEFAULT_HOURS[kind] });
-            }}
-          />
+        {view !== 'week' && !noData && nothingSet && (
+          <section className="setup-day" aria-label="Set up your places">
+            <h2>{isMe ? 'Set your places on My Air' : `Set ${person.name}’s places`}</h2>
+            {isMe ? (
+              <p className="muted">
+                Exposure is the air at the places you spend the day. Add home, work or school, and a
+                park on My Air, and this chart fills in.
+              </p>
+            ) : (
+              <p className="muted">Open {person.name}’s day below to say where they spend it.</p>
+            )}
+            {isMe ? (
+              <Link to="/" className="primary-link">
+                Go to My Air
+              </Link>
+            ) : (
+              <button
+                type="button"
+                className="primary-link"
+                onClick={() => {
+                  setPanel(true);
+                }}
+              >
+                Set {person.name}’s places
+              </button>
+            )}
+          </section>
         )}
 
         {view !== 'week' && !noData && (
           <>
-            <div className="segmented wide kinds" role="group" aria-label="Show">
-              {(['all', ...info.kinds] as const).map((t) => (
-                <button
-                  key={t}
-                  type="button"
-                  aria-pressed={shownTab === t}
-                  onClick={() => {
-                    setTab(t);
-                  }}
-                >
-                  {t === 'all' ? 'All' : SPOT_LABELS[t]}
-                </button>
-              ))}
-            </div>
             <div className="dial-wrap">
               <Dial
-                cells={cells}
-                rings={rings}
-                focus={shownTab}
+                cells={counted}
+                names={ringNames}
                 nowHour={isToday ? hoursSoFar(today()) + 0.5 : undefined}
                 picked={picked}
                 onPick={setPicked}
-                set={setKinds}
               />
+              <DialInfo names={ringNames} />
             </div>
-            <DialKey rings={rings} focus={shownTab} />
             <div className="hour-row">
               <div className="hour-picker">
                 <label htmlFor="hour">Hour</label>
@@ -415,11 +408,7 @@ export function ExposureScreen({
                 <p className="muted">
                   {isToday && picked >= hoursSoFar(today())
                     ? 'That hour has not happened yet.'
-                    : shownTab === 'outdoor'
-                      ? isMe
-                        ? 'No outdoor time counted for this hour. It comes from your location.'
-                        : `No outdoor time logged for this hour. Log it for ${person.name}.`
-                      : 'No place set for this hour.'}
+                    : 'No place was set for this hour.'}
                 </p>
               ) : (
                 <ul>
@@ -497,7 +486,6 @@ export function ExposureScreen({
           onSave={(details) => {
             addOuting(details);
             setLogging(false);
-            setTab('outdoor');
             setView(details.date);
             setPicked(Math.floor(details.start / 60));
           }}
@@ -514,7 +502,6 @@ export function ExposureScreen({
           onAdd={(details, newSpots) => {
             const id = add(details);
             saveSpots(window.localStorage, id, newSpots);
-            setTab('all');
             setAdding(false);
           }}
         />

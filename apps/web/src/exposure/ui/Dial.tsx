@@ -1,5 +1,6 @@
 import { arc } from 'd3-shape';
-import { UserRound } from 'lucide-react';
+import { Info, UserRound, X } from 'lucide-react';
+import { useEffect, useState } from 'react';
 import { levelForAqi } from '../../design/levels';
 import type { Cell, Where } from '../model';
 import { SPOT_LABELS } from '../spots';
@@ -12,42 +13,107 @@ const SWEEP = 290; // degrees, with the gap at the bottom where 24 meets 0
 
 export const WHERE_LABELS: Readonly<Record<Where, string>> = { ...SPOT_LABELS, live: 'Live' };
 
-/** What each ring is, in a few words, for the key under the dial. */
-export const WHERE_HELP: Readonly<Record<Where, string>> = {
-  home: 'Hours at home, indoors unless a monitor says otherwise',
-  work: 'Hours at work',
-  school: 'Hours at school',
-  outdoor: 'Time logged outside: walks, play, a park',
-  live: 'Where your phone put you, hour by hour',
+/** The three rings of a day, outside in: home, work or school, and outdoors. */
+export const DIAL_RINGS = ['home', 'work', 'outdoor'] as const;
+export type DialRing = (typeof DIAL_RINGS)[number];
+
+/** The ring an hour belongs to: school is the work ring, and a fix from the phone is the place it was in. */
+export function ringOf(cell: Cell): DialRing {
+  const where = cell.where === 'live' ? (cell.at ?? 'outdoor') : cell.where;
+  return where === 'school' ? 'work' : where;
+}
+
+/** What each ring is, in a few words, for the card that explains the dial. */
+export const RING_HELP: Readonly<Record<DialRing, string>> = {
+  home: 'The hours you were at home',
+  work: 'The hours you were at work or school',
+  outdoor: 'The hours you were outside: walks, play, the park',
 };
 
 /**
- * What the dial shows, said plainly, with a key to its rings. The rings run from the outside in, in the order listed;
- * the chosen one is bold.
+ * The card that explains the dial, which pops up from a small “i” at the corner of the chart, the way an alert
+ * opens. It says how to read the chart and what each ring is, and nothing else is in the way of the chart.
  */
-export function DialKey({
-  rings,
-  focus,
+export function DialInfo({
+  names,
 }: {
-  readonly rings: readonly Where[];
-  readonly focus: 'all' | Where;
+  readonly names: Readonly<Record<DialRing, string>>;
 }): React.JSX.Element {
+  const [open, setOpen] = useState(false);
+  useEffect(() => {
+    if (!open) return undefined;
+    const onKey = (event: KeyboardEvent): void => {
+      if (event.key === 'Escape') setOpen(false);
+    };
+    window.addEventListener('keydown', onKey);
+    return () => {
+      window.removeEventListener('keydown', onKey);
+    };
+  }, [open]);
   return (
-    <div className="dial-key">
-      <p className="small">
-        <strong>How to read this.</strong> Each segment is an hour, 0 to 24 round the dial. Each
-        ring is a kind of place, outside in. Colour is the AQI breathed: green clean, red unhealthy,
-        grey nothing set.
-      </p>
-      <ol className="ring-key" aria-label="The rings, outside in">
-        {rings.map((where) => (
-          <li key={where} className={focus === where ? 'on' : ''}>
-            <strong>{WHERE_LABELS[where]}</strong>
-            <span className="muted small"> {WHERE_HELP[where]}</span>
-          </li>
-        ))}
-      </ol>
-    </div>
+    <>
+      <button
+        type="button"
+        className="dial-info-button"
+        aria-label="How to read this chart"
+        aria-haspopup="dialog"
+        onClick={() => {
+          setOpen(true);
+        }}
+      >
+        <Info size={20} strokeWidth={2} aria-hidden="true" />
+      </button>
+      {open && (
+        <div
+          className="sheet-backdrop"
+          role="presentation"
+          onClick={(event) => {
+            if (event.target === event.currentTarget) setOpen(false);
+          }}
+          onKeyDown={(event) => {
+            if (event.key === 'Escape') setOpen(false);
+          }}
+        >
+          <div
+            className="sheet dial-info"
+            role="dialog"
+            aria-modal="true"
+            aria-label="How to read this chart"
+          >
+            <div className="sheet-head">
+              <h2>How to read this</h2>
+              <button
+                type="button"
+                className="icon-button"
+                aria-label="Close"
+                onClick={() => {
+                  setOpen(false);
+                }}
+              >
+                <X size={20} aria-hidden="true" />
+              </button>
+            </div>
+            <p>
+              Each segment is one hour, from 0 at the bottom left round to 24. At any hour you are
+              in one place, so one ring is filled for it, in the colour of the air you breathed
+              there.
+            </p>
+            <ol className="ring-key" aria-label="The rings, outside in">
+              {DIAL_RINGS.map((ring) => (
+                <li key={ring}>
+                  <strong>{names[ring]}</strong>
+                  <span className="muted small"> {RING_HELP[ring]}</span>
+                </li>
+              ))}
+            </ol>
+            <p className="muted small">
+              Green is clean and red is unhealthy. A grey segment means no place was set for that
+              hour, or the hour has not happened yet.
+            </p>
+          </div>
+        </div>
+      )}
+    </>
   );
 }
 
@@ -68,34 +134,29 @@ const cellPath = arc();
  */
 export function Dial({
   cells,
-  rings,
-  focus,
+  names,
   nowHour,
   picked,
   onPick,
-  set,
 }: {
+  /** One cell for each hour: the place the person was in, and nothing for the places they were not. */
   readonly cells: readonly Cell[];
-  /** Every ring, outside in. */
-  readonly rings: readonly Where[];
-  /** `all` for every ring alike, or one kind to lift above the rest. */
-  readonly focus: 'all' | Where;
+  readonly names: Readonly<Record<DialRing, string>>;
   /** The hour to mark as now, or undefined for a finished day. */
   readonly nowHour: number | undefined;
   readonly picked: number;
   readonly onPick: (hour: number) => void;
-  /** Which kinds have been set, so the others show faint in the centre. */
-  readonly set: ReadonlySet<Where>;
 }): React.JSX.Element {
+  const rings = DIAL_RINGS;
   const thickness = (OUTER - INNER) / rings.length;
-  const gap = rings.length > 1 ? 2 : 0;
+  const gap = 2;
 
   return (
     <svg
       viewBox={`0 0 ${String(SIZE)} ${String(SIZE)}`}
       className="dial"
       role="img"
-      aria-label="A 24-hour dial of the air you breathed, one ring for each kind of place: home, work or school, outdoors, and where your location put you"
+      aria-label="A 24-hour dial of the air you breathed: home, work or school, and outdoors"
     >
       {Array.from({ length: 25 }, (_, h) => {
         const [x1, y1] = point(OUTER + 4, h);
@@ -128,23 +189,16 @@ export function Dial({
       {rings.map((where, ringIndex) => {
         const outer = OUTER - ringIndex * thickness;
         const inner = outer - thickness + gap;
-        const lifted = focus === where;
-        const faded = focus !== 'all' && !lifted;
         // Each ring is named in the gap at the bottom, where the day starts and ends, level with its own ring.
         const labelX = C;
         const labelY = C + (outer + inner) / 2;
         return (
-          <g key={where} className={faded ? 'ring faded' : lifted ? 'ring lifted' : 'ring'}>
-            <text
-              x={labelX}
-              y={labelY + 3}
-              textAnchor="middle"
-              className={`ring-name${lifted ? ' on' : ''}`}
-            >
-              {WHERE_LABELS[where]}
+          <g key={where} className="ring">
+            <text x={labelX} y={labelY + 3} textAnchor="middle" className="ring-name">
+              {names[where]}
             </text>
             {Array.from({ length: 24 }, (_, hour) => {
-              const cell = cells.find((c) => c.hour === hour && c.where === where);
+              const cell = cells.find((c) => c.hour === hour && ringOf(c) === where);
               const d = cellPath({
                 innerRadius: inner,
                 outerRadius: outer,
@@ -165,20 +219,6 @@ export function Dial({
                 />
               );
             })}
-            {lifted && (
-              <path
-                d={
-                  cellPath({
-                    innerRadius: inner - 1,
-                    outerRadius: outer + 1,
-                    startAngle: angle(0),
-                    endAngle: angle(24),
-                  }) ?? ''
-                }
-                transform={`translate(${String(C)} ${String(C)})`}
-                className="ring-outline"
-              />
-            )}
           </g>
         );
       })}
@@ -215,17 +255,6 @@ export function Dial({
         className="dial-person"
         aria-hidden="true"
       />
-      {rings.map((where, i) => (
-        <text
-          key={where}
-          x={C}
-          y={C - 2 + i * 12}
-          textAnchor="middle"
-          className={`dial-name${focus === where ? ' on' : ''}${set.has(where) ? '' : ' unset'}`}
-        >
-          {WHERE_LABELS[where].toUpperCase()}
-        </text>
-      ))}
     </svg>
   );
 }

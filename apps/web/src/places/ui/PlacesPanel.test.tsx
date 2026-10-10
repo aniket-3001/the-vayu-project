@@ -24,7 +24,7 @@ const lucknow: PlaceMatch = {
 const screenWith = (props: React.ComponentProps<typeof MyAirScreen> = {}): void => {
   render(
     <MemoryRouter>
-      <MyAirScreen {...props} />
+      <MyAirScreen address={() => Promise.resolve('Sector 49, Gurugram')} {...props} />
     </MemoryRouter>,
   );
 };
@@ -105,14 +105,62 @@ describe('the Places screen', () => {
     expect(screen.getByRole('link', { name: 'Open Home' })).toBeInTheDocument();
   });
 
-  it('says plainly when nothing is pinned: only the dotted square with a plus is left', async () => {
+  it('says plainly when nothing is pinned: three set-up fields and the plus square are left', async () => {
     screenWith();
     for (const name of ['Home', 'School', 'Office', 'Park']) {
       await userEvent.click(screen.getByRole('button', { name: `Remove ${name}` }));
     }
-    const list = screen.getByRole('list', { name: 'Your places' });
-    expect(list.children).toHaveLength(1);
-    expect(screen.getByRole('button', { name: 'Add a place' })).toBeInTheDocument();
+    for (const name of ['Set Home', 'Set Work or school', 'Set Park', 'Add a place'])
+      expect(screen.getByRole('button', { name })).toBeInTheDocument();
+  });
+
+  it('asks for home, work or school, and a park as input fields, and a field becomes a card when set', async () => {
+    window.localStorage.setItem('vayu.pins.v1', '[]');
+    screenWith({
+      locate: (found) => {
+        found(28.4, 77.05);
+      },
+    });
+    await userEvent.click(screen.getByRole('button', { name: 'Set Home' }));
+    const sheet = screen.getByRole('dialog', { name: 'Where is home?' });
+    await userEvent.click(within(sheet).getByRole('button', { name: 'Detect me' }));
+    // Home needs no name: it goes straight to a card, with the address under it.
+    const card = (await screen.findByRole('link', { name: 'Open Home' })).closest('li');
+    expect(card?.querySelector('.pc-name')).toHaveTextContent('Home');
+    expect(card?.querySelector('.pc-detail')).toHaveTextContent('Sector 49, Gurugram');
+    expect(screen.queryByRole('button', { name: 'Set Home' })).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Set Work or school' })).toBeInTheDocument();
+    // And it counts in the owner's day on Exposure.
+    const spots = JSON.parse(window.localStorage.getItem('vayu.spots.v3') ?? '{}') as {
+      me?: { home?: { pin?: { name?: string } } };
+    };
+    expect(spots.me?.home?.pin?.name).toBe('Home');
+  });
+
+  it('makes the work or school field a choice of the two, and the day follows it', async () => {
+    window.localStorage.setItem('vayu.pins.v1', '[]');
+    screenWith({
+      locate: (found) => {
+        found(28.4, 77.05);
+      },
+    });
+    await userEvent.click(screen.getByRole('button', { name: 'Set Work or school' }));
+    await userEvent.click(
+      within(screen.getByRole('dialog', { name: 'Where do you work or study?' })).getByRole(
+        'button',
+        { name: 'Detect me' },
+      ),
+    );
+    const name = screen.getByRole('dialog', { name: 'Name this place' });
+    // Only the two, and no name of your own.
+    expect(within(name).queryByRole('textbox')).not.toBeInTheDocument();
+    await userEvent.click(within(name).getByRole('button', { name: 'School' }));
+    await userEvent.click(within(name).getByRole('button', { name: /Pin it/u }));
+    expect(await screen.findByRole('link', { name: 'Open School' })).toBeInTheDocument();
+    const people = JSON.parse(window.localStorage.getItem('vayu.people.v1') ?? '{}') as {
+      people?: { id: string; day: string }[];
+    };
+    expect(people.people?.find((p) => p.id === 'me')?.day).toBe('school');
   });
 
   it('adds a place from the plus square: where, then what to call it, then it is pinned under that name', async () => {
@@ -128,10 +176,10 @@ describe('the Places screen', () => {
     const name = screen.getByRole('dialog', { name: 'Name this place' });
     // It cannot be pinned without a name.
     expect(within(name).getByRole('button', { name: /Pin it/u })).toBeDisabled();
-    await userEvent.click(within(name).getByRole('button', { name: 'School' }));
+    await userEvent.type(within(name).getByRole('textbox'), 'Gym');
     await userEvent.click(within(name).getByRole('button', { name: /Pin it/u }));
+    expect(await screen.findByRole('link', { name: 'Open Gym' })).toBeInTheDocument();
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'Open School' })).toBeInTheDocument();
   });
 
   it('asks for a name before a searched place is pinned, and accepts any name', async () => {
@@ -148,7 +196,7 @@ describe('the Places screen', () => {
       'Aunt’s house',
     );
     await userEvent.click(within(sheet).getByRole('button', { name: /Pin it/u }));
-    const link = screen.getByRole('link', { name: 'Open Aunt’s house' });
+    const link = await screen.findByRole('link', { name: 'Open Aunt’s house' });
     expect(link).toBeInTheDocument();
     // The card still says which place it is, under the name.
     expect(link).toHaveTextContent('Lucknow');

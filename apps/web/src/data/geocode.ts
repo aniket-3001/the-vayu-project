@@ -134,3 +134,29 @@ export async function searchPlaces(
   if (found.length === 0 && failure !== undefined) throw failure as Error;
   return found.slice(0, 6);
 }
+
+/**
+ * The address of a point, as people say it: the street, the area and the city. Used to name a place found by
+ * “Detect me”. Only the point is sent, to the same search service; it returns nothing useful at sea, and then the
+ * caller keeps its own words.
+ */
+export async function addressOf(
+  lat: number,
+  lng: number,
+  fetchImpl: typeof fetch = fetch,
+): Promise<string | undefined> {
+  try {
+    const res = await fetchImpl(
+      `https://photon.komoot.io/reverse?lat=${String(lat)}&lon=${String(lng)}&lang=en&limit=1`,
+    );
+    if (!res.ok) return undefined;
+    const body = (await res.json()) as { features?: readonly PhotonFeature[] };
+    const p = body.features?.[0]?.properties;
+    if (p === undefined) return undefined;
+    const house = [p.name, p.street].filter((part) => part !== undefined && part !== '');
+    const text = joined([...house, p.locality ?? p.district, p.city ?? p.county, p.state]);
+    return text === '' ? undefined : text;
+  } catch {
+    return undefined;
+  }
+}
