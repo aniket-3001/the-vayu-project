@@ -3842,3 +3842,59 @@ button.alert-card {
 .search-form input {
   width: 0;
 }
+
+/* The Lens card is the home place card, opened out and not a link */
+.lens-hud .place-card.open {
+  grid-column: auto;
+  max-height: 46dvh;
+  overflow-y: auto;
+  box-shadow: 0 10px 28px -14px rgb(51 65 85 / 0.55);
+}
+.lens-hud .place-card .pc-hit {
+  min-height: 150px;
+  cursor: default;
+}
+.lens-hud .place-card .pc-name,
+.lens-hud .place-card .pc-detail {
+  padding-right: 0;
+}
+.lens-hud .place-card .pc-aqi strong {
+  font-size: 54px;
+}
+.lens-hud .place-card .pc-face {
+  bottom: auto;
+  top: 10px;
+  right: 10px;
+}
+.lens-hud .place-card .pc-hit .smoke-square.compact {
+  right: 12px;
+  bottom: 12px;
+}
+.lens-facts {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.lens-facts li {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 8px 10px;
+  border-radius: 12px;
+  background: rgb(255 255 255 / 0.55);
+  font-size: 14px;
+  line-height: 1.3;
+}
+.lens-facts svg {
+  flex: none;
+  margin-top: 1px;
+}
+.lens-hud .lens-more summary {
+  color: inherit;
+  text-decoration: underline;
+}
+.lens-hud .lens-foot {
+  margin: 6px 0 0;
+}

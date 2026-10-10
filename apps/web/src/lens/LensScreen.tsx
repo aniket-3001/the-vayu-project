@@ -2,12 +2,9 @@ import {
   Briefcase,
   Camera,
   CameraOff,
-  Compass,
-  Eye,
   GraduationCap,
   House,
   MapPin,
-  Navigation,
   TreePine,
   type LucideIcon,
 } from 'lucide-react';
@@ -19,16 +16,12 @@ import { AirError, AirLoading } from '../components/AirState';
 import { AqiScale } from '../components/AqiScale';
 import { useLivePin } from '../places/liveLocation';
 import { usePins } from '../places/usePins';
-import { compassPoint } from '../today/wind';
 import { clock24, dayMonth, isoDate, weekday } from '../today/time';
-import { Pill } from '../today/ui/Chip';
-import { SmokeSquare } from '../units/AirUnits';
-import { concentration } from '../today/ui/format';
 import { HazeCanvas } from './HazeCanvas';
+import { LensCard } from './LensCard';
 import {
   DIAL_HOURS,
   bestHour,
-  formatDistance,
   hazeFor,
   isNight,
   lensSeries,
@@ -121,7 +114,6 @@ export function LensScreen(): React.JSX.Element {
   }
 
   const PlaceIcon = SCENE_ICONS[sceneFor(pin.name)];
-  const level = levelForAqi(hour.aqi);
   const haze = hazeFor(hour.pm25, hour.aqi);
   const sight = visibilityKm(hour.pm25);
   const best = bestHour(series);
@@ -191,67 +183,17 @@ export function LensScreen(): React.JSX.Element {
       </div>
 
       <div className="lens-hud" ref={hud}>
-        <section className="lens-card" aria-label="The air here">
-          <div className="lens-row">
-            <p className="lens-number" style={{ background: level.solid, color: level.onSolid }}>
-              <strong className="tnum">{hour.aqi}</strong>
-              <span>AQI</span>
-            </p>
-            <div>
-              <p className="lens-level">
-                {level.name}
-                <span className="muted small">
-                  {' '}
-                  · {concentration(hour.pm25)} µg/m³ PM<sub>2.5</sub>
-                </span>
-              </p>
-              {hour.wind !== undefined && (
-                <p className="lens-wind">
-                  <Navigation
-                    size={16}
-                    strokeWidth={2}
-                    aria-hidden="true"
-                    style={{ transform: `rotate(${String(arrow)}deg)` }}
-                  />
-                  From the {compassPoint(hour.wind.fromDeg)}, {hour.wind.kmh} km/h
-                </p>
-              )}
-              <p className="lens-line">
-                <Eye size={16} strokeWidth={1.75} aria-hidden="true" />
-                <span>
-                  You could see about <strong>{formatDistance(sight)}</strong>
-                </span>
-                <Pill>Estimate</Pill>
-              </p>
-            </div>
-            <SmokeSquare pm25={hour.pm25} compact />
-          </div>
-          {advice !== undefined && <p className="lens-line lens-advice">{advice}</p>}
-          <details className="lens-more">
-            <summary>More about this view</summary>
-            <p className="lens-foot muted small">
-              {compass.needsTap ? (
-                <button type="button" className="link-button" onClick={compass.enable}>
-                  <Compass size={14} aria-hidden="true" /> Turn on the compass
-                </button>
-              ) : (
-                <span>
-                  {compass.heading === undefined
-                    ? 'North is up.'
-                    : `Facing ${compassPoint(compass.heading)}.`}
-                </span>
-              )}
-              <span role="status">{CAMERA_WORDS[camera.state]}</span>
-              <Pill>
-                {data.provenance.mode === 'sample'
-                  ? 'Sample data'
-                  : data.provenance.mode === 'live'
-                    ? `Live · ${data.provenance.stationName ?? 'monitor'}`
-                    : 'Estimate'}
-              </Pill>
-            </p>
-          </details>
-        </section>
+        <LensCard
+          pin={pin}
+          data={data}
+          hour={hour}
+          step={step}
+          sight={sight}
+          arrow={arrow}
+          advice={advice}
+          compass={compass}
+          cameraWords={CAMERA_WORDS[camera.state]}
+        />
 
         <section className="lens-dial" aria-label="Time">
           <div className="dial-labels">

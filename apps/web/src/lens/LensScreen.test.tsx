@@ -30,7 +30,7 @@ describe('the AR Lens', () => {
     expect(screen.getByRole('img', { name: /illustration of a home/u })).toBeInTheDocument();
     const card = screen.getByRole('region', { name: 'The air here' });
     expect(card).toHaveTextContent('Unhealthy');
-    expect(card).toHaveTextContent(/From the north-west, \d+ km\/h/u);
+    expect(card).toHaveTextContent(/Wind from the north-west, \d+ km\/h/u);
     expect(card).toHaveTextContent(/You could see about \d/u);
     expect(card).toHaveTextContent('Estimate');
     expect(card).toHaveTextContent('Sample data');
@@ -82,10 +82,11 @@ describe('the AR Lens', () => {
       'lens-actions',
     ]);
     const hud = document.querySelector('.lens-hud');
-    expect(Array.from(hud?.children ?? []).map((el) => el.className)).toEqual([
-      'lens-card',
-      'lens-dial',
-    ]);
+    const kids = Array.from(hud?.children ?? []);
+    expect(kids).toHaveLength(2);
+    // The card is the home screen's place card, opened out; under it is the time slider.
+    expect(kids[0]).toHaveClass('place-card', 'open', 'lens-card');
+    expect(kids[1]).toHaveClass('lens-dial');
     const round = Array.from(top?.querySelectorAll('.lens-round') ?? []);
     expect(round).toHaveLength(2);
     expect(round[0]).toHaveAccessibleName('Use camera');
@@ -103,11 +104,20 @@ describe('the AR Lens', () => {
     expect(scale.querySelector('.aqi-scale-mark')).toBeInTheDocument();
   });
 
-  it('keeps the smoke note and the camera words behind “More about this view”, so the picture stays clear', () => {
+  it('keeps the camera and compass words behind “About this view”, so the picture stays clear', () => {
     open();
     const more = document.querySelector('.lens-more');
     expect(more).not.toHaveAttribute('open');
-    expect(more).toHaveTextContent('More about this view');
+    expect(more).toHaveTextContent('About this view');
+  });
+
+  it('shows the face, the number, the wind, how far you can see and where the reading came from', () => {
+    open();
+    const card = screen.getByRole('region', { name: 'The air here' });
+    expect(card.querySelector('.pc-face svg')).toBeInTheDocument();
+    expect(card.querySelector('.pc-aqi strong')?.textContent).toMatch(/^\d+$/u);
+    expect(card).toHaveTextContent(/You could see about/u);
+    expect(card.querySelector('.pc-source')).toBeInTheDocument();
   });
 
   it('changes place, and the air with it', () => {

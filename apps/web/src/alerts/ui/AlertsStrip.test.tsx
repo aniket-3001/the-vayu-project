@@ -59,7 +59,10 @@ describe('the alerts strip', () => {
     open('hazardous', 127);
     for (const [name, why] of [
       [/Avoid park walks today/u, /breathe several times more air/u],
-      [/Heavy stubble burning nearby/u, /127 fires.*within 100 km.*upwind|127 fires.*within 100 km.*side the wind comes from/su],
+      [
+        /Heavy stubble burning nearby/u,
+        /127 fires.*within 100 km.*upwind|127 fires.*within 100 km.*side the wind comes from/su,
+      ],
     ] as const) {
       await userEvent.click(screen.getByRole('button', { name }));
       expect(
