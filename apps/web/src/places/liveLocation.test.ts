@@ -1,5 +1,5 @@
-import { describe, expect, it, vi } from 'vitest';
-import { LIVE_LOCATION_KEY, createLiveLocation, livePin } from './liveLocation';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { LIVE_LOCATION_KEY, createLiveLocation, livePin, metresBetween } from './liveLocation';
 
 function memory(initial?: string): Storage {
   const data = new Map<string, string>(initial === undefined ? [] : [[LIVE_LOCATION_KEY, initial]]);
@@ -13,85 +13,119 @@ function memory(initial?: string): Storage {
 
 function device(): {
   geolocation: () => Geolocation;
-  watch: ReturnType<typeof vi.fn>;
-  clearWatch: ReturnType<typeof vi.fn>;
-  move: (lat: number, lng: number) => void;
+  asks: ReturnType<typeof vi.fn>;
+  at: (lat: number, lng: number) => void;
   refuse: () => void;
 } {
-  let ok: PositionCallback = () => undefined;
-  let fail: PositionErrorCallback = () => undefined;
-  const clearWatch = vi.fn();
-  const watch = vi.fn((success: PositionCallback, failure: PositionErrorCallback) => {
-    ok = success;
-    fail = failure;
-    return 7;
+  let next = { lat: 28.5, lng: 77.1 };
+  let refuse = false;
+  const asks = vi.fn((ok: PositionCallback, fail: PositionErrorCallback) => {
+    if (refuse) fail({ code: 1 } as GeolocationPositionError);
+    else ok({ coords: { latitude: next.lat, longitude: next.lng } } as GeolocationPosition);
   });
-  const geolocation = { watchPosition: watch, clearWatch } as unknown as Geolocation;
+  const geolocation = { getCurrentPosition: asks } as unknown as Geolocation;
   return {
     geolocation: () => geolocation,
-    watch,
-    clearWatch,
-    move: (lat: number, lng: number) => {
-      ok({ coords: { latitude: lat, longitude: lng } } as GeolocationPosition);
+    asks,
+    at: (lat, lng) => {
+      next = { lat, lng };
     },
     refuse: () => {
-      fail({ code: 1 } as GeolocationPositionError);
+      refuse = true;
     },
   };
 }
 
 describe('live location', () => {
-  it('starts off, asks when turned on, and follows the device', () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+  });
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it('starts off, asks once when turned on, and holds the place it was given', () => {
     const d = device();
     const live = createLiveLocation({ storage: memory(), geolocation: d.geolocation });
     expect(live.get()).toEqual({ enabled: false, status: 'off' });
     live.set(true);
-    expect(live.get()).toMatchObject({ enabled: true, status: 'asking' });
-    d.move(28.5, 77.1);
-    expect(live.get()).toEqual({
+    expect(d.asks).toHaveBeenCalledTimes(1);
+    expect(live.get()).toMatchObject({
       enabled: true,
       status: 'on',
       position: { lat: 28.5, lng: 77.1 },
     });
-    d.move(28.6, 77.2);
-    expect(live.get().position).toEqual({ lat: 28.6, lng: 77.2 });
+  });
+
+  it('looks again only every fifteen minutes, to spare the battery', () => {
+    const d = device();
+    createLiveLocation({ storage: memory(), geolocation: d.geolocation }).set(true);
+    vi.advanceTimersByTime(14 * 60_000);
+    expect(d.asks).toHaveBeenCalledTimes(1);
+    vi.advanceTimersByTime(60_000);
+    expect(d.asks).toHaveBeenCalledTimes(2);
+    vi.advanceTimersByTime(30 * 60_000);
+    expect(d.asks).toHaveBeenCalledTimes(4);
+  });
+
+  it('keeps the place when the device has moved less than 500 m, and takes the new one when it has moved more', () => {
+    const d = device();
+    const live = createLiveLocation({ storage: memory(), geolocation: d.geolocation });
+    const heard = vi.fn();
+    live.set(true);
+    live.subscribe(heard);
+    // About 220 m north: the same place.
+    d.at(28.502, 77.1);
+    vi.advanceTimersByTime(15 * 60_000);
+    expect(live.get().position).toEqual({ lat: 28.5, lng: 77.1 });
+    expect(live.get().checkedAt).toBeDefined();
+    // About 1.1 km north: a new place.
+    d.at(28.51, 77.1);
+    vi.advanceTimersByTime(15 * 60_000);
+    expect(live.get().position).toEqual({ lat: 28.51, lng: 77.1 });
+  });
+
+  it('measures distance on the ground', () => {
+    expect(metresBetween({ lat: 28.5, lng: 77.1 }, { lat: 28.5, lng: 77.1 })).toBe(0);
+    expect(metresBetween({ lat: 28.5, lng: 77.1 }, { lat: 28.51, lng: 77.1 })).toBeGreaterThan(
+      1000,
+    );
+    expect(metresBetween({ lat: 28.5, lng: 77.1 }, { lat: 28.5, lng: 77.104 })).toBeLessThan(500);
   });
 
   it('is remembered, so it is not set up again each visit: it resumes by itself', () => {
     const storage = memory();
-    const first = device();
-    createLiveLocation({ storage, geolocation: first.geolocation }).set(true);
+    createLiveLocation({ storage, geolocation: device().geolocation }).set(true);
     const second = device();
     const next = createLiveLocation({ storage, geolocation: second.geolocation });
     expect(next.get().enabled).toBe(true);
-    expect(second.watch).not.toHaveBeenCalled();
+    expect(second.asks).not.toHaveBeenCalled();
     next.resume();
-    expect(second.watch).toHaveBeenCalledTimes(1);
+    expect(second.asks).toHaveBeenCalledTimes(1);
     next.resume();
-    expect(second.watch).toHaveBeenCalledTimes(1);
+    expect(second.asks).toHaveBeenCalledTimes(1);
   });
 
-  it('stops following, and forgets the position, when turned off', () => {
+  it('stops asking when turned off', () => {
     const d = device();
     const live = createLiveLocation({ storage: memory(), geolocation: d.geolocation });
     live.set(true);
-    d.move(28.5, 77.1);
     live.set(false);
-    expect(d.clearWatch).toHaveBeenCalledWith(7);
+    vi.advanceTimersByTime(60 * 60_000);
+    expect(d.asks).toHaveBeenCalledTimes(1);
     expect(live.get()).toEqual({ enabled: false, status: 'off' });
-    expect(
-      createLiveLocation({ storage: memory('on'), geolocation: d.geolocation }).get().enabled,
-    ).toBe(true);
   });
 
   it('says so when the browser refuses, turns itself off, and does not ask again until told', () => {
     const storage = memory();
     const d = device();
+    d.refuse();
     const live = createLiveLocation({ storage, geolocation: d.geolocation });
     live.set(true);
-    d.refuse();
     expect(live.get()).toEqual({ enabled: false, status: 'refused' });
     expect(storage.getItem(LIVE_LOCATION_KEY)).toBe('off');
+    vi.advanceTimersByTime(60 * 60_000);
+    expect(d.asks).toHaveBeenCalledTimes(1);
   });
 
   it('says so when there is no location in this browser', () => {
@@ -106,11 +140,11 @@ describe('live location', () => {
     const heard = vi.fn();
     const leave = live.subscribe(heard);
     live.set(true);
-    d.move(28.5, 77.1);
-    expect(heard).toHaveBeenCalledTimes(2);
+    const first = heard.mock.calls.length;
+    expect(first).toBeGreaterThanOrEqual(2);
     leave();
-    d.move(28.6, 77.2);
-    expect(heard).toHaveBeenCalledTimes(2);
+    vi.advanceTimersByTime(15 * 60_000);
+    expect(heard).toHaveBeenCalledTimes(first);
   });
 });
 

@@ -6,6 +6,7 @@ import {
   fetchFireCount,
   fetchWindGrid,
   gridPoints,
+  worldPoints,
   recall,
   remember,
   towardsDeg,
@@ -71,10 +72,22 @@ describe('wind from Open-Meteo', () => {
   });
 });
 
+describe('the world grid', () => {
+  it('covers the planet from pole to pole, without repeating the close grid', () => {
+    const world = worldPoints(10);
+    expect(world.some((p) => p.lat < -60)).toBe(true);
+    expect(world.some((p) => p.lat > 60)).toBe(true);
+    expect(world.some((p) => p.lng < -150)).toBe(true);
+    expect(world.some((p) => p.lat === 28 && p.lng === 78)).toBe(false);
+    expect(world.length).toBeLessThan(700);
+  });
+});
+
 describe('air quality from Open-Meteo', () => {
   it('becomes model-grid points with PM2.5 and the AQI the model reports', async () => {
     const air = await fetchAirGrid(echo({ pm2_5: 62.9, us_aqi: 159 }));
-    expect(air).toHaveLength(gridPoints(2).length);
+    // The close grid over south Asia, and a coarse one for the rest of the world.
+    expect(air).toHaveLength(gridPoints(2).length + worldPoints(10).length);
     expect(air[0]).toMatchObject({ pm25: 62.9, aqi: 159, name: 'Model grid' });
   });
 

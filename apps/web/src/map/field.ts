@@ -2,10 +2,10 @@ import { LEVELS } from '../design/levels';
 import type { Monitor } from './monitors';
 
 /** The patch of the world the colour field covers, in degrees. */
-export const FIELD_BOUNDS = { west: 62, east: 96, south: 2, north: 38 } as const;
+export const FIELD_BOUNDS = { west: -180, east: 180, south: -80, north: 80 } as const;
 
 /** How far from a monitor, in degrees, the field still colours anything. Past this we have no idea, so we say nothing. */
-export const REACH_DEG = 3.2;
+export const REACH_DEG = 7;
 
 const distanceDeg = (lat: number, lng: number, m: Monitor): number => {
   const dLat = lat - m.lat;
@@ -122,7 +122,7 @@ export function renderField(
         FIELD_BOUNDS.east - lng,
       );
       // Fade out towards the edge of the data, so the field does not end in a hard box.
-      pixels[i + 3] = Math.round(value.confidence * Math.min(1, edge / 5) * 215);
+      pixels[i + 3] = Math.round(value.confidence * Math.min(1, edge / 3) * 215);
     }
   }
   return pixels;

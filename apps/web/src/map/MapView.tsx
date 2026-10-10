@@ -57,7 +57,7 @@ const CLEAR =
 
 function fieldImage(air: readonly Monitor[]): string {
   if (air.length === 0) return CLEAR;
-  const { pixels, width, height } = grainyField(air, 136, 144, 6);
+  const { pixels, width, height } = grainyField(air, 180, 100, 4);
   const canvas = document.createElement('canvas');
   canvas.width = width;
   canvas.height = height;
@@ -106,7 +106,8 @@ export function MapView({
       center: START.center,
       zoom: START.zoom,
       minZoom: 0.4,
-      maxZoom: 11,
+      // Down to a street: the base map has detail that far. Readings are the nearest monitor's, and say how far.
+      maxZoom: 18,
       attributionControl: { compact: true },
       canvasContextAttributes: { antialias: true },
     });
@@ -156,7 +157,7 @@ export function MapView({
         data: monitorsGeoJson(latest.current.monitors),
         cluster: true,
         clusterRadius: 38,
-        clusterMaxZoom: 6,
+        clusterMaxZoom: 8,
         clusterProperties: { total: ['+', ['get', 'aqi']] },
       });
       const label = [

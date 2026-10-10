@@ -125,6 +125,8 @@ export function useLive(storage: Storage = window.localStorage): {
   // Each fix, while live location is on, is written down against the hour it came in.
   const lat = here.position?.lat;
   const lng = here.position?.lng;
+  // Each look counts, moved or not: standing still all afternoon is still an afternoon in that place.
+  const looked = here.checkedAt;
   useEffect(() => {
     if (!here.enabled || here.status !== 'on' || lat === undefined || lng === undefined) return;
     setSample(false);
@@ -133,7 +135,7 @@ export function useLive(storage: Storage = window.localStorage): {
       saveLive(storage, next);
       return next;
     });
-  }, [here.enabled, here.status, lat, lng, storage]);
+  }, [here.enabled, here.status, lat, lng, looked, storage]);
 
   return {
     log: sample && track !== undefined ? track : log,

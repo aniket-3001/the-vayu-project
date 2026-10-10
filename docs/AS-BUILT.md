@@ -54,3 +54,18 @@ Checked against the deployed stack and the live address on 10 October 2026.
 ## Things found by testing the live site
 
 Six faults were found by running it, each fixed with a test: a 403 from the `Host` header behind CloudFront, the guardrail refusing our own rewording instruction, a masked-name number slipping the number check, a missing hour in the model's answer, a rate limit on the monitors job, and a deploy that failed on an API setting that named a route before it existed. `LIVE-CHECKLIST.md` lists them.
+
+## What the air numbers use, and what they leave out
+
+| Factor                              | In the AQI and exposure?                                                                                             | Where it does show                                                  |
+| ----------------------------------- | -------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------- |
+| PM2.5 (and PM10 for the GRAP guard) | Yes. The AQI is the US formula applied to PM2.5.                                                                     | everywhere                                                          |
+| Which place you were in, and when   | Yes. Exposure is the AQI at the place you were, hour by hour, with an assumed indoor share when no monitor is there. | Exposure                                                            |
+| Trees, for logged outdoor time      | A small assumed cut, labelled assumed.                                                                               | Exposure                                                            |
+| Wind speed and direction            | No. Not in the AQI.                                                                                                  | Shown with the reading; moves the map's wind and the Lens particles |
+| Humidity                            | Only in the device verdict (damp air makes optical sensors read high, so "not sure"), which has no device yet.       | Shown with the weather                                              |
+| Rain                                | No.                                                                                                                  | Shown in the forecast                                               |
+| Temperature                         | No.                                                                                                                  | Shown with the weather                                              |
+| Elevation and boundary-layer height | No.                                                                                                                  | Not used anywhere                                                   |
+
+The forecast hours come from the CAMS model, which does include weather in what it predicts, and the app corrects it with the nearest monitor's recent readings. The app itself does not adjust a measured number for weather.

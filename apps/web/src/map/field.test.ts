@@ -88,17 +88,18 @@ describe('the rendered field', () => {
 
 describe('the edge of the field', () => {
   it('fades to nothing at the corner of the data, so there is no hard box', () => {
-    const everywhere = Array.from({ length: 40 }, (_, i) =>
-      Array.from({ length: 40 }, (_, j) =>
-        at(FIELD_BOUNDS.south + i, FIELD_BOUNDS.west + j * 0.9, 100),
+    // Monitors every five degrees over the whole world, so only the edge of the picture can fade.
+    const everywhere = Array.from({ length: 33 }, (_, i) =>
+      Array.from({ length: 73 }, (_, j) =>
+        at(FIELD_BOUNDS.south + i * 5, FIELD_BOUNDS.west + j * 5, 100),
       ),
     ).flat();
-    const cols = 34;
+    const cols = 72;
     const rows = 36;
     const px = renderField(everywhere, cols, rows);
     const alpha = (row: number, col: number): number => px[(row * cols + col) * 4 + 3] ?? 0;
-    expect(alpha(0, 0)).toBeLessThan(alpha(18, 17) / 3);
-    expect(alpha(18, 17)).toBeGreaterThan(70);
+    expect(alpha(0, 0)).toBeLessThan(alpha(18, 36) / 3);
+    expect(alpha(18, 36)).toBeGreaterThan(70);
   });
 });
 
@@ -140,7 +141,7 @@ describe('the fine grain', () => {
   });
 
   it('keeps colour at the level colours and is empty far from any monitor', () => {
-    const { pixels, width, height } = grainyField(monitors, 40, 44, 4);
+    const { pixels, width, height } = grainyField(monitors, 180, 100, 4);
     expect(pixels[3]).toBe(0);
     let strong = 0;
     for (let i = 3; i < pixels.length; i += 4) if ((pixels[i] ?? 0) > 100) strong += 1;

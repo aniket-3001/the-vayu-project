@@ -158,11 +158,9 @@ describe('the Places screen', () => {
       storage: window.localStorage,
       geolocation: () =>
         ({
-          watchPosition: (ok: PositionCallback) => {
+          getCurrentPosition: (ok: PositionCallback) => {
             ok({ coords: { latitude: 28.6, longitude: 77.2 } } as GeolocationPosition);
-            return 1;
           },
-          clearWatch: () => undefined,
         }) as unknown as Geolocation,
     });
     setLiveLocation(store);

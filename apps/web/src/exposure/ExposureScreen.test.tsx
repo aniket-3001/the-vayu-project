@@ -406,12 +406,10 @@ describe('working it out from where I am', () => {
     Object.defineProperty(navigator, 'geolocation', {
       configurable: true,
       value: {
-        watchPosition: (success: (p: GeolocationPosition) => void, failure: () => void) => {
+        getCurrentPosition: (success: (p: GeolocationPosition) => void, failure: () => void) => {
           ok = success;
           no = failure;
-          return 1;
         },
-        clearWatch: () => undefined,
       },
     });
     return {

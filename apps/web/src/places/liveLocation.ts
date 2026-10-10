@@ -11,6 +11,8 @@ export interface LiveSnapshot {
   readonly status: LiveStatus;
   /** Where the device is, as the browser gave it. Only while it is on. */
   readonly position?: { readonly lat: number; readonly lng: number };
+  /** When the device was last asked, as a time in milliseconds. It changes on every look, moved or not. */
+  readonly checkedAt?: number;
 }
 
 export interface LiveLocation {
@@ -22,8 +24,28 @@ export interface LiveLocation {
   readonly resume: () => void;
 }
 
+/** How often the device is asked where it is, while live location is on. A phone's battery is spared by asking rarely. */
+export const CHECK_EVERY_MS = 15 * 60_000;
+/** A move smaller than this is not a move: the place, and so the air and the exposure, stay as they were. */
+export const MOVED_METRES = 500;
+
+/** Straight-line distance between two points, in metres. */
+export function metresBetween(
+  a: { readonly lat: number; readonly lng: number },
+  b: { readonly lat: number; readonly lng: number },
+): number {
+  const rad = (deg: number): number => (deg * Math.PI) / 180;
+  const h =
+    Math.sin(rad(b.lat - a.lat) / 2) ** 2 +
+    Math.cos(rad(a.lat)) * Math.cos(rad(b.lat)) * Math.sin(rad(b.lng - a.lng) / 2) ** 2;
+  return 2 * 6_371_000 * Math.asin(Math.min(1, Math.sqrt(h)));
+}
+
 interface Options {
   readonly storage?: Storage;
+  readonly intervalMs?: number;
+  readonly movedMetres?: number;
+  readonly now?: () => number;
   /** Read each time it is needed, since a browser may add or remove it. */
   readonly geolocation?: () => Geolocation | undefined;
 }
@@ -45,7 +67,13 @@ export function createLiveLocation(options: Options = {}): LiveLocation {
   const geo = options.geolocation ?? ((): Geolocation | undefined => navigator.geolocation);
   let snapshot: LiveSnapshot = { enabled: readEnabled(storage), status: 'off' };
   const listeners = new Set<() => void>();
-  let watch: number | undefined;
+  const every = options.intervalMs ?? CHECK_EVERY_MS;
+  const moved = options.movedMetres ?? MOVED_METRES;
+  const now = options.now ?? Date.now;
+  let timer: ReturnType<typeof setInterval> | undefined;
+  let lastCheck = 0;
+  let running = false;
+  const isRunning = (): boolean => running;
 
   const change = (next: LiveSnapshot): void => {
     snapshot = next;
@@ -58,34 +86,54 @@ export function createLiveLocation(options: Options = {}): LiveLocation {
       // Best effort: the switch still works for this visit.
     }
   };
-  const stopWatching = (): void => {
-    if (watch !== undefined) geo()?.clearWatch(watch);
-    watch = undefined;
+  const stop = (): void => {
+    running = false;
+    if (timer !== undefined) clearInterval(timer);
+    timer = undefined;
+    if (typeof document !== 'undefined')
+      document.removeEventListener('visibilitychange', onVisible);
   };
-  const start = (): void => {
-    stopWatching();
+  /** One coarse look at where the device is. Kept only if it is a real move from the last place kept. */
+  const check = (): void => {
     const geolocation = geo();
     if (geolocation === undefined) {
       change({ enabled: true, status: 'unavailable' });
       return;
     }
-    change({ enabled: true, status: 'asking' });
-    watch = geolocation.watchPosition(
+    lastCheck = now();
+    geolocation.getCurrentPosition(
       (fix) => {
-        change({
-          enabled: true,
-          status: 'on',
-          position: { lat: fix.coords.latitude, lng: fix.coords.longitude },
-        });
+        const here = { lat: fix.coords.latitude, lng: fix.coords.longitude };
+        const before = snapshot.position;
+        const checkedAt = now();
+        // Not moved far: keep the place as it was, so the air is not asked for again, and only note the look.
+        if (before !== undefined && metresBetween(before, here) < moved)
+          change({ enabled: true, status: 'on', position: before, checkedAt });
+        else change({ enabled: true, status: 'on', position: here, checkedAt });
       },
       () => {
         // Refused or failed: say so, and stop asking. The person can try the switch again.
-        stopWatching();
+        stop();
         remember(false);
         change({ enabled: false, status: 'refused' });
       },
-      { maximumAge: 60_000, timeout: 20_000 },
+      // A coarse fix is enough, and is cheaper for the battery than a precise one.
+      { maximumAge: every, timeout: 20_000, enableHighAccuracy: false },
     );
+  };
+  // Timers are slowed or stopped while the page is hidden, so a return to the page checks if one is due.
+  function onVisible(): void {
+    if (running && document.visibilityState === 'visible' && now() - lastCheck >= every) check();
+  }
+  const start = (): void => {
+    stop();
+    running = true;
+    change({ enabled: true, status: 'asking' });
+    check();
+    // A refusal can come back at once, and stops everything; there is then nothing to keep checking.
+    if (!isRunning()) return;
+    timer = setInterval(check, every);
+    if (typeof document !== 'undefined') document.addEventListener('visibilitychange', onVisible);
   };
 
   return {
@@ -100,12 +148,12 @@ export function createLiveLocation(options: Options = {}): LiveLocation {
       remember(enabled);
       if (enabled) start();
       else {
-        stopWatching();
+        stop();
         change({ enabled: false, status: 'off' });
       }
     },
     resume: () => {
-      if (snapshot.enabled && watch === undefined) start();
+      if (snapshot.enabled && !running) start();
     },
   };
 }

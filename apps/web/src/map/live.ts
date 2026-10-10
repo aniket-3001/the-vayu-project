@@ -33,6 +33,26 @@ export function gridPoints(
   return points;
 }
 
+/**
+ * The rest of the world, on a coarse grid, for the air colours: ten degrees apart, which is about 1,100 km. The
+ * regional model has nothing finer to say there than that, and the map says so. Points in the closer grid above
+ * are left out.
+ */
+export function worldPoints(step = 10): readonly { readonly lat: number; readonly lng: number }[] {
+  const points: { lat: number; lng: number }[] = [];
+  for (let lat = -80; lat <= 80; lat += step) {
+    for (let lng = -180; lng < 180; lng += step) {
+      const inside =
+        lat >= GRID.south - 1 &&
+        lat <= GRID.north + 1 &&
+        lng >= GRID.west - 1 &&
+        lng <= GRID.east + 1;
+      if (!inside) points.push({ lat, lng });
+    }
+  }
+  return points;
+}
+
 const CHUNK = 90;
 const WIND_URL = 'https://api.open-meteo.com/v1/forecast';
 const AIR_URL = 'https://air-quality-api.open-meteo.com/v1/air-quality';
@@ -89,9 +109,12 @@ export async function fetchWindGrid(
   return winds;
 }
 
-/** PM2.5 and US AQI now across the grid, from the CAMS atmospheric model (satellite-assimilated), as pseudo-monitors. */
+/**
+ * PM2.5 and US AQI now, from the CAMS atmospheric model (satellite-assimilated), as pseudo-monitors: a close grid
+ * over south Asia and a coarse one over the rest of the world.
+ */
 export async function fetchAirGrid(fetchImpl: typeof fetch = fetch): Promise<readonly Monitor[]> {
-  const points = gridPoints(2);
+  const points = [...gridPoints(2), ...worldPoints(10)];
   const rows = await manyPoints(AIR_URL, 'pm2_5,us_aqi', points, fetchImpl);
   const grid: Monitor[] = [];
   rows.forEach((row, i) => {
