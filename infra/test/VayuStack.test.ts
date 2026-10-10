@@ -101,7 +101,7 @@ describe('the Vayu stack', () => {
           Action: ['secretsmanager:GetSecretValue', 'secretsmanager:DescribeSecret'],
         }).test(statement).isSuccess,
     );
-    expect(secretReads).toHaveLength(6); // the webhook secret, the bot token (API and Send), the FIRMS key, and the OpenAQ key (API and harvest)
+    expect(secretReads).toHaveLength(7); // the webhook secret, the bot token (API and Send), the FIRMS key, and the OpenAQ key (API, harvest and the map monitors)
   });
 
   describe('the alert loop', () => {
@@ -181,11 +181,11 @@ describe('the Vayu stack', () => {
       });
     });
 
-    it('lets only three roles invoke a function: the alert loop (Send), FixCheck and the scheduler (harvest)', () => {
+    it('lets only four roles invoke a function: the alert loop (Send), FixCheck and the scheduler (harvest and the map monitors)', () => {
       const invokes = statements().filter((s) =>
         JSON.stringify(s.Action).includes('lambda:InvokeFunction'),
       );
-      expect(invokes).toHaveLength(3);
+      expect(invokes).toHaveLength(4);
     });
 
     it('puts states:SendTaskSuccess on exactly one policy (the API function, whose resource must be "*")', () => {
@@ -303,15 +303,15 @@ describe('the CloudFront directory-index function', () => {
       expect(JSON.stringify(dataReads[0]?.Resource)).toContain('/replay/*');
     });
 
-    it('lets the harvest only put items in the Cache table', () => {
+    it('lets the harvest and the map monitors only put items in the Cache table', () => {
       const writes = harvestStatements().filter(
         (s) =>
           JSON.stringify(s.Action).includes('dynamodb:PutItem') &&
           !JSON.stringify(s.Action).includes('dynamodb:DeleteItem') &&
           JSON.stringify(s.Resource).includes('Cache'),
       );
-      expect(writes).toHaveLength(1);
-      expect(JSON.stringify(writes[0]?.Action)).toBe('"dynamodb:PutItem"');
+      expect(writes).toHaveLength(2);
+      for (const write of writes) expect(JSON.stringify(write.Action)).toBe('"dynamodb:PutItem"');
     });
 
     it('rule I9: gives the harvest a two-minute limit', () => {
@@ -335,6 +335,46 @@ describe('the CloudFront directory-index function', () => {
       expect(puts).toHaveLength(1);
       expect(JSON.stringify(puts[0]?.Resource)).toContain('/harvest/*');
       expect(JSON.stringify(puts[0]?.Action)).not.toContain('s3:Delete');
+    });
+  });
+
+  describe('the map monitors', () => {
+    const template = synth();
+    it('are snapshotted every 30 minutes, with retries off', () => {
+      template.hasResourceProperties('AWS::Scheduler::Schedule', {
+        ScheduleExpression: 'rate(30 minutes)',
+        State: 'ENABLED',
+        Target: Match.objectLike({ RetryPolicy: { MaximumRetryAttempts: 0 } }),
+      });
+    });
+
+    it('rule I9: have a limit under two minutes, and only the cache and the OpenAQ key to use', () => {
+      template.hasResourceProperties('AWS::Lambda::Function', {
+        Timeout: 110,
+        Environment: {
+          Variables: Match.objectLike({
+            OPENAQ_API_KEY_ARN: Match.anyValue(),
+            CACHE_TABLE: Match.anyValue(),
+          }),
+        },
+      });
+    });
+
+    it('can be switched off with the harvest, without removing them', () => {
+      const off = synthWith({ harvestEnabled: false });
+      off.hasResourceProperties('AWS::Scheduler::Schedule', {
+        ScheduleExpression: 'rate(30 minutes)',
+        State: 'DISABLED',
+      });
+    });
+
+    it('raise an alarm when they stop running, since a function that never runs reports no error', () => {
+      template.hasResourceProperties('AWS::CloudWatch::Alarm', {
+        MetricName: 'Invocations',
+        Period: 5400,
+        ComparisonOperator: 'LessThanThreshold',
+        TreatMissingData: 'breaching',
+      });
     });
   });
 
@@ -378,7 +418,7 @@ describe('the CloudFront directory-index function', () => {
         >,
       ).flatMap((policy) => policy.Properties.PolicyDocument.Statement);
       const putOnly = policies.filter((s) => JSON.stringify(s.Action) === '"dynamodb:PutItem"');
-      expect(putOnly).toHaveLength(2); // the harvest (Cache) and the ingest (Rooms)
+      expect(putOnly).toHaveLength(3); // the harvest and the map monitors (Cache) and the ingest (Rooms)
     });
 
     it('also sends every reading to Firehose, one line each, so history is kept in S3 without code', () => {
@@ -534,7 +574,7 @@ describe('the CloudFront directory-index function', () => {
       );
 
     it('has one alarm for each thing that can quietly stop', () => {
-      template.resourceCountIs('AWS::CloudWatch::Alarm', 7);
+      template.resourceCountIs('AWS::CloudWatch::Alarm', 8);
       expect(alarmFor('AWS/Lambda', 'Errors')).toHaveLength(4); // API, harvest, ingest, send
       expect(alarmFor('AWS/ApiGateway', '5xx')).toHaveLength(1);
       expect(alarmFor('AWS/States', 'ExecutionsFailed')).toHaveLength(1);

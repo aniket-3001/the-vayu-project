@@ -26,6 +26,7 @@ import { FixCheck } from './FixCheck';
 import { Harvest } from './Harvest';
 import { Ingest } from './Ingest';
 import { Operations } from './Operations';
+import { Stations } from './Stations';
 
 export interface VayuStackProps extends StackProps {
   /** Where budget alerts go. Without it, no budget is created. */
@@ -162,6 +163,13 @@ export class VayuStack extends Stack {
       ...(props.harvestEnabled === undefined ? {} : { enabled: props.harvestEnabled }),
     });
 
+    // The monitors on the map, snapshotted on a clock so visitors never reach OpenAQ.
+    const stations = new Stations(this, 'Stations', {
+      cache,
+      openAqKey,
+      ...(props.harvestEnabled === undefined ? {} : { enabled: props.harvestEnabled }),
+    });
+
     // "Did it work?": look at a room, wait, look again, write the answer.
     const fixCheck = new FixCheck(this, 'FixCheck', { watch, rooms, cache });
     apiFunction.addEnvironment('FIXCHECK_STATE_MACHINE_ARN', fixCheck.stateMachine.stateMachineArn);
@@ -220,6 +228,7 @@ export class VayuStack extends Stack {
     new Operations(this, 'Operations', {
       apiFunction,
       harvestFunction: harvest.harvestFunction,
+      stationsFunction: stations.stationsFunction,
       ingestFunction: ingest.ingestFunction,
       sendFunction: alertLoop.sendFunction,
       alertLoop: alertLoop.stateMachine,

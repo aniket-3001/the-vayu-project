@@ -44,8 +44,11 @@ describe('GET /v1/history', () => {
   });
 
   it('asks for as many days as were wanted, and no more than fourteen', async () => {
-    const hourlyFor = vi.fn(fixtureStationRepo().hourlyFor);
-    const repo: StationRepo = { ...fixtureStationRepo(), hourlyFor };
+    const inner = fixtureStationRepo();
+    const hourlyFor = vi.fn((id: string, asOf: string, days?: number) =>
+      inner.hourlyFor(id, asOf, days),
+    );
+    const repo: StationRepo = { ...inner, hourlyFor };
     await ask({ stationRepo: repo }, { place: 'home', days: '10' });
     expect(hourlyFor).toHaveBeenCalledWith(expect.any(String), AS_OF, 10);
     for (const days of ['0', '15', 'many', '-1', '7.5']) {

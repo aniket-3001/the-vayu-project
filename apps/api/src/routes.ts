@@ -26,6 +26,7 @@ import type { CacheReader } from './roomStores';
 import { handleRoom, type RoomsDeps } from './roomsRoute';
 import { loadAir, placeFromQuery } from './air';
 import { handleHistory } from './historyRoute';
+import { handleStations } from './stationsRoute';
 import { handleToday } from './todayRoute';
 import { failure, ok, type ApiRequest, type ApiResponse } from './respond';
 export type { ApiRequest, ApiResponse } from './respond';
@@ -150,6 +151,13 @@ export function createRouter(deps: RouterDeps) {
           ...deps,
           mode: deps.mode === 'live' ? 'live' : 'model',
         });
+      case '/v1/stations':
+        return deps.cache === undefined
+          ? failure(404, 'not_found', `No route for ${request.path}`)
+          : handleStations(request, {
+              stations: (asOf) => deps.cache?.stations?.(asOf) ?? Promise.resolve(undefined),
+              clock: deps.clock,
+            });
       case '/v1/history':
         return handleHistory(request, {
           ...deps,

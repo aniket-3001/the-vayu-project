@@ -69,6 +69,8 @@ export interface CacheReader {
   latest(placeId: string, asOf: string): Promise<StationSnapshot | undefined>;
   /** The forecast the harvest last recorded for a place, under the same rules. */
   latestForecast(placeId: string, asOf: string): Promise<ForecastSnapshot | undefined>;
+  /** The monitors the map shows, as the last scheduled snapshot left them. */
+  stations?(asOf: string): Promise<unknown>;
 }
 
 /** Reads what the harvest wrote to the Cache table (`LATEST#<place>`). */
@@ -86,6 +88,7 @@ export function dynamoCacheReader(tableName: string, client: Doc = defaultClient
       const value = await read(`LATEST#${placeId}`, asOf);
       return value === undefined ? undefined : StationSnapshot.parse(value);
     },
+    stations: (asOf) => read('STATIONS#north-india', asOf),
     async latestForecast(placeId, asOf) {
       const value = await read(`FORECAST#${placeId}`, asOf);
       return value === undefined ? undefined : ForecastSnapshot.parse(value);

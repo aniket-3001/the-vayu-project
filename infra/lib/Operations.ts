@@ -20,6 +20,7 @@ import { Construct } from 'constructs';
 export interface OperationsProps {
   readonly apiFunction: IFunction;
   readonly harvestFunction: IFunction;
+  readonly stationsFunction: IFunction;
   readonly ingestFunction: IFunction;
   readonly sendFunction: IFunction;
   readonly alertLoop: IStateMachine;
@@ -101,6 +102,19 @@ export class Operations extends Construct {
         'HarvestStopped',
         'The harvest has not run for 45 minutes (it should run every 15).',
         props.harvestFunction.metricInvocations({ period: Duration.minutes(45), statistic: 'Sum' }),
+        1,
+        {
+          operator: ComparisonOperator.LESS_THAN_THRESHOLD,
+          missing: TreatMissingData.BREACHING,
+        },
+      ),
+      alarm(
+        'StationsStopped',
+        'The map monitors have not been snapshotted for 90 minutes (they should be every 30).',
+        props.stationsFunction.metricInvocations({
+          period: Duration.minutes(90),
+          statistic: 'Sum',
+        }),
         1,
         {
           operator: ComparisonOperator.LESS_THAN_THRESHOLD,

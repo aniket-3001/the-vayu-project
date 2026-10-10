@@ -4,6 +4,7 @@ import {
   fixtureFireRepo,
   fixtureForecastRepo,
   fixtureStationRepo,
+  type Point,
   type StationRepo,
   type WeatherForecastRepo,
 } from '@vayu/data';
@@ -118,7 +119,8 @@ describe('GET /v1/today', () => {
   });
 
   it('asks the provider once for a repeat of the same place within the caller’s cache', async () => {
-    const stationsNear = vi.fn(baseDeps.stationRepo.stationsNear);
+    const inner = baseDeps.stationRepo;
+    const stationsNear = vi.fn((point: Point, asOf: string) => inner.stationsNear(point, asOf));
     await ask(
       { stationRepo: { ...baseDeps.stationRepo, stationsNear } },
       { lat: '28.6', lng: '77.2' },
