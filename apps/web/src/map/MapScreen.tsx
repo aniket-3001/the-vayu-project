@@ -3,6 +3,7 @@ import type { Map as MapLibreMap } from 'maplibre-gl';
 import { useState } from 'react';
 import { LEVELS } from '../design/levels';
 import { Pill } from '../today/ui/Chip';
+import { useAirUnits } from '../units/AirUnits';
 import { LAYER_LABELS, defaultLayers, type Shown } from './layers';
 import { MapView, type MapMode } from './MapView';
 import { WindCanvas } from './WindCanvas';
@@ -20,6 +21,7 @@ export function MapScreen(): React.JSX.Element {
   const [shown, setShown] = useState<Shown>(defaultLayers('map'));
   const [open, setOpen] = useState(false);
   const [map, setMap] = useState<MapLibreMap>();
+  const { smoke } = useAirUnits();
 
   const choose = (next: MapMode): void => {
     setMode(next);
@@ -31,7 +33,7 @@ export function MapScreen(): React.JSX.Element {
 
   return (
     <div className="map-screen">
-      <MapView mode={mode} layers={shown} onReady={setMap} />
+      <MapView mode={mode} layers={shown} smoke={smoke} onReady={setMap} />
       <WindCanvas map={map} enabled={shown.wind} />
 
       <div className="map-bottom">

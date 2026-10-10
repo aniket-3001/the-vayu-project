@@ -6,6 +6,7 @@ import { levelVars } from '../../today/ui/format';
 import { CONDITION_LABELS, FaceIcon, WeatherIcon } from '../../today/ui/icons';
 import { AqiChip } from '../../today/ui/Chip';
 import { weekday } from '../../today/time';
+import { SmokeNote } from '../../units/AirUnits';
 import { readingForPin } from '../placeSample';
 
 const age = (minutes: number): string =>
@@ -60,6 +61,7 @@ export function PlaceCard({
         <p className="pc-aqi">
           <strong className="tnum">{reading.aqi}</strong>
           <span>AQI</span>
+          <SmokeNote pm25={reading.pm25} className="pc-smoke" />
         </p>
       </div>
       <ul className="pc-days" aria-label="Next three days">

@@ -7,6 +7,7 @@ import { usePins } from '../places/usePins';
 import { compassPoint } from '../today/wind';
 import { clock24, dayMonth, weekday } from '../today/time';
 import { Pill } from '../today/ui/Chip';
+import { SmokeNote } from '../units/AirUnits';
 import { concentration } from '../today/ui/format';
 import { HazeCanvas } from './HazeCanvas';
 import {
@@ -150,6 +151,7 @@ export function LensScreen(): React.JSX.Element {
               </p>
             </div>
           </div>
+          <SmokeNote pm25={hour.pm25} className="lens-smoke" />
           <p className="lens-line">
             <Eye size={16} strokeWidth={1.75} aria-hidden="true" />
             <span>

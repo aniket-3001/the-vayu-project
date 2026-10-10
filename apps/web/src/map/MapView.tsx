@@ -9,6 +9,7 @@ import workerUrl from 'maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import { useEffect, useMemo, useRef } from 'react';
 import { LEVELS } from '../design/levels';
+import { cigarettesPerDay, describeCigarettes } from '../units/smoke';
 import { FIELD_BOUNDS, renderField } from './field';
 import { firesGeoJson, sampleFires } from './fires';
 import { monitorsGeoJson, sampleMonitors } from './monitors';
@@ -72,17 +73,20 @@ function fieldImage(): string {
 export function MapView({
   mode,
   layers,
+  smoke,
   onReady,
 }: {
   readonly mode: MapMode;
   readonly layers: MapLayers;
+  /** Whether popups also say cigarettes a day. */
+  readonly smoke: boolean;
   readonly onReady: (map: MapLibreMap) => void;
 }): React.JSX.Element {
   const container = useRef<HTMLDivElement>(null);
   const map = useRef<MapLibreMap>();
   const ready = useRef(false);
-  const latest = useRef({ mode, layers });
-  latest.current = { mode, layers };
+  const latest = useRef({ mode, layers, smoke });
+  latest.current = { mode, layers, smoke };
   const monitors = useMemo(() => sampleMonitors(), []);
   const fires = useMemo(() => sampleFires(), []);
 
@@ -224,7 +228,13 @@ export function MapView({
       const note = document.createElement('p');
       note.className = 'muted';
       note.textContent = 'Sample data';
-      box.append(title, body, note);
+      box.append(title, body);
+      if (latest.current.smoke && p.pm25 !== undefined) {
+        const smokes = document.createElement('p');
+        smokes.textContent = describeCigarettes(cigarettesPerDay(p.pm25));
+        box.append(smokes);
+      }
+      box.append(note);
       new Popup({ closeButton: false, offset: 14 })
         .setLngLat(event.lngLat)
         .setDOMContent(box)

@@ -6,6 +6,7 @@ import { LensScreen } from './lens/LensScreen';
 import { MapScreen } from './map/MapScreen';
 import { MyAirScreen } from './myair/MyAirScreen';
 import { TabBar } from './nav/TabBar';
+import { AirUnitsProvider, SmokeToggle } from './units/AirUnits';
 import { readingForPin, sampleIdForPin } from './places/placeSample';
 import { usePins } from './places/usePins';
 import { SAMPLE_IDS } from './today/sample';
@@ -57,20 +58,23 @@ function PlaceRoute(): React.JSX.Element {
 export function App(): React.JSX.Element {
   return (
     <HashRouter>
-      <div className="bar">
-        <Link to="/" className="wordmark">
-          Vayu Air
-        </Link>
-      </div>
-      <Routes>
-        <Route path="/" element={<MyAirScreen />} />
-        <Route path="/place/:id" element={<PlaceRoute />} />
-        <Route path="/map" element={<MapScreen />} />
-        <Route path="/exposure" element={<ExposureScreen />} />
-        <Route path="/lens" element={<LensScreen />} />
-        <Route path="*" element={<MyAirScreen />} />
-      </Routes>
-      <TabBar />
+      <AirUnitsProvider>
+        <div className="bar">
+          <Link to="/" className="wordmark">
+            Vayu Air
+          </Link>
+          <SmokeToggle />
+        </div>
+        <Routes>
+          <Route path="/" element={<MyAirScreen />} />
+          <Route path="/place/:id" element={<PlaceRoute />} />
+          <Route path="/map" element={<MapScreen />} />
+          <Route path="/exposure" element={<ExposureScreen />} />
+          <Route path="/lens" element={<LensScreen />} />
+          <Route path="*" element={<MyAirScreen />} />
+        </Routes>
+        <TabBar />
+      </AirUnitsProvider>
     </HashRouter>
   );
 }
