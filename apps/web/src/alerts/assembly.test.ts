@@ -51,7 +51,9 @@ describe('where the morning assembly should be, by GRAP stage', () => {
 
   it('falls back to the AQI, and says so, when no stage can be worked out', () => {
     const day = sampleDay('hazardous');
-    const blind = { ...day, pollutants: { ...day.pollutants, pm10: undefined } } as TodayData;
+    const pollutants = { ...day.pollutants };
+    delete pollutants.pm10;
+    const blind: TodayData = { ...day, pollutants };
     const advice = assemblyFor(blind);
     expect(advice.where).toBe('inside');
     expect(advice.words).toMatch(/No GRAP stage could be worked out/u);
