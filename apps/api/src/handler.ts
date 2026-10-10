@@ -11,6 +11,9 @@ import {
   firmsFireRepo,
   openAqStationRepo,
   openMeteoForecastRepo,
+  openMeteoGasRepo,
+  openMeteoHistoryRepo,
+  openMeteoWeatherForecastRepo,
   openMeteoWeatherRepo,
 } from '@vayu/data';
 import { dynamoLinkStore, dynamoTokenStore, resumeAlertLoop } from '@vayu/watch';
@@ -66,6 +69,9 @@ function buildRoute(): Promise<ReturnType<typeof createRouter>> {
       stationRepo: cachedStationRepo(openAqStationRepo({ apiKey: openAqKey }), 15 * 60_000),
       forecastRepo: openMeteoForecastRepo(),
       weatherRepo: cachedWeatherRepo(openMeteoWeatherRepo(), 15 * 60_000),
+      weatherForecastRepo: openMeteoWeatherForecastRepo(),
+      gasRepo: openMeteoGasRepo(),
+      historyRepo: openMeteoHistoryRepo(),
       fireRepo: firmsFireRepo({ mapKey: firmsMapKey }),
       fireMode: 'live',
       replayRepo: s3ReplayRepo(mustEnv('DATA_BUCKET')),
@@ -124,7 +130,12 @@ export async function handler(event: APIGatewayProxyEventV2): Promise<APIGateway
   });
   return {
     statusCode: response.statusCode,
-    headers: { 'content-type': 'application/json', 'cache-control': 'no-store' },
+    headers: {
+      'content-type': 'application/json',
+      'cache-control': 'no-store',
+      // A route that moves slowly says how long a shared cache may keep it; it overrides the default above.
+      ...response.headers,
+    },
     body: JSON.stringify(response.body),
   };
 }

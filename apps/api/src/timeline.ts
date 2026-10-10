@@ -47,6 +47,9 @@ export interface TimelineInputs {
   readonly fetchedAt?: string | undefined;
   /** The weather model's value for now, when it answered. */
   readonly weather?: WeatherNow | undefined;
+  /** How many hours of the past and future to build. A week back and two days ahead when left out. */
+  readonly hoursBack?: number | undefined;
+  readonly hoursAhead?: number | undefined;
 }
 
 /** The timeline for a place, built by the shared core and checked against the contract before it leaves. */
@@ -59,8 +62,8 @@ export function timelineFor(input: TimelineInputs): Timeline {
     forecast,
     asOf,
     mode,
-    hoursBack: 7 * 24,
-    hoursAhead: 48,
+    hoursBack: input.hoursBack ?? 7 * 24,
+    hoursAhead: input.hoursAhead ?? 48,
     simulated,
     fetchedAt,
     station:

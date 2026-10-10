@@ -87,15 +87,16 @@ export function openAqStationRepo(options: OpenAqClientOptions): StationRepo {
       });
     },
 
-    async hourlyFor(stationId: string, asOf: string): Promise<readonly RawHour[]> {
+    async hourlyFor(stationId: string, asOf: string, days = 7): Promise<readonly RawHour[]> {
+      const span = Math.min(14, Math.max(1, Math.round(days)));
       if (!stationId.startsWith(SENSOR_PREFIX)) return [];
       const sensorId = stationId.slice(SENSOR_PREFIX.length);
       // /hours is oldest-first, so a bare `datetime_to` + limit returns the OLDEST 168 hours
       // (found against the live API, 6 Oct 2026). Bound the window from below to get the latest week.
-      const from = new Date(new Date(asOf).getTime() - 7 * 24 * 3_600_000).toISOString();
+      const from = new Date(new Date(asOf).getTime() - span * 24 * 3_600_000).toISOString();
       const url =
         `${baseUrl}/sensors/${sensorId}/hours?datetime_from=${encodeURIComponent(from)}` +
-        `&datetime_to=${encodeURIComponent(asOf)}&limit=168`;
+        `&datetime_to=${encodeURIComponent(asOf)}&limit=${String(span * 24)}`;
       const body = await getJson<OpenAqHoursResponse>(doFetch, url, options.apiKey, 'hours');
       return body.results
         .filter((item) => isPm25(item.parameter.name))

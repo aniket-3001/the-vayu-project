@@ -144,6 +144,109 @@ export const Timeline = record({
 });
 export type Timeline = z.infer<typeof Timeline>;
 
+/** One hour of the air at a place, in the compact form the app draws from. */
+export const TodayHour = record({
+  t: z.string(),
+  pm25: z.number().nullable(),
+  kind: HourKind,
+});
+export type TodayHour = z.infer<typeof TodayHour>;
+
+/** The weather model's hour. A model for the area, never a measurement at the place. */
+export const WeatherHour = record({
+  t: z.string(),
+  tempC: z.number(),
+  rhPct: z.number(),
+  windKmh: z.number().nonnegative(),
+  windFromDeg: z.number(),
+  rainPct: z.number(),
+  rainMm: z.number(),
+  /** WMO weather code. */
+  code: z.number().int(),
+  isDay: z.boolean(),
+  uv: z.number(),
+});
+export type WeatherHour = z.infer<typeof WeatherHour>;
+
+export const WeatherDay = record({
+  /** Midnight at the start of the day, India time, ISO. */
+  date: z.string(),
+  tMaxC: z.number(),
+  tMinC: z.number(),
+  windKmh: z.number(),
+  windFromDeg: z.number(),
+  rhPct: z.number(),
+  rainPct: z.number(),
+  code: z.number().int(),
+  sunrise: z.string(),
+  sunset: z.string(),
+});
+export type WeatherDay = z.infer<typeof WeatherDay>;
+
+/** The gases from the regional air-quality model, for the hour. Modelled, never measured here. */
+export const Gases = record({
+  at: z.string(),
+  pm10: z.number().nullable(),
+  o3: z.number().nullable(),
+  no2: z.number().nullable(),
+  so2: z.number().nullable(),
+  co: z.number().nullable(),
+});
+export type Gases = z.infer<typeof Gases>;
+
+/**
+ * `/v1/today`: everything the Today screen needs for one place, in one cached answer. The hours are PM2.5 only;
+ * the app turns them into the US AQI with the shared `usAqi`, so the number on screen and in an alert agree.
+ */
+export const Today = record({
+  schemaVersion: z.literal(1),
+  place: Place,
+  asOf: z.string(),
+  mode: Mode,
+  /** Past observed hours, then the forecast, oldest first. */
+  hours: list(TodayHour),
+  weather: record({ hours: list(WeatherHour), days: list(WeatherDay) }).optional(),
+  gases: Gases.optional(),
+  windows: list(Window),
+  headline: z.string(),
+  prov: Provenance,
+});
+export type Today = z.infer<typeof Today>;
+
+/** `/v1/history`: the hourly PM2.5 a place's nearest monitor gave over the last days, or the regional model if none is recent. */
+export const History = record({
+  schemaVersion: z.literal(1),
+  place: Place,
+  asOf: z.string(),
+  mode: Mode,
+  days: z.number().int(),
+  hours: list(record({ t: z.string(), pm25: z.number().nullable() })),
+  prov: Provenance,
+});
+export type History = z.infer<typeof History>;
+
+/** One monitor's latest PM2.5 for the map. */
+export const MapStation = record({
+  id: z.string(),
+  name: z.string(),
+  lat: z.number(),
+  lng: z.number(),
+  pm25: z.number(),
+  /** When the reading applies. */
+  at: z.string(),
+});
+export type MapStation = z.infer<typeof MapStation>;
+
+/** `/v1/stations`: the monitors with a recent reading, for the map. */
+export const Stations = record({
+  schemaVersion: z.literal(1),
+  asOf: z.string(),
+  mode: Mode,
+  source: z.string(),
+  stations: list(MapStation),
+});
+export type Stations = z.infer<typeof Stations>;
+
 export const Leakiness = z.enum(['closed', 'typical', 'windows_open', 'custom']);
 export const RoomSpec = record({
   id: z.string(),

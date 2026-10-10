@@ -99,7 +99,9 @@ export function cachedStationRepo(
       remember(`near:${point.lat.toFixed(3)},${point.lng.toFixed(3)}`, () =>
         inner.stationsNear(point, asOf),
       ),
-    hourlyFor: (stationId, asOf) =>
-      remember(`hours:${stationId}`, () => inner.hourlyFor(stationId, asOf)),
+    hourlyFor: (stationId, asOf, days) =>
+      remember(`hours:${stationId}:${String(days ?? 7)}`, () =>
+        inner.hourlyFor(stationId, asOf, days),
+      ),
   };
 }

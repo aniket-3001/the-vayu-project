@@ -12,3 +12,4 @@ export * from './ingest';
 export * from './roomObservation';
 export * from './fromHarvest';
 export * from './weather';
+export * from './weatherForecast';

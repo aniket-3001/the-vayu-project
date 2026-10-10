@@ -30,7 +30,7 @@ export function openMeteoForecastRepo(options: OpenMeteoClientOptions = {}): For
     async forecastFor(point: Point, asOf: string): Promise<readonly RawHour[]> {
       const url =
         `${baseUrl}?latitude=${point.lat}&longitude=${point.lng}` +
-        `&hourly=pm2_5,pm10&timezone=Asia%2FKolkata&past_days=1&forecast_days=3`;
+        `&hourly=pm2_5,pm10&timezone=Asia%2FKolkata&past_days=1&forecast_days=5`;
       const res = await doFetch(url);
       if (!res.ok) {
         throw new Error(`Open-Meteo request failed: ${res.status} ${res.statusText}`);
@@ -54,6 +54,45 @@ export function openMeteoForecastRepo(options: OpenMeteoClientOptions = {}): For
           }),
         )
         .filter((hour) => new Date(hour.hourStart).getTime() >= asOfMs);
+    },
+  };
+}
+
+/** What the regional air-quality model said for the days just gone. A model on a coarse grid, never a station. */
+export interface ModelHistoryRepo {
+  /** Hours that had ended by `asOf`, going back `days` (at most 14). */
+  historyFor(point: Point, asOf: string, days: number): Promise<readonly RawHour[]>;
+}
+
+export function openMeteoHistoryRepo(options: OpenMeteoClientOptions = {}): ModelHistoryRepo {
+  const baseUrl = options.baseUrl ?? 'https://air-quality-api.open-meteo.com/v1/air-quality';
+  const doFetch = options.fetchImpl ?? fetch;
+  return {
+    async historyFor(point, asOf, days) {
+      const span = Math.min(14, Math.max(1, Math.round(days)));
+      const url =
+        `${baseUrl}?latitude=${point.lat}&longitude=${point.lng}` +
+        `&hourly=pm2_5,pm10&timezone=Asia%2FKolkata&past_days=${String(span)}&forecast_days=1`;
+      const res = await doFetch(url);
+      if (!res.ok) throw new Error(`Open-Meteo request failed: ${String(res.status)}`);
+      const body = (await res.json()) as OpenMeteoResponse;
+      const asOfMs = new Date(asOf).getTime();
+      const fromMs = asOfMs - span * 24 * 3_600_000;
+      return (
+        body.hourly.time
+          .map((hourStart, index) =>
+            RawHour.parse({
+              hourStart: new Date(`${hourStart}:00+05:30`).toISOString(),
+              pm25: body.hourly.pm2_5[index] ?? null,
+              pm10: body.hourly.pm10[index] ?? null,
+            }),
+          )
+          // Rule I1: only hours that had ended by now, and only the span asked for.
+          .filter((hour) => {
+            const start = new Date(hour.hourStart).getTime();
+            return start + 3_600_000 <= asOfMs && start >= fromMs;
+          })
+      );
     },
   };
 }

@@ -1,14 +1,15 @@
-import { DEMO_PLACES, type Mode, type Place } from '@vayu/contracts';
+import { DEMO_PLACES, type Mode } from '@vayu/contracts';
 import type { Clock } from '@vayu/core';
 import {
   countFires,
   NORTH_INDIA_BOX,
-  fromHarvest,
-  nearestFreshStation,
   type FireRepo,
   type ForecastRepo,
+  type GasRepo,
+  type ModelHistoryRepo,
   type ReplayRepo,
   type StationRepo,
+  type WeatherForecastRepo,
   type WeatherRepo,
 } from '@vayu/data';
 import {
@@ -23,11 +24,19 @@ import { handleFixChecks, type FixChecksDeps } from './fixChecksRoute';
 import { handleReplay } from './replayRoute';
 import type { CacheReader } from './roomStores';
 import { handleRoom, type RoomsDeps } from './roomsRoute';
+import { loadAir, placeFromQuery } from './air';
+import { handleHistory } from './historyRoute';
+import { handleToday } from './todayRoute';
 import { failure, ok, type ApiRequest, type ApiResponse } from './respond';
 export type { ApiRequest, ApiResponse } from './respond';
-import { findPlace, locationPlace, timelineFor } from './timeline';
+import { timelineFor } from './timeline';
 
 export interface RouterDeps {
+  /** The Today screen's weather and gases. Absent, or failing, only means Today has none. */
+  readonly weatherForecastRepo?: WeatherForecastRepo | undefined;
+  readonly gasRepo?: GasRepo | undefined;
+  /** The regional model for the days just gone, for history where no monitor has a recent reading. */
+  readonly historyRepo?: ModelHistoryRepo | undefined;
   readonly stationRepo: StationRepo;
   readonly forecastRepo: ForecastRepo;
   readonly fireRepo: FireRepo;
@@ -118,74 +127,34 @@ export function createRouter(deps: RouterDeps) {
       case '/v1/places':
         return ok({ places: DEMO_PLACES });
       case '/v1/timeline': {
-        const { lat, lng, place: placeId } = request.query;
-        let place: Place | undefined;
-        if (lat !== undefined || lng !== undefined) {
-          place = locationPlace(lat, lng);
-          if (place === undefined) {
-            return failure(
-              400,
-              'bad_location',
-              'lat and lng must both be numbers inside north India (roughly 20 to 35 N, 70 to 90 E)',
-              'lat',
-            );
-          }
-        } else {
-          if (placeId === undefined) {
-            return failure(
-              400,
-              'missing_parameter',
-              'Add ?place=home (or school, office, park), or ?lat=..&lng=..',
-              'place',
-            );
-          }
-          place = findPlace(placeId);
-          if (place === undefined) {
-            return failure(
-              404,
-              'unknown_place',
-              `No place called "${placeId}". Try one from /v1/places`,
-              'place',
-            );
-          }
-        }
+        const choice = placeFromQuery(request.query);
+        if (choice.kind === 'error') return choice.response;
+        const { place } = choice;
         const asOf = deps.clock.now();
-        // The four demo places are harvested every 15 minutes, so while that is fresh a request
-        // never has to ask OpenAQ. Anything else (your own location), or a harvest that has gone
-        // quiet, is looked up live. Only a station with a recent reading counts. With none we fall
-        // back to the model estimate and say so (mode 'model') rather than show old numbers as current.
-        const harvested =
-          deps.cache !== undefined && findPlace(place.id) !== undefined
-            ? fromHarvest(
-                await deps.cache.latest(place.id, asOf),
-                await deps.cache.latestForecast(place.id, asOf),
-                asOf,
-              )
-            : undefined;
-        const [fresh, forecast, weather] = await Promise.all([
-          harvested?.station ?? nearestFreshStation(deps.stationRepo, place, asOf),
-          harvested?.forecast ?? deps.forecastRepo.forecastFor(place, asOf),
-          // Weather is context. If the model is down, the air answer still goes out without it.
-          (deps.weatherRepo?.nowAt(place, asOf) ?? Promise.resolve(undefined)).catch(
-            () => undefined,
-          ),
-        ]);
-
+        const air = await loadAir(deps, place, asOf);
         return ok(
           timelineFor({
             place,
             asOf,
-            observed: fresh?.observed ?? [],
-            forecast,
-            nearest: fresh?.nearest,
-            mode: fresh === undefined ? 'model' : deps.mode,
-            weather,
-            ...(fresh !== undefined && fresh === harvested?.station
-              ? { fetchedAt: harvested.fetchedAt }
-              : {}),
+            observed: air.fresh?.observed ?? [],
+            forecast: air.forecast,
+            nearest: air.fresh?.nearest,
+            mode: air.fresh === undefined ? 'model' : deps.mode,
+            weather: air.weather,
+            ...(air.fetchedAt === undefined ? {} : { fetchedAt: air.fetchedAt }),
           }),
         );
       }
+      case '/v1/today':
+        return handleToday(request, {
+          ...deps,
+          mode: deps.mode === 'live' ? 'live' : 'model',
+        });
+      case '/v1/history':
+        return handleHistory(request, {
+          ...deps,
+          mode: deps.mode === 'live' ? 'live' : 'model',
+        });
       case '/v1/replay':
       case '/v1/replay/weeks':
         return deps.replayRepo === undefined
