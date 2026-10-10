@@ -24,7 +24,7 @@ function latestObservedEnd(hours: readonly TodayHour[]): string | undefined {
 }
 
 const PAST_HOURS = 48;
-const FUTURE_HOURS = 120;
+const FUTURE_HOURS = 168;
 
 /**
  * `GET /v1/today?lat=..&lng=..` (or `?place=home`): everything the Today screen needs for one place, in one

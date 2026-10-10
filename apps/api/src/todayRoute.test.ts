@@ -69,6 +69,26 @@ describe('GET /v1/today', () => {
     );
   });
 
+  it('carries the forecast out to seven days, so the daily forecast can show seven', async () => {
+    const asOfMs = Date.parse(AS_OF);
+    const forecast: RawHour[] = Array.from({ length: 200 }, (_, i) => ({
+      hourStart: new Date(asOfMs - (asOfMs % 3_600_000) + i * 3_600_000).toISOString(),
+      pm25: 60,
+      pm10: 90,
+    }));
+    const response = await ask(
+      { forecastRepo: { forecastFor: () => Promise.resolve(forecast) } },
+      { lat: '28.6', lng: '77.2' },
+    );
+    const today = Today.parse(response.body);
+    const days = new Set(
+      today.hours
+        .filter((h) => h.kind === 'forecast')
+        .map((h) => new Date(Date.parse(h.t) + 5.5 * 3_600_000).toISOString().slice(0, 10)),
+    );
+    expect(days.size).toBeGreaterThanOrEqual(7);
+  });
+
   it('never returns an observed hour that had not ended by now (rule I1)', async () => {
     const today = Today.parse((await ask({}, { place: 'home' })).body);
     const limit = Date.parse(AS_OF);
