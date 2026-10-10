@@ -9,11 +9,13 @@ const MAX_HARVEST_AGE_MS = 45 * 60_000;
 export interface FromHarvest {
   /** The same shape `nearestFreshStation` returns, or undefined when the harvest cannot be used. */
   readonly station: FreshStation | undefined;
-  /** Forecast hours from `asOf` on, or undefined when the harvest cannot be used. */
+  /** Forecast hours that have not finished by `asOf`, the one in progress included, or undefined when the harvest cannot be used. */
   readonly forecast: readonly RawHour[] | undefined;
   /** When the data was fetched from the provider (the harvest time), for provenance. */
   readonly fetchedAt: string | undefined;
 }
+
+const HOUR_MS = 3_600_000;
 
 const recent = (harvestedAt: string, asOf: string): boolean => {
   const age = toMs(asOf) - toMs(harvestedAt);
@@ -51,7 +53,7 @@ export function fromHarvest(
           }
         : undefined,
     forecast: forecastUsable
-      ? forecast.hours.filter((hour) => toMs(hour.hourStart) >= toMs(asOf))
+      ? forecast.hours.filter((hour) => toMs(hour.hourStart) + HOUR_MS > toMs(asOf))
       : undefined,
     fetchedAt: stationUsable ? station.harvestedAt : undefined,
   };

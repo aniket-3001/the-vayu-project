@@ -14,6 +14,8 @@ export interface TodayDeps extends AirDeps {
 
 /** How long a shared cache may keep a Today answer. The harvest runs every 15 minutes, so a few minutes is safe. */
 export const TODAY_CACHE_SECONDS = 300;
+/** An answer from the regional model alone may only mean a monitor lookup failed a moment ago, so it is kept briefly. */
+export const TODAY_MODEL_CACHE_SECONDS = 60;
 
 /** When the newest observed reading's hour ended, or undefined when there is none. */
 function latestObservedEnd(hours: readonly TodayHour[]): string | undefined {
@@ -89,6 +91,6 @@ export async function handleToday(request: ApiRequest, deps: TodayDeps): Promise
         distanceKm: timeline.prov.distanceKm,
       }),
     }),
-    TODAY_CACHE_SECONDS,
+    air.fresh === undefined ? TODAY_MODEL_CACHE_SECONDS : TODAY_CACHE_SECONDS,
   );
 }

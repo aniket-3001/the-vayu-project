@@ -297,7 +297,7 @@ describe('checkToday', () => {
       checkToday({
         ...base,
         mode: 'model',
-        hours: [{ t: '2026-10-10T12:30:00.000Z', pm25: 65, kind: 'forecast' }],
+        hours: [{ t: '2026-10-10T11:30:00.000Z', pm25: 65, kind: 'forecast' }],
         prov: { mode: 'model', label: 'Estimate', source: 'model', ageMinutes: 0 },
       }),
     ).toEqual([]);
@@ -314,6 +314,15 @@ describe('checkToday', () => {
     expect(checkToday({ ...base, prov: { ...base.prov, stationName: undefined } }).join()).toMatch(
       /station name/u,
     );
+  });
+  it('catches a model answer with no figure for the hour in progress, which leaves a place with no reading', () => {
+    const model = {
+      ...base,
+      mode: 'model',
+      hours: [{ t: '2026-10-10T12:30:00.000Z', pm25: 65, kind: 'forecast' }],
+      prov: { mode: 'model', label: 'Estimate', source: 'model', ageMinutes: 0 },
+    };
+    expect(checkToday(model).join()).toMatch(/hour in progress/u);
   });
   it('catches a model answer that has observed hours, a station, or advice', () => {
     const model = {

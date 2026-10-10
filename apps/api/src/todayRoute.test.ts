@@ -106,6 +106,21 @@ describe('GET /v1/today', () => {
     expect(today.windows).toEqual([]);
   });
 
+  it('keeps an estimate for a minute only, since it may mean a monitor lookup failed a moment ago, and still has a figure for the hour in progress', async () => {
+    const none: StationRepo = {
+      stationsNear: () => Promise.resolve([]),
+      hourlyFor: () => Promise.resolve([]),
+    };
+    // 12:00 UTC is in the hour that began at 11:30 UTC, which the answer must hold.
+    const response = await ask({ stationRepo: none }, { place: 'home' });
+    expect(response.headers).toEqual({ 'cache-control': 'public, max-age=60' });
+    const today = Today.parse(response.body);
+    const now = Date.parse(AS_OF);
+    expect(
+      today.hours.some((h) => Date.parse(h.t) <= now && now < Date.parse(h.t) + 3_600_000),
+    ).toBe(true);
+  });
+
   it('keeps coordinates to about a kilometre and inside north India, and says what to fix', async () => {
     const rounded = Today.parse((await ask({}, { lat: '28.60123', lng: '77.20987' })).body);
     expect(rounded.place).toMatchObject({ lat: 28.6, lng: 77.21 });

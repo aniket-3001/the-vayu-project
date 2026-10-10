@@ -34,6 +34,27 @@ describe('openMeteoForecastRepo', () => {
     ]);
   });
 
+  it('keeps the hour in progress, so there is a figure for now', async () => {
+    // 05:30 local is in the hour that began at 05:00 local; that hour must survive, the one before it must not.
+    const fetchImpl = vi.fn().mockResolvedValue(
+      jsonResponse({
+        hourly: {
+          time: ['2026-10-05T04:00', '2026-10-05T05:00', '2026-10-05T06:00'],
+          pm2_5: [70, 75, 80],
+          pm10: [100, 110, 120],
+        },
+      }),
+    );
+    const hours = await openMeteoForecastRepo({ fetchImpl }).forecastFor(
+      { lat: 28.6, lng: 77.2 },
+      '2026-10-05T00:00:00Z',
+    );
+    expect(hours.map((h) => h.hourStart)).toEqual([
+      '2026-10-04T23:30:00.000Z',
+      '2026-10-05T00:30:00.000Z',
+    ]);
+  });
+
   it('requests the parameters named in the build spec', async () => {
     const fetchImpl = vi
       .fn()

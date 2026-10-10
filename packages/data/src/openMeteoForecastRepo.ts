@@ -45,15 +45,18 @@ export function openMeteoForecastRepo(options: OpenMeteoClientOptions = {}): For
       const toUtcIso = (localNaive: string): string =>
         new Date(`${localNaive}:00+05:30`).toISOString();
 
-      return body.hourly.time
-        .map((hourStart, index) =>
-          RawHour.parse({
-            hourStart: toUtcIso(hourStart),
-            pm25: body.hourly.pm2_5[index] ?? null,
-            pm10: body.hourly.pm10[index] ?? null,
-          }),
-        )
-        .filter((hour) => new Date(hour.hourStart).getTime() >= asOfMs);
+      return (
+        body.hourly.time
+          .map((hourStart, index) =>
+            RawHour.parse({
+              hourStart: toUtcIso(hourStart),
+              pm25: body.hourly.pm2_5[index] ?? null,
+              pm10: body.hourly.pm10[index] ?? null,
+            }),
+          )
+          // The hour in progress counts: it has not finished, and without it there is no figure for "now".
+          .filter((hour) => new Date(hour.hourStart).getTime() + 3_600_000 > asOfMs)
+      );
     },
   };
 }

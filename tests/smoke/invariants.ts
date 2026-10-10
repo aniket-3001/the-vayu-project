@@ -267,6 +267,14 @@ export function checkToday(today: TodayLike): string[] {
     if (observed.length > 0) problems.push('model answer contains observed hours');
     if (today.prov.stationName !== undefined) problems.push('model answer names a station');
     if (today.windows.length > 0) problems.push('model answer gives advice (rule I3)');
+    // The app shows the model's figure for the hour in progress as "now"; without it a place has no reading.
+    if (
+      !today.hours.some((h) => {
+        const start = new Date(h.t).getTime();
+        return h.pm25 !== null && start <= asOfMs && asOfMs < start + HOUR_MS;
+      })
+    )
+      problems.push('model answer has no figure for the hour in progress');
   }
   for (const w of today.weather?.hours ?? []) {
     if (w.rhPct < 0 || w.rhPct > 100 || w.windKmh < 0 || w.windFromDeg < 0 || w.windFromDeg > 360)

@@ -40,7 +40,12 @@ describe('fromHarvest', () => {
     expect(out.fetchedAt).toBe(minutesAgo(10));
   });
 
-  it('keeps only forecast hours from now on, as the live forecast does', () => {
+  it('keeps only forecast hours that have not ended, the one in progress included, as the live forecast does', () => {
+    const midHour = '2026-10-08T10:20:00.000Z';
+    expect(fromHarvest(station(), forecast(), midHour).forecast?.map((h) => h.hourStart)).toEqual([
+      '2026-10-08T10:00:00.000Z',
+      '2026-10-08T11:00:00.000Z',
+    ]);
     expect(fromHarvest(station(), forecast(), NOW).forecast?.map((h) => h.hourStart)).toEqual([
       '2026-10-08T10:00:00.000Z',
       '2026-10-08T11:00:00.000Z',

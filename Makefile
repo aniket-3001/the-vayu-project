@@ -15,7 +15,7 @@ typecheck:
 	npx tsc --noEmit -p tests/smoke
 
 test:
-	npm test
+	NODE_OPTIONS=--no-experimental-webstorage npm test
 
 # The stack must build, and its assertion tests (every wait has a timeout, caps exist) run in `make test`.
 synth:
@@ -23,7 +23,7 @@ synth:
 
 # The deployed app must hold no prototype code (device frames, scenarios, the tour); the prototype build must still have it.
 bundle:
-	npm run build -w @vayu/web
+	VITE_API_URL= npm run build -w @vayu/web
 	npm run build:demo -w @vayu/web
 	node scripts/check-bundle.mjs
 
