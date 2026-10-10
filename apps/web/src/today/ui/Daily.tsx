@@ -35,7 +35,11 @@ export function Daily({ data }: { readonly data: TodayData }): React.JSX.Element
               <strong>{index === 0 ? 'Today' : weekday(day.date)}</strong>
               <span className="muted small">{dayMonth(day.date)}</span>
             </span>
-            <AqiChip aqi={day.aqi} />
+            {day.aqi === undefined ? (
+              <span className="muted small daily-noair">No air forecast yet</span>
+            ) : (
+              <AqiChip aqi={day.aqi} />
+            )}
             {day.sky === undefined ? (
               <span className="muted small daily-missing">No weather for this day</span>
             ) : (
@@ -61,6 +65,12 @@ export function Daily({ data }: { readonly data: TodayData }): React.JSX.Element
           </li>
         ))}
       </ul>
+      {data.daily.slice(0, range).some((day) => day.aqi === undefined) && (
+        <p className="muted small">
+          The air forecast reaches about five days. The last days show the weather only, and we do
+          not guess the air.
+        </p>
+      )}
     </section>
   );
 }

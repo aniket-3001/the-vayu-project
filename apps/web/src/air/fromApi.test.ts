@@ -155,15 +155,19 @@ describe('the API’s Today as the app’s TodayData', () => {
     expect(conditionFor(3)).toBe('cloudy');
   });
 
-  it('builds a day’s AQI from that day’s hours, and drops a day it has too few hours for', () => {
+  it('builds a day’s AQI from that day’s hours, and keeps a day with weather but no air forecast, without an AQI', () => {
     const data = todayDataFromApi(pin, fixture());
-    expect(data.daily.length).toBeGreaterThanOrEqual(4);
-    expect(data.daily.length).toBeLessThanOrEqual(7);
+    expect(data.daily.length).toBe(7);
     expect(data.daily[0]?.date).toBe('2026-10-09T18:30:00.000Z');
     expect(data.daily[1]?.sky?.condition).toBe('rain');
-    for (const day of data.daily) expect(day.aqi).toBeGreaterThan(0);
-    // The week's far end has no air forecast, so it has no AQI and is left off, not guessed.
-    expect(data.daily.some((d) => d.date.startsWith('2026-10-15'))).toBe(false);
+    const withAir = data.daily.filter((d) => d.aqi !== undefined);
+    expect(withAir.length).toBeGreaterThanOrEqual(4);
+    for (const day of withAir) expect(day.aqi).toBeGreaterThan(0);
+    // The week's far end has weather but no air forecast: it is there, with no AQI, and is never guessed.
+    const far = data.daily.find((d) => d.date.startsWith('2026-10-15'));
+    expect(far).toBeDefined();
+    expect(far?.aqi).toBeUndefined();
+    expect(far?.sky?.hiC).toBe(33);
   });
 
   it('gives the gases the model had and leaves out the one it did not', () => {

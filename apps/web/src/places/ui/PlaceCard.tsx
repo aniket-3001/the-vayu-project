@@ -119,7 +119,11 @@ export function PlaceCard({
           {reading.daily.slice(0, 3).map((day, index) => (
             <li key={day.date}>
               <span className="pc-day-name">{index === 0 ? 'Today' : weekday(day.date)}</span>
-              <AqiChip aqi={day.aqi} />
+              {day.aqi === undefined ? (
+                <span className="muted small">no air forecast</span>
+              ) : (
+                <AqiChip aqi={day.aqi} />
+              )}
               {day.sky !== undefined && (
                 <span className="tnum pc-day-temps">
                   <WeatherIcon condition={day.sky.condition} isDay size={16} />

@@ -112,9 +112,13 @@ export function todayDataFromApi(pin: Pin, today: Today): TodayData {
     rainChancePct: Math.round(day.rainPct),
     condition: conditionFor(day.code),
   });
+  // The weather reaches seven days and the regional air forecast about five. A day with weather but no air
+  // forecast is kept, with no AQI, and says so; it is never filled in with a guess.
+  const todayStartMs = Date.parse(`${isoDate(today.asOf)}T00:00:00+05:30`);
   const daily: DailyPoint[] = (today.weather?.days ?? []).flatMap((day): DailyPoint[] => {
     const aqiForDay = dayAqi(day.date);
-    return aqiForDay === undefined ? [] : [{ date: day.date, aqi: aqiForDay, sky: skyOf(day) }];
+    if (aqiForDay !== undefined) return [{ date: day.date, aqi: aqiForDay, sky: skyOf(day) }];
+    return Date.parse(day.date) >= todayStartMs ? [{ date: day.date, sky: skyOf(day) }] : [];
   });
   if (today.weather === undefined) {
     // No weather: still give the days we have air for, from today on.

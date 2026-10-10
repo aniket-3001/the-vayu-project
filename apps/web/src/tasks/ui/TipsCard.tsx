@@ -133,7 +133,6 @@ export function TipsCard({
       window.removeEventListener('resize', measure);
     };
     // Measured again when the tips change; the row reports its own scrolling.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tips.length]);
   const scrollToFraction = (clientX: number, track: HTMLElement): void => {
     const el = row.current;

@@ -45,6 +45,20 @@ describe('the Today screen', () => {
     expect(tiles.length).toBeGreaterThanOrEqual(6);
   });
 
+  it('shows all seven days with 7 days chosen, saying where the air forecast does not reach', () => {
+    const day = sampleDay('unhealthy');
+    // From the sixth day on, the weather is there and the air forecast is not.
+    const daily = day.daily.map((d, i) =>
+      i < 5 ? d : { date: d.date, ...(d.sky === undefined ? {} : { sky: d.sky }) },
+    );
+    render(<TodayScreen data={{ ...day, daily }} />);
+    const region = screen.getByRole('region', { name: 'Daily forecast' });
+    expect(screen.getByRole('button', { name: '7 days' })).toHaveAttribute('aria-pressed', 'true');
+    expect(within(region).getAllByRole('listitem')).toHaveLength(7);
+    expect(within(region).getAllByText('No air forecast yet')).toHaveLength(2);
+    expect(region).toHaveTextContent(/air forecast reaches about five days/u);
+  });
+
   it('shows three days when asked', async () => {
     render(<TodayScreen data={sampleDay('good')} />);
     await userEvent.click(screen.getByRole('button', { name: '3 days' }));

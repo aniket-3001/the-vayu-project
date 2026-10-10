@@ -130,7 +130,7 @@ export function alertsFor(data: TodayData, fires: number | undefined): readonly 
   }
   data.daily.slice(1, 3).forEach((day, i) => {
     const offset = (i + 1) as 1 | 2;
-    if (day.aqi >= 151 && day.aqi >= data.aqi + 20) {
+    if (day.aqi !== undefined && day.aqi >= 151 && day.aqi >= data.aqi + 20) {
       alerts.push({
         id: `smog-${String(offset)}`,
         kind: 'smog',

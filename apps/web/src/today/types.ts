@@ -49,7 +49,8 @@ export interface DaySky {
 export interface DailyPoint {
   /** Midnight at the start of the day, India time, ISO. */
   readonly date: string;
-  readonly aqi: number;
+  /** Missing for the last days of the week, where the air forecast does not reach but the weather does. */
+  readonly aqi?: number;
   /** Missing when the weather model had no answer for this day. */
   readonly sky?: DaySky;
 }
