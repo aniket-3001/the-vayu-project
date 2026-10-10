@@ -48,7 +48,7 @@ Needs Node 22 or later.
 ```bash
 npm ci
 make prove     # lint, types, every test, cdk synth, and a check that the deployed bundle holds no prototype code
-make local-api # in one terminal: the API on your machine (needs OPENAQ_API_KEY and FIRMS_MAP_KEY in the environment)
+make local-api # in one terminal: the API on your machine (real monitors need OPENAQ_API_KEY in the environment)
 make local     # in another: the app on your machine, reading it
 ```
 

@@ -15,7 +15,7 @@ Unticked means not yet seen live.
 - [x] Bad input is refused with a reason: unknown place, out-of-range history, outside north India, bad room name, invalid request form
 - [x] Every answer says where its numbers come from and how old they are
 - [x] A model-only answer has a figure for the hour in progress
-- [ ] Monitors for the map: the list is empty until the stations job has run once (see below)
+- [x] Monitors for the map: 68 monitors in the list after the first complete run of the stations job
 
 ## Checked by hand
 
@@ -26,7 +26,7 @@ Unticked means not yet seen live.
 | My Air Devices | Says "To be implemented", shows no measured numbers, and nothing counts in Exposure                            | [x]  |
 | Exposure       | The dial is drawn from the real last 24 hours; hours in each level add up; no unit readings are counted        | [x]  |
 | Map            | The air colours and the wind load from Open-Meteo; fire points come from our API                               | [x]  |
-| Map            | Monitor dots appear once the stations job has run                                                              | [ ]  |
+| Map            | Monitor dots appear once the stations job has run                                                              | [x]  |
 | Assistant      | A question gets an answer from the rules, reworded by Bedrock, with "Wording by AI, checked against the facts" | [x]  |
 | Assistant      | The answer names the monitor, its distance and its age                                                         | [x]  |
 | AR Lens        | Camera, location and microphone prompts, on a real phone                                                       | [ ]  |
@@ -44,6 +44,6 @@ Unticked means not yet seen live.
    It no longer counts as a number.
 4. Places outside a monitor's range showed "No reading right now": the regional model's answer left out the hour in progress.
    It is kept now, and an estimate is cached for one minute instead of five.
-5. The map's monitor job ran into OpenAQ's rate limit. It now waits as long as OpenAQ asks, up to three times a run.
+5. The map's monitor job ran into OpenAQ's rate limit, and also took longer than its two-minute limit. It now waits as long as OpenAQ asks, up to three times a run, starts requests a fixed time apart, and stops at a time budget.
 6. The first deploy failed on an API stage setting that named a route before it existed, and the rollback failed too.
    The stage now waits for its routes.
