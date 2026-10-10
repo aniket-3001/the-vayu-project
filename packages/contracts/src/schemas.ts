@@ -333,6 +333,21 @@ export const AssistantReply = z.object({
 });
 export type AssistantReply = z.infer<typeof AssistantReply>;
 
+/**
+ * `POST /v1/speech`: an answer to be read aloud. The text is at most 400 characters; the voice is a woman's, Amazon
+ * Polly's Kajal. The audio comes back as MP3, in base64.
+ */
+export const SpeechRequest = z.object({ text: z.string().trim().min(1).max(400) }).strict();
+export type SpeechRequest = z.infer<typeof SpeechRequest>;
+export const SpeechReply = z.object({
+  audio: z.string().min(1),
+  voice: z.literal('Kajal'),
+  characters: z.number().int().min(1).max(400),
+  /** True when the same words had been spoken lately and the audio was kept. */
+  cached: z.boolean(),
+});
+export type SpeechReply = z.infer<typeof SpeechReply>;
+
 export const Leakiness = z.enum(['closed', 'typical', 'windows_open', 'custom']);
 export const RoomSpec = record({
   id: z.string(),

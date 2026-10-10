@@ -7,18 +7,21 @@ import { traced } from './tracing';
  * (rule I15): each caller, and the whole service, can only do so much a day.
  */
 export interface Quota {
-  /** Uses one of `limit` for `key`. False means the limit is used up and the caller must not go ahead. */
-  take(key: string, limit: number, ttlSeconds: number): Promise<boolean>;
+  /**
+   * Uses `amount` (one, unless said) of `limit` for `key`. False means there is not that much left and the caller
+   * must not go ahead; nothing is used then.
+   */
+  take(key: string, limit: number, ttlSeconds: number, amount?: number): Promise<boolean>;
 }
 
 /** A quota that lives in memory, for tests and for local runs. */
 export function memoryQuota(): Quota & { readonly used: (key: string) => number } {
   const counts = new Map<string, number>();
   return {
-    take(key, limit) {
+    take(key, limit, _ttlSeconds, amount = 1) {
       const used = counts.get(key) ?? 0;
-      if (used >= limit) return Promise.resolve(false);
-      counts.set(key, used + 1);
+      if (used + amount > limit) return Promise.resolve(false);
+      counts.set(key, used + amount);
       return Promise.resolve(true);
     },
     used: (key) => counts.get(key) ?? 0,
@@ -35,17 +38,18 @@ export function dynamoQuota(
   nowSeconds: () => number = () => Math.floor(Date.now() / 1000),
 ): Quota {
   return {
-    async take(key, limit, ttlSeconds) {
+    async take(key, limit, ttlSeconds, amount = 1) {
       try {
         await client.send(
           new UpdateCommand({
             TableName: tableName,
             Key: { pk: `CAP#${key}`, sk: 'CAP' },
-            UpdateExpression: 'ADD used :one SET expiresAt = if_not_exists(expiresAt, :expires)',
-            ConditionExpression: 'attribute_not_exists(used) OR used < :limit',
+            UpdateExpression: 'ADD used :amount SET expiresAt = if_not_exists(expiresAt, :expires)',
+            // There must be room for the whole amount; otherwise nothing is taken.
+            ConditionExpression: 'attribute_not_exists(used) OR used <= :room',
             ExpressionAttributeValues: {
-              ':one': 1,
-              ':limit': limit,
+              ':amount': amount,
+              ':room': limit - amount,
               ':expires': nowSeconds() + ttlSeconds,
             },
           }),

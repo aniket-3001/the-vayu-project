@@ -17,7 +17,13 @@ import {
   openMeteoWeatherForecastRepo,
   openMeteoWeatherRepo,
 } from '@vayu/data';
-import { bedrockGenerator, dynamoLinkStore, dynamoTokenStore, resumeAlertLoop } from '@vayu/watch';
+import {
+  bedrockGenerator,
+  dynamoLinkStore,
+  dynamoTokenStore,
+  pollyEnglishVoice,
+  resumeAlertLoop,
+} from '@vayu/watch';
 import { ASSISTANT_LIMITS, GROUNDED_SYSTEM_PROMPT } from './assistantAgent';
 import { ssmSwitch } from './killSwitch';
 import { s3ReplayRepo } from './replayStore';
@@ -25,6 +31,8 @@ import { clientAddress } from './clientAddress';
 import { dynamoQuota } from './quota';
 import { dynamoRequestsSave } from './requestsStore';
 import { dynamoCacheReader, dynamoRoomStore } from './roomStores';
+import { SPEECH_LIMITS } from './speechRoute';
+import { dynamoSpeechStore } from './speechStore';
 import { startFixCheck } from './fixCheck';
 import { dynamoFixCheckStore } from './fixCheckStore';
 import { createRouter, type ApiRequest, type RouterDeps } from './routes';
@@ -129,6 +137,14 @@ function buildRoute(): Promise<ReturnType<typeof createRouter>> {
       },
       cache: dynamoCacheReader(mustEnv('CACHE_TABLE')),
       assistant: assistantDeps(requestSalt, docClient),
+      speech: {
+        voice: pollyEnglishVoice({ maxCharacters: SPEECH_LIMITS.maxCharacters }),
+        enabled: ssmSwitch(mustEnv('ASSISTANT_SWITCH_PARAM')),
+        quota: dynamoQuota(mustEnv('WATCH_TABLE'), docClient),
+        store: dynamoSpeechStore(mustEnv('WATCH_TABLE'), docClient),
+        clock: liveClock(),
+        salt: requestSalt,
+      },
       requests: {
         save: dynamoRequestsSave(mustEnv('WATCH_TABLE'), docClient),
         quota: dynamoQuota(mustEnv('WATCH_TABLE'), docClient),

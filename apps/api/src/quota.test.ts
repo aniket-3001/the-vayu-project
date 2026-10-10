@@ -25,8 +25,22 @@ describe('a quota', () => {
     const command = send.mock.calls[0]?.[0] as { input: Record<string, unknown> };
     expect(command.input).toMatchObject({
       Key: { pk: 'CAP#k', sk: 'CAP' },
-      ConditionExpression: 'attribute_not_exists(used) OR used < :limit',
-      ExpressionAttributeValues: { ':one': 1, ':limit': 3, ':expires': 1060 },
+      ConditionExpression: 'attribute_not_exists(used) OR used <= :room',
+      ExpressionAttributeValues: { ':amount': 1, ':room': 2, ':expires': 1060 },
+    });
+  });
+
+  it('can take an amount at a time, all or nothing', async () => {
+    const memory = memoryQuota();
+    expect(await memory.take('k', 1000, 60, 600)).toBe(true);
+    expect(await memory.take('k', 1000, 60, 600)).toBe(false);
+    expect(memory.used('k')).toBe(600);
+    expect(await memory.take('k', 1000, 60, 400)).toBe(true);
+    const send = vi.fn().mockResolvedValue({});
+    await dynamoQuota('Watch', { send } as never, () => 1000).take('k', 1000, 60, 300);
+    const command = send.mock.calls[0]?.[0] as { input: Record<string, unknown> };
+    expect(command.input).toMatchObject({
+      ExpressionAttributeValues: { ':amount': 300, ':room': 700 },
     });
   });
 

@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { cleanup, render, screen, within } from '@testing-library/react';
+import { act, cleanup, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -9,6 +9,7 @@ import { apiAssistant } from './api';
 import { AssistantFab } from './AssistantFab';
 import { spanWords, buildContext } from './context';
 import { localAssistant } from './local';
+import type { Voice } from './speech';
 import type { AssistantContext, AssistantSource } from './types';
 
 beforeEach(() => {
@@ -16,7 +17,6 @@ beforeEach(() => {
 });
 afterEach(() => {
   cleanup();
-  Reflect.deleteProperty(window, 'speechSynthesis');
 });
 
 const base: AssistantContext = {
@@ -210,24 +210,147 @@ describe('the assistant button', () => {
     ).toBeInTheDocument();
   });
 
-  it('reads an answer aloud when the browser can speak', async () => {
-    const speak = vi.fn();
-    Object.defineProperty(window, 'speechSynthesis', {
-      configurable: true,
-      value: { speak, cancel: vi.fn() },
-    });
-    vi.stubGlobal(
-      'SpeechSynthesisUtterance',
-      class {
-        constructor(public text: string) {}
+  const voiceStub = (): Voice & { said: string[]; stopped: number } => {
+    const v = {
+      said: [] as string[],
+      stopped: 0,
+      speak: (text: string): Promise<void> => {
+        v.said.push(text);
+        return Promise.resolve();
       },
+      stop: (): void => {
+        v.stopped += 1;
+      },
+    };
+    return v;
+  };
+  const openWith = (voice: Voice): void => {
+    render(
+      <MemoryRouter>
+        <AssistantFab voice={voice} />
+      </MemoryRouter>,
     );
-    open();
+  };
+
+  it('reads every answer aloud as it arrives, like a voice assistant', async () => {
+    const voice = voiceStub();
+    openWith(voice);
     await userEvent.click(screen.getByRole('button', { name: 'Vayu assistant' }));
     await userEvent.click(screen.getByRole('button', { name: 'Do I need a mask?' }));
-    await userEvent.click(await screen.findByRole('button', { name: 'Listen to this answer' }));
-    expect(speak).toHaveBeenCalledTimes(1);
-    vi.unstubAllGlobals();
+    expect(await screen.findByText(/well-fitted N95 or FFP2/u)).toBeInTheDocument();
+    await waitFor(() => {
+      expect(voice.said).toHaveLength(1);
+    });
+    expect(voice.said[0]).toMatch(/N95 or FFP2/u);
+    await userEvent.click(screen.getByRole('button', { name: 'Listen to this answer' }));
+    expect(voice.said).toHaveLength(2);
+  });
+
+  it('can be muted, and stays muted the next time', async () => {
+    const voice = voiceStub();
+    openWith(voice);
+    await userEvent.click(screen.getByRole('button', { name: 'Vayu assistant' }));
+    const switchButton = screen.getByRole('button', { name: 'Read answers aloud' });
+    expect(switchButton).toHaveAttribute('aria-pressed', 'true');
+    await userEvent.click(switchButton);
+    expect(switchButton).toHaveAttribute('aria-pressed', 'false');
+    expect(window.localStorage.getItem('vayu.voice.v1')).toBe('off');
+    await userEvent.click(screen.getByRole('button', { name: 'Do I need a mask?' }));
+    await screen.findByText(/well-fitted N95 or FFP2/u);
+    expect(voice.said).toHaveLength(0);
+    cleanup();
+    openWith(voiceStub());
+    await userEvent.click(screen.getByRole('button', { name: 'Vayu assistant' }));
+    expect(screen.getByRole('button', { name: 'Read answers aloud' })).toHaveAttribute(
+      'aria-pressed',
+      'false',
+    );
+  });
+
+  it('stops talking when the chat is closed', async () => {
+    const voice = voiceStub();
+    openWith(voice);
+    await userEvent.click(screen.getByRole('button', { name: 'Vayu assistant' }));
+    const before = voice.stopped;
+    await userEvent.keyboard('{Escape}');
+    expect(voice.stopped).toBeGreaterThan(before);
+  });
+
+  describe('by voice', () => {
+    interface FakeRecognition {
+      onresult: ((event: { results: unknown[] }) => void) | null;
+      onend: (() => void) | null;
+      stopped: boolean;
+    }
+    const instances: FakeRecognition[] = [];
+    const current = (): FakeRecognition | undefined => instances.at(-1);
+    beforeEach(() => {
+      instances.length = 0;
+      class Fake implements FakeRecognition {
+        onresult: FakeRecognition['onresult'] = null;
+        onend: FakeRecognition['onend'] = null;
+        onerror: (() => void) | null = null;
+        stopped = false;
+        lang = '';
+        continuous = false;
+        interimResults = false;
+        constructor() {
+          instances.push(this);
+        }
+        start(): void {
+          // Listening begins at once; there is nothing to do.
+        }
+        stop(): void {
+          this.stopped = true;
+          this.onend?.();
+        }
+        abort(): void {
+          this.stop();
+        }
+      }
+      vi.stubGlobal('webkitSpeechRecognition', Fake);
+    });
+    afterEach(() => {
+      vi.unstubAllGlobals();
+    });
+    const said = (text: string): unknown[] => [[{ transcript: text }]];
+
+    it('shows that it is listening, then the words as they are understood, and sends them', async () => {
+      openWith(voiceStub());
+      await userEvent.click(screen.getByRole('button', { name: 'Vayu assistant' }));
+      await userEvent.click(screen.getByRole('button', { name: 'Speak to the assistant' }));
+      expect(screen.getByRole('status')).toHaveTextContent('Listening…');
+      expect(screen.getByRole('button', { name: 'Stop listening' })).toHaveAttribute(
+        'aria-pressed',
+        'true',
+      );
+      act(() => {
+        current()?.onresult?.({ results: said('do I need') });
+      });
+      expect(screen.getByRole('status')).toHaveTextContent('Transcribing…');
+      expect(screen.getByRole('status')).toHaveTextContent('do I need');
+      act(() => {
+        current()?.onresult?.({ results: said('do I need a mask') });
+      });
+      expect(screen.getByRole('status')).toHaveTextContent('do I need a mask');
+      await userEvent.click(screen.getByRole('button', { name: 'Stop listening' }));
+      expect(current()?.stopped).toBe(true);
+      expect(await screen.findByText(/well-fitted N95 or FFP2/u)).toBeInTheDocument();
+      expect(screen.queryByRole('status')).not.toBeInTheDocument();
+    });
+
+    it('lets go of the microphone and sends nothing when cancelled', async () => {
+      openWith(voiceStub());
+      await userEvent.click(screen.getByRole('button', { name: 'Vayu assistant' }));
+      await userEvent.click(screen.getByRole('button', { name: 'Speak to the assistant' }));
+      act(() => {
+        current()?.onresult?.({ results: said('open the windows') });
+      });
+      await userEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+      expect(current()?.stopped).toBe(true);
+      expect(screen.queryByText('open the windows')).not.toBeInTheDocument();
+      expect(screen.queryByRole('status')).not.toBeInTheDocument();
+    });
   });
 
   it('says what to do when nothing is pinned, and closes with Escape', async () => {

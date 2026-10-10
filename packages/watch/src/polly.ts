@@ -8,6 +8,10 @@ export interface PollyHindiOptions {
   readonly region?: string;
   /** Rule I9: how long to wait for Polly before giving up. */
   readonly timeoutMs?: number;
+  /** The most characters one call may speak. Polly's own limit is 3,000. */
+  readonly maxCharacters?: number;
+  /** The language the voice speaks. Kajal speaks both Hindi and Indian English. */
+  readonly languageCode?: 'hi-IN' | 'en-IN';
 }
 
 /** A voice note is a few sentences. This keeps one far under Polly's 3,000-character limit. */
@@ -18,11 +22,20 @@ const MAX_CHARACTERS = 1000;
  * available in Mumbai (ap-south-1), checked on 4 October 2026.
  */
 export function pollyHindiVoice(options: PollyHindiOptions = {}): Voice {
+  return pollyKajal({ languageCode: 'hi-IN', ...options });
+}
+
+/** The same voice speaking Indian English, for the assistant's answers. */
+export function pollyEnglishVoice(options: PollyHindiOptions = {}): Voice {
+  return pollyKajal({ languageCode: 'en-IN', ...options });
+}
+
+function pollyKajal(options: PollyHindiOptions): Voice {
   const client = options.client ?? new PollyClient({ region: options.region ?? 'ap-south-1' });
   const timeoutMs = options.timeoutMs ?? 5000;
   return async (text) => {
     if (text.trim() === '') throw new Error('There is nothing to say');
-    if (text.length > MAX_CHARACTERS) {
+    if (text.length > (options.maxCharacters ?? MAX_CHARACTERS)) {
       throw new Error(
         `The text is too long for one voice note (${String(text.length)} characters)`,
       );
@@ -39,7 +52,7 @@ export function pollyHindiVoice(options: PollyHindiOptions = {}): Voice {
           new SynthesizeSpeechCommand({
             Engine: 'neural',
             VoiceId: 'Kajal',
-            LanguageCode: 'hi-IN',
+            LanguageCode: options.languageCode ?? 'hi-IN',
             OutputFormat: 'mp3',
             Text: text,
             TextType: 'text',

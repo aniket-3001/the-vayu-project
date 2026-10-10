@@ -29,6 +29,7 @@ import { loadAir, placeFromQuery } from './air';
 import { handleHistory } from './historyRoute';
 import { handleAssistant, type AssistantDeps } from './assistantRoute';
 import { handleRequests, type RequestsDeps } from './requestsRoute';
+import { handleSpeech, type SpeechDeps } from './speechRoute';
 import { handleStations } from './stationsRoute';
 import { handleToday } from './todayRoute';
 import { failure, ok, okCached, type ApiRequest, type ApiResponse } from './respond';
@@ -65,6 +66,8 @@ export interface RouterDeps {
   readonly assistant?: AssistantDeps | undefined;
   /** Asking for a demo or monitors. Absent where nothing is wired: /v1/requests is then not found. */
   readonly requests?: RequestsDeps | undefined;
+  /** Reading an answer aloud. Absent where nothing is wired: /v1/speech is then not found. */
+  readonly speech?: SpeechDeps | undefined;
   /** The Today screen's weather and gases. Absent, or failing, only means Today has none. */
   readonly weatherForecastRepo?: WeatherForecastRepo | undefined;
   readonly gasRepo?: GasRepo | undefined;
@@ -145,6 +148,11 @@ export function createRouter(deps: RouterDeps) {
       return deps.assistant === undefined
         ? failure(404, 'not_found', `No route for ${request.path}`)
         : handleAssistant(request, deps.assistant);
+    }
+    if (request.path === '/v1/speech') {
+      return deps.speech === undefined
+        ? failure(404, 'not_found', 'The voice is not available here')
+        : handleSpeech(request, deps.speech);
     }
     if (request.path === '/v1/requests') {
       return deps.requests === undefined

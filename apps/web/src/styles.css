@@ -3542,3 +3542,109 @@ button.alert-card {
   font-weight: 800;
   text-decoration: none;
 }
+
+/* Voice input: listening, then the words as they are understood */
+.listening {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border: 1px solid #8fbbe6;
+  border-radius: 14px;
+  background: #eef5fc;
+}
+.listen-bars {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  height: 28px;
+}
+.listen-bars i {
+  width: 4px;
+  height: 100%;
+  border-radius: 2px;
+  background: #3b82c4;
+  transform: scaleY(0.25);
+  animation: listen-bar 0.9s ease-in-out infinite;
+}
+.listen-bars i:nth-child(2) {
+  animation-delay: 0.12s;
+}
+.listen-bars i:nth-child(3) {
+  animation-delay: 0.24s;
+}
+.listen-bars i:nth-child(4) {
+  animation-delay: 0.36s;
+}
+.listen-bars i:nth-child(5) {
+  animation-delay: 0.48s;
+}
+@keyframes listen-bar {
+  50% {
+    transform: scaleY(1);
+  }
+}
+.listen-words {
+  display: grid;
+  flex: 1;
+  min-width: 0;
+  gap: 2px;
+}
+.listen-text {
+  overflow-wrap: anywhere;
+  font-size: 14px;
+}
+.caret {
+  display: inline-block;
+  width: 2px;
+  height: 1em;
+  margin-left: 2px;
+  vertical-align: text-bottom;
+  background: #3b82c4;
+  animation: caret-blink 1s steps(1) infinite;
+}
+@keyframes caret-blink {
+  50% {
+    opacity: 0;
+  }
+}
+.listen-cancel {
+  min-height: 36px;
+  padding: 0 12px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--card);
+  color: var(--text);
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+.icon-button.mic.live {
+  background: #3b82c4;
+  color: #fff;
+  animation: mic-pulse 1.2s ease-out infinite;
+}
+@keyframes mic-pulse {
+  0% {
+    box-shadow: 0 0 0 0 rgb(59 130 196 / 0.55);
+  }
+  100% {
+    box-shadow: 0 0 0 14px rgb(59 130 196 / 0);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .listen-bars i,
+  .caret,
+  .icon-button.mic.live {
+    animation: none;
+  }
+  .listen-bars i {
+    transform: scaleY(0.7);
+  }
+}
+
+.sheet-head-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}

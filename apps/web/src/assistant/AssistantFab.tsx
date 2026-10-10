@@ -1,4 +1,4 @@
-import { Mic, SendHorizontal, Sparkles, Store, Volume2, X } from 'lucide-react';
+import { Mic, SendHorizontal, Sparkles, Store, Volume2, VolumeX, X } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { alertsFor } from '../alerts/model';
@@ -20,7 +20,14 @@ import { addOuting, loadOutings, newOuting, saveOutings } from '../exposure/outi
 import { loadHousehold } from '../exposure/people';
 import { nowMinutes } from '../exposure/ui/OutingSheet';
 import { loadPins } from '../data/pins';
-import { canListen, canSpeak, listen, speak, stopSpeaking } from './speech';
+import {
+  browserVoice,
+  canListen,
+  listenLive,
+  pollyVoice,
+  type Listening,
+  type Voice,
+} from './speech';
 import type { AssistantContext, AssistantSource } from './types';
 
 interface Message {
@@ -47,6 +54,19 @@ const GREETING =
 const configured = (): AssistantSource =>
   airStore().kind === 'live' ? apiAssistant(API_URL) : localAssistant;
 
+/** The deployed app reads answers in Amazon Polly's voice through our API; the prototype and the tests use the browser's. */
+const configuredVoice = (): Voice =>
+  airStore().kind === 'live' ? pollyVoice(API_URL) : browserVoice();
+
+const VOICE_KEY = 'vayu.voice.v1';
+const voiceWasOn = (): boolean => {
+  try {
+    return window.localStorage.getItem(VOICE_KEY) !== 'off';
+  } catch {
+    return true;
+  }
+};
+
 /**
  * A button that stays on every screen and opens a chat. It answers questions such as "when can I go for a
  * walk" or "is school safe today" from the air, the alerts and the people being tracked. It can read answers
@@ -55,14 +75,20 @@ const configured = (): AssistantSource =>
  */
 export function AssistantFab({
   source = configured(),
+  voice: given,
 }: {
   readonly source?: AssistantSource;
+  readonly voice?: Voice;
 }): React.JSX.Element {
   const [open, setOpen] = useState(false);
   const [messages, setMessages] = useState<readonly Message[]>([]);
   const [draft, setDraft] = useState('');
   const [busy, setBusy] = useState(false);
   const [listening, setListening] = useState(false);
+  const [transcript, setTranscript] = useState('');
+  const [spoken, setSpoken] = useState(voiceWasOn);
+  const voice = useMemo(() => given ?? configuredVoice(), [given]);
+  const hearing = useRef<Listening | undefined>(undefined);
   const [view, setView] = useState<'chat' | 'request'>('chat');
   const input = useRef<HTMLInputElement>(null);
   const end = useRef<HTMLDivElement>(null);
@@ -89,8 +115,11 @@ export function AssistantFab({
 
   useEffect(() => {
     if (open) input.current?.focus();
-    else stopSpeaking();
-  }, [open]);
+    else {
+      voice.stop();
+      hearing.current?.cancel();
+    }
+  }, [open, voice]);
   useEffect(() => {
     if (!open) return;
     const onKey = (event: KeyboardEvent): void => {
@@ -147,6 +176,7 @@ export function AssistantFab({
           ...(link === undefined ? {} : { link }),
         },
       ]);
+      if (spoken) void voice.speak(reply);
       return;
     }
     if (context === undefined) {
@@ -175,10 +205,10 @@ export function AssistantFab({
             from: 'vayu',
             text: answer.text,
             basis: answer.basis,
-            ...(answer.audioUrl === undefined ? {} : { audioUrl: answer.audioUrl }),
           },
         ]);
         setBusy(false);
+        if (spoken) void voice.speak(answer.text);
       },
       () => {
         setMessages((m) => [
@@ -211,12 +241,34 @@ export function AssistantFab({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [context === undefined]);
 
+  // Listening shows the words as they are understood, and stops by itself after a few quiet seconds.
   const byVoice = (): void => {
+    if (hearing.current !== undefined) {
+      hearing.current.stop();
+      return;
+    }
+    voice.stop();
+    setTranscript('');
     setListening(true);
-    void listen().then((heard) => {
-      setListening(false);
-      if (heard !== undefined && heard !== '') ask(heard);
+    hearing.current = listenLive({
+      onTranscript: setTranscript,
+      onEnd: (heard) => {
+        hearing.current = undefined;
+        setListening(false);
+        setTranscript('');
+        if (heard !== undefined) ask(heard);
+      },
     });
+    if (hearing.current === undefined) setListening(false);
+  };
+  const setVoiceOn = (on: boolean): void => {
+    setSpoken(on);
+    if (!on) voice.stop();
+    try {
+      window.localStorage.setItem(VOICE_KEY, on ? 'on' : 'off');
+    } catch {
+      // Best effort: it still holds for this visit.
+    }
   };
 
   return (
@@ -267,16 +319,38 @@ export function AssistantFab({
                   )}
                 </p>
               </div>
-              <button
-                type="button"
-                className="icon-button"
-                aria-label="Close"
-                onClick={() => {
-                  setOpen(false);
-                }}
-              >
-                <X size={20} aria-hidden="true" />
-              </button>
+              <div className="sheet-head-actions">
+                <button
+                  type="button"
+                  className="icon-button"
+                  aria-label="Read answers aloud"
+                  aria-pressed={spoken}
+                  title={
+                    spoken
+                      ? 'Answers are read aloud. Tap to mute.'
+                      : 'Muted. Tap to read answers aloud.'
+                  }
+                  onClick={() => {
+                    setVoiceOn(!spoken);
+                  }}
+                >
+                  {spoken ? (
+                    <Volume2 size={20} aria-hidden="true" />
+                  ) : (
+                    <VolumeX size={20} aria-hidden="true" />
+                  )}
+                </button>
+                <button
+                  type="button"
+                  className="icon-button"
+                  aria-label="Close"
+                  onClick={() => {
+                    setOpen(false);
+                  }}
+                >
+                  <X size={20} aria-hidden="true" />
+                </button>
+              </div>
             </div>
             {view === 'chat' ? (
               <>
@@ -288,18 +362,16 @@ export function AssistantFab({
                       {m.from === 'vayu' && m.basis !== undefined && (
                         <p className="small muted bubble-foot">
                           {m.basis}
-                          {canSpeak() || m.audioUrl !== undefined ? (
-                            <button
-                              type="button"
-                              className="link-button"
-                              aria-label="Listen to this answer"
-                              onClick={() => {
-                                speak(m.text, m.audioUrl);
-                              }}
-                            >
-                              <Volume2 size={14} aria-hidden="true" /> Listen
-                            </button>
-                          ) : null}
+                          <button
+                            type="button"
+                            className="link-button"
+                            aria-label="Listen to this answer"
+                            onClick={() => {
+                              void voice.speak(m.text);
+                            }}
+                          >
+                            <Volume2 size={14} aria-hidden="true" /> Listen
+                          </button>
                         </p>
                       )}
                       {m.link !== undefined && (
@@ -356,6 +428,35 @@ export function AssistantFab({
                     </button>
                   ))}
                 </div>
+                {listening && (
+                  <div className="listening" role="status" aria-live="polite">
+                    <span className="listen-bars" aria-hidden="true">
+                      <i />
+                      <i />
+                      <i />
+                      <i />
+                      <i />
+                    </span>
+                    <span className="listen-words">
+                      <strong>{transcript === '' ? 'Listening…' : 'Transcribing…'}</strong>
+                      <span className={`listen-text${transcript === '' ? ' muted' : ''}`}>
+                        {transcript === ''
+                          ? 'Say it now. It stops by itself after a few quiet seconds.'
+                          : transcript}
+                        {transcript !== '' && <i className="caret" aria-hidden="true" />}
+                      </span>
+                    </span>
+                    <button
+                      type="button"
+                      className="listen-cancel"
+                      onClick={() => {
+                        hearing.current?.cancel();
+                      }}
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                )}
                 <form
                   className="ask-form"
                   onSubmit={(event) => {
@@ -379,8 +480,8 @@ export function AssistantFab({
                   {canListen() && (
                     <button
                       type="button"
-                      className="icon-button"
-                      aria-label={listening ? 'Listening…' : 'Speak to the assistant'}
+                      className={`icon-button mic${listening ? ' live' : ''}`}
+                      aria-label={listening ? 'Stop listening' : 'Speak to the assistant'}
                       aria-pressed={listening}
                       onClick={byVoice}
                     >

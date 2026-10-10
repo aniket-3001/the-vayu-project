@@ -202,9 +202,9 @@ export class VayuStack extends Stack {
         maxAge: Duration.days(1),
       },
     });
-    // The two routes that cost something or take a person's words get their own, tighter, throttle below.
+    // The routes that cost something or take a person's words get their own, tighter, throttle below.
     const limitedRoutes = [];
-    for (const path of ['/v1/assistant', '/v1/requests']) {
+    for (const path of ['/v1/assistant', '/v1/speech', '/v1/requests']) {
       limitedRoutes.push(
         ...api.addRoutes({
           path,
@@ -234,6 +234,7 @@ export class VayuStack extends Stack {
     (apiStage.node.defaultChild as CfnStage).routeSettings = {
       // Written as CloudFormation spells them: this property is an untyped map, so nothing converts the case.
       'POST /v1/assistant': { ThrottlingRateLimit: 3, ThrottlingBurstLimit: 6 },
+      'POST /v1/speech': { ThrottlingRateLimit: 3, ThrottlingBurstLimit: 6 },
       'POST /v1/requests': { ThrottlingRateLimit: 1, ThrottlingBurstLimit: 3 },
     };
 

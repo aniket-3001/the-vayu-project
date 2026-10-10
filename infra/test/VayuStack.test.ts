@@ -800,12 +800,19 @@ describe('the public site', () => {
         .flatMap((policy) => policy.Properties.PolicyDocument.Statement)
         .filter((s) => JSON.stringify(s.Action).includes('polly:'));
 
-    it('is off by default: alerts stay text only, and nothing may call Polly', () => {
+    it('is off by default: alerts stay text only, and only the API (reading answers aloud) may call Polly', () => {
       const t = synth();
       t.hasResourceProperties('AWS::Lambda::Function', {
         Environment: { Variables: Match.objectLike({ VOICE: 'off' }) },
       });
-      expect(polly(t)).toHaveLength(0);
+      const statements = polly(t);
+      expect(statements).toHaveLength(1);
+      expect(statements[0]?.Action).toBe('polly:SynthesizeSpeech');
+      // The one statement is on the API function's role, not the alert sender's.
+      const owner = Object.entries(
+        t.findResources('AWS::IAM::Policy') as Record<string, { Properties: object }>,
+      ).find(([, policy]) => JSON.stringify(policy.Properties).includes('polly:'));
+      expect(owner?.[0]).toMatch(/^ApiFunction/u);
     });
 
     it('when switched on, gives only the Send function the one Polly action, SynthesizeSpeech', () => {
@@ -814,8 +821,9 @@ describe('the public site', () => {
         Environment: { Variables: Match.objectLike({ VOICE: 'on' }) },
       });
       const statements = polly(t);
-      expect(statements).toHaveLength(1);
-      expect(statements[0]?.Action).toBe('polly:SynthesizeSpeech');
+      // The API's, and the alert sender's: each one action, SynthesizeSpeech.
+      expect(statements).toHaveLength(2);
+      for (const statement of statements) expect(statement.Action).toBe('polly:SynthesizeSpeech');
     });
   });
 });
@@ -877,9 +885,21 @@ describe('the assistant (rule I15 and the AI boundaries)', () => {
     template.hasResourceProperties('AWS::ApiGatewayV2::Stage', {
       RouteSettings: {
         'POST /v1/assistant': { ThrottlingRateLimit: 3, ThrottlingBurstLimit: 6 },
+        'POST /v1/speech': { ThrottlingRateLimit: 3, ThrottlingBurstLimit: 6 },
         'POST /v1/requests': { ThrottlingRateLimit: 1, ThrottlingBurstLimit: 3 },
       },
       DefaultRouteSettings: { ThrottlingRateLimit: 25, ThrottlingBurstLimit: 50 },
     });
+  });
+
+  it('lets the API read answers aloud with one Polly action, and nothing more', () => {
+    const statements = policies().filter((s) => JSON.stringify(s.Action).includes('polly:'));
+    expect(statements).toHaveLength(1);
+    expect(statements[0]).toMatchObject({ Action: 'polly:SynthesizeSpeech', Effect: 'Allow' });
+  });
+
+  it('has a route for the voice beside the assistant, so each can be throttled on its own', () => {
+    for (const key of ['POST /v1/assistant', 'POST /v1/speech', 'POST /v1/requests'])
+      template.hasResourceProperties('AWS::ApiGatewayV2::Route', { RouteKey: key });
   });
 });

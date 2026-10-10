@@ -104,6 +104,15 @@ export class Assistant extends Construct {
         ],
       }),
     );
+    // The voice that reads answers aloud. Polly's SynthesizeSpeech takes no resource, so "*" is the only possible
+    // scope: it can turn text into speech and do nothing else.
+    fn.addToRolePolicy(
+      new PolicyStatement({
+        effect: Effect.ALLOW,
+        actions: ['polly:SynthesizeSpeech'],
+        resources: ['*'],
+      }),
+    );
     fn.addToRolePolicy(
       new PolicyStatement({
         effect: Effect.ALLOW,
