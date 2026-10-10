@@ -55,6 +55,9 @@ Unticked means not yet seen live.
 | Assistant      | "log a 30 minute walk" asks where, adds it, and the hour shows in the outdoor ring and the graph's line          | [ ]  |
 | Exposure       | The window slides along the day's line; the dial is in am and pm; the person icon is centred                     | [ ]  |
 | Lens           | The window slides along the next day and a half and says the AQI of the hour under it                            | [ ]  |
+| My Air         | A school's card says where the morning assembly should be; GRAP alerts are yellow, orange, red or purple         | [ ]  |
+| Exposure       | A half-hour walk colours half an hour's segment in the outdoor ring and the rest in the ring you were in         | [ ]  |
+| My Air         | The points are gold stars, true stars at any width; dots under the tips follow the swipe                         | [ ]  |
 | Laptop         | Every screen at a laptop width                                                                                   | [ ]  |
 | Offline        | Switch the phone to airplane mode: the last good readings stay and say how old they are                          | [ ]  |
 

@@ -38,11 +38,11 @@ export const SCENARIOS: readonly Scenario[] = [
   },
   {
     id: 'bad',
-    label: 'Bad day, no walk',
-    caption: 'An unhealthy day: an alert says to skip the park, and says why.',
+    label: 'Bad day',
+    caption: 'An unhealthy day: the tips say to keep walks short and the windows shut.',
     route: '/',
     seconds: 5,
-    state: { day: 'unhealthy', openAlert: 'walk-today' },
+    state: { day: 'unhealthy' },
   },
   {
     id: 'grap',

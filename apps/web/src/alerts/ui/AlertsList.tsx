@@ -40,7 +40,7 @@ export function AlertsList({
             <li key={alert.id}>
               <button
                 type="button"
-                className={`alert-row ${alert.severity}${alert.day === 0 ? ' now' : ''}`}
+                className={`alert-row ${alert.severity} ${alert.stage === undefined ? alert.kind : `grap-s${String(alert.stage)}`}${alert.day === 0 ? ' now' : ''}`}
                 aria-haspopup="dialog"
                 onClick={() => {
                   setOpen(alert);

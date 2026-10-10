@@ -30,7 +30,7 @@ describe('demo scenarios', () => {
     for (const part of ['/exposure', '/map', '/lens', '/place/'])
       expect(routes.some((r) => r.startsWith(part))).toBe(true);
     const opened = SCENARIOS.map((s) => s.state.openAlert);
-    expect(opened).toEqual(expect.arrayContaining(['walk-today', 'grap-today', 'stubble']));
+    expect(opened).toEqual(expect.arrayContaining(['grap-today', 'stubble']));
     expect(new Set(SCENARIOS.map((s) => s.id)).size).toBe(SCENARIOS.length);
   });
 
@@ -50,7 +50,6 @@ describe('demo scenarios', () => {
     const [home] = loadPins(window.localStorage);
     if (home === undefined) throw new Error('no pins');
     for (const [id, alert, fires] of [
-      ['bad', 'walk-today', undefined],
       ['grap', 'grap-today', undefined],
       ['stubble', 'stubble', 140],
     ] as const) {

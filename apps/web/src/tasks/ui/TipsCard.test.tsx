@@ -80,29 +80,34 @@ describe('the Breathe better tips on My Air', () => {
     expect(screen.queryByRole('region', { name: 'Breathe better today' })).not.toBeInTheDocument();
   });
 
-  it('hold the alerts and the tips together: alerts down the page above, tips as cards that swipe', () => {
+  it('hold the tips as cards that swipe, with dots to say which, and no separate alerts section', async () => {
     open();
     const card = screen.getByRole('region', { name: 'Breathe better today' });
     expect(screen.queryByRole('heading', { name: 'Alerts', level: 2 })).not.toBeInTheDocument();
-    const alerts = card.querySelector('.alert-list');
     const tips = card.querySelector('.tips-row');
-    expect(alerts).toBeInTheDocument();
     expect(tips).toBeInTheDocument();
-    // The alerts come first in the card, then the tips, then the totals.
-    if (alerts === null || tips === null) throw new Error('missing');
-    expect(alerts.compareDocumentPosition(tips) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     expect(screen.queryByRole('button', { name: /See all|Fold/u })).not.toBeInTheDocument();
-    // Each tip shows its reason in full beside its coin, with no unfolding.
-    const first = tips?.querySelector('li');
-    expect(first?.querySelector('.task-words .muted')).toBeInTheDocument();
+    const dots = within(card).getAllByRole('button', { name: /^Tip \d of \d$/u });
+    expect(dots.length).toBe(tips?.querySelectorAll('li').length);
+    expect(dots[0]).toHaveAttribute('aria-current', 'true');
+    const second = dots[1];
+    if (second === undefined) throw new Error('only one tip');
+    await userEvent.click(second);
+    expect(dots[1]).toHaveAttribute('aria-current', 'true');
+    expect(dots[0]).toHaveAttribute('aria-current', 'false');
+    // Each tip shows its reason in full beside its star, with no unfolding.
+    expect(tips?.querySelector('li .task-words .muted')).toBeInTheDocument();
   });
 
-  it('show the points on a gold coin', () => {
+  it('show the points on a gold star, a true star and not a stretched circle', () => {
     open();
     const card = screen.getByRole('region', { name: 'Breathe better today' });
-    const coins = card.querySelectorAll('.coin');
+    const coins = card.querySelectorAll('.points-star');
     expect(coins.length).toBeGreaterThanOrEqual(2);
-    for (const coin of coins) expect(coin).toHaveTextContent(/^\+\d+$/u);
+    for (const coin of coins) {
+      expect(coin).toHaveTextContent(/^\+\d+$/u);
+      expect(coin.querySelector('svg path')).toBeInTheDocument();
+    }
     expect(within(card).getAllByRole('img', { name: /\d+ points/u }).length).toBe(coins.length);
   });
 });

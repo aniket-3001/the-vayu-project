@@ -340,4 +340,37 @@ describe('outdoor time that was logged', () => {
     const phoneOnly = countedCells(dayCells(adult, [], live, today())).find((c) => c.hour === 16);
     expect(phoneOnly?.where).toBe('live');
   });
+
+  it('splits an hour that was part outside, so each part can be drawn in its own ring', () => {
+    const counted = countedCells(
+      dayCells(adult, [], {}, today(), [walk({ date: today(), start: 16 * 60 + 30, minutes: 30 })]),
+    ).find((c) => c.hour === 16);
+    expect(counted?.parts?.map((p) => [p.where, p.from, p.to])).toEqual([
+      ['outdoor', 0.5, 1],
+      ['home', 0, 0.5],
+    ]);
+    expect(counted?.parts?.every((p) => p.aqi > 0)).toBe(true);
+    // An hour with no walk in it is not split.
+    const plain = countedCells(dayCells(adult, [], {}, today())).find((c) => c.hour === 15);
+    expect(plain?.parts).toBeUndefined();
+  });
+
+  it('splits an hour round two short walks, with the gaps in the other ring', () => {
+    const counted = countedCells(
+      dayCells(adult, [], {}, today(), [
+        walk({ id: 'a', date: today(), start: 16 * 60, minutes: 15 }),
+        walk({ id: 'b', date: today(), start: 16 * 60 + 30, minutes: 15 }),
+      ]),
+    ).find((c) => c.hour === 16);
+    const outside = counted?.parts?.filter((p) => p.where === 'outdoor') ?? [];
+    const rest = counted?.parts?.filter((p) => p.where === 'home') ?? [];
+    expect(outside.map((p) => [p.from, p.to])).toEqual([
+      [0, 0.25],
+      [0.5, 0.75],
+    ]);
+    expect(rest.map((p) => [p.from, p.to])).toEqual([
+      [0.25, 0.5],
+      [0.75, 1],
+    ]);
+  });
 });

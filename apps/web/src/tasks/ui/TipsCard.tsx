@@ -10,6 +10,7 @@ import {
   type LucideIcon,
 } from 'lucide-react';
 import { motion, useReducedMotion } from 'motion/react';
+import { useRef, useState } from 'react';
 import { MaskIcon } from '../../today/ui/icons';
 import { POINTS, type Task, type TaskKind } from '../model';
 import { useTasks } from '../useTasks';
@@ -85,10 +86,26 @@ export function Progress({
   );
 }
 
-/** A game coin in gold with the points on it, for a task. */
-function Coin({ points }: { readonly points: number }): React.JSX.Element {
+/** A gold star with the points on it, for a task: a star, as in a game, drawn as a true star at any width. */
+function PointsStar({ points }: { readonly points: number }): React.JSX.Element {
   return (
-    <span className="coin tnum" role="img" aria-label={`${String(points)} points`}>
+    <span className="points-star tnum" role="img" aria-label={`${String(points)} points`}>
+      <svg viewBox="0 0 48 48" aria-hidden="true">
+        <defs>
+          <radialGradient id="star-gold" cx="38%" cy="30%" r="75%">
+            <stop offset="0" stopColor="#ffe98a" />
+            <stop offset="0.6" stopColor="#f7b500" />
+            <stop offset="1" stopColor="#d99100" />
+          </radialGradient>
+        </defs>
+        <path
+          d="M24 3.5l5.6 12.4 13.5 1.5-10 9.1 2.8 13.3L24 32.8 12.1 39.8l2.8-13.3-10-9.1 13.5-1.5z"
+          fill="url(#star-gold)"
+          stroke="#c98a00"
+          strokeWidth="2"
+          strokeLinejoin="round"
+        />
+      </svg>
       <span aria-hidden="true">+{points}</span>
     </span>
   );
@@ -112,6 +129,27 @@ export function TipsCard({
   const progress = useTasks();
   const reduced = useReducedMotion() === true;
   const doneCount = tips.filter((t) => progress.done.has(t.id)).length;
+  // Which tip the row is showing, for the dots under it.
+  const row = useRef<HTMLUListElement>(null);
+  const [shownTip, setShownTip] = useState(0);
+  const whichTip = (): number => {
+    const el = row.current;
+    const first = el?.querySelector('li');
+    if (el === null || first === null || first === undefined) return 0;
+    const step = first.getBoundingClientRect().width + 10;
+    return Math.min(tips.length - 1, Math.max(0, Math.round(el.scrollLeft / step)));
+  };
+  const goToTip = (index: number): void => {
+    const el = row.current;
+    const target = el?.querySelectorAll('li')[index];
+    if (el === null || target === undefined) return;
+    setShownTip(index);
+    // A browser without smooth scrolling just does not move; the dot still says where it went.
+    (el as Partial<HTMLElement>).scrollTo?.({
+      left: target.offsetLeft - el.offsetLeft,
+      behavior: 'smooth',
+    });
+  };
 
   return (
     <section className="breathe tips" aria-labelledby="tips-title">
@@ -124,7 +162,14 @@ export function TipsCard({
       </div>
       {alerts}
       {tips.length > 0 && (
-        <ul className="tips-row" aria-label="Tips, swipe for more">
+        <ul
+          ref={row}
+          className="tips-row"
+          aria-label="Tips, swipe for more"
+          onScroll={() => {
+            setShownTip(whichTip());
+          }}
+        >
           {tips.map((task) => {
             const checked = progress.done.has(task.id);
             const Icon = task.kind === 'mask' ? undefined : ICONS[task.kind];
@@ -156,11 +201,27 @@ export function TipsCard({
                   <strong>{task.title}</strong>
                   <span className="muted small">{task.why}</span>
                 </span>
-                <Coin points={task.points} />
+                <PointsStar points={task.points} />
               </li>
             );
           })}
         </ul>
+      )}
+      {tips.length > 1 && (
+        <div className="carousel-dots" role="group" aria-label="Which tip">
+          {tips.map((task, index) => (
+            <button
+              key={task.id}
+              type="button"
+              className={index === shownTip ? 'dot on' : 'dot'}
+              aria-label={`Tip ${String(index + 1)} of ${String(tips.length)}`}
+              aria-current={index === shownTip}
+              onClick={() => {
+                goToTip(index);
+              }}
+            />
+          ))}
+        </div>
       )}
       <div className="tips-footer">
         <Progress progress={progress} />

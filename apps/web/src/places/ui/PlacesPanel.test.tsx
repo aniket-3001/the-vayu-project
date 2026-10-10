@@ -86,6 +86,15 @@ describe('the Places screen', () => {
     expect(home.querySelector('.pc-aqi strong')).toBeInTheDocument();
   });
 
+  it('shows, on a school’s card and only there, whether the morning assembly is inside or on the ground', () => {
+    screenWith();
+    const school = cardOf('School');
+    const line = school.querySelector('.pc-assembly');
+    expect(line).toBeInTheDocument();
+    expect(line).toHaveTextContent(/Morning assembly: (Inside|Open ground)/u);
+    expect(line).toHaveTextContent(/AQI \d+/u);
+    expect(cardOf('Home').querySelector('.pc-assembly')).not.toBeInTheDocument();
+  });
   it('removes a place, and remembers it after a reload', async () => {
     screenWith();
     await userEvent.click(screen.getByRole('button', { name: 'Remove School' }));

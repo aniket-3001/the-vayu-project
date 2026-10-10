@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { levelForAqi } from '../../design/levels';
 import type { Cell, Where } from '../model';
 import { hourName } from '../../today/time';
-import { SPOT_LABELS } from '../spots';
+import { SPOT_LABELS, type SpotKind } from '../spots';
 
 const SIZE = 372;
 const C = SIZE / 2;
@@ -22,9 +22,36 @@ export const DIAL_RINGS = ['home', 'work', 'outdoor'] as const;
 export type DialRing = (typeof DIAL_RINGS)[number];
 
 /** The ring an hour belongs to: school is the work ring, and a fix from the phone is the place it was in. */
-export function ringOf(cell: Cell): DialRing {
+export function ringOf(cell: {
+  readonly where: Where;
+  readonly at?: SpotKind | undefined;
+}): DialRing {
   const where = cell.where === 'live' ? (cell.at ?? 'outdoor') : cell.where;
   return where === 'school' ? 'work' : where;
+}
+
+/** One coloured piece of an hour in one ring: the whole hour, or part of it when the hour was split. */
+interface Piece {
+  readonly hour: number;
+  readonly ring: DialRing;
+  readonly from: number;
+  readonly to: number;
+  readonly aqi: number;
+}
+
+/** The pieces the dial draws: a split hour is drawn in two rings, each only for its own minutes. */
+export function piecesOf(cells: readonly Cell[]): readonly Piece[] {
+  return cells.flatMap((cell): Piece[] =>
+    cell.parts === undefined
+      ? [{ hour: cell.hour, ring: ringOf(cell), from: 0, to: 1, aqi: cell.aqi }]
+      : cell.parts.map((part) => ({
+          hour: cell.hour,
+          ring: ringOf(part),
+          from: part.from,
+          to: part.to,
+          aqi: part.aqi,
+        })),
+  );
 }
 
 /** What each ring is, in a few words, for the card that explains the dial. */
@@ -155,6 +182,7 @@ export function Dial({
   readonly onPick: (hour: number) => void;
 }): React.JSX.Element {
   const rings = DIAL_RINGS;
+  const pieces = piecesOf(cells);
   const thickness = (OUTER - INNER) / rings.length;
   const gap = 2;
 
@@ -217,26 +245,44 @@ export function Dial({
               </textPath>
             </text>
             {Array.from({ length: 24 }, (_, hour) => {
-              const cell = cells.find((c) => c.hour === hour && ringOf(c) === where);
-              const d = cellPath({
-                innerRadius: inner,
-                outerRadius: outer,
-                startAngle: angle(hour) + 0.004,
-                endAngle: angle(hour + 1) - 0.004,
-              });
-              return (
+              const here = pieces.filter((p) => p.hour === hour && p.ring === where);
+              const draw = (
+                from: number,
+                to: number,
+                aqi: number | undefined,
+                key: string,
+              ): React.JSX.Element => (
                 <path
-                  key={hour}
-                  d={d ?? ''}
+                  key={key}
+                  d={
+                    cellPath({
+                      innerRadius: inner,
+                      outerRadius: outer,
+                      startAngle: angle(hour + from) + 0.004,
+                      endAngle: angle(hour + to) - 0.004,
+                    }) ?? ''
+                  }
                   transform={`translate(${String(C)} ${String(C)})`}
-                  className={cell === undefined ? 'cell empty' : 'cell'}
-                  style={cell === undefined ? undefined : { fill: levelForAqi(cell.aqi).solid }}
+                  className={aqi === undefined ? 'cell empty' : 'cell'}
+                  style={aqi === undefined ? undefined : { fill: levelForAqi(aqi).solid }}
                   onClick={() => {
                     onPick(hour);
                   }}
                   aria-hidden="true"
                 />
               );
+              // An hour with nothing in this ring is one grey piece; otherwise only the pieces are coloured and
+              // the rest of the hour is left grey, so a half hour is half a segment.
+              return here.length === 0
+                ? draw(0, 1, undefined, `${String(hour)}-grey`)
+                : [
+                    ...(here.every((p) => p.to - p.from >= 1 - 1e-9)
+                      ? []
+                      : [draw(0, 1, undefined, `${String(hour)}-grey`)]),
+                    ...here.map((p, i) =>
+                      draw(p.from, p.to, p.aqi, `${String(hour)}-${String(i)}`),
+                    ),
+                  ];
             })}
             {lifted && (
               <path

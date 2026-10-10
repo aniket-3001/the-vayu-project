@@ -43,10 +43,37 @@ describe('the alerts list', () => {
       expect(row).toHaveClass('caution');
   });
 
-  it('calls a walk warning a caution, until the air is hazardous', () => {
-    const moderate = sampleDay('unhealthy');
-    const walk = alertsFor(moderate, undefined).find((a) => a.kind === 'walk');
-    expect(walk?.severity).toBe('caution');
+  it('gives each GRAP stage its own colour, yellow, orange, red and purple, and pulses the top two', () => {
+    const rows = (id: Parameters<typeof sampleDay>[0]): string[] => {
+      const data = sampleDay(id);
+      return alertsFor(data, undefined).map((a) =>
+        a.stage === undefined ? a.kind : `grap-s${String(a.stage)}`,
+      );
+    };
+    expect(rows('hazardous')).toContain('grap-s4');
+    const stages = new Map<number, string>();
+    for (const id of ['unhealthy', 'dusty', 'hazardous'] as const) {
+      for (const a of alertsFor(sampleDay(id), undefined)) {
+        if (a.stage !== undefined) stages.set(a.stage, a.severity);
+      }
+    }
+    for (const [stage, severity] of stages) {
+      expect(severity).toBe(stage >= 3 ? 'severe' : 'caution');
+    }
+  });
+
+  it('has no walk warning: the first alert is GRAP Stage I, past 200 on the CPCB scale', () => {
+    for (const id of ['good', 'moderate', 'unhealthy'] as const) {
+      const alerts = alertsFor(sampleDay(id), undefined);
+      expect(alerts.some((a) => (a.kind as string) === 'walk')).toBe(false);
+    }
+  });
+
+  it('says what to avoid for each stage, with schools and open assembly in it', () => {
+    const grap = alertsFor(sampleDay('hazardous'), undefined).find((a) => a.kind === 'grap');
+    expect(grap?.avoid.length).toBeGreaterThanOrEqual(3);
+    expect(grap?.avoid.join(' ')).toMatch(/school/iu);
+    expect(grap?.body).toMatch(/school/iu);
   });
 
   it('opens an alert up close, with a short reason and what to do, and closes it again', async () => {
@@ -70,7 +97,7 @@ describe('the alerts list', () => {
   it('gives each kind of alert a reason of its own', async () => {
     open('hazardous', 127);
     for (const [name, why] of [
-      [/Avoid park walks today/u, /breathe several times more air/u],
+      [/GRAP Stage IV likely today/u, /India’s own scale \(CPCB\)/u],
       [
         /Heavy stubble burning nearby/u,
         /127 fires.*within 100 km.*upwind|127 fires.*within 100 km.*side the wind comes from/su,

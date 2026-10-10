@@ -1,4 +1,4 @@
-import { Flame, Footprints, Phone, TriangleAlert, Wind, X, type LucideIcon } from 'lucide-react';
+import { Flame, Phone, TriangleAlert, Wind, X, type LucideIcon } from 'lucide-react';
 import { useEffect } from 'react';
 import { Pill } from '../../today/ui/Chip';
 import type { TodayData } from '../../today/types';
@@ -7,7 +7,6 @@ import { dayWord, type Alert, type AlertKind } from '../model';
 export const ALERT_ICONS: Readonly<Record<AlertKind, LucideIcon>> = {
   grap: TriangleAlert,
   smog: Wind,
-  walk: Footprints,
   stubble: Flame,
 };
 
@@ -67,6 +66,16 @@ export function AlertSheet({
           <h3>Why</h3>
           <p>{alert.reason}</p>
         </section>
+        {alert.avoid.length > 0 && (
+          <section aria-label="What to avoid">
+            <h3>What to avoid</h3>
+            <ul className="todo avoid">
+              {alert.avoid.map((step) => (
+                <li key={step}>{step}</li>
+              ))}
+            </ul>
+          </section>
+        )}
         <section aria-label="What to do">
           <h3>What to do</h3>
           <ul className="todo">

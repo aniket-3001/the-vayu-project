@@ -3,7 +3,7 @@ import { levelForAqi } from '../design/levels';
 import { weekday } from '../today/time';
 import type { TodayData } from '../today/types';
 
-export type AlertKind = 'grap' | 'smog' | 'walk' | 'stubble';
+export type AlertKind = 'grap' | 'smog' | 'stubble';
 
 /** How loud an alert is: a severe one glows red and comes first; the rest are cautions, in soft yellow. */
 export type AlertSeverity = 'severe' | 'caution';
@@ -12,6 +12,10 @@ export interface Alert {
   readonly id: string;
   readonly kind: AlertKind;
   readonly severity: AlertSeverity;
+  /** For a GRAP alert: the stage, 1 to 4, which sets its colour: yellow, orange, red, purple. */
+  readonly stage?: 1 | 2 | 3 | 4;
+  /** What to avoid, in plain words: walks, outdoor sport, open-ground school assembly. */
+  readonly avoid: readonly string[];
   /** 0 is today, 1 tomorrow, 2 the day after. */
   readonly day: 0 | 1 | 2;
   readonly title: string;
@@ -30,6 +34,68 @@ export const HEAVY_FIRES = 10;
 
 const ROMAN = ['', 'I', 'II', 'III', 'IV'] as const;
 
+/** What each GRAP stage means for a day out, in words: our reading of it, never an order. */
+const GRAP_GUIDE: Readonly<
+  Record<
+    1 | 2 | 3 | 4,
+    { readonly short: string; readonly avoid: readonly string[]; readonly todo: readonly string[] }
+  >
+> = {
+  1: {
+    short: 'Skip long outdoor walks and hard exercise. Keep school assembly short.',
+    avoid: [
+      'Long walks, runs and hard exercise outdoors, above all for children, older people and anyone with asthma.',
+      'Long open-ground school assembly and outdoor sport: keep them short, or hold them under cover.',
+      'Burning rubbish, leaves or wood.',
+    ],
+    todo: [
+      'Do exercise indoors, or in the cleanest hour of the day.',
+      'Keep the windows shut when the air is at its worst.',
+    ],
+  },
+  2: {
+    short: 'No outdoor walks or exercise. Hold school assembly inside.',
+    avoid: [
+      'Outdoor walks, runs and exercise for everyone, not only the sensitive.',
+      'Open-ground school assembly and outdoor sport: hold them inside.',
+      'Burning rubbish or wood for warmth, and running a diesel generator when there is another way.',
+    ],
+    todo: [
+      'Move exercise indoors, and keep outdoor errands short.',
+      'Wear a well-fitted N95 or FFP2 mask outside.',
+      'Run a purifier if you have one.',
+    ],
+  },
+  3: {
+    short: 'Stay in where you can. No outdoor play, sport or open assembly.',
+    avoid: [
+      'Going out for anything that can wait.',
+      'All outdoor play, exercise and sport, for adults and children.',
+      'Open-ground school assembly and outdoor classes. Younger classes may be moved or paused by the authorities.',
+      'Opening windows.',
+    ],
+    todo: [
+      'Keep children and older people indoors.',
+      'If you must go out, wear a well-fitted N95 or FFP2 mask.',
+      'Run a purifier, and keep the windows shut.',
+    ],
+  },
+  4: {
+    short: 'Avoid going out. Schools may be shut or online: check the official order.',
+    avoid: [
+      'Leaving home unless it is necessary.',
+      'Any outdoor activity, including school sport, play and assembly.',
+      'Sending young children to school in person before you have read the official order: schools may be shut or moved online.',
+      'Opening windows.',
+    ],
+    todo: [
+      'Stay indoors, with the windows shut and a purifier on.',
+      'If you must go out, wear a well-fitted N95 or FFP2 mask.',
+      'Check on older neighbours and anyone with a lung or heart condition.',
+    ],
+  },
+};
+
 /** "Today", "Tomorrow", or the weekday. */
 export function dayWord(day: 0 | 1 | 2, data: TodayData): string {
   if (day === 0) return 'Today';
@@ -46,37 +112,19 @@ export function dayWord(day: 0 | 1 | 2, data: TodayData): string {
 export function alertsFor(data: TodayData, fires: number | undefined): readonly Alert[] {
   const alerts: Alert[] = [];
   const stage = grapStageFor(data);
-  if (stage > 0) {
+  if (stage !== 0) {
+    const guide = GRAP_GUIDE[stage];
     alerts.push({
       id: 'grap-today',
       kind: 'grap',
       severity: stage >= 3 ? 'severe' : 'caution',
+      stage,
       day: 0,
       title: `GRAP Stage ${ROMAN[stage]} likely today`,
-      body: 'Unofficial: our estimate, not an order. Check the official order at caqm.nic.in.',
-      reason: `The last 24 hours average about ${String(Math.round(cpcbAqiFor(data) ?? 0))} on India’s own scale (CPCB). That is in the band where GRAP Stage ${ROMAN[stage]} applies. Only the official order counts.`,
-      todo: [
-        'Read today’s official GRAP order at caqm.nic.in.',
-        'Keep children and older people indoors where you can.',
-        'Keep windows shut and run a purifier if you have one.',
-      ],
-      authorities: false,
-    });
-  }
-  if (data.aqi >= 151) {
-    alerts.push({
-      id: 'walk-today',
-      kind: 'walk',
-      severity: data.aqi >= 301 ? 'severe' : 'caution',
-      day: 0,
-      title: 'Avoid park walks today',
-      body: `AQI ${String(data.aqi)}, ${levelForAqi(data.aqi).name.toLowerCase()}. Walk indoors if you can.`,
-      reason: `The air outside is AQI ${String(data.aqi)}, ${levelForAqi(data.aqi).name.toLowerCase()}. A brisk walk makes you breathe several times more air than sitting still, so the harm adds up quickly.`,
-      todo: [
-        'Move your walk indoors today.',
-        'If you must go out, wear a well-fitted N95 or FFP2 mask.',
-        'Try again when the air clears.',
-      ],
+      body: guide.short,
+      reason: `The last 24 hours average about ${String(Math.round(cpcbAqiFor(data) ?? 0))} on India’s own scale (CPCB). That is in the band where GRAP Stage ${ROMAN[stage]} applies. This is our estimate, and only the official order counts.`,
+      avoid: guide.avoid,
+      todo: ['Read today’s official GRAP order at caqm.nic.in.', ...guide.todo],
       authorities: false,
     });
   }
@@ -90,6 +138,10 @@ export function alertsFor(data: TodayData, fires: number | undefined): readonly 
         day: offset,
         title: `Smog likely ${offset === 1 ? 'tomorrow' : dayWord(offset, data)}`,
         body: `AQI near ${String(day.aqi)}, ${levelForAqi(day.aqi).name.toLowerCase()}. Plan outdoor time before then.`,
+        avoid: [
+          'Long outdoor walks and exercise that day.',
+          'Open-ground school assembly and outdoor sport.',
+        ],
         reason: `Our forecast puts ${dayWord(offset, data).toLowerCase()}’s air near AQI ${String(day.aqi)}, ${String(day.aqi - data.aqi)} points worse than today’s ${String(data.aqi)}. It is a forecast, so it can change.`,
         todo: [
           'Do outdoor errands and exercise before then.',
@@ -106,6 +158,7 @@ export function alertsFor(data: TodayData, fires: number | undefined): readonly 
       kind: 'stubble',
       severity: 'caution',
       day: 1,
+      avoid: ['Opening windows when the smoke arrives.', 'Outdoor exercise on the mornings after.'],
       title: 'Heavy stubble burning nearby',
       body: `${String(fires)} fires seen by satellite in the last 24 hours, near here or upwind. Smoke can reach you within a day or two.`,
       reason: `Satellites saw ${String(fires)} fires in the last 24 hours within 100 km of this place, or within 300 km on the side the wind comes from. Fires further away, or downwind, are not counted. In October the wind often blows from the north-west.`,

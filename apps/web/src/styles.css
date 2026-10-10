@@ -4463,24 +4463,7 @@ h2 {
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 3;
 }
-.coin {
-  display: grid;
-  flex: none;
-  place-items: center;
-  width: 40px;
-  height: 40px;
-  border: 2px solid #c98a00;
-  border-radius: 50%;
-  background: radial-gradient(circle at 35% 30%, #ffe27a 0%, #f7b500 62%, #d99100 100%);
-  box-shadow:
-    inset 0 -2px 0 rgb(160 100 0 / 0.35),
-    0 2px 6px -2px rgb(160 100 0 / 0.6);
-  color: #5a3a00;
-  font-size: 12.5px;
-  font-weight: 800;
-  letter-spacing: -0.02em;
-}
-.tip.done .coin {
+.tip.done .points-star {
   filter: saturate(0.4);
   opacity: 0.7;
 }
@@ -4678,4 +4661,140 @@ h2 {
 .lens-hint {
   margin: 4px 0 0;
   text-align: center;
+}
+
+/* Points on a gold star, round-proportioned whatever the card is doing */
+.points-star {
+  position: relative;
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 52px;
+  height: 52px;
+  aspect-ratio: 1;
+  color: #5a3a00;
+  font-size: 11.5px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  filter: drop-shadow(0 2px 3px rgb(160 100 0 / 0.35));
+}
+.points-star svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+.points-star > span {
+  position: relative;
+  margin-top: 3px;
+}
+.carousel-dots {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  margin-top: -2px;
+}
+.carousel-dots .dot {
+  width: 9px;
+  height: 9px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: #c8d3e2;
+  cursor: pointer;
+  transition:
+    background 160ms ease,
+    transform 160ms ease;
+}
+.carousel-dots .dot.on {
+  background: #3b82c4;
+  transform: scale(1.3);
+}
+/* The assembly line on a school's card */
+.pc-assembly {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin: 0;
+  padding: 7px 9px;
+  border-radius: 10px;
+  background: rgb(255 255 255 / 0.55);
+  font-size: 12.5px;
+  line-height: 1.3;
+}
+.pc-assembly svg {
+  flex: none;
+  margin-top: 1px;
+}
+.pc-assembly strong {
+  display: block;
+}
+.pc-assembly.inside {
+  background: #fff;
+  box-shadow: inset 0 0 0 2px rgb(61 74 92 / 0.35);
+}
+.pc-assembly-words {
+  display: -webkit-box;
+  overflow: hidden;
+  font-size: 11.5px;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+}
+@container (min-width: 300px) {
+  .pc-assembly,
+  .pc-assembly-words {
+    font-size: 13.5px;
+  }
+}
+
+/* GRAP stages: yellow, orange, red, purple. The top two glow and pulse a dotted edge. */
+.alert-row.grap-s1 {
+  border-color: #ecd566;
+  background: #fff7c2;
+}
+.alert-row.grap-s2 {
+  border-color: #f0a856;
+  background: #ffe2c2;
+}
+.alert-row.grap-s3 {
+  --edge: #d92d20;
+  --glow: 217 45 32;
+  background: #ffdad5;
+}
+.alert-row.grap-s4 {
+  --edge: #7d3cc8;
+  --glow: 125 60 200;
+  background: #eadcff;
+}
+.alert-row.smog {
+  --edge: #d92d20;
+  --glow: 217 45 32;
+}
+.alert-row.severe {
+  border: 2.5px dotted var(--edge, #d92d20);
+  box-shadow:
+    0 0 0 0 rgb(var(--glow, 217 45 32) / 0.55),
+    0 0 16px 2px rgb(var(--glow, 217 45 32) / 0.45);
+  animation: alert-pulse 1.5s ease-in-out infinite;
+}
+.alert-row.grap-s4 .alert-words .small {
+  color: #3f1a73;
+}
+@keyframes alert-pulse {
+  0%,
+  100% {
+    border-color: var(--edge, #d92d20);
+    box-shadow:
+      0 0 0 0 rgb(var(--glow, 217 45 32) / 0.5),
+      0 0 10px 1px rgb(var(--glow, 217 45 32) / 0.35);
+  }
+  50% {
+    border-color: rgb(var(--glow, 217 45 32) / 0.25);
+    box-shadow:
+      0 0 0 5px rgb(var(--glow, 217 45 32) / 0),
+      0 0 24px 5px rgb(var(--glow, 217 45 32) / 0.6);
+  }
+}
+.todo.avoid li::marker {
+  color: #d92d20;
 }

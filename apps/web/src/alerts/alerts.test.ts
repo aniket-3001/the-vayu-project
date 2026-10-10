@@ -3,12 +3,12 @@ import { sampleDay } from '../today/sample';
 import { HEAVY_FIRES, alertsFor, dayWord, onDay, suggestionFrom } from './model';
 
 describe('alerts for the next three days', () => {
-  it('say GRAP is likely and to avoid park walks on a smog day, today, and call it unofficial', () => {
+  it('say GRAP is likely on a smog day, today, and call it our estimate', () => {
     const alerts = alertsFor(sampleDay('hazardous'), undefined);
     const grap = alerts.find((a) => a.kind === 'grap');
     expect(grap?.title).toBe('GRAP Stage IV likely today');
-    expect(grap?.body).toMatch(/Unofficial/u);
-    expect(alerts.find((a) => a.kind === 'walk')?.title).toBe('Avoid park walks today');
+    expect(grap?.reason).toMatch(/our estimate, and only the official order counts/u);
+    expect(alerts.some((a) => (a.kind as string) === 'walk')).toBe(false);
     expect(alerts.every((a) => a.day === 0 || a.kind !== 'grap')).toBe(true);
   });
 

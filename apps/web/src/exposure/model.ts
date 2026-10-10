@@ -40,6 +40,48 @@ export interface Cell {
   /** Outdoor cells: where it was, and how much of the hour was spent outside (0 to 1). */
   readonly pin?: Pin;
   readonly share?: number;
+  /** Outdoor cells: which parts of the hour were spent outside, as fractions of it from 0 to 1. */
+  readonly spans?: readonly (readonly [number, number])[];
+  /**
+   * An hour that was split: the pieces of it, so the dial can colour each piece in its own ring. Only on counted
+   * cells, and only when the hour was part outside and part somewhere else.
+   */
+  readonly parts?: readonly CellPart[];
+}
+
+/** A piece of an hour, from `from` to `to` (0 to 1 along it), at one place and its own AQI. */
+export interface CellPart {
+  readonly where: Where;
+  readonly at?: SpotKind | undefined;
+  readonly from: number;
+  readonly to: number;
+  readonly aqi: number;
+}
+
+type Span = readonly [number, number];
+
+/** Spans put in order and joined where they touch or overlap. */
+function mergeSpans(spans: readonly Span[]): readonly Span[] {
+  const sorted = [...spans].sort((a, b) => a[0] - b[0]);
+  const merged: [number, number][] = [];
+  for (const [from, to] of sorted) {
+    const last = merged[merged.length - 1];
+    if (last !== undefined && from <= last[1] + 1e-9) last[1] = Math.max(last[1], to);
+    else merged.push([from, to]);
+  }
+  return merged;
+}
+
+/** What is left of 0 to 1 once the spans are taken out. */
+function gapsOf(spans: readonly Span[]): readonly Span[] {
+  const gaps: Span[] = [];
+  let at = 0;
+  for (const [from, to] of mergeSpans(spans)) {
+    if (from > at + 1e-9) gaps.push([at, from]);
+    at = Math.max(at, to);
+  }
+  if (at < 1 - 1e-9) gaps.push([at, 1]);
+  return gaps;
 }
 
 /** Rings, from the outside in. */
@@ -225,7 +267,10 @@ export function outdoorCells(
   date: DateKey,
   upTo: number,
 ): readonly Cell[] {
-  const byHour = new Map<number, { share: number; weighted: number; pin: Pin; trees: boolean }>();
+  const byHour = new Map<
+    number,
+    { share: number; weighted: number; pin: Pin; trees: boolean; spans: Span[] }
+  >();
   for (const outing of outings) {
     if (outing.date !== date) continue;
     const end = outing.start + outing.minutes;
@@ -241,6 +286,13 @@ export function outdoorCells(
         weighted: (now?.weighted ?? 0) + pm * share,
         pin: now?.pin ?? outing.pin,
         trees: (now?.trees ?? false) || outing.trees,
+        spans: [
+          ...(now?.spans ?? []),
+          [
+            (Math.max(outing.start, hour * 60) - hour * 60) / 60,
+            (Math.min(end, hour * 60 + 60) - hour * 60) / 60,
+          ] as Span,
+        ],
       });
     }
   }
@@ -248,6 +300,7 @@ export function outdoorCells(
     ...cellOf(hour, 'outdoor', round1(got.weighted / got.share), got.trees ? 'trees' : 'outdoor'),
     pin: got.pin,
     share: Math.min(1, got.share),
+    spans: mergeSpans(got.spans),
   }));
 }
 
@@ -270,7 +323,24 @@ export function countedCells(cells: readonly Cell[]): readonly Cell[] {
         const rest = here.find((cell) => cell.where === restWhere);
         if (rest !== undefined) {
           const pm25 = round1(found.pm25 * share + rest.pm25 * (1 - share));
-          counted.push({ ...found, pm25, aqi: usAqi(pm25)?.value ?? 0 });
+          // The hour is split: the minutes outside in their ring, the rest where the person was, in theirs.
+          const spans = found.spans ?? [[1 - share, 1] as Span];
+          const parts: CellPart[] = [
+            ...spans.map(([from, to]): CellPart => ({
+              where: 'outdoor',
+              from,
+              to,
+              aqi: found.aqi,
+            })),
+            ...gapsOf(spans).map(([from, to]): CellPart => ({
+              where: rest.where,
+              ...(rest.at === undefined ? {} : { at: rest.at }),
+              from,
+              to,
+              aqi: rest.aqi,
+            })),
+          ];
+          counted.push({ ...found, pm25, aqi: usAqi(pm25)?.value ?? 0, parts });
           break;
         }
       }
