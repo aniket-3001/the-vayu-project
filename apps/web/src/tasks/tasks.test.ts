@@ -56,14 +56,23 @@ describe('today’s tasks', () => {
     expect(tasks.some((t) => t.kind === 'grap' || t.kind === 'mask')).toBe(false);
   });
 
-  it('say there is no clean hour on a bad day, ask for a mask and shut windows, and never suggest a walk', () => {
+  it('always name the cleanest hour, even on a bad day, with how long to stay out and where', () => {
     const tasks = tasksFor(sampleDay('unhealthy'));
-    expect(tasks.some((t) => t.kind === 'walk')).toBe(false);
-    expect(tasks.find((t) => t.id === 'stay-in')?.title).toBe(
-      'No clean hour outside today. Stay in if you can.',
+    expect(tasks.some((t) => t.id === 'stay-in')).toBe(false);
+    const walk = tasks.find((t) => t.kind === 'walk');
+    expect(walk?.title).toMatch(
+      /^Cleanest hour for a walk: \d{1,2}( [ap]m)?–\d{1,2} [ap]m( tomorrow)?$/u,
     );
+    expect(walk?.why).toMatch(/park with trees|N95|short/u);
+    expect(walk?.why).not.toMatch(/no clean hour/iu);
     expect(tasks.find((t) => t.id === 'windows')?.title).toBe('Keep the windows shut');
     expect(tasks.some((t) => t.kind === 'mask')).toBe(true);
+  });
+
+  it('says to walk anywhere for as long as you like when the cleanest hour is good', () => {
+    const walk = tasksFor(sampleDay('good')).find((t) => t.kind === 'walk');
+    expect(walk?.why).toMatch(/anywhere/u);
+    expect(walk?.why).toMatch(/as long as you like/u);
   });
 
   it('mention GRAP as unofficial, only when the air points to a stage', () => {

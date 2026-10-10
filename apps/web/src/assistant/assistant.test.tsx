@@ -41,14 +41,21 @@ const clean: AssistantContext = {
 const ask = async (q: string, c = base): Promise<string> => (await localAssistant.ask(q, c)).text;
 
 describe('the local answers', () => {
-  it('say when a walk is good, and when there is no clean hour', async () => {
-    expect(await ask('When can I go for a walk?', clean)).toMatch(
-      /A good hour for a walk: 3 to 4 pm/u,
-    );
-    expect(await ask('can i go for a run', base)).toMatch(/No clean hour outside today at Home/u);
-    expect(
-      await ask('best time to exercise', { ...base, best: { span: '5 to 6 pm', aqi: 120 } }),
-    ).toMatch(/cleanest hour is 5 to 6 pm/u);
+  it('say when a walk is good, and how long and where when it is only the best there is', async () => {
+    const good = await ask('When can I go for a walk?', clean);
+    expect(good).toMatch(/A good hour for a walk: 3 to 4 pm/u);
+    expect(good).toMatch(/for as long as you like/u);
+    const middling = await ask('best time to exercise', {
+      ...base,
+      best: { span: '5 to 6 pm', aqi: 120 },
+    });
+    expect(middling).toMatch(/cleanest hour is 5 to 6 pm/u);
+    expect(middling).toMatch(/keep it short/u);
+    expect(middling).toMatch(/park with trees/u);
+    const bad = await ask('can i go for a run', { ...base, best: { span: '4 to 5 pm', aqi: 230 } });
+    expect(bad).toMatch(/cleanest hour is 4 to 5 pm, at AQI 230/u);
+    expect(bad).toMatch(/10 minutes at most/u);
+    expect(bad).not.toMatch(/No clean hour/iu);
   });
 
   it('answer about school, with the child by name, and point to official orders in a bad stage', async () => {

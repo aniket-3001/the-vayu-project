@@ -4823,3 +4823,10 @@ h2 {
   background: #3b82c4;
   pointer-events: none;
 }
+
+.lens-best-wrap {
+  white-space: normal;
+}
+.lens-best-advice {
+  font-weight: 600;
+}

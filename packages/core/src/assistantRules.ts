@@ -1,19 +1,20 @@
 import type { AssistantContext } from '@vayu/contracts';
+import { walkAdviceFor } from './walkAdvice';
 
 /** Words for a level, for sentences that begin with one. */
 const bad = (c: AssistantContext): boolean => c.aqi >= 151;
 
 function walk(c: AssistantContext): string {
   if (c.best === undefined) {
-    return `No clean hour outside today at ${c.place}. If you can stay in, do, and move any exercise indoors.`;
+    return `I could not find a daylight hour ahead at ${c.place} to suggest. Right now it is AQI ${String(c.aqi)}, so keep any exercise to what you need.`;
   }
-  if (c.best.aqi <= 100) {
-    return `A good hour for a walk: ${c.best.span}. Air stays near AQI ${String(c.best.aqi)} then. Right now it is AQI ${String(c.aqi)}.`;
-  }
-  if (c.best.aqi <= 150) {
-    return `The cleanest hour is ${c.best.span}, at AQI ${String(c.best.aqi)}. Keep the walk short, and skip it if you are sensitive to air pollution.`;
-  }
-  return `No clean hour outside today at ${c.place}. The best is ${c.best.span}, still AQI ${String(c.best.aqi)}. If you can stay in, do.`;
+  // The best hour there is, always named, with how long and where by how clean it is.
+  const advice = walkAdviceFor(c.best.aqi);
+  const lead =
+    c.best.aqi <= 100
+      ? `A good hour for a walk: ${c.best.span}. Air stays near AQI ${String(c.best.aqi)} then.`
+      : `The cleanest hour is ${c.best.span}, at AQI ${String(c.best.aqi)}.`;
+  return `${lead} ${advice.long} Right now it is AQI ${String(c.aqi)}.`;
 }
 
 function school(c: AssistantContext): string {

@@ -1,5 +1,6 @@
 import { Camera, CameraOff, ChevronDown, type LucideIcon } from 'lucide-react';
 import type { Pin } from '../data/pins';
+import { walkAdviceFor } from '@vayu/core';
 import { levelForAqi } from '../design/levels';
 import { dayMonth, hourOfDay, hourRange, isoDate, weekday, clock12 } from '../today/time';
 import { CONDITION_LABELS, FaceIcon, WeatherIcon } from '../today/ui/icons';
@@ -51,12 +52,12 @@ export function LensCard({
   const when = step === 0 ? 'Now' : `${weekday(hour.at)} ${dayMonth(hour.at)}, ${clock12(hour.at)}`;
   const name = pin.id === 'live' ? LIVE_OUTDOOR_NAME : pin.name;
   const active = places.options.find((o) => o.id === places.activeId);
+  // The cleanest daylight hour is always named, and how long to stay out follows from how clean it is.
   const bestWords =
     best === undefined
       ? undefined
-      : best.aqi > 150
-        ? 'No clean hour today'
-        : `Cleanest ${hourRange(Math.floor(hourOfDay(best.at)))}${isoDate(best.at) === isoDate(data.asOf) ? '' : ' tomorrow'} (AQI ${String(best.aqi)})`;
+      : `Cleanest ${hourRange(Math.floor(hourOfDay(best.at)))}${isoDate(best.at) === isoDate(data.asOf) ? '' : ' tomorrow'} (AQI ${String(best.aqi)})`;
+  const bestAdvice = best === undefined ? undefined : walkAdviceFor(best.aqi).short;
   return (
     <section className="place-card lens-card" style={levelVars(level)} aria-label="The air here">
       <div className="lens-head">
@@ -122,7 +123,12 @@ export function LensCard({
                 <span className="lens-bar" aria-hidden="true">
                   |
                 </span>
-                <span className="lens-best">{bestWords}</span>
+                <span className="lens-best">
+                  {bestWords}
+                  {bestAdvice !== undefined && (
+                    <span className="lens-best-advice"> · {bestAdvice}</span>
+                  )}
+                </span>
               </span>
             )}
           </span>

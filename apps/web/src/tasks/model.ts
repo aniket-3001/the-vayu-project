@@ -1,4 +1,4 @@
-import { aqi24h } from '@vayu/core';
+import { aqi24h, walkAdviceFor } from '@vayu/core';
 import { bestHour, lensSeries } from '../lens/model';
 import { hourName, hourOfDay, hourRange, isoDate } from '../today/time';
 import type { TodayData } from '../today/types';
@@ -68,29 +68,15 @@ export function tasksFor(data: TodayData): readonly Task[] {
   const best = bestHour(series);
   const now = data.aqi;
 
-  if (best !== undefined && best.aqi <= 100) {
+  // The cleanest daylight hour ahead is always named, with how long to stay out and where by how clean it is.
+  if (best !== undefined) {
+    const advice = walkAdviceFor(best.aqi);
     tasks.push({
       id: 'walk',
       kind: 'walk',
-      title: `A good hour for a walk: ${range(best.at, data.asOf)}`,
-      why: `Air stays near AQI ${String(best.aqi)} then.`,
+      title: `${best.aqi <= 100 ? 'A good hour' : 'Cleanest hour'} for a walk: ${range(best.at, data.asOf)}`,
+      why: `AQI ${String(best.aqi)}. ${advice.long}`,
       points: POINTS.walk,
-    });
-  } else if (best !== undefined && best.aqi <= 150) {
-    tasks.push({
-      id: 'walk',
-      kind: 'walk',
-      title: `Cleanest hour for a short walk: ${range(best.at, data.asOf)}`,
-      why: `AQI ${String(best.aqi)}, the best of the next day. Keep it short.`,
-      points: POINTS.walk,
-    });
-  } else {
-    tasks.push({
-      id: 'stay-in',
-      kind: 'stay-in',
-      title: 'No clean hour outside today. Stay in if you can.',
-      why: 'Move exercise indoors, and keep outdoor errands short.',
-      points: POINTS['stay-in'],
     });
   }
 

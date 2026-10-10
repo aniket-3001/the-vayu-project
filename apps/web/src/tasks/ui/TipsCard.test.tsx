@@ -49,7 +49,7 @@ describe('the Breathe better tips on My Air', () => {
     await userEvent.click(first);
     expect(first).toHaveAttribute('aria-checked', 'true');
     expect(card).toHaveTextContent('1-day streak');
-    expect(card).toHaveTextContent(/10 points/u);
+    expect(card).toHaveTextContent(/30 points/u);
     expect(within(card).getByRole('img', { name: /1 of \d done/u })).toBeInTheDocument();
     await userEvent.click(first);
     expect(first).toHaveAttribute('aria-checked', 'false');

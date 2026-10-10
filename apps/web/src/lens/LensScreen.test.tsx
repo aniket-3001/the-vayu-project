@@ -34,21 +34,18 @@ describe('the AR Lens', () => {
     expect(card).toHaveTextContent(/\d+°/u);
   });
 
-  it('says the cleanest daylight hour, in am and pm with its AQI in brackets, or that there is none', () => {
+  it('always names the cleanest daylight hour, in am and pm with its AQI in brackets, and how long to go out', () => {
     open();
     const card = screen.getByRole('region', { name: 'The air here' });
-    expect(card).toHaveTextContent('No clean hour today');
-    cleanup();
-    open();
-    fireEvent.change(screen.getByRole('combobox'), {
-      target: { value: screen.getByRole('option', { name: 'Park' }).getAttribute('value') },
-    });
-    const park = screen.getByRole('region', { name: 'The air here' });
-    expect(park).toHaveTextContent(
+    expect(card).toHaveTextContent(
       /Cleanest \d{1,2}( [ap]m)?–\d{1,2} [ap]m( tomorrow)? \(AQI \d+\)/u,
     );
-    expect(park.querySelector('.lens-bar')).toHaveTextContent('|');
-    expect(park.textContent).not.toMatch(/\d\d:\d\d/u);
+    expect(card).not.toHaveTextContent(/No clean hour/iu);
+    expect(card.querySelector('.lens-best-advice')?.textContent).toMatch(
+      /min|any length|anywhere|short/u,
+    );
+    expect(card.querySelector('.lens-bar')).toHaveTextContent('|');
+    expect(card.textContent).not.toMatch(/\d\d:\d\d/u);
   });
 
   it('shows a scene that matches the place: a room for Home, a school, an office, a park, a street for anywhere else', () => {

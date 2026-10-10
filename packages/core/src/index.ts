@@ -14,3 +14,4 @@ export * from './whoGuideline';
 export * from './fixcheck';
 export * from './roomVerdict';
 export * from './assistantRules';
+export * from './walkAdvice';
