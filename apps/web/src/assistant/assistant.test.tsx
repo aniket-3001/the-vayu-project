@@ -358,9 +358,64 @@ describe('the assistant button', () => {
     open();
     await userEvent.click(screen.getByRole('button', { name: 'Vayu assistant' }));
     await userEvent.type(screen.getByRole('textbox', { name: 'Your message' }), 'walk?{Enter}');
-    expect(await screen.findByText(/Pin a place on My Air first/u)).toBeInTheDocument();
+    expect(await screen.findByText(/Add a place on My Air first/u)).toBeInTheDocument();
     await userEvent.keyboard('{Escape}');
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+  });
+});
+
+describe('a place pinned while the assistant is already open', () => {
+  it('is seen by the assistant at once, and answered from, without reloading', async () => {
+    window.localStorage.setItem('vayu.pins.v1', '[]');
+    const { PINS_CHANGED } = await import('../places/usePins');
+    render(
+      <MemoryRouter>
+        <AssistantFab voice={{ speak: () => Promise.resolve(), stop: () => undefined }} />
+      </MemoryRouter>,
+    );
+    await userEvent.click(screen.getByRole('button', { name: 'Vayu assistant' }));
+    await userEvent.type(screen.getByRole('textbox', { name: 'Your message' }), 'mask?{Enter}');
+    expect(await screen.findByText(/Add a place on My Air first/u)).toBeInTheDocument();
+    // A place is pinned on another screen: storage changes and the change is announced.
+    window.localStorage.setItem(
+      'vayu.pins.v1',
+      JSON.stringify([{ id: '28.59,77.22', name: 'Home', lat: 28.59, lng: 77.22 }]),
+    );
+    act(() => {
+      window.dispatchEvent(new Event(PINS_CHANGED));
+    });
+    await userEvent.type(
+      screen.getByRole('textbox', { name: 'Your message' }),
+      'Do I need a mask?{Enter}',
+    );
+    // An answer from the air at the new place, not the help message again.
+    expect(
+      await screen.findByText(/At AQI \d+/u, { selector: '.bubble.vayu p' }),
+    ).toBeInTheDocument();
+    expect(screen.getAllByText(/Add a place on My Air first/u)).toHaveLength(1);
+  });
+
+  it('speaks even the help message, and offers to read it again', async () => {
+    window.localStorage.setItem('vayu.pins.v1', '[]');
+    const said: string[] = [];
+    render(
+      <MemoryRouter>
+        <AssistantFab
+          voice={{
+            speak: (text) => {
+              said.push(text);
+              return Promise.resolve();
+            },
+            stop: () => undefined,
+          }}
+        />
+      </MemoryRouter>,
+    );
+    await userEvent.click(screen.getByRole('button', { name: 'Vayu assistant' }));
+    await userEvent.type(screen.getByRole('textbox', { name: 'Your message' }), 'hello{Enter}');
+    await screen.findByText(/Add a place on My Air first/u);
+    expect(said.join(' ')).toMatch(/Add a place on My Air first/u);
+    expect(screen.getByRole('button', { name: 'Listen to this answer' })).toBeInTheDocument();
   });
 });
 

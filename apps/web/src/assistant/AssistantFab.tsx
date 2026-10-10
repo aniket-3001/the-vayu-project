@@ -158,6 +158,7 @@ export function AssistantFab({
 
   const staged = useRef(readDemo()?.ask);
   const asked = useRef(false);
+  const waitingFor = useRef<string | undefined>(undefined);
 
   const ask = (question: string): void => {
     const text = question.trim();
@@ -204,23 +205,31 @@ export function AssistantFab({
       return;
     }
     if (context === undefined) {
+      const stuck = first === undefined || state?.status === 'error';
+      if (!stuck) {
+        // The air for the place is still on its way: say so, and answer the moment it arrives.
+        waitingFor.current = text;
+        setBusy(true);
+        return;
+      }
+      const words =
+        first === undefined
+          ? 'Add a place on My Air first, so there is some air to talk about.'
+          : 'We could not get the air just now, so I have nothing to go on. Please try again in a moment.';
       setMessages((m) => [
         ...m,
-        {
-          id: next.current++,
-          from: 'vayu',
-          text:
-            first === undefined
-              ? 'Pin a place on My Air first, so there is some air to talk about.'
-              : state?.status === 'error'
-                ? 'We could not get the air just now, so I have nothing to go on. Please try again in a moment.'
-                : 'Still getting the air for your first place. Ask again in a moment.',
-        },
+        { id: next.current++, from: 'vayu', text: words, basis: 'No reading yet' },
       ]);
+      if (spoken) void voice.speak(words);
       return;
     }
+    respond(text, context);
+  };
+
+  /** Asks the source and shows its answer, which is also spoken unless it is muted. */
+  const respond = (text: string, ctx: AssistantContext): void => {
     setBusy(true);
-    source.ask(text, context).then(
+    source.ask(text, ctx).then(
       (answer) => {
         setMessages((m) => [
           ...m,
@@ -247,6 +256,30 @@ export function AssistantFab({
       },
     );
   };
+
+  // A question asked while the air was still loading is answered as soon as it has loaded.
+  useEffect(() => {
+    const waiting = waitingFor.current;
+    if (waiting === undefined) return;
+    if (context === undefined) {
+      // The air could not be had: say so, rather than leave the question hanging.
+      if (state?.status === 'error') {
+        waitingFor.current = undefined;
+        setBusy(false);
+        const words =
+          'We could not get the air just now, so I have nothing to go on. Please try again in a moment.';
+        setMessages((m) => [
+          ...m,
+          { id: next.current++, from: 'vayu', text: words, basis: 'No reading yet' },
+        ]);
+      }
+      return;
+    }
+    waitingFor.current = undefined;
+    respond(waiting, context);
+    // Only when the air arrives.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [context, state?.status]);
 
   // A demo scenario can open the chat and put a question as soon as the app shows.
   const stagedQuestion = staged.current;
