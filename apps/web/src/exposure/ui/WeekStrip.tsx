@@ -1,5 +1,5 @@
 import { levelForAqi } from '../../design/levels';
-import { SmokeSquare } from '../../units/AirUnits';
+import { SmokeFigure } from '../../units/AirUnits';
 import { formatDate, type DateKey, type Summary } from '../model';
 
 const shortDay = (date: DateKey): string => formatDate(date).split(' ')[0] ?? '';
@@ -38,7 +38,11 @@ export function WeekStrip({
       ) : (
         <p className="muted">Nothing to add up. Set a place and the days fill in.</p>
       )}
-      {best !== undefined && <SmokeSquare pm25={meanPm} />}
+      {best !== undefined && (
+        <p className="sum-lead">
+          <SmokeFigure pm25={meanPm} variant="chip" /> a day, on average over the week
+        </p>
+      )}
       <ul className="week-bars">
         {days.map(({ date, summary }) => {
           const level = summary === undefined ? undefined : levelForAqi(summary.aqi);

@@ -3,6 +3,7 @@ import { cleanup, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { useEffect } from 'react';
 import { MemoryRouter } from 'react-router-dom';
+import { setLiveLocation, type LiveLocation, type LiveSnapshot } from '../places/liveLocation';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 const dataNow: { windLive: boolean; airLive: boolean; fires: number | undefined } = {
@@ -134,7 +135,9 @@ describe('the Map screen', () => {
         <MapScreen />
       </MemoryRouter>,
     );
-    expect(screen.getByRole('img', { name: /AQI colours/u })).toBeInTheDocument();
+    const scale = screen.getByRole('img', { name: /What the colours mean/u });
+    expect(scale).toHaveAccessibleName(/Good from 0 to 50/u);
+    expect(scale).toHaveAccessibleName(/Hazardous from 301 up/u);
   });
 });
 
@@ -170,46 +173,65 @@ describe('what the map says about its data', () => {
   });
 });
 
-describe('Find me', () => {
-  it('flies to where the person is, and says so', async () => {
-    const flyTo = vi.fn();
-    seen.mapObject = { flyTo };
-    Object.defineProperty(navigator, 'geolocation', {
-      configurable: true,
-      value: {
-        getCurrentPosition: (ok: (p: GeolocationPosition) => void) => {
-          ok({ coords: { latitude: 28.6, longitude: 77.2 } } as GeolocationPosition);
-        },
-      },
-    });
-    render(
-      <MemoryRouter>
-        <MapScreen />
-      </MemoryRouter>,
-    );
-    await userEvent.click(screen.getByRole('button', { name: /Find me/u }));
-    expect(screen.getByRole('status')).toHaveTextContent('You are here.');
-    expect(flyTo).toHaveBeenCalledWith(expect.objectContaining({ center: [77.2, 28.6] }));
-    Reflect.deleteProperty(navigator, 'geolocation');
+describe('live location on the map', () => {
+  const fake = (snapshot: LiveSnapshot): LiveLocation => ({
+    get: () => snapshot,
+    subscribe: () => () => undefined,
+    set: () => undefined,
+    resume: () => undefined,
+  });
+  afterEach(() => {
+    setLiveLocation(undefined);
   });
 
-  it('says plainly when the location cannot be had', async () => {
-    seen.mapObject = { flyTo: vi.fn() };
-    Object.defineProperty(navigator, 'geolocation', {
-      configurable: true,
-      value: {
-        getCurrentPosition: (_ok: unknown, no: () => void) => {
-          no();
-        },
-      },
-    });
+  it('has no Find me button of its own: the round live-location button does the job', () => {
     render(
       <MemoryRouter>
         <MapScreen />
       </MemoryRouter>,
     );
-    await userEvent.click(screen.getByRole('button', { name: /Find me/u }));
-    expect(screen.getByRole('status')).toHaveTextContent(/could not get your location/u);
-    Reflect.deleteProperty(navigator, 'geolocation');
+    expect(screen.queryByRole('button', { name: /Find me/u })).not.toBeInTheDocument();
+  });
+
+  it('flies to where the device is, once, when live location is on', () => {
+    const flyTo = vi.fn();
+    seen.mapObject = { flyTo };
+    setLiveLocation(
+      fake({ enabled: true, status: 'on', position: { lat: 28.6, lng: 77.2 }, checkedAt: 1 }),
+    );
+    render(
+      <MemoryRouter>
+        <MapScreen />
+      </MemoryRouter>,
+    );
+    expect(flyTo).toHaveBeenCalledTimes(1);
+    expect(flyTo).toHaveBeenCalledWith(expect.objectContaining({ center: [77.2, 28.6] }));
+  });
+
+  it('stays where a link put it, rather than flying away from it', () => {
+    const flyTo = vi.fn();
+    seen.mapObject = { flyTo };
+    setLiveLocation(
+      fake({ enabled: true, status: 'on', position: { lat: 28.6, lng: 77.2 }, checkedAt: 1 }),
+    );
+    render(
+      <MemoryRouter initialEntries={['/map?lat=30.5&lng=75&z=6']}>
+        <MapScreen />
+      </MemoryRouter>,
+    );
+    expect(flyTo).not.toHaveBeenCalled();
+  });
+
+  it('says so when the device is outside north India', () => {
+    seen.mapObject = { flyTo: vi.fn() };
+    setLiveLocation(
+      fake({ enabled: true, status: 'on', position: { lat: 51.5, lng: -0.1 }, checkedAt: 1 }),
+    );
+    render(
+      <MemoryRouter>
+        <MapScreen />
+      </MemoryRouter>,
+    );
+    expect(screen.getByRole('status')).toHaveTextContent(/outside north India/u);
   });
 });

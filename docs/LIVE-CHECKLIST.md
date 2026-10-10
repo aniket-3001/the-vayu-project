@@ -41,6 +41,10 @@ Unticked means not yet seen live.
 | Assistant      | "I took a walk" asks where, then how long; "at school" with no school set says to add one on My Air first       | [ ]  |
 | Map            | Flames show where the alerts say fires are, and stay at every zoom                                              | [ ]  |
 | My Air         | Alerts first, then Breathe better today, then the cards; a card's label is its heading, the address under it    | [ ]  |
+| Exposure       | A new home fills the day so far at once, including the hour in progress                                         | [ ]  |
+| Buttons        | Ask, cigarettes and live location are in the same column at the bottom right on all four tabs                   | [ ]  |
+| Map            | The live-location button drops a blue dot and flies to it; the scale at the top is centred                      | [ ]  |
+| Cards          | No arrow on a place card; the cigarettes sit beside the AQI at the same size on cards, Lens and Today           | [ ]  |
 | Laptop         | Every screen at a laptop width                                                                                  | [ ]  |
 | Offline        | Switch the phone to airplane mode: the last good readings stay and say how old they are                         | [ ]  |
 

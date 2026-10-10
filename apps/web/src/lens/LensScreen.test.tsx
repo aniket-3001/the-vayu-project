@@ -111,16 +111,12 @@ describe('the AR Lens', () => {
     expect(more).toHaveTextContent('About this view');
   });
 
-  it('is small until opened, then shows the wind, how far you can see and the best hour', async () => {
+  it('has no opened-out view: the wind, how far you can see and the best hour are on the card itself', () => {
     open();
     const card = screen.getByRole('region', { name: 'The air here' });
-    expect(card).not.toHaveClass('open');
-    expect(card.querySelector('.pc-more')).toHaveAttribute('hidden');
-    await userEvent.click(screen.getByRole('button', { name: 'Show more about the air here' }));
-    expect(card).toHaveClass('open');
-    expect(card.querySelector('.pc-more')).not.toHaveAttribute('hidden');
-    await userEvent.click(screen.getByRole('button', { name: 'Show less' }));
-    expect(card).not.toHaveClass('open');
+    expect(screen.queryByRole('button', { name: /Show more/u })).not.toBeInTheDocument();
+    expect(card.querySelector('.lens-facts')).toBeVisible();
+    expect(card.querySelectorAll('.lens-facts li').length).toBeGreaterThanOrEqual(2);
   });
 
   it('shows the face, the number, the wind, how far you can see and where the reading came from', () => {
@@ -194,7 +190,7 @@ describe('the AR Lens', () => {
       value: FakeOrientation,
     });
     open();
-    await userEvent.click(screen.getByRole('button', { name: 'Show more about the air here' }));
+    await userEvent.click(screen.getByText('About this view'));
     await userEvent.click(screen.getByRole('button', { name: /Turn on the compass/u }));
     expect(request).toHaveBeenCalled();
     const turn = new Event('deviceorientation');

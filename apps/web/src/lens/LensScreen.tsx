@@ -75,14 +75,14 @@ export function LensScreen(): React.JSX.Element {
     const root = document.documentElement;
     if (panel === null || typeof ResizeObserver === 'undefined') return;
     const report = (): void => {
-      root.style.setProperty('--lens-hud-h', `${String(Math.round(panel.offsetHeight))}px`);
+      root.style.setProperty('--dock-lift', `${String(Math.round(panel.offsetHeight) + 6)}px`);
     };
     report();
     const watcher = new ResizeObserver(report);
     watcher.observe(panel);
     return () => {
       watcher.disconnect();
-      root.style.removeProperty('--lens-hud-h');
+      root.style.removeProperty('--dock-lift');
     };
   });
 

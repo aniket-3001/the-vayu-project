@@ -282,7 +282,11 @@ export function useHistory(pins: readonly Pin[]): 'loading' | 'ready' | 'error' 
   useSyncExternalStore(store.subscribe, store.snapshot);
   const ids = pins.map((p) => p.id).join('|');
   useEffect(() => {
-    for (const pin of pins) store.ensureHistory(pin);
+    for (const pin of pins) {
+      store.ensureHistory(pin);
+      // The hour in progress has no finished reading, so it borrows the reading from now.
+      store.ensureToday(pin);
+    }
     // The pins' coordinates are their ids.
   }, [ids, store]);
   const states = pins.map((p) => store.historyStatus(p).status);

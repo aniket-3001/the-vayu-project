@@ -88,9 +88,9 @@ function Frame(): React.JSX.Element {
       </Routes>
       {import.meta.env.VITE_DEMO === '1' && <DemoPill />}
       <div className="dock">
-        <LiveToggle />
-        <SmokeToggle />
         <AssistantFab />
+        <SmokeToggle />
+        <LiveToggle />
       </div>
       <TabBar />
     </div>

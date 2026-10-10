@@ -19,14 +19,17 @@ const withUnits = (node: React.ReactNode): React.JSX.Element => (
 );
 
 describe('the relatable measure on the screens', () => {
-  it('adds a small square cigarettes card on every place card and beside the AQI on the Today hero', () => {
+  it('puts the cigarettes right beside the AQI, the same size, on every place card and on the Today hero', () => {
     window.localStorage.setItem(UNITS_STORAGE_KEY, 'smoke');
     render(withUnits(<MyAirScreen />));
-    expect(document.querySelectorAll('.place-card .smoke-square.compact').length).toBe(4);
+    const figures = document.querySelectorAll('.place-card .pc-aqi .smoke-fig');
+    expect(figures.length).toBe(4);
+    for (const figure of figures) expect(figure.previousElementSibling).toHaveClass('fig');
     cleanup();
     render(withUnits(<TodayScreen data={sampleDay('unhealthy')} />));
     const square = screen.getByRole('group', { name: /cigarettes? a day\./u });
-    expect(square).toHaveTextContent('cigarettes a day');
+    expect(square).toHaveClass('badge');
+    expect(square).toHaveTextContent('a day');
     expect(square).toHaveTextContent(/^\d/u);
     expect(screen.getByText(/Berkeley Earth/u)).toBeInTheDocument();
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();

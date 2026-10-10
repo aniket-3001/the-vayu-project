@@ -83,6 +83,14 @@ export function hoursSoFar(date: DateKey): number {
   return hasData(date) ? 24 : 0;
 }
 
+/**
+ * Hours of a date that count: those that have finished and, for today, the hour in progress, so a place set at
+ * ten past midnight has its first hour straight away.
+ */
+export function hoursCounted(date: DateKey): number {
+  return date === today() ? Math.min(24, hoursSoFar(date) + 1) : hoursSoFar(date);
+}
+
 /** Open-air PM2.5 for each hour of a date at a place; `undefined` where we have no finished reading. */
 export function ambientByHour(pin: Pin, date: DateKey): readonly (number | undefined)[] {
   return hasData(date)
@@ -93,6 +101,20 @@ export function ambientByHour(pin: Pin, date: DateKey): readonly (number | undef
 // What a person breathes
 
 const round1 = (value: number): number => Math.round(value * 10) / 10;
+
+/**
+ * The open-air figure for one hour. The hour in progress has no finished reading yet, so it takes the hour
+ * before it, or the last hour of the day before, or the reading from right now.
+ */
+export function openAt(pin: Pin, date: DateKey, hour: number): number | undefined {
+  const own = ambientByHour(pin, date)[hour];
+  if (own !== undefined || date !== today() || hour !== hoursSoFar(date)) return own;
+  const before =
+    hour > 0 ? ambientByHour(pin, date)[hour - 1] : ambientByHour(pin, addDays(date, -1))[23];
+  if (before !== undefined) return before;
+  const now = airStore().today(pin);
+  return now.status === 'ready' ? now.data.pm25 : undefined;
+}
 
 /** What a person breathes at a set place, given the open-air figure, any unit there, and the assumptions. */
 export function breathed(
@@ -119,6 +141,12 @@ export type LiveLog = Readonly<Record<string, { readonly lat: number; readonly l
 
 export { AT_PLACE_KM };
 
+/**
+ * How far from a set place a fix must be to count as somewhere else. A phone's coarse fix can be a kilometre
+ * out, and a person at home should not be shown as outdoors for that.
+ */
+export const AWAY_KM = 1;
+
 /** The set place a fix is in, if any. */
 export function placeOfFix(
   fix: { readonly lat: number; readonly lng: number },
@@ -129,7 +157,7 @@ export function placeOfFix(
     const spot = spots[kind];
     if (spot === undefined) continue;
     const distance = distanceKm(fix, spot.pin);
-    if (distance <= AT_PLACE_KM && (best === undefined || distance < best.distance))
+    if (distance <= AWAY_KM && (best === undefined || distance < best.distance))
       best = { kind, distance };
   }
   return best?.kind;
@@ -149,13 +177,12 @@ export function dayCells(
   outings: readonly Outing[] = [],
 ): readonly Cell[] {
   const cells: Cell[] = [];
-  const upTo = hoursSoFar(date);
+  const upTo = hoursCounted(date);
   for (const kind of SPOT_KINDS) {
     const spot = spots[kind];
     if (spot === undefined || kind === 'outdoor' || !runsOn(kind, spot, date)) continue;
-    const ambient = ambientByHour(spot.pin, date);
     for (let hour = 0; hour < upTo; hour++) {
-      const open = ambient[hour];
+      const open = openAt(spot.pin, date, hour);
       if (open === undefined || (kind !== 'home' && !isThere(spot, hour))) continue;
       const { pm25, source } = breathed(spot, open, units);
       cells.push(cellOf(hour, kind, pm25, source));
@@ -165,8 +192,7 @@ export function dayCells(
   if (date === today()) {
     for (const [key, fix] of Object.entries(live)) {
       const hour = Number(key);
-      // A fix can come from the hour in progress, which the schedule leaves out.
-      if (hour > upTo) continue;
+      if (hour >= upTo) continue;
       const here = placeOfFix(fix, spots);
       const spot = here === undefined ? undefined : spots[here];
       const pin: Pin = spot?.pin ?? {
@@ -175,7 +201,7 @@ export function dayCells(
         lat: fix.lat,
         lng: fix.lng,
       };
-      const open = ambientByHour(pin, date)[hour] ?? ambientByHour(pin, date)[hour - 1];
+      const open = openAt(pin, date, hour);
       if (open === undefined) continue;
       const near = unitNear(fix, units);
       let got: { pm25: number; source: Source };
@@ -201,7 +227,7 @@ export function outdoorCells(
     const end = outing.start + outing.minutes;
     for (let hour = Math.floor(outing.start / 60); hour * 60 < end && hour < upTo; hour++) {
       const minutes = Math.min(end, hour * 60 + 60) - Math.max(outing.start, hour * 60);
-      const open = ambientByHour(outing.pin, date)[hour];
+      const open = openAt(outing.pin, date, hour);
       if (minutes <= 0 || open === undefined) continue;
       const pm = outing.trees ? open * TREE_SHARE : open;
       const share = minutes / 60;
@@ -325,10 +351,7 @@ export function openAirFor(
     } else {
       pin = cell.pin ?? spots[cell.where]?.pin;
     }
-    const open =
-      pin === undefined
-        ? undefined
-        : (ambientByHour(pin, date)[cell.hour] ?? ambientByHour(pin, date)[cell.hour - 1]);
+    const open = pin === undefined ? undefined : openAt(pin, date, cell.hour);
     if (open !== undefined) out.push(open);
   }
   return out;

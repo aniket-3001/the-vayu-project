@@ -2,7 +2,7 @@
 import { cleanup, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { AirUnitsProvider, SmokeSquare, SmokeToggle, UNITS_STORAGE_KEY } from './AirUnits';
+import { AirUnitsProvider, SmokeFigure, SmokeToggle, UNITS_STORAGE_KEY } from './AirUnits';
 import {
   PM25_PER_CIGARETTE,
   cigarettesForAqi,
@@ -43,7 +43,7 @@ describe('the relatable measure switch', () => {
     <AirUnitsProvider>
       <SmokeToggle />
       <p>
-        AQI 158 <SmokeSquare pm25={71.3} />
+        AQI 158 <SmokeFigure pm25={71.3} />
       </p>
     </AirUnitsProvider>
   );
@@ -70,7 +70,7 @@ describe('the relatable measure switch', () => {
   });
 
   it('shows nothing, and does not fail, when used without a provider', () => {
-    render(<SmokeSquare pm25={50} />);
+    render(<SmokeFigure pm25={50} />);
     expect(screen.queryByText(/cigarette/u)).not.toBeInTheDocument();
   });
 

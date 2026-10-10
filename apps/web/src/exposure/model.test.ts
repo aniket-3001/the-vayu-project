@@ -140,9 +140,20 @@ describe('a day, hour by hour', () => {
     expect(dayCells(adult, [], {}, addDays(today(), 1))).toEqual([]);
   });
 
-  it('stops at the present for today', () => {
+  it('stops at the hour in progress for today, which borrows the hour before it', () => {
     const cells = dayCells(adult, [], {}, today());
-    expect(Math.max(...cells.map((c) => c.hour))).toBeLessThan(17);
+    expect(Math.max(...cells.map((c) => c.hour))).toBe(17);
+    const at = (hour: number): number | undefined =>
+      cells.find((c) => c.where === 'home' && c.hour === hour)?.pm25;
+    expect(at(17)).toBeDefined();
+    expect(at(17)).toBe(at(16));
+  });
+
+  it('counts a fix within a kilometre of a set place as being there', () => {
+    const near = { lat: home.pin.lat + 0.006, lng: home.pin.lng };
+    const far = { lat: home.pin.lat + 0.05, lng: home.pin.lng };
+    expect(placeOfFix(near, adult)).toBe('home');
+    expect(placeOfFix(far, adult)).toBeUndefined();
   });
 
   it('gives a child school hours at school, and an adult none', () => {
@@ -297,10 +308,10 @@ describe('outdoor time that was logged', () => {
     expect(open.length).toBe(24);
   });
 
-  it('leaves out hours that have not finished today', () => {
+  it('leaves out hours that have not started today', () => {
     const cells = dayCells(adult, [], {}, today(), [
-      walk({ date: today(), start: 16 * 60 + 30, minutes: 60 }),
+      walk({ date: today(), start: 16 * 60 + 30, minutes: 120 }),
     ]);
-    expect(cells.filter((c) => c.where === 'outdoor').map((c) => c.hour)).toEqual([16]);
+    expect(cells.filter((c) => c.where === 'outdoor').map((c) => c.hour)).toEqual([16, 17]);
   });
 });

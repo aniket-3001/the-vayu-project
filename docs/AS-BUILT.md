@@ -21,13 +21,16 @@ Checked against the deployed stack and the live address on 10 October 2026.
 
 ## In the app, passing tests, not yet seen on a phone
 
-| Part                     | State                                                                                                                                                         |
-| ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Set-up on My Air         | Three dotted fields for a new person: Home, Work or school (one field), Park. Setting one pins the place and gives Exposure its hours. They can be skipped.   |
-| Exposure rings           | Three rings, Home, Work or school, Outdoor. Each hour counts in one ring only (live place, then outdoor, work, school, home). The "i" button opens the guide. |
-| Logging by the assistant | Activity, where (a named place or home, school or work, park) and how long. It asks for what is missing and never guesses a place. No school set: it says so. |
-| Fires on the map         | A flame for each FIRMS detection, at every zoom, over the monitor dots. The same fires feed the alerts.                                                       |
-| Place cards              | The label is the heading and the address is under it, found from the map position when the place was detected.                                                |
+| Part                     | State                                                                                                                                                                                                                                                                                       |
+| ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Set-up on My Air         | Three dotted fields for a new person: Home, Work or school (one field), Park. Setting one pins the place and gives Exposure its hours. They can be skipped.                                                                                                                                 |
+| Exposure rings           | Three rings, Home, Work or school, Outdoor. Each hour counts in one ring only (live place, then outdoor, work, school, home). The "i" button opens the guide.                                                                                                                               |
+| Logging by the assistant | Activity, where (a named place or home, school or work, park) and how long. It asks for what is missing and never guesses a place. No school set: it says so.                                                                                                                               |
+| Exposure days            | Home counts every hour by default, work or school in its hours, and the hour in progress counts from the first minute. A live fix within a kilometre of a set place counts as being there; further away it counts as outdoors.                                                              |
+| The round buttons        | Ask, cigarettes and live location are one column at the bottom right of every screen, above any card or legend there. On the map, live location drops the blue dot and flies there.                                                                                                         |
+| The map                  | The colour scale is at the top, centred, as on the Lens; wind and layers are round buttons under it.                                                                                                                                                                                        |
+| Fires on the map         | A flame for each FIRMS detection, at every zoom, over the monitor dots. The same fires feed the alerts.                                                                                                                                                                                     |
+| Place cards              | One card per place, as wide as the screen: label, address under it, the AQI (with the cigarettes beside it, same size, when that is on), the face, today and the next two days, and the source. No arrow to open it out. The Lens card is the same card with the wind, sight and best hour. |
 
 ## Built and tested, but not live or not used by the app
 

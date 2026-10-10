@@ -69,7 +69,7 @@ describe('the Exposure screen', () => {
     expect(screen.getByRole('button', { name: /^Me/u })).toHaveAttribute('aria-pressed', 'true');
     expect(screen.getByRole('img', { name: /24-hour dial/u })).toBeInTheDocument();
     expect(screen.getByText(/You breathed an average of AQI/u)).toHaveTextContent(
-      'so far today (17 hours)',
+      'so far today (18 hours)',
     );
     for (const name of ['Home', 'Work', 'Outdoor', 'Live location']) {
       expect(screen.queryByRole('region', { name })).not.toBeInTheDocument();

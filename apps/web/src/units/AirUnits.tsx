@@ -71,39 +71,82 @@ export function SmokeToggle(): React.JSX.Element {
   );
 }
 
+const shownCigarettes = (perDay: number): string =>
+  perDay < 0.5 ? '<½' : perDay >= 10 ? String(Math.round(perDay)) : String(perDay);
+
 /**
- * The air as cigarettes a day, as one square: a cigarette, the number, and what it counts. The same square
- * everywhere the measure is shown, in two sizes (`compact` for a corner of a card or a line of a list), and only
- * while the cigarette switch is on.
+ * The air as cigarettes a day, only while the cigarette switch is on. It always sits right beside the AQI and in
+ * the same size:
+ * - `figure` is a number with a small label under it, as the AQI is on a place card;
+ * - `badge` is a tile like the AQI tile on the Today screen;
+ * - `chip` is a small chip like the AQI chip in a line of text.
  */
-export function SmokeSquare({
+export function SmokeFigure({
   pm25,
+  variant = 'figure',
   className = '',
-  compact = false,
 }: {
   readonly pm25: number;
+  readonly variant?: 'figure' | 'badge' | 'chip';
   readonly className?: string;
-  readonly compact?: boolean;
 }): React.JSX.Element | null {
   const { smoke } = useAirUnits();
   if (!smoke) return null;
   const perDay = cigarettesPerDay(pm25);
-  const shown = perDay < 0.5 ? '<½' : perDay >= 10 ? String(Math.round(perDay)) : String(perDay);
+  const shown = shownCigarettes(perDay);
   const words = describeCigarettesShort(perDay);
+  const group = {
+    role: 'group',
+    'aria-label': `${words}. ${SMOKE_CAVEAT}`,
+    title: SMOKE_CAVEAT,
+  } as const;
+  if (variant === 'chip')
+    return (
+      <span className={`chip cig-chip ${className}`.trim()} {...group}>
+        <span className="cig-chip-in" aria-hidden="true">
+          <CigaretteIcon size={16} lit />
+          {shown}
+        </span>
+      </span>
+    );
+  if (variant === 'badge')
+    return (
+      <span className={`badge smoke-badge ${className}`.trim()} {...group}>
+        <span className="badge-num" aria-hidden="true">
+          {shown}
+        </span>
+        <span className="badge-unit" aria-hidden="true">
+          <CigaretteIcon size={16} lit /> a day
+        </span>
+      </span>
+    );
   return (
-    <span
-      className={`smoke-square${compact ? ' compact' : ''} ${className}`.trim()}
-      role="group"
-      aria-label={`${words}. ${SMOKE_CAVEAT}`}
-      title={SMOKE_CAVEAT}
-    >
-      <span className="smoke-square-top" aria-hidden="true">
-        <CigaretteIcon size={compact ? 20 : 26} lit />
-        <strong className="tnum">{shown}</strong>
+    <span className={`smoke-fig ${className}`.trim()} {...group}>
+      <strong className="tnum" aria-hidden="true">
+        {shown}
+      </strong>
+      <span className="smoke-fig-label" aria-hidden="true">
+        <CigaretteIcon size={16} lit /> a day
       </span>
-      <span className="smoke-square-label" aria-hidden="true">
-        {compact ? 'a day' : 'cigarettes a day'}
+    </span>
+  );
+}
+
+/** The AQI as a big number with its label, and the cigarettes beside it while that is switched on. */
+export function AirFigures({
+  aqi,
+  pm25,
+}: {
+  readonly aqi: number;
+  readonly pm25: number;
+}): React.JSX.Element {
+  return (
+    <span className="pc-aqi">
+      <span className="fig">
+        <strong className="tnum">{aqi}</strong>
+        <span>AQI</span>
       </span>
+      <SmokeFigure pm25={pm25} />
     </span>
   );
 }

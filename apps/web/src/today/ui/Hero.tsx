@@ -7,7 +7,7 @@ import { compassPoint } from '../wind';
 import { FaceIcon, WindArrow } from './icons';
 import { concentration, splitLabel } from './format';
 import { useSettle } from './hooks';
-import { SmokeSquare, useAirUnits } from '../../units/AirUnits';
+import { SmokeFigure, useAirUnits } from '../../units/AirUnits';
 import { SMOKE_CAVEAT } from '../../units/smoke';
 
 /** The status card: the number, what it means, the main pollutant, and the weather right now. */
@@ -19,7 +19,7 @@ export function Hero({ data }: { readonly data: TodayData }): React.JSX.Element 
   const w = data.weather;
   const { smoke } = useAirUnits();
   return (
-    <section className="hero" aria-labelledby="hero-title">
+    <section className={`hero${smoke ? ' with-smoke' : ''}`} aria-labelledby="hero-title">
       <div className="hero-top">
         <div className="badge-col">
           <div className="badge">
@@ -31,7 +31,7 @@ export function Hero({ data }: { readonly data: TodayData }): React.JSX.Element 
               AQI
             </span>
           </div>
-          <SmokeSquare pm25={data.pm25} />
+          <SmokeFigure pm25={data.pm25} variant="badge" />
         </div>
         <div className="hero-words">
           <h2 id="hero-title" className="hero-level">

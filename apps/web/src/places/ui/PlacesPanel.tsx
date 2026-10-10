@@ -37,14 +37,7 @@ export function PlacesPanel({
   const [adding, setAdding] = useState<
     { readonly place?: FoundPlace; readonly setup?: SetupKind } | undefined
   >(undefined);
-  const [skipped, setSkipped] = useState(() => {
-    try {
-      return window.localStorage.getItem('vayu.setup.skipped') === 'yes';
-    } catch {
-      return false;
-    }
-  });
-  // The first set-up asks for home, work or school, and a park, until they are given or put off.
+  // The first set-up asks for home, work or school, and a park, until each is given.
   const unset = SETUP_KINDS.filter((kind) =>
     kind === 'home'
       ? pinForRole('home', pins) === undefined
@@ -52,7 +45,7 @@ export function PlacesPanel({
         ? pinForRole('outdoor', pins) === undefined
         : pinForRole('work', pins) === undefined && pinForRole('school', pins) === undefined,
   );
-  const settingUp = !skipped && unset.length > 0;
+  const settingUp = unset.length > 0;
 
   /** Pins a place under its name, with its address, and makes it count in the day if the name is a role. */
   const pinPlace = async (label: string, place: FoundPlace): Promise<void> => {
@@ -212,22 +205,6 @@ export function PlacesPanel({
           </li>
         )}
       </ul>
-      {settingUp && (
-        <button
-          type="button"
-          className="plain skip-setup"
-          onClick={() => {
-            setSkipped(true);
-            try {
-              window.localStorage.setItem('vayu.setup.skipped', 'yes');
-            } catch {
-              // Best effort.
-            }
-          }}
-        >
-          Skip set-up for now
-        </button>
-      )}
       {children}
       <p className="muted small places-note">
         {airStore().kind === 'sample' ? (

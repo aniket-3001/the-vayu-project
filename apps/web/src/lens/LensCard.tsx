@@ -1,5 +1,4 @@
-import { ChevronDown, Compass, Eye, Navigation, Sunrise } from 'lucide-react';
-import { useId, useState } from 'react';
+import { Compass, Eye, Navigation, Sunrise } from 'lucide-react';
 import type { Pin } from '../data/pins';
 import { levelForAqi } from '../design/levels';
 import { clock24, dayMonth, weekday } from '../today/time';
@@ -8,7 +7,7 @@ import { CONDITION_LABELS, FaceIcon, WeatherIcon } from '../today/ui/icons';
 import { levelVars } from '../today/ui/format';
 import { compassPoint } from '../today/wind';
 import type { TodayData } from '../today/types';
-import { SmokeSquare } from '../units/AirUnits';
+import { AirFigures } from '../units/AirUnits';
 import { formatDistance, type LensHour } from './model';
 
 const age = (minutes: number): string =>
@@ -47,59 +46,32 @@ export function LensCard({
   };
   readonly cameraWords: string;
 }): React.JSX.Element {
-  const [open, setOpen] = useState(false);
-  const detailId = useId();
   const level = levelForAqi(hour.aqi);
   const p = data.provenance;
   const point = data.hourly.find((h) => h.at === hour.at);
   const w = point?.weather ?? (step === 0 ? data.weather : undefined);
   const when = step === 0 ? 'Now' : `${weekday(hour.at)} ${dayMonth(hour.at)}, ${clock24(hour.at)}`;
   return (
-    <section
-      className={`place-card lens-card${open ? ' open' : ''}`}
-      style={levelVars(level)}
-      aria-label="The air here"
-    >
-      <button
-        type="button"
-        className="pc-icon-button lens-more-toggle"
-        aria-expanded={open}
-        aria-controls={detailId}
-        aria-label={open ? 'Show less' : 'Show more about the air here'}
-        onClick={() => {
-          setOpen((v) => !v);
-        }}
-      >
-        <ChevronDown
-          size={22}
-          strokeWidth={2.25}
-          aria-hidden="true"
-          className={open ? 'flip' : ''}
-        />
-      </button>
+    <section className="place-card lens-card" style={levelVars(level)} aria-label="The air here">
       <div className="pc-hit">
         <span className="pc-name">{pin.id === 'live' ? 'Here' : pin.name}</span>
         <span className="pc-detail">{step === 0 ? (pin.detail ?? '') : when}</span>
-        <span className="pc-aqi">
-          <strong className="tnum">{hour.aqi}</strong>
-          <span>AQI</span>
-        </span>
-        <span className="pc-level">{level.name}</span>
-        {w !== undefined && (
-          <span className="pc-sky">
-            <span className="pc-sky-disc">
-              <WeatherIcon condition={w.condition} isDay={w.isDay} size={18} />
+        <AirFigures aqi={hour.aqi} pm25={hour.pm25} />
+        <span className="pc-line">
+          <span className="pc-level">{level.name}</span>
+          {w !== undefined && (
+            <span className="pc-sky">
+              <span className="pc-sky-disc">
+                <WeatherIcon condition={w.condition} isDay={w.isDay} size={18} />
+              </span>
+              <span className="tnum">{w.tempC}°</span>
+              <span className="sr-only">{CONDITION_LABELS[w.condition]}</span>
             </span>
-            <span className="tnum">{w.tempC}°</span>
-            <span className="sr-only">{CONDITION_LABELS[w.condition]}</span>
-          </span>
-        )}
-        <SmokeSquare pm25={hour.pm25} compact className="pc-smoke" />
-        <span className="pc-face" aria-hidden="true">
-          <FaceIcon face={level.face} size={56} />
+          )}
         </span>
-      </div>
-      <div className="pc-more" id={detailId} hidden={!open}>
+        <span className="pc-face" aria-hidden="true">
+          <FaceIcon face={level.face} size={72} />
+        </span>
         <ul className="lens-facts">
           {hour.wind !== undefined && (
             <li>
@@ -122,12 +94,19 @@ export function LensCard({
             </span>
           </li>
           {advice !== undefined && (
-            <li>
+            <li className="lens-advice">
               <Sunrise size={18} strokeWidth={2} aria-hidden="true" />
               <span>{advice}</span>
             </li>
           )}
         </ul>
+        <span className="pc-source">
+          {p.mode === 'sample' ? 'Sample data' : p.label}
+          {p.stationName !== undefined && p.distanceKm !== undefined
+            ? ` · ${p.stationName}, ${String(Math.round(p.distanceKm * 10) / 10)} km`
+            : ''}{' '}
+          · {age(p.ageMinutes)}
+        </span>
         <details className="lens-more">
           <summary>About this view</summary>
           <p className="muted small lens-foot">
@@ -145,13 +124,6 @@ export function LensCard({
             <span role="status">{cameraWords}</span>
           </p>
         </details>
-        <p className="pc-source">
-          {p.mode === 'sample' ? 'Sample data' : p.label}
-          {p.stationName !== undefined && p.distanceKm !== undefined
-            ? ` · ${p.stationName}, ${String(Math.round(p.distanceKm * 10) / 10)} km`
-            : ''}{' '}
-          · {age(p.ageMinutes)}
-        </p>
       </div>
     </section>
   );

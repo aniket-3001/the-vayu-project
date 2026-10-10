@@ -9,7 +9,7 @@ import { AirError, AirLoading } from '../components/AirState';
 import { pinId, type Pin } from '../data/pins';
 import { usePins } from '../places/usePins';
 import { Progress } from '../tasks/ui/TipsCard';
-import { SmokeSquare } from '../units/AirUnits';
+import { SmokeFigure } from '../units/AirUnits';
 import { ASSUMPTION_NOTES } from './assumptions';
 import {
   today,
@@ -83,7 +83,7 @@ export function ExposureScreen({
   const [picked, setPicked] = useState(() =>
     params.has('hour') && Number.isInteger(wantedHour) && wantedHour >= 0 && wantedHour < 24
       ? wantedHour
-      : Math.max(0, hoursSoFar(today()) - 1),
+      : hoursSoFar(today()),
   );
   const wantedPerson = params.get('person');
   useEffect(() => {
@@ -131,11 +131,13 @@ export function ExposureScreen({
     return [...new Map(pinsHere.map((p) => [p.id, p])).values()];
   }, [visible, outings, live.log]);
   const history = useHistory(needed);
+  // Today's readings are here too, since the hour in progress borrows one: the day is worked out again when it comes.
+  const readyNow = needed.filter((pin) => airStore().today(pin).status === 'ready').length;
   const cells = useMemo(
     () => dayCells(visible, units, live.log, date, outings),
     // `history` is here so the day is worked out again when the air arrives.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [visible, units, live.log, date, outings, history],
+    [visible, units, live.log, date, outings, history, readyNow],
   );
   // At any hour a person is in one place, so one cell is kept for each hour: the others overlap it and are left out.
   const counted = useMemo(() => countedCells(cells), [cells]);
@@ -159,7 +161,7 @@ export function ExposureScreen({
 
   const open = (next: View): void => {
     setView(next);
-    setPicked(next === today() ? Math.max(0, hoursSoFar(today()) - 1) : 12);
+    setPicked(next === today() ? hoursSoFar(today()) : 12);
   };
   const choosePerson = (id: string): void => {
     select(id);
@@ -406,7 +408,7 @@ export function ExposureScreen({
             <div className="readout" aria-live="polite">
               {atPicked.length === 0 ? (
                 <p className="muted">
-                  {isToday && picked >= hoursSoFar(today())
+                  {isToday && picked > hoursSoFar(today())
                     ? 'That hour has not happened yet.'
                     : 'No place was set for this hour.'}
                 </p>
@@ -423,6 +425,7 @@ export function ExposureScreen({
                       >
                         {cell.aqi}
                       </span>
+                      <SmokeFigure pm25={cell.pm25} variant="chip" />
                       <span>
                         <strong>{WHERE_LABELS[cell.where]}</strong>,{' '}
                         {levelForAqi(cell.aqi).name.toLowerCase()}. {cell.pm25} µg/m³ PM
@@ -430,7 +433,6 @@ export function ExposureScreen({
                         {cell.source === 'assumed' || cell.source === 'trees' ? ' (assumed)' : ''}
                         {cell.source === 'unit' ? ' (from a nearby unit)' : ''}
                       </span>
-                      <SmokeSquare pm25={cell.pm25} compact />
                     </li>
                   ))}
                 </ul>

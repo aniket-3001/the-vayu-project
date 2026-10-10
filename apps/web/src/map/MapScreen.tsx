@@ -1,11 +1,12 @@
-import { Flame, Layers, LocateFixed, Wind } from 'lucide-react';
+import { Flame, Layers, Wind } from 'lucide-react';
 import { Marker, type Map as MapLibreMap } from 'maplibre-gl';
-import { useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { airStore, useStations } from '../air/store';
 import { nowIso } from '../clock';
 import { inCoverage } from '../data/geocode';
-import { LEVELS } from '../design/levels';
+import { AqiScale } from '../components/AqiScale';
+import { useLiveLocation } from '../places/liveLocation';
 import { Pill } from '../today/ui/Chip';
 import { useAirUnits } from '../units/AirUnits';
 import { LAYER_LABELS, defaultLayers, type Shown } from './layers';
@@ -14,8 +15,6 @@ import { MapView } from './MapView';
 import { WindStars } from './WindStars';
 import { makeWindField } from './windTexture';
 import { useMapData } from './useMapData';
-
-const STOPS = [0, 50, 100, 150, 200, 300] as const;
 
 /** Where the air is bad, and where it is going: a flat map of readings and fires, or a globe with the wind on it. */
 export function MapScreen(): React.JSX.Element {
@@ -52,38 +51,62 @@ export function MapScreen(): React.JSX.Element {
     // Only the opening position is read; moving the map does not change the link.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-  const [where, setWhere] = useState('');
   const marker = useRef<Marker>();
   const windField = useMemo(() => makeWindField(data.wind), [data.wind]);
+  const bottom = useRef<HTMLDivElement>(null);
 
-  /** Asks where the person is, drops a blue dot there and flies in close. */
-  const findMe = (): void => {
+  // The live location switch is on every screen. Here, on, it puts a blue dot where the device is and flies there.
+  const live = useLiveLocation();
+  const liveLat = live.enabled ? live.position?.lat : undefined;
+  const liveLng = live.enabled ? live.position?.lng : undefined;
+  const flown = useRef(false);
+  useEffect(() => {
     if (map === undefined) return;
-    if (!('geolocation' in navigator)) {
-      setWhere('This browser cannot share a location.');
+    if (liveLat === undefined || liveLng === undefined) {
+      marker.current?.remove();
+      marker.current = undefined;
+      flown.current = false;
       return;
     }
-    setWhere('Finding where you are…');
-    navigator.geolocation.getCurrentPosition(
-      (position) => {
-        const { latitude, longitude } = position.coords;
-        marker.current?.remove();
-        const dot = document.createElement('div');
-        dot.className = 'you-dot';
-        marker.current = new Marker({ element: dot }).setLngLat([longitude, latitude]).addTo(map);
-        void map.flyTo({ center: [longitude, latitude], zoom: 9.5, duration: 1800 });
-        setWhere(
-          inCoverage(latitude, longitude)
-            ? 'You are here.'
-            : 'You are here. It is outside north India, so the monitors and fires shown are far away.',
-        );
-      },
-      () => {
-        setWhere('We could not get your location. You can still pan the map.');
-      },
-      { timeout: 10_000 },
-    );
-  };
+    if (marker.current === undefined) {
+      const dot = document.createElement('div');
+      dot.className = 'you-dot';
+      marker.current = new Marker({ element: dot });
+    }
+    marker.current.setLngLat([liveLng, liveLat]).addTo(map);
+    // Fly in once, when the position first arrives, unless a link opened the map somewhere on purpose.
+    if (!flown.current && start === undefined)
+      void map.flyTo({ center: [liveLng, liveLat], zoom: 9.5, duration: 1800 });
+    flown.current = true;
+  }, [map, liveLat, liveLng, start]);
+  useEffect(
+    () => () => {
+      marker.current?.remove();
+    },
+    [],
+  );
+  const where =
+    liveLat !== undefined && liveLng !== undefined && !inCoverage(liveLat, liveLng)
+      ? 'You are outside north India, so the monitors and fires shown are far away.'
+      : '';
+
+  // The buttons that stay on every screen sit just above this panel, so tell the page how tall it is.
+  useEffect(() => {
+    const panel = bottom.current;
+    const root = document.documentElement;
+    if (panel === null || typeof ResizeObserver === 'undefined') return;
+    const report = (): void => {
+      root.style.setProperty('--dock-lift', `${String(Math.round(panel.offsetHeight) + 6)}px`);
+    };
+    report();
+    const watcher = new ResizeObserver(report);
+    watcher.observe(panel);
+    return () => {
+      watcher.disconnect();
+      root.style.removeProperty('--dock-lift');
+    };
+  }, []);
+
   const toggle = (key: keyof Shown): void => {
     setShown((current) => ({ ...current, [key]: !current[key] }));
   };
@@ -102,7 +125,35 @@ export function MapScreen(): React.JSX.Element {
       />
       <WindStars map={map} enabled={shown.wind} field={windField} />
 
-      <div className="map-bottom">
+      <div className="lens-top map-top">
+        <AqiScale className="lens-scale" />
+        <div className="lens-actions">
+          <button
+            type="button"
+            className="lens-round wind-switch"
+            aria-pressed={shown.wind}
+            aria-label={shown.wind ? 'Wind on. Turn wind off' : 'Wind off. Turn wind on'}
+            title={shown.wind ? 'Wind on' : 'Wind off'}
+            onClick={() => {
+              toggle('wind');
+            }}
+          >
+            <Wind size={22} strokeWidth={1.75} aria-hidden="true" />
+          </button>
+          <button
+            type="button"
+            className="lens-round"
+            aria-label="Layers"
+            title="Layers"
+            aria-expanded={open}
+            aria-controls="map-layers"
+            onClick={() => {
+              setOpen((v) => !v);
+            }}
+          >
+            <Layers size={22} strokeWidth={1.75} aria-hidden="true" />
+          </button>
+        </div>
         {open && (
           <fieldset className="map-sheet" id="map-layers">
             <legend>Show on the map</legend>
@@ -128,55 +179,10 @@ export function MapScreen(): React.JSX.Element {
               ))}
           </fieldset>
         )}
+      </div>
 
-        <div className="map-controls">
-          <button
-            type="button"
-            className="map-layers-button wind-switch"
-            aria-pressed={shown.wind}
-            aria-label={shown.wind ? 'Wind on. Turn wind off' : 'Wind off. Turn wind on'}
-            onClick={() => {
-              toggle('wind');
-            }}
-          >
-            <Wind size={18} strokeWidth={1.75} aria-hidden="true" />{' '}
-            <span className="btn-label">Wind {shown.wind ? 'on' : 'off'}</span>
-          </button>
-          <button type="button" className="map-layers-button" aria-label="Find me" onClick={findMe}>
-            <LocateFixed size={18} strokeWidth={1.75} aria-hidden="true" />{' '}
-            <span className="btn-label">Find me</span>
-          </button>
-          <button
-            type="button"
-            className="map-layers-button"
-            aria-label="Layers"
-            aria-expanded={open}
-            aria-controls="map-layers"
-            onClick={() => {
-              setOpen((v) => !v);
-            }}
-          >
-            <Layers size={18} strokeWidth={1.75} aria-hidden="true" />{' '}
-            <span className="btn-label">Layers</span>
-          </button>
-        </div>
-
+      <div className="map-bottom" ref={bottom}>
         <div className="map-legend">
-          <div
-            className="legend-bar"
-            role="img"
-            aria-label="AQI colours, from Good in green to Hazardous in rose-plum"
-          >
-            {LEVELS.map((level) => (
-              <span key={level.name} style={{ background: level.solid }} />
-            ))}
-          </div>
-          <div className="legend-ticks" aria-hidden="true">
-            {STOPS.map((stop) => (
-              <span key={stop}>{stop}</span>
-            ))}
-            <span>+</span>
-          </div>
           <p className="small" role="status">
             {where}
           </p>
