@@ -5,6 +5,7 @@ import { MemoryRouter } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { PINS_STORAGE_KEY } from '../data/pins';
 import { LensScreen } from './LensScreen';
+import { sceneFor } from './SampleScene';
 
 beforeEach(() => {
   window.localStorage.clear();
@@ -26,7 +27,7 @@ const open = (): void => {
 describe('the AR Lens', () => {
   it('opens on the first place with the air, the wind, how far you can see, and says what is sample', () => {
     open();
-    expect(screen.getByRole('img', { name: /sample street scene/u })).toBeInTheDocument();
+    expect(screen.getByRole('img', { name: /sample home scene/u })).toBeInTheDocument();
     const card = screen.getByRole('region', { name: 'The air here' });
     expect(card).toHaveTextContent('Unhealthy');
     expect(card).toHaveTextContent(/From the north-west, \d+ km\/h/u);
@@ -47,6 +48,41 @@ describe('the AR Lens', () => {
       target: { value: screen.getByRole('option', { name: 'Park' }).getAttribute('value') },
     });
     expect(screen.getByText(/Cleanest daylight hour: \d\d:\d\d, AQI \d+\./u)).toBeInTheDocument();
+  });
+
+  it('shows a scene that matches the place: a room for Home, a school, an office, a park, a street for anywhere else', () => {
+    open();
+    const choose = (name: string): void => {
+      fireEvent.change(screen.getByRole('combobox'), {
+        target: { value: screen.getByRole('option', { name }).getAttribute('value') },
+      });
+    };
+    const scene = (): string | null =>
+      screen.getByRole('img', { name: /sample .* scene/u }).getAttribute('data-place');
+    expect(scene()).toBe('home');
+    choose('School');
+    expect(scene()).toBe('school');
+    choose('Office');
+    expect(scene()).toBe('work');
+    choose('Park');
+    expect(scene()).toBe('park');
+    expect(sceneFor('Near you')).toBe('street');
+    expect(sceneFor('Dwarka Sector 7')).toBe('street');
+    expect(sceneFor('Primary School')).toBe('school');
+    expect(sceneFor('My flat')).toBe('home');
+  });
+
+  it('puts the place and camera buttons in the bottom right, after the card, not along the top', () => {
+    open();
+    const actions = document.querySelector('.lens-actions');
+    expect(actions).toBeInTheDocument();
+    expect(document.querySelector('.lens-top')).not.toBeInTheDocument();
+    expect(actions?.querySelector('select')).toBeInTheDocument();
+    expect(actions?.querySelector('button')).toHaveTextContent('Use camera');
+    const hud = document.querySelector('.lens-hud');
+    expect(hud?.compareDocumentPosition(actions as Node) ?? 0).toBe(
+      Node.DOCUMENT_POSITION_FOLLOWING,
+    );
   });
 
   it('changes place, and the air with it', () => {
@@ -80,10 +116,10 @@ describe('the AR Lens', () => {
     open();
     await userEvent.click(screen.getByRole('button', { name: /Use camera/u }));
     expect(await screen.findByText('Camera on; nothing leaves this phone.')).toBeInTheDocument();
-    expect(screen.queryByRole('img', { name: /sample street scene/u })).not.toBeInTheDocument();
+    expect(screen.queryByRole('img', { name: /sample home scene/u })).not.toBeInTheDocument();
     await userEvent.click(screen.getByRole('button', { name: /Camera off/u }));
     expect(stop).toHaveBeenCalled();
-    expect(screen.getByRole('img', { name: /sample street scene/u })).toBeInTheDocument();
+    expect(screen.getByRole('img', { name: /sample home scene/u })).toBeInTheDocument();
   });
 
   it('carries on with a sample street when the camera is refused or missing', async () => {

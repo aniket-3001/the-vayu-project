@@ -119,7 +119,7 @@ export function PersonPanel({
               {...(search !== undefined ? { search } : {})}
             />
           ))}
-        {!isMe && (
+        {
           <section className="spot spot-set" aria-label="Outdoor time">
             <div className="spot-head">
               <span className="dc-icon spot-outdoor">
@@ -128,8 +128,9 @@ export function PersonPanel({
               <div>
                 <h2 className="spot-title">Outdoor time</h2>
                 <p className="muted small">
-                  Walks, play, anything outside. Tell us where and for how long, or tell the
-                  assistant.
+                  {isMe
+                    ? 'Your location logs this for you. Add anything it missed, or tell the assistant.'
+                    : 'Walks, play, anything outside. Tell us where and for how long, or tell the assistant.'}
                 </p>
               </div>
             </div>
@@ -173,7 +174,7 @@ export function PersonPanel({
               Log outdoor time
             </button>
           </section>
-        )}
+        }
         {isMe && (
           <LiveCard
             state={live.state}

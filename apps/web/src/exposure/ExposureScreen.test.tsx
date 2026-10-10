@@ -94,7 +94,9 @@ describe('the Exposure screen', () => {
     // Home has no hours: the rest of the time is at home. Work has its days. Your own outdoor time is automatic.
     expect(within(panel).queryByLabelText('Home from')).not.toBeInTheDocument();
     expect(within(panel).getByRole('group', { name: 'Work days' })).toBeInTheDocument();
-    expect(within(panel).queryByRole('region', { name: 'Outdoor time' })).not.toBeInTheDocument();
+    expect(within(panel).getByRole('region', { name: 'Outdoor time' })).toHaveTextContent(
+      'Your location logs this for you',
+    );
     expect(within(panel).queryByRole('region', { name: 'School' })).not.toBeInTheDocument();
     await closePanel();
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
@@ -450,9 +452,10 @@ describe('working it out from where I am', () => {
 
   it('logs a walk for someone else, shows it on the Outdoor tab, and lets it be removed', async () => {
     open();
-    expect(screen.queryByRole('button', { name: /Log outdoor time/u })).not.toBeInTheDocument();
+    // The plus beside the dial is there for everyone, including the person holding the phone.
+    expect(screen.getByRole('button', { name: 'Log outdoor time' })).toBeInTheDocument();
     await addPerson('Asha', '9');
-    await userEvent.click(screen.getByRole('button', { name: /Log outdoor time for Asha/u }));
+    await userEvent.click(screen.getByRole('button', { name: 'Log outdoor time for Asha' }));
     const sheet = screen.getByRole('dialog', { name: /Outdoor time for Asha/u });
     await userEvent.selectOptions(within(sheet).getByLabelText('Where'), 'Park');
     await userEvent.selectOptions(within(sheet).getByLabelText('For how long'), '45 minutes');
@@ -475,7 +478,7 @@ describe('working it out from where I am', () => {
   it('will not log outdoor time that has not happened yet', async () => {
     open();
     await addPerson('Asha', '9');
-    await userEvent.click(screen.getByRole('button', { name: /Log outdoor time for Asha/u }));
+    await userEvent.click(screen.getByRole('button', { name: 'Log outdoor time for Asha' }));
     const sheet = screen.getByRole('dialog', { name: /Outdoor time for Asha/u });
     fireEvent.change(within(sheet).getByLabelText('Started at'), { target: { value: '19:00' } });
     await userEvent.click(within(sheet).getByRole('button', { name: /Add to Asha/u }));

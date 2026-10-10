@@ -1,4 +1,4 @@
-import { CalendarDays, Info, LocateFixed, Plus, TreePine } from 'lucide-react';
+import { CalendarDays, Info, LocateFixed, Plus } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import type { PlaceMatch } from '../data/geocode';
 import { useDevices } from '../devices/useDevices';
@@ -208,23 +208,6 @@ export function ExposureScreen({
             </button>
           )}
         </div>
-        {!isMe && (
-          <button
-            type="button"
-            className="log-outdoor"
-            onClick={() => {
-              setLogging(true);
-            }}
-          >
-            <TreePine size={18} strokeWidth={1.75} aria-hidden="true" />
-            <span>
-              <strong>Log outdoor time for {person.name}</strong>
-              <span className="muted small">
-                A walk, play or anything outside, and for how long
-              </span>
-            </span>
-          </button>
-        )}
         {isMe && (
           <label className="auto-switch">
             <LocateFixed size={18} strokeWidth={1.75} aria-hidden="true" />
@@ -319,6 +302,21 @@ export function ExposureScreen({
               ))}
             </div>
             <div className="dial-wrap">
+              <button
+                type="button"
+                className="dial-log"
+                aria-label={isMe ? 'Log outdoor time' : `Log outdoor time for ${person.name}`}
+                onClick={() => {
+                  setLogging(true);
+                }}
+              >
+                <Plus size={18} strokeWidth={2.5} aria-hidden="true" />
+                <span>
+                  Log outdoor
+                  <br />
+                  time
+                </span>
+              </button>
               <Dial
                 cells={shown}
                 rings={rings}

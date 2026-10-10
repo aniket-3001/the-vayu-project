@@ -14,9 +14,7 @@ export type OutingIntent =
   /** Something a person did outdoors, ready to save. */
   | { readonly kind: 'add'; readonly person: Person; readonly outing: Omit<Outing, 'id'> }
   /** Someone's outdoor time, but it cannot be saved as it stands. */
-  | { readonly kind: 'problem'; readonly person: Person; readonly text: string }
-  /** The person holding the phone: their outdoor time is automatic. */
-  | { readonly kind: 'me' };
+  | { readonly kind: 'problem'; readonly person: Person; readonly text: string };
 
 const QUESTION =
   /^(can|could|should|is|are|will|would|when|what|where|how|do|does|did|which|why)\b/u;
@@ -94,7 +92,7 @@ export function parseOuting(
 ): OutingIntent | undefined {
   const t = text.toLowerCase().trim();
   if (t.endsWith('?') || QUESTION.test(t) || !PAST.test(t) || !OUTSIDE.test(t)) return undefined;
-  const person = [...people]
+  const named = [...people]
     .filter((p) => p.id !== 'me')
     .sort((a, b) => b.name.length - a.name.length)
     .find((p) =>
@@ -102,7 +100,10 @@ export function parseOuting(
         t,
       ),
     );
-  if (person === undefined) return /\b(i|my|me)\b/u.test(t) ? { kind: 'me' } : undefined;
+  // "I walked…" is the person holding the phone.
+  const person =
+    named ?? (/\b(i|my|me)\b/u.test(t) ? people.find((p) => p.id === 'me') : undefined);
+  if (person === undefined) return undefined;
 
   const minutes = minutesIn(t);
   if (minutes === undefined)
@@ -120,8 +121,8 @@ export function parseOuting(
     };
 
   const date = /\byesterday\b/u.test(t) ? YESTERDAY : now.date;
-  const named = startIn(t);
-  let start = named ?? (date === now.date ? Math.max(0, now.minutes - minutes) : 17 * 60);
+  const said = startIn(t);
+  let start = said ?? (date === now.date ? Math.max(0, now.minutes - minutes) : 17 * 60);
   if (start + minutes > 24 * 60) start = 24 * 60 - minutes;
   const problem = problemWithOuting({ start, minutes }, date, TODAY, now.minutes);
   if (problem !== undefined)
@@ -145,7 +146,8 @@ export function addedText(person: Person, outing: Omit<Outing, 'id'>): string {
   const open = ambientByHour(outing.pin, outing.date)[Math.floor(outing.start / 60)];
   const aqi = open === undefined ? undefined : usAqi(open)?.value;
   const what = ACTIVITY_LABELS[outing.activity].toLowerCase();
-  return `Added to ${person.name}’s day: ${what} in ${outing.pin.name}, ${String(outing.minutes)} minutes from ${clockOf(outing.start)}, ${outing.date === TODAY ? 'today' : formatDate(outing.date)}. ${
+  const whose = person.id === 'me' ? 'your' : `${person.name}’s`;
+  return `Added to ${whose} day: ${what} in ${outing.pin.name}, ${String(outing.minutes)} minutes from ${clockOf(outing.start)}, ${outing.date === TODAY ? 'today' : formatDate(outing.date)}. ${
     aqi === undefined ? '' : `The air there then was AQI ${String(aqi)}. `
-  }It is counted as outside air${outing.trees ? ', a little lower for trees (assumed)' : ''}. You can see or remove it in ${person.name}’s outdoor time.`;
+  }It is counted as outside air${outing.trees ? ', a little lower for trees (assumed)' : ''}. You can see or remove it in ${whose} outdoor time.`;
 }

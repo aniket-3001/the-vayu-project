@@ -92,8 +92,11 @@ describe('telling the assistant what someone did outdoors', () => {
     expect(parse('Asha is at school')).toBeUndefined();
   });
 
-  it('says your own outdoor time is automatic', () => {
-    expect(parse('I walked in the park for 30 minutes')).toEqual({ kind: 'me' });
+  it('adds your own walk to your day when you say “I”, as well as anyone else’s', () => {
+    const got = parse('I walked in the park for 30 minutes');
+    expect(got).toMatchObject({ kind: 'add', person: { id: 'me' }, outing: { minutes: 30 } });
+    if (got?.kind === 'add')
+      expect(addedText(got.person, got.outing)).toMatch(/^Added to your day:/u);
   });
 
   it('says what it added, and the air there', () => {

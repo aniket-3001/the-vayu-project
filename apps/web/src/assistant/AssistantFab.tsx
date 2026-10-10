@@ -118,10 +118,7 @@ export function AssistantFab({
           addOuting(mine, newOuting(logged.outing, mine)),
         );
         reply = addedText(logged.person, logged.outing);
-      } else if (logged.kind === 'problem') reply = logged.text;
-      else
-        reply =
-          'Your own outdoor time is counted from your location, so there is nothing to add. Turn on “Work it out from where I am” in Exposure. For someone else, tell me their name.';
+      } else reply = logged.text;
       setMessages((m) => [
         ...m,
         {

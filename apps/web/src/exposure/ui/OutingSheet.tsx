@@ -117,8 +117,11 @@ export function OutingSheet({
               {person.name}
             </h2>
             <p className="muted small">
-              Where {person.name} was outside, and for how long. It counts as outside air, a little
-              less with trees around (assumed).
+              Where {person.name === 'Me' ? 'you were' : `${person.name} was`} outside, and for how
+              long. It counts as outside air, a little less with trees around (assumed).
+              {person.id === 'me'
+                ? ' In hours when your location is on, your location counts.'
+                : ''}
             </p>
           </div>
           <button type="button" className="icon-button" aria-label="Close" onClick={onClose}>

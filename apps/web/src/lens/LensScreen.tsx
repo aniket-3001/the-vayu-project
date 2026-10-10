@@ -1,4 +1,16 @@
-import { Camera, CameraOff, Compass, Eye, Navigation } from 'lucide-react';
+import {
+  Briefcase,
+  Camera,
+  CameraOff,
+  Compass,
+  Eye,
+  GraduationCap,
+  House,
+  MapPin,
+  Navigation,
+  TreePine,
+  type LucideIcon,
+} from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { levelForAqi } from '../design/levels';
@@ -20,7 +32,15 @@ import {
   visibilityKm,
   windOnScreen,
 } from './model';
-import { SampleScene } from './SampleScene';
+import { SampleScene, sceneFor, type ScenePlace } from './SampleScene';
+
+const SCENE_ICONS: Readonly<Record<ScenePlace, LucideIcon>> = {
+  home: House,
+  school: GraduationCap,
+  work: Briefcase,
+  park: TreePine,
+  street: MapPin,
+};
 import { useCamera } from './useCamera';
 import { useHeading } from './useHeading';
 
@@ -61,6 +81,7 @@ export function LensScreen(): React.JSX.Element {
     );
   }
 
+  const PlaceIcon = SCENE_ICONS[sceneFor(pin.name)];
   const level = levelForAqi(hour.aqi);
   const haze = hazeFor(hour.pm25, hour.aqi);
   const sight = visibilityKm(hour.pm25);
@@ -88,41 +109,9 @@ export function LensScreen(): React.JSX.Element {
         {camera.state === 'on' ? (
           <video ref={camera.video} className="scene" playsInline muted aria-hidden="true" />
         ) : (
-          <SampleScene night={isNight(hour)} />
+          <SampleScene night={isNight(hour)} place={sceneFor(pin.name)} />
         )}
         <HazeCanvas haze={haze} windToDeg={arrow} windKmh={hour.windKmh} />
-      </div>
-
-      <div className="lens-top">
-        <label className="lens-place">
-          <span className="sr-only">Place to look at</span>
-          <select
-            value={pin.id}
-            onChange={(event) => {
-              setPlaceId(event.target.value);
-              setStep(0);
-            }}
-          >
-            {pins.map((p) => (
-              <option key={p.id} value={p.id}>
-                {p.name}
-              </option>
-            ))}
-          </select>
-        </label>
-        <button
-          type="button"
-          className="lens-button"
-          onClick={camera.state === 'on' ? camera.stop : camera.start}
-          aria-pressed={camera.state === 'on'}
-        >
-          {camera.state === 'on' ? (
-            <CameraOff size={18} aria-hidden="true" />
-          ) : (
-            <Camera size={18} aria-hidden="true" />
-          )}
-          {camera.state === 'on' ? 'Camera off' : 'Use camera'}
-        </button>
       </div>
 
       <div className="lens-hud">
@@ -198,6 +187,39 @@ export function LensScreen(): React.JSX.Element {
             />
           </div>
         </section>
+      </div>
+
+      <div className="lens-actions">
+        <label className="lens-place">
+          <PlaceIcon size={18} strokeWidth={1.75} aria-hidden="true" />
+          <span className="sr-only">Place to look at</span>
+          <select
+            value={pin.id}
+            onChange={(event) => {
+              setPlaceId(event.target.value);
+              setStep(0);
+            }}
+          >
+            {pins.map((p) => (
+              <option key={p.id} value={p.id}>
+                {p.name}
+              </option>
+            ))}
+          </select>
+        </label>
+        <button
+          type="button"
+          className="lens-button"
+          onClick={camera.state === 'on' ? camera.stop : camera.start}
+          aria-pressed={camera.state === 'on'}
+        >
+          {camera.state === 'on' ? (
+            <CameraOff size={18} aria-hidden="true" />
+          ) : (
+            <Camera size={18} aria-hidden="true" />
+          )}
+          {camera.state === 'on' ? 'Camera off' : 'Use camera'}
+        </button>
       </div>
     </div>
   );
