@@ -101,7 +101,7 @@ export function MapView({
     });
     map.current = m;
     if (import.meta.env.DEV) Object.assign(window, { __vayuMap: m });
-    m.addControl(new NavigationControl({ showCompass: false }), 'bottom-right');
+    m.addControl(new NavigationControl({ showCompass: false }), 'top-right');
 
     const addLayers = (): void => {
       ready.current = true;

@@ -1,3 +1,4 @@
+import { Cpu, MapPin } from 'lucide-react';
 import { useSearchParams } from 'react-router-dom';
 import { DevicesPanel } from '../devices/ui/DevicesPanel';
 import { PlacesPanel } from '../places/ui/PlacesPanel';
@@ -9,8 +10,8 @@ interface Props {
 }
 
 const TABS = [
-  { id: 'places', label: 'Places' },
-  { id: 'devices', label: 'Devices' },
+  { id: 'places', label: 'Places', Icon: MapPin },
+  { id: 'devices', label: 'Devices', Icon: Cpu },
 ] as const;
 
 /** The home tab: your places and your devices. */
@@ -22,7 +23,7 @@ export function MyAirScreen({ search, locate }: Props): React.JSX.Element {
       <header className="place">
         <h1>My Air</h1>
         <div className="tabs" role="tablist" aria-label="My Air">
-          {TABS.map(({ id, label }) => (
+          {TABS.map(({ id, label, Icon }) => (
             <button
               key={id}
               type="button"
@@ -34,6 +35,7 @@ export function MyAirScreen({ search, locate }: Props): React.JSX.Element {
                 setParams(id === 'places' ? {} : { tab: id }, { replace: true });
               }}
             >
+              <Icon size={18} strokeWidth={2} aria-hidden="true" />
               {label}
             </button>
           ))}

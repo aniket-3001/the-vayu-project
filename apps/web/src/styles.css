@@ -441,20 +441,6 @@ h2 {
 .hourly tbody tr:last-child td {
   border-bottom: 0;
 }
-.hourly th[scope='row'] {
-  position: sticky;
-  left: 0;
-  z-index: 1;
-  min-width: 130px;
-  padding-left: 18px;
-  padding-right: 12px;
-  background: var(--card);
-  text-align: left;
-  font-weight: 500;
-  font-size: 13px;
-  color: var(--muted);
-  box-shadow: 8px 0 8px -8px rgb(61 74 92 / 0.12);
-}
 .hourly .day-start {
   border-left: 1px solid var(--line);
 }
@@ -845,7 +831,7 @@ h2 {
   margin-top: 4px;
   font-size: 14px;
 }
-.place-card .wx {
+.place-card .pc-sky .wx {
   color: currentColor;
 }
 .pc-aqi {
@@ -975,6 +961,10 @@ h2 {
   border-bottom: 1px solid var(--line);
 }
 .tabs button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
   min-height: 48px;
   border: 0;
   border-bottom: 3px solid transparent;
@@ -985,8 +975,11 @@ h2 {
   cursor: pointer;
 }
 .tabs button[aria-selected='true'] {
-  border-bottom-color: var(--text);
+  border-bottom-color: #3b82c4;
   color: var(--text);
+}
+.tabs button[aria-selected='true'] svg {
+  color: #3b82c4;
 }
 .panel {
   display: grid;
@@ -1399,24 +1392,36 @@ h2 {
 .wind-canvas {
   pointer-events: none;
 }
-.map-top {
+/* Everything you press on the map sits in one stack at the bottom, where a thumb reaches. */
+.map-bottom {
   position: absolute;
-  top: 12px;
   left: 12px;
   right: 12px;
+  bottom: 90px;
   z-index: 2;
+  display: grid;
+  gap: 8px;
+  max-width: 420px;
+  pointer-events: none;
+}
+.map-bottom > * {
+  pointer-events: auto;
+}
+.map-controls {
   display: flex;
   justify-content: space-between;
   gap: 8px;
-  pointer-events: none;
 }
-.map-top > * {
-  pointer-events: auto;
+.map-controls > * {
   box-shadow: 0 4px 14px -6px rgb(61 74 92 / 0.35);
   background: var(--card);
 }
-.map-top .segmented {
+.map-controls .segmented {
   border: 1px solid var(--line);
+}
+.map-controls .segmented button {
+  min-height: 44px;
+  padding: 0 20px;
 }
 .map-layers-button {
   display: inline-flex;
@@ -1431,14 +1436,9 @@ h2 {
   font-weight: 700;
   cursor: pointer;
 }
-.map-sheet {
-  position: absolute;
-  top: 66px;
-  right: 12px;
-  z-index: 3;
+\.map-sheet {
   display: grid;
   gap: 4px;
-  width: min(300px, calc(100% - 24px));
   margin: 0;
   padding: 12px 14px;
   border: 1px solid var(--line);
@@ -1464,15 +1464,9 @@ h2 {
   margin-top: 2px;
   accent-color: #3b82c4;
 }
-.map-legend {
-  position: absolute;
-  left: 12px;
-  right: 12px;
-  bottom: 96px;
-  z-index: 2;
+\.map-legend {
   display: grid;
   gap: 4px;
-  max-width: 380px;
   padding: 10px 12px;
   border: 1px solid var(--line);
   border-radius: var(--radius);
@@ -1513,9 +1507,6 @@ h2 {
 }
 .map-popup p {
   margin: 2px 0 0;
-}
-.maplibregl-ctrl-bottom-right {
-  bottom: 96px;
 }
 
 /* AR Lens */
@@ -1699,4 +1690,47 @@ h2 {
   border: 3px solid var(--text);
   border-radius: 50%;
   background: #fff;
+}
+
+/* Hourly cells: a symbol, then the figure */
+
+.stack {
+  display: inline-grid;
+  justify-items: center;
+  gap: 2px;
+  line-height: 1.15;
+}
+.stack .unit {
+  font-size: 12px;
+  color: var(--muted);
+}
+.ic-drop {
+  color: #3b82c4;
+  fill: color-mix(in srgb, #3b82c4 25%, transparent);
+}
+.ic-rain {
+  color: #3d85c6;
+}
+.hourly td {
+  padding: 12px 6px;
+}
+.hourly thead th {
+  padding-left: 6px;
+}
+
+.hourly th.sr-only {
+  min-width: 0;
+  padding: 0;
+  border: 0;
+}
+
+.pc-days li {
+  gap: 3px;
+}
+.pc-day-rain {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  font-size: 12px;
+  color: #2f5f90;
 }

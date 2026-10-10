@@ -1,4 +1,4 @@
-import { X } from 'lucide-react';
+import { Droplet, X } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import type { Pin } from '../../data/pins';
 import { levelForAqi } from '../../design/levels';
@@ -67,8 +67,13 @@ export function PlaceCard({
           <li key={day.date}>
             <span className="pc-day-name">{index === 0 ? 'Today' : weekday(day.date)}</span>
             <AqiChip aqi={day.aqi} />
+            <WeatherIcon condition={day.condition} isDay size={22} />
             <span className="tnum pc-day-temps">
               {day.hiC}° <span className="pc-lo">{day.loC}°</span>
+            </span>
+            <span className="tnum pc-day-rain">
+              <Droplet size={13} strokeWidth={2} className="ic-drop" aria-hidden="true" />
+              {day.rainChancePct}%
             </span>
           </li>
         ))}

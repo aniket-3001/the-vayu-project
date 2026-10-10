@@ -3,8 +3,8 @@ import { NavLink } from 'react-router-dom';
 
 const TABS = [
   { to: '/', label: 'My Air', Icon: Wind, end: true },
-  { to: '/map', label: 'Map', Icon: Globe, end: false },
   { to: '/exposure', label: 'Exposure', Icon: UserRound, end: false },
+  { to: '/map', label: 'Map', Icon: Globe, end: false },
   { to: '/lens', label: 'AR Lens', Icon: ScanEye, end: false },
 ] as const;
 

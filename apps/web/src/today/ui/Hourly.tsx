@@ -1,10 +1,11 @@
+import { CloudRain, Droplet } from 'lucide-react';
 import { Fragment } from 'react';
 import { isoDate, clock24, weekday, dayMonth } from '../time';
 import type { TodayData } from '../types';
 import { AqiChip } from './Chip';
 import { WeatherIcon, WindArrow } from './icons';
 
-/** The next 48 hours as a table that scrolls sideways, with the row names pinned on the left. */
+/** The next 48 hours as a table that scrolls sideways, with a symbol for each row instead of a label. The row names are still there for screen readers. */
 export function Hourly({ data }: { readonly data: TodayData }): React.JSX.Element {
   const points = data.hourly;
   const startsDay = (index: number): boolean => {
@@ -29,7 +30,9 @@ export function Hourly({ data }: { readonly data: TodayData }): React.JSX.Elemen
         <table className="hourly">
           <thead>
             <tr>
-              <th scope="row">Time</th>
+              <th scope="row" className="sr-only">
+                Time
+              </th>
               {points.map((point, index) => (
                 <th
                   scope="col"
@@ -62,23 +65,30 @@ export function Hourly({ data }: { readonly data: TodayData }): React.JSX.Elemen
               label="Wind, km/h"
               points={points}
               cell={(p) => (
-                <span className="wind-cell">
-                  <WindArrow fromDeg={p.weather.windFromDeg} />
+                <span className="stack">
+                  <WindArrow fromDeg={p.weather.windFromDeg} size={18} />
                   <span className="tnum">{p.weather.windKmh}</span>
+                  <span className="unit">km/h</span>
                 </span>
               )}
             />
             <Row
               label="Humidity, %"
               points={points}
-              cell={(p) => <span className="tnum">{p.weather.humidityPct}</span>}
+              cell={(p) => (
+                <span className="stack">
+                  <Droplet size={18} strokeWidth={1.75} className="ic-drop" aria-hidden="true" />
+                  <span className="tnum">{p.weather.humidityPct}%</span>
+                </span>
+              )}
             />
             <Row
               label="Rain chance, %"
               points={points}
               cell={(p) => (
-                <span className={`tnum${p.weather.rainChancePct < 20 ? ' faint' : ''}`}>
-                  {p.weather.rainChancePct}
+                <span className={`stack${p.weather.rainChancePct < 20 ? ' faint' : ''}`}>
+                  <CloudRain size={18} strokeWidth={1.75} className="ic-rain" aria-hidden="true" />
+                  <span className="tnum">{p.weather.rainChancePct}%</span>
                 </span>
               )}
             />
@@ -100,7 +110,9 @@ function Row({
 }): React.JSX.Element {
   return (
     <tr>
-      <th scope="row">{label}</th>
+      <th scope="row" className="sr-only">
+        {label}
+      </th>
       {points.map((point, index) => (
         <Fragment key={point.at}>
           <td
