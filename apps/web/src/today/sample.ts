@@ -10,8 +10,9 @@ import type {
   Weather,
 } from './types';
 
-/** The moment every sample day describes: 08:30 on a Saturday morning in Delhi. */
-const AS_OF = '2026-10-10T03:00:00.000Z';
+/** The moment every sample day describes: 17:30 on a Saturday evening in Delhi, so most of today has happened. */
+export const SAMPLE_AS_OF = '2026-10-10T12:00:00.000Z';
+const AS_OF = SAMPLE_AS_OF;
 const HOUR_MS = 3_600_000;
 const SUNRISE = '2026-10-10T00:49:00.000Z'; // 06:19 India time
 const SUNSET = '2026-10-10T12:29:00.000Z'; // 17:59 India time
@@ -117,7 +118,7 @@ const SPECS: Readonly<Record<SampleId, Spec>> = {
     station: 'Sample monitor, east Delhi',
   },
   unhealthy: {
-    pm: (_i, h) => 66 + 12 * wave(h, 4),
+    pm: (_i, h) => 74 + 10 * wave(h, 4),
     temp: { mean: 31, amp: 6 },
     humidity: (t) => 54 - 3.2 * (t - 28),
     wind: (_i, h) => ({ kmh: 12 - 5 * wave(h, 15), from: 320 }),
@@ -144,7 +145,7 @@ const SPECS: Readonly<Record<SampleId, Spec>> = {
   },
   hazardous: {
     pm: (_i, h) => 285 + 40 * wave(h, 3),
-    temp: { mean: 11, amp: 3 },
+    temp: { mean: 9, amp: 3 },
     humidity: (t) => 88 - 1.5 * (t - 11),
     wind: (_i, h) => ({ kmh: 3 + 1.5 * wave(h, 14), from: 45 }),
     rain: () => ({ chance: 5, mm: 0 }),

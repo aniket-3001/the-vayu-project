@@ -24,7 +24,7 @@ const browserLocate: Locate = (onFound, onFail) => {
 };
 
 /** Your places, each a card in the colour of its air. Tap one for its day. */
-export function PlacesScreen({
+export function PlacesPanel({
   search,
   locate = browserLocate,
 }: {
@@ -52,48 +52,40 @@ export function PlacesScreen({
   };
 
   return (
-    <div className="page places">
-      <header className="place">
-        <h1>Places</h1>
-        <p className="muted">Tap a place for its day.</p>
-      </header>
-      <main className="places-main">
-        <PlaceSearch
-          {...(search !== undefined ? { search } : {})}
-          onPick={(match) => {
-            add(match);
-          }}
-        />
-        <button type="button" className="locate" onClick={useMyLocation}>
-          <LocateFixed size={20} strokeWidth={1.75} aria-hidden="true" />
-          Use my location
-        </button>
-        <p className="muted small" role="status">
-          {note}
-        </p>
-        {pins.length === 0 ? (
-          <p className="empty">
-            Nothing pinned yet. Search for a place above, or use your location.
-          </p>
-        ) : (
-          <ul className="place-grid" aria-label="Your places">
-            {pins.map((pin) => (
-              <PlaceCard
-                key={pin.id}
-                pin={pin}
-                onRemove={(p) => {
-                  remove(p.id);
-                }}
-              />
-            ))}
-          </ul>
-        )}
-        <p className="muted small places-note">
-          <Pill>Sample data</Pill> The readings here are made up, shaped like Delhi&rsquo;s seasons.
-          Pinned places are saved on this device only. Up to {MAX_PINS}. Search sends just the name
-          you type to Open-Meteo.
-        </p>
-      </main>
+    <div className="panel">
+      <PlaceSearch
+        {...(search !== undefined ? { search } : {})}
+        onPick={(match) => {
+          add(match);
+        }}
+      />
+      <button type="button" className="locate" onClick={useMyLocation}>
+        <LocateFixed size={20} strokeWidth={1.75} aria-hidden="true" />
+        Use my location
+      </button>
+      <p className="muted small" role="status">
+        {note}
+      </p>
+      {pins.length === 0 ? (
+        <p className="empty">Nothing pinned yet. Search for a place above, or use your location.</p>
+      ) : (
+        <ul className="place-grid" aria-label="Your places">
+          {pins.map((pin) => (
+            <PlaceCard
+              key={pin.id}
+              pin={pin}
+              onRemove={(p) => {
+                remove(p.id);
+              }}
+            />
+          ))}
+        </ul>
+      )}
+      <p className="muted small places-note">
+        <Pill>Sample data</Pill> The readings here are made up, shaped like Delhi&rsquo;s seasons.
+        Pinned places are saved on this device only. Up to {MAX_PINS}. Search sends just the name
+        you type to Open-Meteo.
+      </p>
     </div>
   );
 }

@@ -11,15 +11,22 @@ import {
 } from 'lucide-react';
 import { useRef, useState } from 'react';
 import { PINS_STORAGE_KEY } from '../data/pins';
+import { DEVICES_STORAGE_KEY } from '../devices/devices';
+import { SPOTS_STORAGE_KEY } from '../exposure/spots';
+import { SAMPLE_AS_OF } from '../today/sample';
+import { clock24 } from '../today/time';
 import { DEVICES, deviceById, fitScale, geometry, type DeviceId } from './devices';
 import { useSize } from './useSize';
 import './demo.css';
+
+/** Everything the app saves on the device, so "Start over" really starts over. */
+const RESETTABLE = [PINS_STORAGE_KEY, SPOTS_STORAGE_KEY, DEVICES_STORAGE_KEY];
 
 const fromUrl = (): DeviceId =>
   deviceById(new URLSearchParams(window.location.search).get('device')).id;
 
 /** The time on the frame's status bar: the moment the sample data describes, so the two agree. */
-const SAMPLE_CLOCK = '8:30';
+const SAMPLE_CLOCK = clock24(SAMPLE_AS_OF);
 
 function StatusBar({ kind }: { readonly kind: DeviceId }): React.JSX.Element | null {
   if (kind === 'laptop') return null;
@@ -106,7 +113,7 @@ export function DeviceShell(): React.JSX.Element {
   };
   const startOver = (): void => {
     try {
-      window.localStorage.removeItem(PINS_STORAGE_KEY);
+      for (const key of RESETTABLE) window.localStorage.removeItem(key);
     } catch {
       // Storage may be blocked; the reload below still returns the app to its first screen.
     }

@@ -885,6 +885,34 @@ h2 {
   }
 }
 
+/* Three-day mini forecast on a place card */
+
+.pc-days {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+.pc-days li {
+  display: grid;
+  justify-items: center;
+  gap: 4px;
+  padding: 8px 4px;
+  border-radius: 12px;
+  background: rgb(255 255 255 / 0.5);
+  font-size: 13px;
+}
+.pc-day-name {
+  font-weight: 700;
+}
+.pc-lo {
+  opacity: 0.7;
+}
+.pc-days .chip {
+  height: 24px;
+  min-width: 40px;
+  font-size: 14px;
+}
+
 /* The Places page has no air colour of its own, so its wash is a quiet blue-grey. */
 .page.places {
   --level: #a9bdd6;
@@ -898,4 +926,248 @@ h2 {
   .embedded::-webkit-scrollbar {
     display: none;
   }
+}
+
+/* Bottom tab bar: a floating pill, as in IQAir */
+
+.page {
+  padding-bottom: 112px;
+}
+.tabbar {
+  position: fixed;
+  left: 50%;
+  bottom: 14px;
+  z-index: 10;
+  display: flex;
+  gap: 4px;
+  width: min(calc(100% - 24px), 440px);
+  padding: 6px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--card);
+  box-shadow: 0 8px 24px -8px rgb(61 74 92 / 0.3);
+  transform: translateX(-50%);
+}
+.tab-link {
+  flex: 1;
+  display: grid;
+  justify-items: center;
+  gap: 2px;
+  min-height: 52px;
+  padding: 6px 2px;
+  border-radius: 999px;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 600;
+  text-decoration: none;
+}
+.tab-link[aria-current='page'] {
+  background: color-mix(in srgb, var(--text) 9%, var(--card));
+  color: var(--text);
+}
+
+/* My Air tabs */
+
+.tabs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  margin-top: 12px;
+  border-bottom: 1px solid var(--line);
+}
+.tabs button {
+  min-height: 48px;
+  border: 0;
+  border-bottom: 3px solid transparent;
+  background: transparent;
+  color: var(--muted);
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+.tabs button[aria-selected='true'] {
+  border-bottom-color: var(--text);
+  color: var(--text);
+}
+.panel {
+  display: grid;
+  gap: 12px;
+}
+
+/* Devices */
+
+.promo {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 18px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--card);
+}
+.promo h2 {
+  margin-bottom: 4px;
+}
+.promo-art {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 88px;
+  height: 88px;
+  border-radius: 20px;
+  background: color-mix(in srgb, var(--text) 7%, var(--card));
+  color: var(--muted);
+}
+.device-list {
+  display: grid;
+  gap: 12px;
+}
+.device-card {
+  display: grid;
+  gap: 12px;
+  padding: 16px;
+  border-radius: var(--radius);
+  background: color-mix(in srgb, var(--level) 38%, var(--card));
+}
+.dc-top {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 12px;
+}
+.dc-icon {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background: rgb(255 255 255 / 0.6);
+}
+.icon-button {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--text);
+  cursor: pointer;
+}
+.icon-button:hover {
+  background: rgb(255 255 255 / 0.6);
+}
+.dc-readings {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+.dc-readings dt {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--muted);
+}
+.dc-readings strong {
+  font-size: 26px;
+}
+.dc-level {
+  font-weight: 700;
+}
+.dc-note {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+.dashed {
+  display: grid;
+  justify-items: center;
+  gap: 10px;
+  min-height: 150px;
+  align-content: center;
+  border: 1.5px dashed #b7c9e2;
+  border-radius: var(--radius);
+  background: color-mix(in srgb, #5b8def 6%, var(--card));
+  color: #2f5fb3;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+.dashed-icon {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: color-mix(in srgb, #5b8def 14%, var(--card));
+}
+.add-device {
+  display: grid;
+  gap: 14px;
+  padding: 18px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--card);
+}
+.field {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  font-weight: 600;
+}
+.field input,
+.field select {
+  min-height: 44px;
+  padding: 0 14px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--card);
+  color: var(--text);
+  font: inherit;
+  font-weight: 400;
+}
+.choice-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.choice {
+  min-height: 44px;
+  padding: 0 18px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--card);
+  color: var(--text);
+  font: inherit;
+  cursor: pointer;
+}
+.choice[aria-pressed='true'] {
+  border-color: var(--text);
+  box-shadow: inset 0 0 0 1px var(--text);
+  font-weight: 700;
+}
+.form-actions {
+  display: flex;
+  gap: 8px;
+}
+.primary,
+.plain {
+  min-height: 44px;
+  padding: 0 20px;
+  border-radius: 999px;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+.primary {
+  border: 0;
+  background: var(--text);
+  color: #fff;
+}
+.plain {
+  border: 1px solid var(--line);
+  background: var(--card);
+  color: var(--text);
 }

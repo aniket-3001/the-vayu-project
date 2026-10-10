@@ -5,7 +5,7 @@ import { MemoryRouter } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { App } from '../../App';
 import type { PlaceMatch } from '../../data/geocode';
-import { PlacesScreen } from './PlacesScreen';
+import { MyAirScreen } from '../../myair/MyAirScreen';
 
 beforeEach(() => {
   window.localStorage.clear();
@@ -20,10 +20,10 @@ const lucknow: PlaceMatch = {
   lng: 80.95,
 };
 
-const screenWith = (props: React.ComponentProps<typeof PlacesScreen> = {}): void => {
+const screenWith = (props: React.ComponentProps<typeof MyAirScreen> = {}): void => {
   render(
     <MemoryRouter>
-      <PlacesScreen {...props} />
+      <MyAirScreen {...props} />
     </MemoryRouter>,
   );
 };
@@ -32,7 +32,7 @@ describe('the Places screen', () => {
   it('starts with four places, each a card with a level, a number and the word Sample data', () => {
     screenWith();
     const list = screen.getByRole('list', { name: 'Your places' });
-    const cards = within(list).getAllByRole('listitem');
+    const cards = Array.from(list.children) as HTMLElement[];
     expect(cards).toHaveLength(4);
     const names = cards.map((card) => within(card).getByRole('heading').textContent);
     expect(names).toEqual(['Home', 'School', 'Office', 'Park']);
@@ -42,6 +42,17 @@ describe('the Places screen', () => {
     );
     expect(new Set(levels).size).toBe(4);
     for (const card of cards) expect(card).toHaveTextContent('Sample data');
+  });
+
+  it('shows the next three days on each card', () => {
+    screenWith();
+    const home = screen.getByRole('link', { name: 'Home' }).closest('li');
+    if (home === null) throw new Error('no card');
+    const days = within(within(home).getByRole('list', { name: 'Next three days' })).getAllByRole(
+      'listitem',
+    );
+    expect(days).toHaveLength(3);
+    expect(days[0]).toHaveTextContent('Today');
   });
 
   it('links each card to its place page', () => {
@@ -75,9 +86,9 @@ describe('the Places screen', () => {
     await userEvent.type(screen.getByRole('searchbox'), 'Lucknow');
     await userEvent.click(screen.getByRole('button', { name: 'Search' }));
     await userEvent.click(await screen.findByRole('button', { name: 'Add Lucknow' }));
-    const cards = within(screen.getByRole('list', { name: 'Your places' })).getAllByRole(
-      'listitem',
-    );
+    const cards = Array.from(
+      screen.getByRole('list', { name: 'Your places' }).children,
+    ) as HTMLElement[];
     expect(cards).toHaveLength(5);
     const first = cards[0];
     if (first === undefined) throw new Error('no cards');
@@ -133,8 +144,10 @@ describe('moving between Places and a place', () => {
       expect(screen.getByRole('heading', { level: 1, name: 'Park' })).toBeInTheDocument();
     });
     expect(screen.getByRole('region', { name: 'Good' })).toBeInTheDocument();
-    await userEvent.click(screen.getByRole('link', { name: /Places/u }));
-    expect(screen.getByRole('heading', { level: 1, name: 'Places' })).toBeInTheDocument();
+    await userEvent.click(
+      within(screen.getByRole('banner')).getByRole('link', { name: /My Air/u }),
+    );
+    expect(screen.getByRole('heading', { level: 1, name: 'My Air' })).toBeInTheDocument();
   });
 
   it('says so when a place is not pinned, with a way back', () => {

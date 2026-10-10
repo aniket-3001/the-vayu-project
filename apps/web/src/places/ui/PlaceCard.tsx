@@ -4,6 +4,8 @@ import type { Pin } from '../../data/pins';
 import { levelForAqi } from '../../design/levels';
 import { levelVars } from '../../today/ui/format';
 import { CONDITION_LABELS, FaceIcon, WeatherIcon } from '../../today/ui/icons';
+import { AqiChip } from '../../today/ui/Chip';
+import { weekday } from '../../today/time';
 import { readingForPin } from '../placeSample';
 
 const age = (minutes: number): string =>
@@ -60,6 +62,17 @@ export function PlaceCard({
           <span>AQI</span>
         </p>
       </div>
+      <ul className="pc-days" aria-label="Next three days">
+        {reading.daily.slice(0, 3).map((day, index) => (
+          <li key={day.date}>
+            <span className="pc-day-name">{index === 0 ? 'Today' : weekday(day.date)}</span>
+            <AqiChip aqi={day.aqi} />
+            <span className="tnum pc-day-temps">
+              {day.hiC}° <span className="pc-lo">{day.loC}°</span>
+            </span>
+          </li>
+        ))}
+      </ul>
       <p className="pc-source">
         Sample data · {p.stationName}, {p.distanceKm} km · {age(p.ageMinutes)}
       </p>

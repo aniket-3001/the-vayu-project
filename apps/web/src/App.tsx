@@ -1,7 +1,11 @@
 import { ChevronLeft } from 'lucide-react';
 import { useMemo } from 'react';
 import { HashRouter, Link, Route, Routes, useParams, useSearchParams } from 'react-router-dom';
-import { PlacesScreen } from './places/ui/PlacesScreen';
+import { ExposureScreen } from './exposure/ExposureScreen';
+import { LensScreen } from './lens/LensScreen';
+import { MapScreen } from './map/MapScreen';
+import { MyAirScreen } from './myair/MyAirScreen';
+import { TabBar } from './nav/TabBar';
 import { readingForPin, sampleIdForPin } from './places/placeSample';
 import { usePins } from './places/usePins';
 import { SAMPLE_IDS } from './today/sample';
@@ -42,7 +46,7 @@ function PlaceRoute(): React.JSX.Element {
         data={data}
         back={
           <Link to="/" className="back">
-            <ChevronLeft size={18} strokeWidth={2} aria-hidden="true" /> Places
+            <ChevronLeft size={18} strokeWidth={2} aria-hidden="true" /> My Air
           </Link>
         }
       />
@@ -59,10 +63,14 @@ export function App(): React.JSX.Element {
         </Link>
       </div>
       <Routes>
-        <Route path="/" element={<PlacesScreen />} />
+        <Route path="/" element={<MyAirScreen />} />
         <Route path="/place/:id" element={<PlaceRoute />} />
-        <Route path="*" element={<PlacesScreen />} />
+        <Route path="/map" element={<MapScreen />} />
+        <Route path="/exposure" element={<ExposureScreen />} />
+        <Route path="/lens" element={<LensScreen />} />
+        <Route path="*" element={<MyAirScreen />} />
       </Routes>
+      <TabBar />
     </HashRouter>
   );
 }

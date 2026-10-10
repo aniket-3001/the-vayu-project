@@ -3,6 +3,8 @@ import { cleanup, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { PINS_STORAGE_KEY } from '../data/pins';
+import { DEVICES_STORAGE_KEY } from '../devices/devices';
+import { SPOTS_STORAGE_KEY } from '../exposure/spots';
 import { DeviceShell } from './DeviceShell';
 
 beforeEach(() => {
@@ -56,19 +58,21 @@ describe('the prototype shell', () => {
 
   it('shows the sample clock on a phone and a browser bar on a laptop', async () => {
     render(<DeviceShell />);
-    expect(screen.getByText('8:30')).toBeInTheDocument();
+    expect(screen.getByText('17:30')).toBeInTheDocument();
     await userEvent.click(screen.getByRole('button', { name: 'Laptop' }));
-    expect(screen.queryByText('8:30')).not.toBeInTheDocument();
+    expect(screen.queryByText('17:30')).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Reload the app' })).toBeInTheDocument();
     expect(screen.getByText(/vayuair\.in/u)).toBeInTheDocument();
   });
 
   it('starts over: forgets saved places and reloads the app', async () => {
-    window.localStorage.setItem(PINS_STORAGE_KEY, '[]');
+    for (const key of [PINS_STORAGE_KEY, SPOTS_STORAGE_KEY, DEVICES_STORAGE_KEY])
+      window.localStorage.setItem(key, '[]');
     render(<DeviceShell />);
     const before = appFrame();
     await userEvent.click(screen.getByRole('button', { name: /Start over/u }));
-    expect(window.localStorage.getItem(PINS_STORAGE_KEY)).toBeNull();
+    for (const key of [PINS_STORAGE_KEY, SPOTS_STORAGE_KEY, DEVICES_STORAGE_KEY])
+      expect(window.localStorage.getItem(key)).toBeNull();
     expect(appFrame()).not.toBe(before);
   });
 
