@@ -80,4 +80,27 @@ describe('the prototype shell', () => {
     render(<DeviceShell />);
     expect(screen.getByRole('link', { name: 'Open on its own' })).toHaveAttribute('href', '?embed');
   });
+
+  it('stages a scenario from its button: the app reopens where the scenario starts', async () => {
+    render(<DeviceShell />);
+    await userEvent.click(screen.getByRole('button', { name: 'Map and wind' }));
+    expect(appFrame().getAttribute('src')).toContain('#/map');
+    expect(window.localStorage.getItem('vayu.demo.v1')).toContain('"id":"map"');
+    expect(screen.getByRole('button', { name: 'Map and wind' })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    );
+    await userEvent.click(screen.getByRole('button', { name: /Start over/u }));
+    expect(window.localStorage.getItem('vayu.demo.v1')).toBeNull();
+    expect(appFrame().getAttribute('src')).toContain('#/');
+  });
+
+  it('plays the tour: the first scenario at once, with a caption, and stops when asked', async () => {
+    render(<DeviceShell />);
+    await userEvent.click(screen.getByRole('button', { name: /Play the \d+-second tour/u }));
+    expect(screen.getByRole('status')).toHaveTextContent(/1 of 11/u);
+    expect(window.localStorage.getItem('vayu.demo.v1')).toContain('"id":"good"');
+    await userEvent.click(screen.getByRole('button', { name: 'Stop the tour' }));
+    expect(screen.queryByText(/1 of 11/u)).not.toBeInTheDocument();
+  });
 });
