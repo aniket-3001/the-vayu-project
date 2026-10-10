@@ -305,6 +305,18 @@ describe('the public site', () => {
     });
   });
 
+  it('sends the API only the viewer address, never the viewer Host header, which API Gateway refuses', () => {
+    template.hasResourceProperties('AWS::CloudFront::OriginRequestPolicy', {
+      OriginRequestPolicyConfig: Match.objectLike({
+        HeadersConfig: {
+          HeaderBehavior: 'whitelist',
+          Headers: ['CloudFront-Viewer-Address'],
+        },
+        CookiesConfig: { CookieBehavior: 'none' },
+      }),
+    });
+  });
+
   it('sends the security headers: HSTS, no sniffing, no framing, a strict referrer, and a content policy that names every outside host', () => {
     template.hasResourceProperties('AWS::CloudFront::ResponseHeadersPolicy', {
       ResponseHeadersPolicyConfig: Match.objectLike({

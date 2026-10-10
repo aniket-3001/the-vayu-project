@@ -203,15 +203,18 @@ export class VayuStack extends Stack {
       },
     });
     // The two routes that cost something or take a person's words get their own, tighter, throttle below.
+    const limitedRoutes = [];
     for (const path of ['/v1/assistant', '/v1/requests']) {
-      api.addRoutes({
-        path,
-        methods: [HttpMethod.POST],
-        integration: new HttpLambdaIntegration(
-          `Integration${path.replace(/\W/gu, '')}`,
-          apiFunction,
-        ),
-      });
+      limitedRoutes.push(
+        ...api.addRoutes({
+          path,
+          methods: [HttpMethod.POST],
+          integration: new HttpLambdaIntegration(
+            `Integration${path.replace(/\W/gu, '')}`,
+            apiFunction,
+          ),
+        }),
+      );
     }
     api.addRoutes({
       path: '/v1/{proxy+}',
@@ -226,6 +229,8 @@ export class VayuStack extends Stack {
     });
     // Per route (rule I15): the assistant calls a model and the request form takes personal details, so they
     // are held far below the rest. The daily limits in the code count on top of this.
+    // The stage's settings name those routes, so they must exist before the stage is updated.
+    for (const route of limitedRoutes) apiStage.node.addDependency(route);
     (apiStage.node.defaultChild as CfnStage).routeSettings = {
       // Written as CloudFormation spells them: this property is an untyped map, so nothing converts the case.
       'POST /v1/assistant': { ThrottlingRateLimit: 3, ThrottlingBurstLimit: 6 },

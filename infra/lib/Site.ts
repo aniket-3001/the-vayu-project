@@ -13,7 +13,10 @@ import {
   FunctionRuntime,
   HeadersFrameOption,
   HeadersReferrerPolicy,
+  OriginRequestHeaderBehavior,
   OriginRequestPolicy,
+  OriginRequestQueryStringBehavior,
+  OriginRequestCookieBehavior,
   PriceClass,
   ResponseHeadersPolicy,
   ViewerProtocolPolicy,
@@ -126,6 +129,14 @@ export class Site extends Construct {
       enableAcceptEncodingBrotli: true,
     });
 
+    // What the API is sent besides the address: the viewer's address (for the daily limits, which hash it) and
+    // nothing else. The viewer's own Host header must not be forwarded: API Gateway answers it with a 403.
+    const apiOrigin = new OriginRequestPolicy(this, 'ApiOrigin', {
+      headerBehavior: OriginRequestHeaderBehavior.allowList('CloudFront-Viewer-Address'),
+      queryStringBehavior: OriginRequestQueryStringBehavior.all(),
+      cookieBehavior: OriginRequestCookieBehavior.none(),
+    });
+
     this.distribution = new Distribution(this, 'Distribution', {
       defaultRootObject: 'index.html',
       priceClass: PriceClass.PRICE_CLASS_200,
@@ -142,8 +153,7 @@ export class Site extends Construct {
           viewerProtocolPolicy: ViewerProtocolPolicy.HTTPS_ONLY,
           allowedMethods: AllowedMethods.ALLOW_ALL,
           cachePolicy: apiCache,
-          // The viewer's headers and CloudFront's own (including the viewer's address, for the daily limits).
-          originRequestPolicy: OriginRequestPolicy.ALL_VIEWER_AND_CLOUDFRONT_2022,
+          originRequestPolicy: apiOrigin,
           responseHeadersPolicy: securityHeaders,
           compress: true,
         },
