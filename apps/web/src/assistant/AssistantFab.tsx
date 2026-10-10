@@ -200,7 +200,7 @@ export function AssistantFab({
       <button
         type="button"
         className="assistant-fab"
-        aria-label="Ask Vayu"
+        aria-label="Vayu assistant"
         aria-haspopup="dialog"
         onClick={() => {
           setView('chat');
@@ -208,7 +208,7 @@ export function AssistantFab({
         }}
       >
         <Sparkles size={22} strokeWidth={1.75} aria-hidden="true" />
-        <span>Ask</span>
+        <span>Assistant</span>
       </button>
       {open && (
         <div
@@ -229,7 +229,7 @@ export function AssistantFab({
           >
             <div className="sheet-head">
               <div>
-                <h2 id="assistant-title">Ask Vayu</h2>
+                <h2 id="assistant-title">Vayu assistant</h2>
                 <p className="muted small">
                   <Pill>Sample data</Pill> Answers use today’s sample air. Bedrock and Polly plug in
                   here.
@@ -321,13 +321,13 @@ export function AssistantFab({
                   }}
                 >
                   <label className="sr-only" htmlFor="ask-input">
-                    Your question
+                    Your message
                   </label>
                   <input
                     id="ask-input"
                     ref={input}
                     value={draft}
-                    placeholder="Ask a question"
+                    placeholder="Ask, or tell me something"
                     autoComplete="off"
                     onChange={(event) => {
                       setDraft(event.target.value);
@@ -337,7 +337,7 @@ export function AssistantFab({
                     <button
                       type="button"
                       className="icon-button"
-                      aria-label={listening ? 'Listening…' : 'Ask by voice'}
+                      aria-label={listening ? 'Listening…' : 'Speak to the assistant'}
                       aria-pressed={listening}
                       onClick={byVoice}
                     >

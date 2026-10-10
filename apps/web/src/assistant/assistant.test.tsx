@@ -171,17 +171,17 @@ describe('the assistant button', () => {
 
   it('is always there, and opens a chat with suggested questions', async () => {
     open();
-    await userEvent.click(screen.getByRole('button', { name: 'Ask Vayu' }));
-    const chat = screen.getByRole('dialog', { name: 'Ask Vayu' });
+    await userEvent.click(screen.getByRole('button', { name: 'Vayu assistant' }));
+    const chat = screen.getByRole('dialog', { name: 'Vayu assistant' });
     expect(within(chat).getByRole('group', { name: 'Suggested questions' })).toBeInTheDocument();
     expect(chat).toHaveTextContent('Bedrock and Polly plug in here');
   });
 
   it('answers a question typed in, and one tapped from the suggestions', async () => {
     open();
-    await userEvent.click(screen.getByRole('button', { name: 'Ask Vayu' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Vayu assistant' }));
     await userEvent.type(
-      screen.getByRole('textbox', { name: 'Your question' }),
+      screen.getByRole('textbox', { name: 'Your message' }),
       'Do I need a mask?{Enter}',
     );
     expect(await screen.findByText(/well-fitted N95 or FFP2/u)).toBeInTheDocument();
@@ -198,8 +198,8 @@ describe('the assistant button', () => {
         Promise.resolve({ text: 'From Bedrock.', basis: 'Amazon Bedrock, from live data' }),
     };
     open(source);
-    await userEvent.click(screen.getByRole('button', { name: 'Ask Vayu' }));
-    await userEvent.type(screen.getByRole('textbox', { name: 'Your question' }), 'hello{Enter}');
+    await userEvent.click(screen.getByRole('button', { name: 'Vayu assistant' }));
+    await userEvent.type(screen.getByRole('textbox', { name: 'Your message' }), 'hello{Enter}');
     expect(await screen.findByText('From Bedrock.')).toBeInTheDocument();
     expect(
       screen.getByText('Amazon Bedrock, from live data', { exact: false }),
@@ -219,7 +219,7 @@ describe('the assistant button', () => {
       },
     );
     open();
-    await userEvent.click(screen.getByRole('button', { name: 'Ask Vayu' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Vayu assistant' }));
     await userEvent.click(screen.getByRole('button', { name: 'Do I need a mask?' }));
     await userEvent.click(await screen.findByRole('button', { name: 'Listen to this answer' }));
     expect(speak).toHaveBeenCalledTimes(1);
@@ -229,8 +229,8 @@ describe('the assistant button', () => {
   it('says what to do when nothing is pinned, and closes with Escape', async () => {
     window.localStorage.setItem('vayu.pins.v1', '[]');
     open();
-    await userEvent.click(screen.getByRole('button', { name: 'Ask Vayu' }));
-    await userEvent.type(screen.getByRole('textbox', { name: 'Your question' }), 'walk?{Enter}');
+    await userEvent.click(screen.getByRole('button', { name: 'Vayu assistant' }));
+    await userEvent.type(screen.getByRole('textbox', { name: 'Your message' }), 'walk?{Enter}');
     expect(await screen.findByText(/Pin a place on My Air first/u)).toBeInTheDocument();
     await userEvent.keyboard('{Escape}');
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
@@ -259,8 +259,8 @@ describe('the best hour in the context', () => {
         <AssistantFab source={localAssistant} />
       </MemoryRouter>,
     );
-    await userEvent.click(screen.getByRole('button', { name: 'Ask Vayu' }));
-    const box = screen.getByRole('textbox', { name: 'Your question' });
+    await userEvent.click(screen.getByRole('button', { name: 'Vayu assistant' }));
+    const box = screen.getByRole('textbox', { name: 'Your message' });
     await userEvent.type(box, 'Asha took a walk in the park for 40 minutes{enter}');
     const reply = await screen.findByText(/^Added to Asha’s day/u);
     expect(reply).toHaveTextContent('40 minutes');

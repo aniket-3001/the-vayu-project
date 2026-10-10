@@ -302,6 +302,31 @@ export function ExposureScreen({
               ))}
             </div>
             <div className="dial-wrap">
+              <Dial
+                cells={shown}
+                rings={rings}
+                show={shownTab}
+                nowHour={isToday ? hoursSoFar(TODAY) + 0.5 : undefined}
+                picked={picked}
+                onPick={setPicked}
+                set={setKinds}
+              />
+            </div>
+            <div className="hour-row">
+              <div className="hour-picker">
+                <label htmlFor="hour">Hour</label>
+                <input
+                  id="hour"
+                  type="range"
+                  min={0}
+                  max={23}
+                  value={picked}
+                  onChange={(event) => {
+                    setPicked(Number(event.target.value));
+                  }}
+                />
+                <output htmlFor="hour">{hourSpan(picked)}</output>
+              </div>
               <button
                 type="button"
                 className="dial-log"
@@ -317,29 +342,6 @@ export function ExposureScreen({
                   time
                 </span>
               </button>
-              <Dial
-                cells={shown}
-                rings={rings}
-                show={shownTab}
-                nowHour={isToday ? hoursSoFar(TODAY) + 0.5 : undefined}
-                picked={picked}
-                onPick={setPicked}
-                set={setKinds}
-              />
-            </div>
-            <div className="hour-picker">
-              <label htmlFor="hour">Hour</label>
-              <input
-                id="hour"
-                type="range"
-                min={0}
-                max={23}
-                value={picked}
-                onChange={(event) => {
-                  setPicked(Number(event.target.value));
-                }}
-              />
-              <output htmlFor="hour">{hourSpan(picked)}</output>
             </div>
             <div className="readout" aria-live="polite">
               {atPicked.length === 0 ? (

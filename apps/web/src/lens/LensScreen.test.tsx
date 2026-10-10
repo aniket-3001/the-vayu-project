@@ -72,17 +72,19 @@ describe('the AR Lens', () => {
     expect(sceneFor('My flat')).toBe('home');
   });
 
-  it('puts the place and camera buttons in the bottom right, after the card, not along the top', () => {
+  it('puts two round buttons above the air card: the camera on top, the place below it, then the card and the slider', () => {
     open();
-    const actions = document.querySelector('.lens-actions');
-    expect(actions).toBeInTheDocument();
     expect(document.querySelector('.lens-top')).not.toBeInTheDocument();
-    expect(actions?.querySelector('select')).toBeInTheDocument();
-    expect(actions?.querySelector('button')).toHaveTextContent('Use camera');
     const hud = document.querySelector('.lens-hud');
-    expect(hud?.compareDocumentPosition(actions as Node) ?? 0).toBe(
-      Node.DOCUMENT_POSITION_FOLLOWING,
-    );
+    const kids = Array.from(hud?.children ?? []).map((el) => el.className);
+    expect(kids[0]).toBe('lens-actions');
+    expect(kids.slice(1)).toEqual(['lens-card', 'lens-dial']);
+    const round = Array.from(hud?.querySelectorAll('.lens-round') ?? []);
+    expect(round).toHaveLength(2);
+    expect(round[0]).toHaveAccessibleName('Use camera');
+    expect(round[0]?.textContent).toBe('');
+    expect(round[1]?.querySelector('select')).toBeInTheDocument();
+    expect(round[1]).toHaveAccessibleName(/Place to look at/u);
   });
 
   it('changes place, and the air with it', () => {
@@ -114,7 +116,7 @@ describe('the AR Lens', () => {
       value: { getUserMedia: vi.fn().mockResolvedValue(stream) },
     });
     open();
-    await userEvent.click(screen.getByRole('button', { name: /Use camera/u }));
+    await userEvent.click(screen.getByRole('button', { name: 'Use camera' }));
     expect(await screen.findByText('Camera on; nothing leaves this phone.')).toBeInTheDocument();
     expect(screen.queryByRole('img', { name: /sample home scene/u })).not.toBeInTheDocument();
     await userEvent.click(screen.getByRole('button', { name: /Camera off/u }));
@@ -128,12 +130,12 @@ describe('the AR Lens', () => {
       value: { getUserMedia: vi.fn().mockRejectedValue(new Error('no')) },
     });
     open();
-    await userEvent.click(screen.getByRole('button', { name: /Use camera/u }));
+    await userEvent.click(screen.getByRole('button', { name: 'Use camera' }));
     expect(await screen.findByText('Camera not allowed, so a sample street.')).toBeInTheDocument();
     cleanup();
     Reflect.deleteProperty(navigator, 'mediaDevices');
     open();
-    await userEvent.click(screen.getByRole('button', { name: /Use camera/u }));
+    await userEvent.click(screen.getByRole('button', { name: 'Use camera' }));
     expect(screen.getByText('No camera here, so a sample street.')).toBeInTheDocument();
   });
 

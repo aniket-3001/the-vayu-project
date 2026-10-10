@@ -115,6 +115,39 @@ export function LensScreen(): React.JSX.Element {
       </div>
 
       <div className="lens-hud">
+        <div className="lens-actions">
+          <button
+            type="button"
+            className="lens-round"
+            onClick={camera.state === 'on' ? camera.stop : camera.start}
+            aria-pressed={camera.state === 'on'}
+            aria-label={camera.state === 'on' ? 'Camera off' : 'Use camera'}
+            title={camera.state === 'on' ? 'Camera off' : 'Use camera'}
+          >
+            {camera.state === 'on' ? (
+              <CameraOff size={22} strokeWidth={1.75} aria-hidden="true" />
+            ) : (
+              <Camera size={22} strokeWidth={1.75} aria-hidden="true" />
+            )}
+          </button>
+          <label className="lens-round lens-place" title="Place to look at">
+            <PlaceIcon size={22} strokeWidth={1.75} aria-hidden="true" />
+            <span className="sr-only">Place to look at</span>
+            <select
+              value={pin.id}
+              onChange={(event) => {
+                setPlaceId(event.target.value);
+                setStep(0);
+              }}
+            >
+              {pins.map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.name}
+                </option>
+              ))}
+            </select>
+          </label>
+        </div>
         <section className="lens-card" aria-label="The air here">
           <div className="lens-row">
             <p className="lens-number" style={{ background: level.solid, color: level.onSolid }}>
@@ -187,39 +220,6 @@ export function LensScreen(): React.JSX.Element {
             />
           </div>
         </section>
-      </div>
-
-      <div className="lens-actions">
-        <label className="lens-place">
-          <PlaceIcon size={18} strokeWidth={1.75} aria-hidden="true" />
-          <span className="sr-only">Place to look at</span>
-          <select
-            value={pin.id}
-            onChange={(event) => {
-              setPlaceId(event.target.value);
-              setStep(0);
-            }}
-          >
-            {pins.map((p) => (
-              <option key={p.id} value={p.id}>
-                {p.name}
-              </option>
-            ))}
-          </select>
-        </label>
-        <button
-          type="button"
-          className="lens-button"
-          onClick={camera.state === 'on' ? camera.stop : camera.start}
-          aria-pressed={camera.state === 'on'}
-        >
-          {camera.state === 'on' ? (
-            <CameraOff size={18} aria-hidden="true" />
-          ) : (
-            <Camera size={18} aria-hidden="true" />
-          )}
-          {camera.state === 'on' ? 'Camera off' : 'Use camera'}
-        </button>
       </div>
     </div>
   );

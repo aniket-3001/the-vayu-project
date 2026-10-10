@@ -123,7 +123,7 @@ export const SCENARIOS: readonly Scenario[] = [
   },
   {
     id: 'ask',
-    label: 'Tell Vayu',
+    label: 'Assistant',
     caption: 'Say what someone did outdoors: Asha’s walk is added to her day.',
     route: '/exposure',
     seconds: 6,
