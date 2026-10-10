@@ -121,6 +121,27 @@ describe('GET /v1/today', () => {
     ).toBe(true);
   });
 
+  it("has a figure for the hour in progress when the model hours start at half past, as India's do", async () => {
+    // Open-Meteo's hours are on the hour in India, which is :30 in UTC. 12:00 UTC is inside the hour that began 11:30.
+    const hours = Array.from({ length: 72 }, (_, i): RawHour => ({
+      hourStart: new Date(Date.parse('2026-10-05T10:30:00.000Z') + i * 3_600_000).toISOString(),
+      pm25: 80,
+      pm10: 120,
+    }));
+    const none: StationRepo = {
+      stationsNear: () => Promise.resolve([]),
+      hourlyFor: () => Promise.resolve([]),
+    };
+    const half = { forecastFor: () => Promise.resolve(hours) };
+    const today = Today.parse(
+      (await ask({ stationRepo: none, forecastRepo: half }, { place: 'home' })).body,
+    );
+    const now = Date.parse(AS_OF);
+    expect(
+      today.hours.some((h) => Date.parse(h.t) <= now && now < Date.parse(h.t) + 3_600_000),
+    ).toBe(true);
+  });
+
   it('keeps coordinates to about a kilometre and inside north India, and says what to fix', async () => {
     const rounded = Today.parse((await ask({}, { lat: '28.60123', lng: '77.20987' })).body);
     expect(rounded.place).toMatchObject({ lat: 28.6, lng: 77.21 });

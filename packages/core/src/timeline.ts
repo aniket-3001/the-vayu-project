@@ -156,9 +156,10 @@ export function buildHours(input: BuildHoursInput): BuiltHours {
     }),
   });
 
-  const currentHour = floorToHourMs(toMs(input.asOf));
+  // Hours that have not ended, the one in progress included. Hours here may start at :30 (India is UTC+5:30), so an
+  // hour is kept by when it ends, not by when it starts: otherwise there would be no figure for "now".
   const usableForecast = (input.forecast ?? []).filter(
-    (hour) => toMs(hour.hourStart) >= currentHour,
+    (hour) => hourEndMs(hour) > toMs(input.asOf),
   );
   const useForecast =
     input.forecast !== undefined && usableForecast.length >= Math.min(hoursAhead, 24);
