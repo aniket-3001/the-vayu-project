@@ -99,14 +99,15 @@ describe('the Breathe better tips on My Air', () => {
     expect(tips?.querySelector('li .task-words .muted')).toBeInTheDocument();
   });
 
-  it('show the points on a gold star, a true star and not a stretched circle', () => {
+  it('show the points as a gold star icon and then the number, as the totals do', () => {
     open();
     const card = screen.getByRole('region', { name: 'Breathe better today' });
-    const coins = card.querySelectorAll('.points-star');
+    const coins = card.querySelectorAll('.task-points');
     expect(coins.length).toBeGreaterThanOrEqual(2);
     for (const coin of coins) {
-      expect(coin).toHaveTextContent(/^\+\d+$/u);
-      expect(coin.querySelector('svg path')).toBeInTheDocument();
+      expect(coin).toHaveTextContent(/^\d+$/u);
+      expect(coin.querySelector('svg.ic-star')).toBeInTheDocument();
+      expect(coin.firstElementChild?.tagName.toLowerCase()).toBe('svg');
     }
     expect(within(card).getAllByRole('img', { name: /\d+ points/u }).length).toBe(coins.length);
   });

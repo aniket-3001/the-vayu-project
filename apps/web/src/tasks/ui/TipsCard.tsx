@@ -86,27 +86,12 @@ export function Progress({
   );
 }
 
-/** A gold star with the points on it, for a task: a star, as in a game, drawn as a true star at any width. */
-function PointsStar({ points }: { readonly points: number }): React.JSX.Element {
+/** The points a tip is worth: a gold star and the number, as the totals under the tips show them. */
+function Points({ points }: { readonly points: number }): React.JSX.Element {
   return (
-    <span className="points-star tnum" role="img" aria-label={`${String(points)} points`}>
-      <svg viewBox="0 0 48 48" aria-hidden="true">
-        <defs>
-          <radialGradient id="star-gold" cx="38%" cy="30%" r="75%">
-            <stop offset="0" stopColor="#ffe98a" />
-            <stop offset="0.6" stopColor="#f7b500" />
-            <stop offset="1" stopColor="#d99100" />
-          </radialGradient>
-        </defs>
-        <path
-          d="M24 3.5l5.6 12.4 13.5 1.5-10 9.1 2.8 13.3L24 32.8 12.1 39.8l2.8-13.3-10-9.1 13.5-1.5z"
-          fill="url(#star-gold)"
-          stroke="#c98a00"
-          strokeWidth="2"
-          strokeLinejoin="round"
-        />
-      </svg>
-      <span aria-hidden="true">+{points}</span>
+    <span className="task-points tnum" role="img" aria-label={`${String(points)} points`}>
+      <Star size={18} strokeWidth={2} className="ic-star" aria-hidden="true" />
+      <span aria-hidden="true">{points}</span>
     </span>
   );
 }
@@ -201,7 +186,7 @@ export function TipsCard({
                   <strong>{task.title}</strong>
                   <span className="muted small">{task.why}</span>
                 </span>
-                <PointsStar points={task.points} />
+                <Points points={task.points} />
               </li>
             );
           })}
