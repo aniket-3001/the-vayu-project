@@ -2471,7 +2471,7 @@ h2 {
   transform: translateY(-1px);
 }
 [data-route='map'] .map-bottom {
-  right: 84px;
+  right: 12px;
 }
 .sheet.assistant {
   grid-template-rows: auto minmax(0, 1fr) auto auto;
@@ -2717,7 +2717,21 @@ button.alert-card {
   gap: 10px;
 }
 [data-route='map'] .dock {
-  bottom: 204px;
+  top: 112px;
+  bottom: auto;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 8px;
+}
+[data-route='map'] .assistant-fab {
+  width: 48px;
+  height: 48px;
+  padding: 0;
+  border-radius: 50%;
+  justify-content: center;
+}
+[data-route='map'] .assistant-fab .fab-label {
+  display: none;
 }
 [data-route='lens'] .dock {
   bottom: calc(90px + var(--lens-hud-h, 150px) + 12px);
@@ -4102,4 +4116,44 @@ button.alert-card {
 }
 .slots.blue .slot strong {
   font-size: 16px;
+}
+
+/* One dotted blue square with a plus, to add a place: the same size as a place card */
+.add-place {
+  aspect-ratio: 1;
+}
+.add-place button {
+  display: grid;
+  align-content: center;
+  justify-items: center;
+  gap: 6px;
+  width: 100%;
+  height: 100%;
+  padding: 10px;
+  border: 2.5px dashed #3b82c4;
+  border-radius: var(--radius);
+  background: #eef5fc;
+  color: var(--text);
+  font: inherit;
+  text-align: center;
+  cursor: pointer;
+}
+.add-place button:hover,
+.add-place button:focus-visible {
+  background: #e3effb;
+}
+.add-place-plus {
+  display: grid;
+  place-items: center;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: #dcebfa;
+  color: #2f6aa3;
+}
+.add-place strong {
+  font-size: 17px;
+}
+.here-found {
+  margin: 0;
 }

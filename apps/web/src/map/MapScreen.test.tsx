@@ -2,6 +2,7 @@
 import { cleanup, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { useEffect } from 'react';
+import { MemoryRouter } from 'react-router-dom';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 const dataNow: { windLive: boolean; airLive: boolean; fires: number | undefined } = {
@@ -66,20 +67,32 @@ afterEach(() => {
 
 describe('the Map screen', () => {
   it('is one view, with no Map and Globe to choose between', () => {
-    render(<MapScreen />);
+    render(
+      <MemoryRouter>
+        <MapScreen />
+      </MemoryRouter>,
+    );
     expect(screen.queryByRole('button', { name: 'Globe' })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Map' })).not.toBeInTheDocument();
   });
 
   it('opens with the monitors, the washed-out air colour, the fires and the wind all on', () => {
-    render(<MapScreen />);
+    render(
+      <MemoryRouter>
+        <MapScreen />
+      </MemoryRouter>,
+    );
     expect(seen.layers).toMatchObject({ monitors: true, gradient: true, fires: true });
     expect(seen.windOn).toBe(true);
     expect(screen.getByText('Sample data')).toBeInTheDocument();
   });
 
   it('has a Wind button that turns the wind off and on, and says which it is', async () => {
-    render(<MapScreen />);
+    render(
+      <MemoryRouter>
+        <MapScreen />
+      </MemoryRouter>,
+    );
     const wind = screen.getByRole('button', { name: /Wind on/u });
     expect(wind).toHaveAttribute('aria-pressed', 'true');
     await userEvent.click(wind);
@@ -94,7 +107,11 @@ describe('the Map screen', () => {
   });
 
   it('keeps the other layers in a sheet, each described, and leaves the wind to its own button', async () => {
-    render(<MapScreen />);
+    render(
+      <MemoryRouter>
+        <MapScreen />
+      </MemoryRouter>,
+    );
     await userEvent.click(screen.getByRole('button', { name: 'Layers' }));
     for (const name of ['Monitors', 'Air colour', 'Fires']) {
       expect(screen.getByRole('checkbox', { name: new RegExp(name, 'u') })).toBeInTheDocument();
@@ -112,7 +129,11 @@ describe('the Map screen', () => {
   });
 
   it('draws a legend from Good to Hazardous', () => {
-    render(<MapScreen />);
+    render(
+      <MemoryRouter>
+        <MapScreen />
+      </MemoryRouter>,
+    );
     expect(screen.getByRole('img', { name: /AQI colours/u })).toBeInTheDocument();
   });
 });
@@ -121,7 +142,11 @@ describe('what the map says about its data', () => {
   it('names the live sources when it has them: wind from Open-Meteo, the fire count from NASA', () => {
     dataNow.windLive = true;
     dataNow.fires = 127;
-    render(<MapScreen />);
+    render(
+      <MemoryRouter>
+        <MapScreen />
+      </MemoryRouter>,
+    );
     expect(
       screen.getByText(
         /127 fires in the last 24 hours \(NASA satellite\)\. Positions are a sample/u,
@@ -134,7 +159,11 @@ describe('what the map says about its data', () => {
   });
 
   it('says sample, and not live, when the live data could not be reached', () => {
-    render(<MapScreen />);
+    render(
+      <MemoryRouter>
+        <MapScreen />
+      </MemoryRouter>,
+    );
     expect(screen.queryByText('Live')).not.toBeInTheDocument();
     expect(screen.getByText('Wind is a sample flow.')).toBeInTheDocument();
     expect(screen.getByText(/Colour between monitors is an estimate/u)).toBeInTheDocument();
@@ -153,7 +182,11 @@ describe('Find me', () => {
         },
       },
     });
-    render(<MapScreen />);
+    render(
+      <MemoryRouter>
+        <MapScreen />
+      </MemoryRouter>,
+    );
     await userEvent.click(screen.getByRole('button', { name: /Find me/u }));
     expect(screen.getByRole('status')).toHaveTextContent('You are here.');
     expect(flyTo).toHaveBeenCalledWith(expect.objectContaining({ center: [77.2, 28.6] }));
@@ -170,7 +203,11 @@ describe('Find me', () => {
         },
       },
     });
-    render(<MapScreen />);
+    render(
+      <MemoryRouter>
+        <MapScreen />
+      </MemoryRouter>,
+    );
     await userEvent.click(screen.getByRole('button', { name: /Find me/u }));
     expect(screen.getByRole('status')).toHaveTextContent(/could not get your location/u);
     Reflect.deleteProperty(navigator, 'geolocation');

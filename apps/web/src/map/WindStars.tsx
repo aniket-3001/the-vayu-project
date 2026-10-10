@@ -23,6 +23,9 @@ interface Star {
   trail: { x: number; y: number }[];
 }
 
+/** The wind is drawn up to this zoom (about a city) and not beyond. */
+export const WIND_MAX_ZOOM = 9;
+
 /**
  * Wind as little shooting stars, the way Windy draws it: each one is born at a random spot, shoots along the
  * wind with a tapering tail a little broader than a line, and fades in as it starts and out as it ends. They
@@ -163,6 +166,11 @@ export function WindStars({
       if (stopped) return;
       if (!document.hidden) {
         ctx.clearRect(0, 0, el.clientWidth, el.clientHeight);
+        // Wind is a weather-scale thing: past city level its grid says nothing about a street, so it is not drawn.
+        if (map.getZoom() > WIND_MAX_ZOOM) {
+          frame = window.requestAnimationFrame(tick);
+          return;
+        }
         ctx.lineCap = 'round';
         const zoomScale = Math.min(1, 2 ** ((map.getZoom() - 3.2) * 0.5) + 0.25);
         for (let i = 0; i < stars.length; i++) {

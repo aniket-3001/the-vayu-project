@@ -1,4 +1,4 @@
-import { LocateFixed } from 'lucide-react';
+import { LocateFixed, Plus } from 'lucide-react';
 import { useState } from 'react';
 import { inCoverage, type PlaceMatch } from '../../data/geocode';
 import { MAX_PINS } from '../../data/pins';
@@ -10,7 +10,7 @@ import { usePins } from '../usePins';
 import { PlaceCard } from './PlaceCard';
 import { browserLocate, type Locate } from '../locate';
 import { PlaceSearch } from './PlaceSearch';
-import { STARTER_KINDS, StarterSlot, starterKindOf } from './StarterSlots';
+import { AddPlaceSheet, type FoundPlace } from './AddPlaceSheet';
 
 /** Your places, each a card in the colour of its air. Tap one for its day. */
 export function PlacesPanel({
@@ -27,6 +27,8 @@ export function PlacesPanel({
   const live = useLiveLocation();
   const livePin = useLivePin();
   const [note, setNote] = useState('');
+  // Adding a place: a search result waiting for a name, or the empty add card opened.
+  const [adding, setAdding] = useState<{ readonly place?: FoundPlace } | undefined>(undefined);
   const [found, setFound] = useState<{ readonly lat: number; readonly lng: number } | undefined>(
     undefined,
   );
@@ -49,7 +51,15 @@ export function PlacesPanel({
       <PlaceSearch
         {...(search !== undefined ? { search } : {})}
         onPick={(match) => {
-          add(match);
+          // A place found by search is asked for a name before it is pinned.
+          setAdding({
+            place: {
+              name: match.name,
+              ...(match.detail === '' ? {} : { detail: match.detail }),
+              lat: match.lat,
+              lng: match.lng,
+            },
+          });
         }}
         trailing={
           <button
@@ -98,42 +108,55 @@ export function PlacesPanel({
           Your browser did not share your location, so live location is off.
         </p>
       )}
+      {adding !== undefined && (
+        <AddPlaceSheet
+          initial={adding.place}
+          {...(search !== undefined ? { search } : {})}
+          locate={locate}
+          onSave={(label, place) => {
+            add({
+              name: label,
+              detail: [place.name !== label ? place.name : undefined, place.detail]
+                .filter((part): part is string => part !== undefined && part !== '')
+                .join(', '),
+              lat: place.lat,
+              lng: place.lng,
+            });
+            setAdding(undefined);
+          }}
+          onCancel={() => {
+            setAdding(undefined);
+          }}
+        />
+      )}
       <ul className="place-grid" aria-label="Your places">
         {livePin !== undefined && <PlaceCard key="live" pin={livePin} />}
-        {/* The four usual places are always there: a dotted square to fill in, or its card on top once set. */}
-        {STARTER_KINDS.map((kind) => {
-          const set = pins.find((pin) => starterKindOf(pin) === kind);
-          return set === undefined ? (
-            <StarterSlot
-              key={kind}
-              kind={kind}
-              {...(search !== undefined ? { search } : {})}
-              locate={locate}
-              onSet={(name, place) => {
-                add({ name, ...place });
+        {pins.map((pin) => (
+          <PlaceCard
+            key={pin.id}
+            pin={pin}
+            onRemove={(p) => {
+              remove(p.id);
+            }}
+          />
+        ))}
+        {pins.length < MAX_PINS && (
+          <li className="add-place">
+            <button
+              type="button"
+              aria-label="Add a place"
+              onClick={() => {
+                setAdding({});
               }}
-            />
-          ) : (
-            <PlaceCard
-              key={set.id}
-              pin={set}
-              onRemove={(p) => {
-                remove(p.id);
-              }}
-            />
-          );
-        })}
-        {pins
-          .filter((pin) => starterKindOf(pin) === undefined)
-          .map((pin) => (
-            <PlaceCard
-              key={pin.id}
-              pin={pin}
-              onRemove={(p) => {
-                remove(p.id);
-              }}
-            />
-          ))}
+            >
+              <span className="add-place-plus">
+                <Plus size={30} strokeWidth={2.25} aria-hidden="true" />
+              </span>
+              <strong>Add a place</strong>
+              <span className="muted small">Home, school, office, a park…</span>
+            </button>
+          </li>
+        )}
       </ul>
       {children}
       <p className="muted small places-note">

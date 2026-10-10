@@ -1,6 +1,7 @@
 import { Flame, Layers, LocateFixed, Wind } from 'lucide-react';
 import { Marker, type Map as MapLibreMap } from 'maplibre-gl';
 import { useMemo, useRef, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { airStore, useStations } from '../air/store';
 import { nowIso } from '../clock';
 import { inCoverage } from '../data/geocode';
@@ -35,6 +36,22 @@ export function MapScreen(): React.JSX.Element {
     () => (sample ? data.air : binMonitors(monitors, 1)),
     [sample, data.air, monitors],
   );
+  // A link can open the map somewhere: #/map?lat=28.6&lng=77.2&z=12.
+  const [params] = useSearchParams();
+  const start = useMemo(() => {
+    const lat = Number(params.get('lat'));
+    const lng = Number(params.get('lng'));
+    const zoom = Number(params.get('z'));
+    return params.has('lat') &&
+      params.has('lng') &&
+      Math.abs(lat) <= 85 &&
+      Math.abs(lng) <= 180 &&
+      Number.isFinite(zoom)
+      ? { center: [lng, lat] as [number, number], zoom: Math.min(18, Math.max(1, zoom)) }
+      : undefined;
+    // Only the opening position is read; moving the map does not change the link.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   const [where, setWhere] = useState('');
   const marker = useRef<Marker>();
   const windField = useMemo(() => makeWindField(data.wind), [data.wind]);
@@ -80,6 +97,7 @@ export function MapScreen(): React.JSX.Element {
         monitors={monitors}
         fires={data.fireList}
         sample={sample}
+        start={start}
         onReady={setMap}
       />
       <WindStars map={map} enabled={shown.wind} field={windField} />

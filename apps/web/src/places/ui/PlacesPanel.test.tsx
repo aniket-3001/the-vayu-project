@@ -39,8 +39,12 @@ describe('the Places screen', () => {
   it('starts with four square cards, each with a level, a number and a sky', () => {
     screenWith();
     const list = screen.getByRole('list', { name: 'Your places' });
-    const cards = Array.from(list.children) as HTMLElement[];
+    // The four cards, then one dotted square with a plus to add a place.
+    const cards = (Array.from(list.children) as HTMLElement[]).filter(
+      (item) => !item.classList.contains('add-place'),
+    );
     expect(cards).toHaveLength(4);
+    expect(list.querySelector('.add-place button')).toHaveAccessibleName('Add a place');
     const names = cards.map((card) => card.querySelector('.pc-name')?.textContent);
     expect(names).toEqual(['Home', 'School', 'Office', 'Park']);
     const levels = cards.map((card) => card.querySelector('.pc-level')?.textContent);
@@ -101,70 +105,53 @@ describe('the Places screen', () => {
     expect(screen.getByRole('link', { name: 'Open Home' })).toBeInTheDocument();
   });
 
-  it('says plainly when nothing is pinned', async () => {
+  it('says plainly when nothing is pinned: only the dotted square with a plus is left', async () => {
     screenWith();
     for (const name of ['Home', 'School', 'Office', 'Park']) {
       await userEvent.click(screen.getByRole('button', { name: `Remove ${name}` }));
     }
-    // Four dotted squares to fill in, one for each place most people want.
-    for (const name of ['Set Home', 'Set School', 'Set Office', 'Set Park'])
-      expect(screen.getByRole('button', { name })).toBeInTheDocument();
+    const list = screen.getByRole('list', { name: 'Your places' });
+    expect(list.children).toHaveLength(1);
+    expect(screen.getByRole('button', { name: 'Add a place' })).toBeInTheDocument();
   });
 
-  it('keeps the four dotted squares as fields: set one and its card sits on it, cross the card and the square returns', async () => {
+  it('adds a place from the plus square: where, then what to call it, then it is pinned under that name', async () => {
     window.localStorage.setItem('vayu.pins.v1', '[]');
     screenWith({
       locate: (found) => {
         found(28.4, 77.05);
       },
     });
-    const list = (): HTMLElement[] =>
-      Array.from(screen.getByRole('list', { name: 'Your places' }).children) as HTMLElement[];
-    expect(list()).toHaveLength(4);
-    await userEvent.click(screen.getByRole('button', { name: 'Set Office' }));
-    await userEvent.click(
-      within(screen.getByRole('dialog', { name: 'Where is Office?' })).getByRole('button', {
-        name: 'Detect me',
-      }),
-    );
-    // Still four places, in the same order: Office is now a card where its square was.
-    expect(list()).toHaveLength(4);
-    expect(list()[2]?.querySelector('.pc-name')).toHaveTextContent('Office');
-    await userEvent.click(screen.getByRole('button', { name: 'Remove Office' }));
-    expect(list()).toHaveLength(4);
-    expect(screen.getByRole('button', { name: 'Set Office' })).toBeInTheDocument();
-  });
-
-  it('turns a dotted square into a card with the name of the square, once its place is given', async () => {
-    window.localStorage.setItem('vayu.pins.v1', '[]');
-    screenWith({
-      locate: (found) => {
-        found(28.4, 77.05);
-      },
-    });
-    await userEvent.click(screen.getByRole('button', { name: 'Set School' }));
-    const sheet = screen.getByRole('dialog', { name: 'Where is School?' });
-    await userEvent.click(within(sheet).getByRole('button', { name: 'Detect me' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Add a place' }));
+    const where = screen.getByRole('dialog', { name: 'Add a place' });
+    await userEvent.click(within(where).getByRole('button', { name: 'Detect me' }));
+    const name = screen.getByRole('dialog', { name: 'Name this place' });
+    // It cannot be pinned without a name.
+    expect(within(name).getByRole('button', { name: /Pin it/u })).toBeDisabled();
+    await userEvent.click(within(name).getByRole('button', { name: 'School' }));
+    await userEvent.click(within(name).getByRole('button', { name: /Pin it/u }));
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Open School' })).toBeInTheDocument();
-    // The other three are still there to fill in, and School's is gone.
-    expect(screen.queryByRole('button', { name: 'Set School' })).not.toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Set Home' })).toBeInTheDocument();
   });
 
-  it('searches by name and pins what the person picks, after the four usual places', async () => {
+  it('asks for a name before a searched place is pinned, and accepts any name', async () => {
     screenWith({ search: () => Promise.resolve([lucknow]) });
     await userEvent.type(screen.getByRole('searchbox'), 'Lucknow');
     await userEvent.click(screen.getByRole('button', { name: 'Search' }));
     await userEvent.click(await screen.findByRole('button', { name: 'Add Lucknow' }));
-    const cards = Array.from(
-      screen.getByRole('list', { name: 'Your places' }).children,
-    ) as HTMLElement[];
-    expect(cards).toHaveLength(5);
-    // The four usual places keep their positions; a searched place follows them.
-    const last = cards[4];
-    if (last === undefined) throw new Error('no cards');
-    expect(last.querySelector('.pc-name')).toHaveTextContent('Lucknow');
+    // Not pinned yet: it is waiting for a name, and says which place it is.
+    expect(screen.queryByRole('link', { name: 'Open Lucknow' })).not.toBeInTheDocument();
+    const sheet = screen.getByRole('dialog', { name: 'Name this place' });
+    expect(sheet).toHaveTextContent('Lucknow');
+    await userEvent.type(
+      within(sheet).getByRole('textbox', { name: 'Name for this place' }),
+      'Aunt’s house',
+    );
+    await userEvent.click(within(sheet).getByRole('button', { name: /Pin it/u }));
+    const link = screen.getByRole('link', { name: 'Open Aunt’s house' });
+    expect(link).toBeInTheDocument();
+    // The card still says which place it is, under the name.
+    expect(link).toHaveTextContent('Lucknow');
   });
 
   it('says so when no monitors cover the search, and when search is down', async () => {

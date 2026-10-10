@@ -94,6 +94,7 @@ export function MapView({
   monitors,
   fires,
   sample,
+  start,
   onReady,
 }: {
   readonly layers: MapLayers;
@@ -106,13 +107,15 @@ export function MapView({
   readonly fires: readonly Fire[];
   /** Whether the readings are made up (the prototype), for the popup's small print. */
   readonly sample: boolean;
+  /** Where to open, from a link; otherwise south Asia at country level. */
+  readonly start?: { readonly center: [number, number]; readonly zoom: number } | undefined;
   readonly onReady: (map: MapLibreMap) => void;
 }): React.JSX.Element {
   const container = useRef<HTMLDivElement>(null);
   const map = useRef<MapLibreMap>();
   const ready = useRef(false);
-  const latest = useRef({ layers, smoke, air, monitors, fires, sample });
-  latest.current = { layers, smoke, air, monitors, fires, sample };
+  const latest = useRef({ layers, smoke, air, monitors, fires, sample, start });
+  latest.current = { layers, smoke, air, monitors, fires, sample, start };
 
   useEffect(() => {
     const el = container.current;
@@ -120,8 +123,8 @@ export function MapView({
     const m = new MapLibreMap({
       container: el,
       style: STYLE_URL,
-      center: START.center,
-      zoom: START.zoom,
+      center: latest.current.start?.center ?? START.center,
+      zoom: latest.current.start?.zoom ?? START.zoom,
       minZoom: 0.4,
       // Down to a street: the base map has detail that far. Readings are the nearest monitor's, and say how far.
       maxZoom: 18,
