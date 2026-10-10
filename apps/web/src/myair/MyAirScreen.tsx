@@ -1,5 +1,10 @@
 import { Cpu, MapPin } from 'lucide-react';
+import { useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
+import { readingForPin } from '../places/placeSample';
+import { usePins } from '../places/usePins';
+import { tasksFor } from '../tasks/model';
+import { TasksCard } from '../tasks/ui/TasksCard';
 import { DevicesPanel } from '../devices/ui/DevicesPanel';
 import { PlacesPanel } from '../places/ui/PlacesPanel';
 import type { PlaceMatch } from '../data/geocode';
@@ -18,6 +23,9 @@ const TABS = [
 export function MyAirScreen({ search, locate }: Props): React.JSX.Element {
   const [params, setParams] = useSearchParams();
   const tab = params.get('tab') === 'devices' ? 'devices' : 'places';
+  const { pins } = usePins();
+  const first = pins[0];
+  const tasks = useMemo(() => (first === undefined ? [] : tasksFor(readingForPin(first))), [first]);
   return (
     <div className="page places">
       <header className="place">
@@ -41,6 +49,11 @@ export function MyAirScreen({ search, locate }: Props): React.JSX.Element {
           ))}
         </div>
       </header>
+      {first !== undefined && tasks.length > 0 && (
+        <div className="places-main tasks-wrap">
+          <TasksCard tasks={tasks} placeName={first.name} />
+        </div>
+      )}
       <main
         className="places-main"
         role="tabpanel"
