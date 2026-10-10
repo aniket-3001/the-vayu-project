@@ -10,7 +10,7 @@ import {
   type LucideIcon,
 } from 'lucide-react';
 import { motion, useReducedMotion } from 'motion/react';
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { MaskIcon } from '../../today/ui/icons';
 import { POINTS, type Task, type TaskKind } from '../model';
 import { useTasks } from '../useTasks';
@@ -114,27 +114,39 @@ export function TipsCard({
   const progress = useTasks();
   const reduced = useReducedMotion() === true;
   const doneCount = tips.filter((t) => progress.done.has(t.id)).length;
-  // Which tip the row is showing, for the dots under it.
+  // The scroll indicator under the row: how much of the row is in view, and where. It is drawn from the row's own
+  // scroll position, so it needs no lining up with the cards, whatever their width.
   const row = useRef<HTMLUListElement>(null);
-  const [shownTip, setShownTip] = useState(0);
-  const whichTip = (): number => {
+  const [view, setView] = useState({ size: 1, at: 0 });
+  const measure = (): void => {
     const el = row.current;
-    const first = el?.querySelector('li');
-    if (el === null || first === null || first === undefined) return 0;
-    const step = first.getBoundingClientRect().width + 10;
-    return Math.min(tips.length - 1, Math.max(0, Math.round(el.scrollLeft / step)));
-  };
-  const goToTip = (index: number): void => {
-    const el = row.current;
-    const target = el?.querySelectorAll('li')[index];
-    if (el === null || target === undefined) return;
-    setShownTip(index);
-    // A browser without smooth scrolling just does not move; the dot still says where it went.
-    (el as Partial<HTMLElement>).scrollTo?.({
-      left: target.offsetLeft - el.offsetLeft,
-      behavior: 'smooth',
+    if (el === null || el.scrollWidth <= 0) return;
+    setView({
+      size: Math.min(1, el.clientWidth / el.scrollWidth),
+      at: el.scrollLeft / el.scrollWidth,
     });
   };
+  useEffect(() => {
+    measure();
+    window.addEventListener('resize', measure);
+    return () => {
+      window.removeEventListener('resize', measure);
+    };
+    // Measured again when the tips change; the row reports its own scrolling.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tips.length]);
+  const scrollToFraction = (clientX: number, track: HTMLElement): void => {
+    const el = row.current;
+    if (el === null) return;
+    const box = track.getBoundingClientRect();
+    if (box.width === 0) return;
+    const centre = ((clientX - box.left) / box.width) * el.scrollWidth;
+    el.scrollLeft = Math.max(
+      0,
+      Math.min(el.scrollWidth - el.clientWidth, centre - el.clientWidth / 2),
+    );
+  };
+  const scrollable = view.size < 0.999;
 
   return (
     <section className="breathe tips" aria-labelledby="tips-title">
@@ -147,14 +159,7 @@ export function TipsCard({
       </div>
       {alerts}
       {tips.length > 0 && (
-        <ul
-          ref={row}
-          className="tips-row"
-          aria-label="Tips, swipe for more"
-          onScroll={() => {
-            setShownTip(whichTip());
-          }}
-        >
+        <ul ref={row} className="tips-row" aria-label="Tips, swipe for more" onScroll={measure}>
           {tips.map((task) => {
             const checked = progress.done.has(task.id);
             const Icon = task.kind === 'mask' ? undefined : ICONS[task.kind];
@@ -192,20 +197,22 @@ export function TipsCard({
           })}
         </ul>
       )}
-      {tips.length > 1 && (
-        <div className="carousel-dots" role="group" aria-label="Which tip">
-          {tips.map((task, index) => (
-            <button
-              key={task.id}
-              type="button"
-              className={index === shownTip ? 'dot on' : 'dot'}
-              aria-label={`Tip ${String(index + 1)} of ${String(tips.length)}`}
-              aria-current={index === shownTip}
-              onClick={() => {
-                goToTip(index);
-              }}
-            />
-          ))}
+      {tips.length > 0 && scrollable && (
+        <div
+          className="scroll-indicator"
+          role="presentation"
+          onPointerDown={(event) => {
+            event.currentTarget.setPointerCapture(event.pointerId);
+            scrollToFraction(event.clientX, event.currentTarget);
+          }}
+          onPointerMove={(event) => {
+            if (event.buttons === 1) scrollToFraction(event.clientX, event.currentTarget);
+          }}
+        >
+          <span
+            className="scroll-thumb"
+            style={{ width: `${String(view.size * 100)}%`, left: `${String(view.at * 100)}%` }}
+          />
         </div>
       )}
       <div className="tips-footer">

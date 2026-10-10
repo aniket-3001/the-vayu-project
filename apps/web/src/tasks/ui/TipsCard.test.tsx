@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { cleanup, render, screen, within } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
@@ -80,23 +80,34 @@ describe('the Breathe better tips on My Air', () => {
     expect(screen.queryByRole('region', { name: 'Breathe better today' })).not.toBeInTheDocument();
   });
 
-  it('hold the tips as cards that swipe, with dots to say which, and no separate alerts section', async () => {
+  it('hold the tips as cards that scroll sideways, with a scroll indicator and no dots', () => {
     open();
     const card = screen.getByRole('region', { name: 'Breathe better today' });
     expect(screen.queryByRole('heading', { name: 'Alerts', level: 2 })).not.toBeInTheDocument();
-    const tips = card.querySelector('.tips-row');
-    expect(tips).toBeInTheDocument();
+    const row = card.querySelector<HTMLElement>('.tips-row');
+    expect(row).toBeInTheDocument();
+    expect(card.querySelector('.carousel-dots')).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /See all|Fold/u })).not.toBeInTheDocument();
-    const dots = within(card).getAllByRole('button', { name: /^Tip \d of \d$/u });
-    expect(dots.length).toBe(tips?.querySelectorAll('li').length);
-    expect(dots[0]).toHaveAttribute('aria-current', 'true');
-    const second = dots[1];
-    if (second === undefined) throw new Error('only one tip');
-    await userEvent.click(second);
-    expect(dots[1]).toHaveAttribute('aria-current', 'true');
-    expect(dots[0]).toHaveAttribute('aria-current', 'false');
     // Each tip shows its reason in full beside its star, with no unfolding.
-    expect(tips?.querySelector('li .task-words .muted')).toBeInTheDocument();
+    expect(row?.querySelector('li .task-words .muted')).toBeInTheDocument();
+  });
+
+  it('shows how much of the row is in view, and where, from the row’s own scroll position', () => {
+    open();
+    const card = screen.getByRole('region', { name: 'Breathe better today' });
+    const row = card.querySelector<HTMLElement>('.tips-row');
+    if (row === null) throw new Error('no row');
+    // A row twice as wide as the screen, scrolled a quarter of the way.
+    Object.defineProperty(row, 'scrollWidth', { configurable: true, value: 800 });
+    Object.defineProperty(row, 'clientWidth', { configurable: true, value: 400 });
+    Object.defineProperty(row, 'scrollLeft', { configurable: true, writable: true, value: 200 });
+    act(() => {
+      fireEvent.scroll(row);
+    });
+    const thumb = card.querySelector<HTMLElement>('.scroll-thumb');
+    expect(thumb).toBeInTheDocument();
+    expect(thumb?.style.width).toBe('50%');
+    expect(thumb?.style.left).toBe('25%');
   });
 
   it('show the points as a gold star icon and then the number, as the totals do', () => {
