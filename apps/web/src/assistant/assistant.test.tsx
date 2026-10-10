@@ -191,7 +191,8 @@ describe('the assistant button', () => {
     expect(await screen.findByText(/well-fitted N95 or FFP2/u)).toBeInTheDocument();
     await userEvent.click(screen.getByRole('button', { name: 'Is school safe today?' }));
     expect(
-      await screen.findByText(/School is fine|moved indoors|Outdoor play/u),
+      // From the air at the pinned School, not at the first place.
+      await screen.findByText(/School is fine|moved indoors|Outdoor play|GRAP Stage/u),
     ).toBeInTheDocument();
     expect(screen.getAllByText(/From the sample data in this prototype/u).length).toBe(2);
   });
@@ -425,7 +426,88 @@ describe('the best hour in the context', () => {
     expect(c.best?.span).toMatch(/ tomorrow$/u);
   });
 
-  it('adds an outdoor walk for someone on the list when it is told, and does not answer it as a question', async () => {
+  const typeIn = async (words: string): Promise<void> => {
+    await userEvent.type(screen.getByRole('textbox', { name: 'Your message' }), `${words}{Enter}`);
+  };
+  const openChat = async (): Promise<void> => {
+    render(
+      <MemoryRouter>
+        <AssistantFab
+          source={localAssistant}
+          voice={{ speak: () => Promise.resolve(), stop: () => undefined }}
+        />
+      </MemoryRouter>,
+    );
+    await userEvent.click(screen.getByRole('button', { name: 'Vayu assistant' }));
+  };
+  const savedOutings = (): Record<
+    string,
+    { minutes: number; pin: { name: string }; activity: string }[]
+  > =>
+    JSON.parse(window.localStorage.getItem('vayu.outings.v1') ?? '{}') as Record<
+      string,
+      { minutes: number; pin: { name: string }; activity: string }[]
+    >;
+  const pins = [
+    { id: 'h', name: 'Home', lat: 28.59, lng: 77.05 },
+    { id: 's', name: 'School', lat: 28.57, lng: 77.18 },
+    { id: 'p', name: 'Park', lat: 28.63, lng: 77.22 },
+  ];
+
+  it('asks what is missing, one thing at a time: where, then for how long, and then logs it', async () => {
+    window.localStorage.setItem('vayu.pins.v1', JSON.stringify(pins));
+    await openChat();
+    await typeIn('I took a walk');
+    // It does not guess the place from the pinned ones: it asks.
+    expect(await screen.findByText(/Where was it/u)).toBeInTheDocument();
+    expect(savedOutings().me).toBeUndefined();
+    await userEvent.click(
+      within(screen.getByRole('group', { name: 'Quick answers' })).getByRole('button', {
+        name: 'School',
+      }),
+    );
+    expect(await screen.findByText(/For how long, at School/u)).toBeInTheDocument();
+    await typeIn('30');
+    const reply = await screen.findByText(/^Added to your day/u);
+    expect(reply).toHaveTextContent('School');
+    expect(reply).toHaveTextContent('30 minutes');
+    expect(savedOutings().me?.[0]).toMatchObject({ minutes: 30, activity: 'walk' });
+    expect(savedOutings().me?.[0]?.pin.name).toBe('School');
+  });
+
+  it('takes all three from one sentence, with no questions', async () => {
+    window.localStorage.setItem('vayu.pins.v1', JSON.stringify(pins));
+    await openChat();
+    await typeIn('I took a 30 minute walk at home');
+    expect(await screen.findByText(/^Added to your day/u)).toBeInTheDocument();
+    expect(screen.queryByText(/Where was it|For how long/u)).not.toBeInTheDocument();
+    expect(savedOutings().me?.[0]?.pin.name).toBe('Home');
+  });
+
+  it('asks what was done when it was only said that someone was outside', async () => {
+    window.localStorage.setItem('vayu.pins.v1', JSON.stringify(pins));
+    await openChat();
+    await typeIn('I was outside at the park for 20 minutes');
+    expect(await screen.findByText(/What did you do outside/u)).toBeInTheDocument();
+    await userEvent.click(
+      within(screen.getByRole('group', { name: 'Quick answers' })).getByRole('button', {
+        name: 'Play',
+      }),
+    );
+    expect(await screen.findByText(/^Added to your day/u)).toBeInTheDocument();
+    expect(savedOutings().me?.[0]).toMatchObject({ activity: 'play', minutes: 20 });
+  });
+
+  it('says to add the place first when it was somewhere that is not set, and logs nothing', async () => {
+    window.localStorage.setItem('vayu.pins.v1', JSON.stringify([pins[0]]));
+    await openChat();
+    await typeIn('I walked at school for 30 minutes');
+    expect(await screen.findByText(/no school place set yet/iu)).toBeInTheDocument();
+    expect(savedOutings().me).toBeUndefined();
+  });
+
+  it('logs for someone on the list by name, and leaves a question about air as a question', async () => {
+    window.localStorage.setItem('vayu.pins.v1', JSON.stringify(pins));
     window.localStorage.setItem(
       'vayu.people.v1',
       JSON.stringify({
@@ -436,23 +518,28 @@ describe('the best hour in the context', () => {
         current: 'me',
       }),
     );
-    render(
-      <MemoryRouter>
-        <AssistantFab source={localAssistant} />
-      </MemoryRouter>,
-    );
-    await userEvent.click(screen.getByRole('button', { name: 'Vayu assistant' }));
-    const box = screen.getByRole('textbox', { name: 'Your message' });
-    await userEvent.type(box, 'Asha took a walk in the park for 40 minutes{enter}');
-    const reply = await screen.findByText(/^Added to Asha’s day/u);
-    expect(reply).toHaveTextContent('40 minutes');
-    const saved = JSON.parse(window.localStorage.getItem('vayu.outings.v1') ?? '{}') as Record<
-      string,
-      { minutes: number }[]
-    >;
-    expect(saved.kid?.[0]?.minutes).toBe(40);
-    await userEvent.type(box, 'Asha went for a walk in the park{enter}');
-    expect(await screen.findByText(/For how long was Asha outside/u)).toBeInTheDocument();
-    expect(saved.kid).toHaveLength(1);
+    await openChat();
+    await typeIn('Asha played in the park for 45 minutes');
+    expect(await screen.findByText(/^Added to Asha’s day/u)).toBeInTheDocument();
+    expect(savedOutings().kid?.[0]).toMatchObject({ minutes: 45, activity: 'play' });
+    await typeIn('Do I need a mask?');
+    expect(await screen.findByText(/At AQI \d+/u)).toBeInTheDocument();
+  });
+
+  it('answers a question about school by asking for a school first when none is set', async () => {
+    window.localStorage.setItem('vayu.pins.v1', JSON.stringify([pins[0]]));
+    await openChat();
+    await typeIn('Is school safe today?');
+    expect(await screen.findByText(/Add a school on My Air first/u)).toBeInTheDocument();
+  });
+
+  it('lets someone back out of a log that is half done', async () => {
+    window.localStorage.setItem('vayu.pins.v1', JSON.stringify(pins));
+    await openChat();
+    await typeIn('I took a walk');
+    await screen.findByText(/Where was it/u);
+    await typeIn('never mind');
+    expect(await screen.findByText(/I left it out/u)).toBeInTheDocument();
+    expect(savedOutings().me).toBeUndefined();
   });
 });

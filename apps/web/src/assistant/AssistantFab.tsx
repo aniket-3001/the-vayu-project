@@ -14,7 +14,9 @@ import { apiAssistant } from './api';
 import { buildContext } from './context';
 import { localAssistant } from './local';
 import { RequestForm } from './RequestForm';
-import { addedText, parseOuting } from './outingParse';
+import { addedText } from './outingParse';
+import { isOutdoorStatement, nextStep, readInto, startDraft, type LogDraft } from './logging';
+import { pinForRole, type Role } from '../places/roles';
 import { today } from '../exposure/model';
 import { addOuting, loadOutings, newOuting, saveOutings } from '../exposure/outings';
 import { loadHousehold } from '../exposure/people';
@@ -36,6 +38,8 @@ interface Message {
   readonly text: string;
   readonly basis?: string;
   readonly audioUrl?: string;
+  /** Short answers to tap, when the assistant has asked for something. */
+  readonly chips?: readonly string[];
   /** Somewhere to go from this message, such as the Exposure screen after something was logged. */
   readonly link?: { readonly to: string; readonly label: string };
 }
@@ -114,6 +118,40 @@ export function AssistantFab({
     );
   }, [first, reading, fires, household.people]);
 
+  // The air at the school and at the work place too, so a question about either is answered from there.
+  const schoolPin = pinForRole('school', pins);
+  const workPin = pinForRole('work', pins);
+  const schoolState = useToday(schoolPin);
+  const workState = useToday(workPin);
+  const schoolReading = schoolState?.status === 'ready' ? schoolState.data : undefined;
+  const workReading = workState?.status === 'ready' ? workState.data : undefined;
+  const schoolContext = useMemo<AssistantContext | undefined>(
+    () =>
+      schoolPin === undefined || schoolReading === undefined
+        ? undefined
+        : buildContext(
+            schoolPin.name,
+            schoolReading,
+            alertsFor(schoolReading, fires),
+            fires,
+            household.people,
+          ),
+    [schoolPin, schoolReading, fires, household.people],
+  );
+  const workContext = useMemo<AssistantContext | undefined>(
+    () =>
+      workPin === undefined || workReading === undefined
+        ? undefined
+        : buildContext(
+            workPin.name,
+            workReading,
+            alertsFor(workReading, fires),
+            fires,
+            household.people,
+          ),
+    [workPin, workReading, fires, household.people],
+  );
+
   useEffect(() => {
     if (open) input.current?.focus();
     else {
@@ -159,6 +197,7 @@ export function AssistantFab({
   const staged = useRef(readDemo()?.ask);
   const asked = useRef(false);
   const waitingFor = useRef<string | undefined>(undefined);
+  const logging = useRef<LogDraft | undefined>(undefined);
 
   const ask = (question: string): void => {
     const text = question.trim();
@@ -168,42 +207,82 @@ export function AssistantFab({
     const id = next.current++;
     setMessages((m) => [...m, { id, from: 'you', text }]);
     setDraft('');
-    // Something someone did outdoors is added to their day, not answered.
+    // Something someone did outdoors is put together from what, where and for how long, asking for what is
+    // missing, and then added to their day. It is not answered as a question.
     const people = loadHousehold(window.localStorage).people;
-    const logged = parseOuting(text, people, loadPins(window.localStorage), {
-      date: today(),
-      minutes: nowMinutes(),
-    });
-    if (logged !== undefined) {
-      let reply: string;
-      let link: Message['link'];
-      if (logged.kind === 'add') {
-        const mine = loadOutings(window.localStorage, logged.person.id);
-        saveOutings(
-          window.localStorage,
-          logged.person.id,
-          addOuting(mine, newOuting(logged.outing, mine)),
-        );
-        reply = addedText(logged.person, logged.outing);
-        // Where to see it: that person's outdoor ring, at the hour it began.
-        link = {
-          to: `/exposure?person=${encodeURIComponent(logged.person.id)}&tab=outdoor&hour=${String(Math.floor((logged.outing.start + logged.outing.minutes - 1) / 60))}`,
-          label: 'See it in Exposure',
-        };
-      } else reply = logged.text;
+    const allPins = loadPins(window.localStorage);
+    const clock = { date: today(), minutes: nowMinutes() };
+    const say = (words: string, extra: Partial<Message> = {}): void => {
       setMessages((m) => [
         ...m,
-        {
-          id: next.current++,
-          from: 'vayu',
-          text: reply,
-          basis: logged.kind === 'add' ? 'Added to Exposure' : 'Outdoor time',
-          ...(link === undefined ? {} : { link }),
-        },
+        { id: next.current++, from: 'vayu', text: words, basis: 'Outdoor time', ...extra },
       ]);
-      if (spoken) void voice.speak(reply);
+      if (spoken) void voice.speak(words);
+    };
+    let draftNow: LogDraft | undefined;
+    if (logging.current !== undefined) {
+      const held = logging.current;
+      if (/^(cancel|never mind|nevermind|forget it|stop|no)\b/iu.test(text)) {
+        logging.current = undefined;
+        say('Okay, I left it out.');
+        return;
+      }
+      const read = readInto(held, text, allPins);
+      const changed =
+        read.activity !== held.activity ||
+        JSON.stringify(read.where) !== JSON.stringify(held.where) ||
+        read.minutes !== held.minutes ||
+        read.date !== held.date ||
+        read.start !== held.start;
+      if (changed) draftNow = read;
+      else if (text.trim().endsWith('?')) logging.current = undefined;
+      else draftNow = held;
+    } else if (isOutdoorStatement(text)) {
+      draftNow = startDraft(text, people, allPins);
+    }
+    if (draftNow !== undefined) {
+      const step = nextStep(draftNow, people, allPins, clock);
+      if (step.kind === 'ask') {
+        logging.current = step.draft;
+        say(step.text, { chips: step.chips });
+      } else if (step.kind === 'save') {
+        logging.current = undefined;
+        const mine = loadOutings(window.localStorage, step.person.id);
+        saveOutings(
+          window.localStorage,
+          step.person.id,
+          addOuting(mine, newOuting(step.outing, mine)),
+        );
+        say(addedText(step.person, step.outing), {
+          basis: 'Added to Exposure',
+          link: {
+            to: `/exposure?person=${encodeURIComponent(step.person.id)}&hour=${String(Math.floor((step.outing.start + step.outing.minutes - 1) / 60))}`,
+            label: 'See it in Exposure',
+          },
+        });
+      } else {
+        logging.current = undefined;
+        say(step.text);
+      }
       return;
     }
+    // A question about a place that has not been set is answered by asking for it first.
+    const asked = text.toLowerCase();
+    const wanted: Role | undefined = /\b(school|college)\b/u.test(asked)
+      ? 'school'
+      : /\b(work|office)\b/u.test(asked) && !/\b(workout|works)\b/u.test(asked)
+        ? 'work'
+        : undefined;
+    if (wanted !== undefined && pinForRole(wanted, allPins) === undefined) {
+      const words =
+        wanted === 'school'
+          ? 'Add a school on My Air first, so I can tell you about the air there. Use the Work or school field, and choose School.'
+          : 'Add a work place on My Air first, so I can tell you about the air there. Use the Work or school field, and choose Work.';
+      say(words, { basis: 'No place set' });
+      return;
+    }
+    const roleContext =
+      wanted === 'school' ? schoolContext : wanted === 'work' ? workContext : undefined;
     if (context === undefined) {
       const stuck = first === undefined || state?.status === 'error';
       if (!stuck) {
@@ -223,7 +302,7 @@ export function AssistantFab({
       if (spoken) void voice.speak(words);
       return;
     }
-    respond(text, context);
+    respond(text, roleContext ?? context);
   };
 
   /** Asks the source and shows its answer, which is also spoken unless it is muted. */
@@ -432,6 +511,23 @@ export function AssistantFab({
                             <Volume2 size={14} aria-hidden="true" /> Listen
                           </button>
                         </p>
+                      )}
+                      {m.chips !== undefined && m.chips.length > 0 && (
+                        <div className="chips bubble-chips" role="group" aria-label="Quick answers">
+                          {m.chips.map((chip) => (
+                            <button
+                              key={chip}
+                              type="button"
+                              className="choice"
+                              disabled={busy}
+                              onClick={() => {
+                                ask(chip);
+                              }}
+                            >
+                              {chip}
+                            </button>
+                          ))}
+                        </div>
                       )}
                       {m.link !== undefined && (
                         <Link

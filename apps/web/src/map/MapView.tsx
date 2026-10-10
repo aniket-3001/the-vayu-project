@@ -76,6 +76,37 @@ function fieldImage(air: readonly Monitor[], tile: Window): string {
   return canvas.toDataURL();
 }
 
+/** A flame, drawn once from an SVG, for the fires on the map. Undefined where images cannot be made. */
+let flame: Promise<ImageData | undefined> | undefined;
+function loadFlame(): Promise<ImageData | undefined> {
+  flame ??= new Promise((resolve) => {
+    const svg =
+      '<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24">' +
+      '<path d="M12 2c1 3.5 5 5.5 5 10.2A5 5 0 0 1 12 17a5 5 0 0 1-5-4.8c0-1.6.7-2.8 1.6-3.8.4 1.2 1.1 2 2 2.4C10.2 8 10.6 4.6 12 2z" ' +
+      'fill="#e8743b" stroke="#ffffff" stroke-width="1.6" stroke-linejoin="round"/>' +
+      '<path d="M12 22a4 4 0 0 0 4-4c0-1.6-1.4-2.6-2.4-4-.4 1-.9 1.5-1.6 1.8-.2-1.3-.9-2.2-1.6-3C9.4 14 8 15.4 8 18a4 4 0 0 0 4 4z" ' +
+      'fill="#f7b32b" stroke="#ffffff" stroke-width="1" stroke-linejoin="round"/></svg>';
+    const image = new Image(64, 64);
+    image.onload = () => {
+      const canvas = document.createElement('canvas');
+      canvas.width = 64;
+      canvas.height = 64;
+      const ctx = canvas.getContext('2d');
+      if (ctx === null) {
+        resolve(undefined);
+        return;
+      }
+      ctx.drawImage(image, 0, 0, 64, 64);
+      resolve(ctx.getImageData(0, 0, 64, 64));
+    };
+    image.onerror = () => {
+      resolve(undefined);
+    };
+    image.src = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
+  });
+  return flame;
+}
+
 const FIELD_IDS = FIELD_TILES.map((_, i) => `field-${String(i)}`);
 
 /**
@@ -158,26 +189,25 @@ export function MapView({
           type: 'raster',
           source: id,
           paint: {
-            'raster-opacity': 0.8,
+            // Strong across a continent, fading as you come in, so the streets and the monitors show.
+            'raster-opacity': [
+              'interpolate',
+              ['linear'],
+              ['zoom'],
+              0,
+              0.8,
+              7,
+              0.7,
+              11,
+              0.3,
+              14,
+              0.12,
+            ] as never,
             'raster-fade-duration': 0,
             'raster-resampling': 'linear',
           },
           layout: { visibility: on.gradient ? 'visible' : 'none' },
         });
-      });
-      m.addSource('fires', { type: 'geojson', data: firesGeoJson(latest.current.fires) });
-      m.addLayer({
-        id: 'fires',
-        type: 'circle',
-        source: 'fires',
-        paint: {
-          'circle-color': '#e8743b',
-          'circle-opacity': 0.8,
-          'circle-radius': ['interpolate', ['linear'], ['get', 'frp'], 4, 2.5, 50, 6],
-          'circle-stroke-color': '#ffffff',
-          'circle-stroke-width': 1,
-        },
-        layout: { visibility: on.fires ? 'visible' : 'none' },
       });
       m.addSource('monitors', {
         type: 'geojson',
@@ -226,6 +256,39 @@ export function MapView({
           visibility: on.monitors ? 'visible' : 'none',
         },
         paint: { 'text-color': '#334155' },
+      });
+      // Fires are drawn last, on top of the monitors, as flames: a dot first so something shows at once, and the
+      // flame over it once its picture has loaded.
+      m.addSource('fires', { type: 'geojson', data: firesGeoJson(latest.current.fires) });
+      m.addLayer({
+        id: 'fires-dot',
+        type: 'circle',
+        source: 'fires',
+        paint: {
+          'circle-color': '#e8743b',
+          'circle-opacity': 0.9,
+          'circle-radius': ['interpolate', ['linear'], ['zoom'], 0, 4, 6, 6, 10, 8],
+          'circle-stroke-color': '#ffffff',
+          'circle-stroke-width': 1.5,
+        },
+        layout: { visibility: on.fires ? 'visible' : 'none' },
+      });
+      void loadFlame().then((image) => {
+        if (image === undefined || m.getSource('fires') === undefined) return;
+        if (!m.hasImage('flame')) m.addImage('flame', image, { pixelRatio: 2 });
+        if (m.getLayer('fires') !== undefined) return;
+        m.addLayer({
+          id: 'fires',
+          type: 'symbol',
+          source: 'fires',
+          layout: {
+            'icon-image': 'flame',
+            'icon-size': ['interpolate', ['linear'], ['zoom'], 0, 0.7, 6, 0.9, 10, 1.1] as never,
+            'icon-allow-overlap': true,
+            'icon-ignore-placement': true,
+            visibility: latest.current.layers.fires ? 'visible' : 'none',
+          },
+        });
       });
     };
 
@@ -297,7 +360,7 @@ export function MapView({
     const apply = (): void => {
       show(['monitors-dot', 'monitors-label'], layers.monitors);
       show(FIELD_IDS, layers.gradient);
-      show(['fires'], layers.fires);
+      show(['fires-dot', 'fires'], layers.fires);
     };
     apply();
   }, [layers]);

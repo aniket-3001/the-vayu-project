@@ -36,6 +36,11 @@ Unticked means not yet seen live.
 | Search         | "DAV Public School Sector 49 Gurugram" is found, and shows a reading with its monitor's distance or an Estimate | [ ]  |
 | Voice          | Every answer is read in Kajal's voice; the mic shows listening, then the words, and lets go after a few seconds | [ ]  |
 | AR Lens        | Particles have a black outline and spray; the colour scale is at the top; the whole scene fits on a laptop      | [ ]  |
+| Set-up         | A new profile shows Home, Work or school and Park as dotted fields; setting one puts a card over it             | [ ]  |
+| Exposure       | Three rings only; an hour fills one ring; "i" opens the guide card; the centre has only the person icon         | [ ]  |
+| Assistant      | "I took a walk" asks where, then how long; "at school" with no school set says to add one on My Air first       | [ ]  |
+| Map            | Flames show where the alerts say fires are, and stay at every zoom                                              | [ ]  |
+| My Air         | Alerts first, then Breathe better today, then the cards; a card's label is its heading, the address under it    | [ ]  |
 | Laptop         | Every screen at a laptop width                                                                                  | [ ]  |
 | Offline        | Switch the phone to airplane mode: the last good readings stay and say how old they are                         | [ ]  |
 
