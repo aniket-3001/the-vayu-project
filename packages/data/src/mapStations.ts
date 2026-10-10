@@ -44,6 +44,7 @@ interface OpenAqLatest {
 const isPm25 = (name: string): boolean =>
   name.toLowerCase().replaceAll(/[^a-z0-9]/g, '') === 'pm25';
 const HOUR_MS = 3_600_000;
+const MAX_RATE_LIMIT_WAITS = 3;
 /** The upper end of what a PM2.5 sensor can honestly report: beyond it a reading is a fault, not air. */
 const MAX_PLAUSIBLE_PM25 = 1000;
 
@@ -59,8 +60,17 @@ export function openAqMapStationRepo(options: OpenAqMapOptions): MapStationRepo 
   const doFetch = options.fetchImpl ?? fetch;
   const sleep =
     options.sleep ?? ((ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms)));
+  // Told to slow down, a run waits as long as OpenAQ says (at most 20 seconds) and asks again, but only a few
+  // times in all, so a provider that keeps refusing cannot hold the run past its time limit.
+  let waits = 0;
   const get = async <T>(path: string): Promise<T> => {
     const res = await doFetch(`${baseUrl}${path}`, { headers: { 'X-API-Key': options.apiKey } });
+    if (res.status === 429 && waits < MAX_RATE_LIMIT_WAITS) {
+      waits += 1;
+      const asked = Number(res.headers.get('retry-after'));
+      await sleep(Math.min(Number.isFinite(asked) && asked > 0 ? asked : 5, 20) * 1000);
+      return get<T>(path);
+    }
     if (!res.ok) throw new Error(`OpenAQ request failed: ${String(res.status)}`);
     return (await res.json()) as T;
   };

@@ -3,7 +3,12 @@ import { openAqMapStationRepo } from './mapStations';
 
 const AS_OF = '2026-10-10T12:00:00Z';
 const json = (body: unknown, ok = true): Response =>
-  ({ ok, status: ok ? 200 : 429, json: () => Promise.resolve(body) }) as Response;
+  ({
+    ok,
+    status: ok ? 200 : 429,
+    headers: new Headers(),
+    json: () => Promise.resolve(body),
+  }) as Response;
 
 const location = (id: number, name: string, last: string, parameter = 'pm25'): unknown => ({
   id,
@@ -100,10 +105,36 @@ describe('the map’s monitors', () => {
     expect(fetchImpl).toHaveBeenCalledTimes(3); // one list, two latest
   });
 
+  it('waits as OpenAQ asks when told to slow down, and asks again', async () => {
+    const limited = {
+      ok: false,
+      status: 429,
+      headers: new Headers({ 'retry-after': '7' }),
+    } as Response;
+    const good = json({ results: [] });
+    const fetchImpl = vi.fn().mockResolvedValueOnce(limited).mockResolvedValue(good);
+    const sleep = vi.fn(() => Promise.resolve());
+    await openAqMapStationRepo({ apiKey: 'k', fetchImpl, sleep }).latest(AS_OF);
+    expect(sleep).toHaveBeenCalledWith(7000);
+    expect(fetchImpl).toHaveBeenCalledTimes(2);
+  });
+
+  it('gives up after a few waits, so a provider that keeps refusing cannot hold a run for ever', async () => {
+    const limited = { ok: false, status: 429, headers: new Headers() } as Response;
+    const fetchImpl = vi.fn().mockResolvedValue(limited);
+    const sleep = vi.fn(() => Promise.resolve());
+    await expect(
+      openAqMapStationRepo({ apiKey: 'k', fetchImpl, sleep }).latest(AS_OF),
+    ).rejects.toThrow(/429/u);
+    expect(sleep).toHaveBeenCalledTimes(3);
+    expect(fetchImpl).toHaveBeenCalledTimes(4);
+  });
+
   it('fails when the list itself cannot be read, so the schedule shows the failure', async () => {
     const repo = openAqMapStationRepo({
       apiKey: 'k',
       fetchImpl: vi.fn().mockResolvedValue(json({}, false)),
+      sleep: () => Promise.resolve(),
     });
     await expect(repo.latest(AS_OF)).rejects.toThrow(/OpenAQ request failed: 429/u);
   });
