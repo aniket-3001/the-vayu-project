@@ -3,6 +3,7 @@ import { Info, UserRound, X } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { levelForAqi } from '../../design/levels';
 import type { Cell, Where } from '../model';
+import { hourName } from '../../today/time';
 import { SPOT_LABELS } from '../spots';
 
 const SIZE = 372;
@@ -188,7 +189,7 @@ export function Dial({
             textAnchor="middle"
             className={h % 6 === 0 ? 'dial-label strong' : 'dial-label'}
           >
-            {h}
+            {hourName(h % 24)}
           </text>
         );
       })}
@@ -280,9 +281,9 @@ export function Dial({
         })()}
       <circle cx={C} cy={C} r={INNER - 18} className="dial-centre" />
       <UserRound
-        x={C - 18}
-        y={C - 52}
-        size={36}
+        x={C - 24}
+        y={C - 24}
+        size={48}
         strokeWidth={1.5}
         className="dial-person"
         aria-hidden="true"

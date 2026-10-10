@@ -314,4 +314,30 @@ describe('outdoor time that was logged', () => {
     ]);
     expect(cells.filter((c) => c.where === 'outdoor').map((c) => c.hour)).toEqual([16, 17]);
   });
+
+  it('overwrites the part of an hour that was walked, over a day at home with no phone to say otherwise', () => {
+    const at = countedCells(
+      dayCells(adult, [], {}, today(), [walk({ date: today(), start: 16 * 60 + 30, minutes: 30 })]),
+    ).find((c) => c.hour === 16);
+    const homeOnly = countedCells(dayCells(adult, [], {}, today())).find((c) => c.hour === 16);
+    expect(homeOnly?.where).toBe('home');
+    expect(at?.where).toBe('outdoor');
+    expect(at?.share).toBe(0.5);
+    // Half the hour is now the walk's air and half is still home's, so it sits between the two.
+    const open = ambientByHour(park, today())[16] ?? 0;
+    expect(at?.pm25 ?? 0).toBeGreaterThan(homeOnly?.pm25 ?? 0);
+    expect(at?.pm25 ?? 0).toBeLessThan(open);
+  });
+
+  it('lets a logged walk overrule a phone that says home, for the minutes it covers', () => {
+    const live = { '16': { lat: home.pin.lat, lng: home.pin.lng } };
+    const cells = dayCells(adult, [], live, today(), [
+      walk({ date: today(), start: 16 * 60 + 30, minutes: 30 }),
+    ]);
+    const counted = countedCells(cells).find((c) => c.hour === 16);
+    expect(cells.some((c) => c.where === 'live' && c.hour === 16)).toBe(true);
+    expect(counted?.where).toBe('outdoor');
+    const phoneOnly = countedCells(dayCells(adult, [], live, today())).find((c) => c.hour === 16);
+    expect(phoneOnly?.where).toBe('live');
+  });
 });

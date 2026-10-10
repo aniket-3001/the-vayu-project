@@ -52,6 +52,9 @@ Unticked means not yet seen live.
 | My Air         | Alerts sit in Breathe better today: a red one pulses, yellow ones are calm; tips swipe, points are on gold coins | [ ]  |
 | My Air         | A place card shows its three days and source with no arrow; the cigarette tile sits under the AQI                | [ ]  |
 | Times          | Every time reads in am and pm                                                                                    | [ ]  |
+| Assistant      | "log a 30 minute walk" asks where, adds it, and the hour shows in the outdoor ring and the graph's line          | [ ]  |
+| Exposure       | The window slides along the day's line; the dial is in am and pm; the person icon is centred                     | [ ]  |
+| Lens           | The window slides along the next day and a half and says the AQI of the hour under it                            | [ ]  |
 | Laptop         | Every screen at a laptop width                                                                                   | [ ]  |
 | Offline        | Switch the phone to airplane mode: the last good readings stay and say how old they are                          | [ ]  |
 

@@ -118,6 +118,35 @@ describe('the Exposure screen', () => {
     expect(document.querySelector('.dial .ring.lifted')).not.toBeInTheDocument();
   });
 
+  it('has a labelled day timeline with a one-hour window, coloured by AQI, in am and pm', () => {
+    open();
+    const slider = screen.getByRole('slider', { name: 'Hour' });
+    expect(slider).toHaveAttribute('max', '23');
+    expect(document.querySelectorAll('.tl-cell')).toHaveLength(24);
+    expect(document.querySelector('.tl-cell.picked')).toBeInTheDocument();
+    const labels = Array.from(document.querySelectorAll('.tl-ticks span')).map(
+      (el) => el.textContent,
+    );
+    expect(labels).toEqual(['12 am', '3 am', '6 am', '9 am', '12 pm', '3 pm', '6 pm', '9 pm']);
+    const dialLabels = Array.from(document.querySelectorAll('.dial .dial-label')).map(
+      (el) => el.textContent,
+    );
+    expect(dialLabels).toContain('6 am');
+    expect(dialLabels.join(' ')).not.toMatch(/\b(1[3-9]|2[0-3])\b/u);
+    fireEvent.change(slider, { target: { value: '9' } });
+    expect(document.querySelector('.tl-bubble output')).toHaveTextContent('9 am to 10 am');
+  });
+
+  it('keeps the person in the middle of the circle, at a size that fills it', () => {
+    open();
+    const person = document.querySelector('.dial .dial-person');
+    const centre = document.querySelector('.dial .dial-centre');
+    expect(Number(person?.getAttribute('width'))).toBeGreaterThanOrEqual(44);
+    const size = Number(person?.getAttribute('width'));
+    expect(Number(person?.getAttribute('x')) + size / 2).toBe(Number(centre?.getAttribute('cx')));
+    expect(Number(person?.getAttribute('y')) + size / 2).toBe(Number(centre?.getAttribute('cy')));
+  });
+
   it('opens a person’s timetable when they are pressed, with a place for each part of their day', async () => {
     open();
     const panel = await openPanel('Me');

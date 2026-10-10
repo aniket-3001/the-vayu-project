@@ -1,13 +1,13 @@
 import { Briefcase, GraduationCap, House, MapPin, TreePine, type LucideIcon } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { levelForAqi } from '../design/levels';
 import { airStore, useToday } from '../air/store';
 import { AirError, AirLoading } from '../components/AirState';
 import { AqiScale } from '../components/AqiScale';
 import { liveLocation, useLivePin } from '../places/liveLocation';
 import { usePins } from '../places/usePins';
-import { clock12, dayMonth, weekday } from '../today/time';
+import { clock12, dayMonth, hourName, hourOfDay as hourOfDayOf, weekday } from '../today/time';
+import { TimelineWindow } from '../components/TimelineWindow';
 import { HazeCanvas } from './HazeCanvas';
 import { LIVE_OUTDOOR_NAME, LensCard } from './LensCard';
 import { DIAL_HOURS, bestHour, hazeFor, isNight, lensSeries, windOnScreen } from './model';
@@ -126,12 +126,13 @@ export function LensScreen(): React.JSX.Element {
   // North is up: with no compass, the wind's arrow points the way it blows on a map.
   const arrow = hour.wind === undefined ? 0 : windOnScreen(hour.wind.fromDeg, 0);
   const when = step === 0 ? 'Now' : `${weekday(hour.at)} ${dayMonth(hour.at)}, ${clock12(hour.at)}`;
-  const track = `linear-gradient(to right, ${series
-    .map(
-      (h, i) =>
-        `${levelForAqi(h.aqi).solid} ${String((i / series.length) * 100)}% ${String(((i + 1) / series.length) * 100)}%`,
-    )
-    .join(', ')})`;
+  // The labels under the line: now, then every six hours, with the day's name at midnight.
+  const ticks = series.flatMap((h, i) => {
+    const hourOfDay = Math.floor(hourOfDayOf(h.at));
+    if (i === 0) return [{ index: 0, label: 'Now' }];
+    if (hourOfDay % 6 !== 0 || i < 3) return [];
+    return [{ index: i, label: hourOfDay === 0 ? weekday(h.at) : hourName(hourOfDay) }];
+  });
 
   return (
     <div className="lens-screen">
@@ -168,25 +169,20 @@ export function LensScreen(): React.JSX.Element {
 
         <section className="lens-dial" aria-label="Time">
           <AqiScale aqi={hour.aqi} className="lens-scale" />
-          <div className="dial-labels">
-            <span>{when}</span>
-            <span className="muted small">
-              {step === 0 ? 'Drag for the next day and a half' : `in ${String(step)} h`}
-            </span>
-          </div>
-          <div className="dial-track" style={{ background: track }}>
-            <input
-              type="range"
-              min={0}
-              max={Math.min(DIAL_HOURS, series.length - 1)}
-              value={step}
-              aria-label="Time, hours from now"
-              aria-valuetext={when}
-              onChange={(event) => {
-                setStep(Number(event.target.value));
-              }}
-            />
-          </div>
+          <TimelineWindow
+            slots={series.map((h) => ({ aqi: h.aqi }))}
+            value={step}
+            onChange={setStep}
+            label="Time, hours from now"
+            valueText={when}
+            ticks={ticks}
+            nowIndex={0}
+            bubble={step === 0 ? 'Now' : clock12(hour.at)}
+            max={Math.min(DIAL_HOURS, series.length - 1)}
+          />
+          <p className="muted small lens-hint">
+            {step === 0 ? 'Slide the window along the next day and a half' : `in ${String(step)} h`}
+          </p>
         </section>
       </div>
     </div>

@@ -45,8 +45,12 @@ export interface Cell {
 /** Rings, from the outside in. */
 export const RINGS: readonly Where[] = ['home', 'work', 'school', 'outdoor', 'live'];
 
-/** When two places claim the same hour, the first of these wins in the day's total. */
-export const PRIORITY: readonly Where[] = ['live', 'outdoor', 'work', 'school', 'home'];
+/**
+ * When two places claim the same hour, the first of these wins in the day's total. What a person logged outdoors
+ * comes first, since they said it themselves and the phone may have been left behind; then where the phone was;
+ * then the timetable, and home for whatever is left.
+ */
+export const PRIORITY: readonly Where[] = ['outdoor', 'live', 'work', 'school', 'home'];
 
 // Dates
 

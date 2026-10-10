@@ -543,6 +543,18 @@ describe('the best hour in the context', () => {
     expect(savedOutings().me).toBeUndefined();
   });
 
+  it('takes a request to log as well as a statement, and a time range', async () => {
+    window.localStorage.setItem('vayu.pins.v1', JSON.stringify(pins));
+    await openChat();
+    await typeIn('log a 30 minute walk at the park');
+    expect(await screen.findByText(/^Added to your day/u)).toBeInTheDocument();
+    expect(savedOutings().me?.[0]).toMatchObject({ minutes: 30, activity: 'walk' });
+    await typeIn('add a run at home from 4 to 4:45 pm');
+    expect(await screen.findAllByText(/^Added to your day/u)).toHaveLength(2);
+    const second = savedOutings().me?.[1] as { start: number; minutes: number } | undefined;
+    expect(second).toMatchObject({ start: 16 * 60, minutes: 45 });
+  });
+
   describe('reporting a fire', () => {
     const savedReports = (): { lat: number; lng: number; note?: string }[] =>
       JSON.parse(window.localStorage.getItem('vayu.fireReports.v1') ?? '[]') as {

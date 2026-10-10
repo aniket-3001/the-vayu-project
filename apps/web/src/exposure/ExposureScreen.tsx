@@ -30,6 +30,7 @@ import { personaById } from './persona';
 import { DAY_LABELS, initials, MAX_PEOPLE, personaOf } from './people';
 import { loadAllSpots } from './spots';
 import { sourcesNote } from './sources';
+import { TimelineWindow } from '../components/TimelineWindow';
 import { DIAL_RINGS, Dial, DialInfo, WHERE_LABELS, ringOf, type DialRing } from './ui/Dial';
 import { Summary } from './ui/Summary';
 import { WeekStrip } from './ui/WeekStrip';
@@ -45,6 +46,8 @@ type View = DateKey;
 const WEEK = 'week';
 
 const hourSpan = (hour: number): string => `${hourName(hour)} to ${hourName(hour + 1)}`;
+/** The labels under the day's timeline: every three hours, in am and pm. */
+const HOUR_TICKS = [0, 3, 6, 9, 12, 15, 18, 21].map((index) => ({ index, label: hourName(index) }));
 
 const titleFor = (view: View): string =>
   view === WEEK
@@ -154,6 +157,11 @@ export function ExposureScreen({
     [visible, units, outings, history],
   );
   const atPicked = shown.filter((cell) => cell.hour === picked);
+  const hourSlots = useMemo(
+    () =>
+      Array.from({ length: 24 }, (_, hour) => ({ aqi: shown.find((c) => c.hour === hour)?.aqi })),
+    [shown],
+  );
   const ringNames: Record<DialRing, string> = {
     home: 'Home',
     // Said both ways, whoever it is: the ring holds school hours or work hours, whichever the timetable has.
@@ -400,37 +408,28 @@ export function ExposureScreen({
               />
               <DialInfo names={ringNames} />
             </div>
-            <div className="hour-row">
-              <div className="hour-picker">
-                <label htmlFor="hour">Hour</label>
-                <input
-                  id="hour"
-                  type="range"
-                  min={0}
-                  max={23}
-                  value={picked}
-                  onChange={(event) => {
-                    setPicked(Number(event.target.value));
-                  }}
-                />
-                <output htmlFor="hour">{hourSpan(picked)}</output>
-              </div>
-              <button
-                type="button"
-                className="dial-log"
-                aria-label={isMe ? 'Log outdoor time' : `Log outdoor time for ${person.name}`}
-                onClick={() => {
-                  setLogging(true);
-                }}
-              >
-                <Plus size={18} strokeWidth={2.5} aria-hidden="true" />
-                <span>
-                  Log outdoor
-                  <br />
-                  time
-                </span>
-              </button>
-            </div>
+            <TimelineWindow
+              slots={hourSlots}
+              value={picked}
+              onChange={setPicked}
+              label="Hour"
+              inputId="hour"
+              ticks={HOUR_TICKS}
+              nowIndex={isToday ? hoursSoFar(today()) : undefined}
+              bubble={hourSpan(picked)}
+              max={23}
+            />
+            <button
+              type="button"
+              className="dial-log"
+              aria-label={isMe ? 'Log outdoor time' : `Log outdoor time for ${person.name}`}
+              onClick={() => {
+                setLogging(true);
+              }}
+            >
+              <Plus size={18} strokeWidth={2.5} aria-hidden="true" />
+              <span>Log outdoor time</span>
+            </button>
             <div className="readout" aria-live="polite">
               {atPicked.length === 0 ? (
                 <p className="muted">
@@ -459,6 +458,9 @@ export function ExposureScreen({
                         <sub>2.5</sub>
                         {cell.source === 'assumed' || cell.source === 'trees' ? ' (assumed)' : ''}
                         {cell.source === 'unit' ? ' (from a nearby unit)' : ''}
+                        {cell.where === 'outdoor' && (cell.share ?? 1) < 1
+                          ? ` · ${String(Math.round((cell.share ?? 1) * 60))} min of this hour outside, the rest where you were`
+                          : ''}
                       </span>
                     </li>
                   ))}

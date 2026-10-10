@@ -134,14 +134,24 @@ describe('the AR Lens', () => {
     expect(screen.getByRole('region', { name: 'The air here' }).textContent).not.toBe(unhealthy);
   });
 
-  it('has a time dial that moves the picture through the next day and a half', () => {
+  it('has a labelled timeline with a one-hour window that moves the picture through the next day and a half', () => {
     open();
     const dial = screen.getByRole('slider', { name: 'Time, hours from now' });
     expect(dial).toHaveAttribute('max', '36');
-    expect(screen.getByText('Now')).toBeInTheDocument();
+    const bubble = (): string | null | undefined =>
+      document.querySelector('.tl-bubble output')?.textContent;
+    expect(bubble()).toBe('Now');
+    expect(document.querySelectorAll('.tl-cell').length).toBeGreaterThanOrEqual(37);
+    expect(document.querySelector('.tl-cell.picked')).toBeInTheDocument();
+    const labels = Array.from(document.querySelectorAll('.tl-ticks span')).map(
+      (el) => el.textContent,
+    );
+    expect(labels[0]).toBe('Now');
+    expect(labels.some((l) => /^\d{1,2} [ap]m$/u.test(l ?? ''))).toBe(true);
     fireEvent.change(dial, { target: { value: '5' } });
     expect(screen.getByText('in 5 h')).toBeInTheDocument();
-    expect(screen.queryByText('Now')).not.toBeInTheDocument();
+    expect(bubble()).toBe('10:30 pm');
+    expect(document.querySelector('.tl-bubble b')?.textContent).toMatch(/^AQI \d+$/u);
     expect(dial.getAttribute('aria-valuetext')).toMatch(/Sat 10 Oct, 10:30 pm/u);
   });
 

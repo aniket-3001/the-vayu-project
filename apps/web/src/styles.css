@@ -4526,3 +4526,156 @@ h2 {
   gap: 8px;
   white-space: nowrap;
 }
+
+/* ---- The timeline window: a labelled line coloured by AQI, and a one-slot window you slide along it ---- */
+.timeline {
+  display: grid;
+  gap: 4px;
+  padding: 40px 6px 0;
+}
+.tl-track {
+  position: relative;
+  height: 32px;
+  cursor: grab;
+  touch-action: pan-y;
+  user-select: none;
+}
+.tl-track:active {
+  cursor: grabbing;
+}
+.tl-bar {
+  display: grid;
+  grid-template-columns: repeat(var(--slots, 24), minmax(0, 1fr));
+  width: 100%;
+  height: 100%;
+  border-radius: 8px;
+  background: #e6ecf4;
+}
+.tl-cell {
+  min-width: 0;
+  background: #dfe6ef;
+  transition: transform 140ms ease;
+}
+.tl-cell:first-child {
+  border-radius: 8px 0 0 8px;
+}
+.tl-cell:last-child {
+  border-radius: 0 8px 8px 0;
+}
+.tl-cell.blank {
+  background: repeating-linear-gradient(135deg, #e3e9f1 0 4px, #edf1f7 4px 8px);
+}
+/* The picked slot is drawn larger, as if the window magnified it */
+.tl-cell.picked {
+  z-index: 1;
+  border-radius: 5px;
+  box-shadow: 0 0 0 1.5px #fff;
+  transform: scale(2.3, 1.38);
+}
+.tl-window {
+  position: absolute;
+  top: -8px;
+  z-index: 2;
+  height: calc(100% + 16px);
+  min-width: 30px;
+  border: 2.5px solid var(--text);
+  border-radius: 9px;
+  background: rgb(255 255 255 / 0.1);
+  box-shadow:
+    0 0 0 1px rgb(255 255 255 / 0.8),
+    0 6px 14px -8px rgb(61 74 92 / 0.6);
+  transform: translateX(-50%);
+  transition: left 90ms ease-out;
+  pointer-events: none;
+}
+.tl-bubble {
+  position: absolute;
+  bottom: calc(100% + 6px);
+  left: 50%;
+  display: inline-flex;
+  align-items: baseline;
+  gap: 8px;
+  padding: 4px 10px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--card);
+  box-shadow: 0 6px 14px -8px rgb(61 74 92 / 0.5);
+  font-size: 13px;
+  white-space: nowrap;
+  transform: translateX(-50%);
+}
+.tl-bubble b {
+  font-size: 14px;
+}
+.tl-window.at-start .tl-bubble {
+  left: 0;
+  transform: none;
+}
+.tl-window.at-end .tl-bubble {
+  right: 0;
+  left: auto;
+  transform: none;
+}
+.tl-now {
+  position: absolute;
+  top: -3px;
+  width: 2px;
+  height: calc(100% + 6px);
+  border-radius: 1px;
+  background: #3b82c4;
+  transform: translateX(-50%);
+  pointer-events: none;
+}
+.tl-input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  opacity: 0;
+  pointer-events: none;
+}
+.tl-track:focus-within .tl-window {
+  outline: 3px solid #3b82c4;
+  outline-offset: 2px;
+}
+.tl-ticks {
+  position: relative;
+  height: 18px;
+  margin-top: 8px;
+}
+.tl-ticks span {
+  position: absolute;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
+  transform: translateX(-50%);
+}
+.tl-ticks span:first-child {
+  transform: translateX(-30%);
+}
+.dial-log {
+  justify-self: end;
+  display: inline-flex;
+  width: auto;
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+  padding: 0 14px 0 6px;
+  min-height: 48px;
+  border-radius: 999px;
+  background: #e8f6ed;
+  font-size: 14px;
+}
+.dial-log svg {
+  padding: 8px;
+}
+.lens-dial .timeline {
+  padding: 36px 4px 0;
+}
+
+.lens-hint {
+  margin: 4px 0 0;
+  text-align: center;
+}

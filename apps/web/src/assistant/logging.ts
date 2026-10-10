@@ -61,6 +61,28 @@ const WHERE_WORDS: readonly (readonly [Role, RegExp])[] = [
   ['home', /\b(home|house|flat|apartment)\b/u],
 ];
 
+/** "from 4:30 to 5" or "4 to 4:30 pm": a start and a length, when both ends are said. */
+function rangeIn(text: string): { readonly start: number; readonly minutes: number } | undefined {
+  const m =
+    /\b(?:from\s+)?(\d{1,2})(?::(\d{2}))?\s*(am|pm)?\s*(?:to|till|until|-|–)\s*(\d{1,2})(?::(\d{2}))?\s*(am|pm)?\b/u.exec(
+      text,
+    );
+  if (m === null) return undefined;
+  const to = (hour: string, minute: string | undefined, mer: string | undefined): number => {
+    let h = Number(hour);
+    if (mer === 'pm' && h < 12) h += 12;
+    if (mer === 'am' && h === 12) h = 0;
+    return h * 60 + Number(minute ?? 0);
+  };
+  const end = to(m[4] ?? '0', m[5], m[6]);
+  let start = to(m[1] ?? '0', m[2], m[3] ?? m[6]);
+  // "4 to 4:30 pm": the start has the same half of the day as the end, unless that puts it after the end.
+  if (start >= end && start >= 12 * 60 && m[3] === undefined) start -= 12 * 60;
+  const minutes = end - start;
+  if (start < 0 || minutes < 5 || minutes > 6 * 60 || end > 24 * 60) return undefined;
+  return { start, minutes };
+}
+
 function startIn(text: string): number | undefined {
   const at = /\bat\s+(\d{1,2})(?::(\d{2}))?\s*(am|pm)?\b/u.exec(text);
   if (at !== null) {
@@ -76,10 +98,22 @@ function startIn(text: string): number | undefined {
   return undefined;
 }
 
-/** Whether a sentence is someone saying what they did outdoors, and not asking something. */
+/** Asking for it to be written down: "log a 30 minute walk", "add my walk", "I want to record a run". */
+const LOGGING = /\b(log|logs|logged|add|record|note|enter|track|save|count|put)\b/u;
+/** An activity with a length of time beside it, with no verb: "30 minute walk", "walk 30 min". */
+const TIMED =
+  /\b\d+(?:\.\d+)?\s*(?:min|mins|minutes?|hours?|hrs?)\s+(?:walk|run|jog|stroll|cycle|ride|play)\b|\b(?:walk|walked|run|ran|jog|jogged|stroll|cycle|cycled|play|played)\b[^.?]*\b\d+(?:\.\d+)?\s*(?:min|mins|minutes?|hours?|hrs?)\b/u;
+
+/**
+ * Whether a sentence is someone saying, or asking to be written down, what they did outdoors, and not asking
+ * something about the air.
+ */
 export function isOutdoorStatement(text: string): boolean {
   const t = text.toLowerCase().trim();
-  return !t.endsWith('?') && !QUESTION.test(t) && PAST.test(t) && OUTSIDE.test(t);
+  // A request to log, even politely or as a question: "can you log my walk?". Not "how do I log a walk?".
+  if (LOGGING.test(t) && OUTSIDE.test(t) && !/^(how|what|where|why|when)\b/u.test(t)) return true;
+  if (t.endsWith('?') || QUESTION.test(t)) return false;
+  return (PAST.test(t) && OUTSIDE.test(t)) || TIMED.test(t);
 }
 
 const escape = (word: string): string => word.replace(/[.*+?^${}()|[\]\\]/gu, '\\$&');
@@ -116,6 +150,11 @@ export function readInto(draft: LogDraft, text: string, pins: readonly Pin[]): L
       const found = WHERE_WORDS.find(([, pattern]) => pattern.test(t));
       if (found !== undefined) next = { ...next, where: { role: found[0] } };
     }
+  }
+  const range = rangeIn(t);
+  if (range !== undefined) {
+    if (next.minutes === undefined) next = { ...next, minutes: range.minutes };
+    if (next.start === undefined) next = { ...next, start: range.start };
   }
   if (next.minutes === undefined) {
     const said =
