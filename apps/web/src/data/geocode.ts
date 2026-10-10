@@ -34,10 +34,16 @@ interface PhotonFeature {
   };
 }
 
-const joined = (parts: readonly (string | undefined)[]): string =>
-  [...new Set(parts.filter((part): part is string => part !== undefined && part !== ''))].join(
-    ', ',
-  );
+/** The parts that are there, in order, without repeating one that an earlier part already says. */
+const joined = (parts: readonly (string | undefined)[]): string => {
+  const kept: string[] = [];
+  for (const part of parts) {
+    if (part === undefined || part === '') continue;
+    if (kept.some((earlier) => earlier.includes(part))) continue;
+    kept.push(part);
+  }
+  return kept.join(', ');
+};
 
 /**
  * Photon, the OpenStreetMap search, which knows schools, offices, parks and streets, not just towns. Only what the

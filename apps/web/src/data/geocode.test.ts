@@ -31,6 +31,7 @@ describe('searchPlaces', () => {
     expect(results).toEqual([
       {
         name: 'DAV Public School',
+        // "Sector 49" is in the street already, so it is not said twice.
         detail: "S Block Uppal's Southend, Sector 49, Gurugram, Haryana",
         lat: 28.4086214,
         lng: 77.048266,
