@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { describe, expect, it } from 'vitest';
 import type { Pin } from '../data/pins';
-import { TODAY, YESTERDAY } from '../exposure/model';
+import { today, yesterday } from '../exposure/model';
 import type { Person } from '../exposure/people';
 import { addedText, minutesIn, parseOuting } from './outingParse';
 
@@ -14,7 +14,7 @@ const pins: Pin[] = [
   { id: 'h', name: 'Home', lat: 28.59, lng: 77.05 },
   { id: 'p', name: 'Park', lat: 28.55, lng: 77.2 },
 ];
-const now = { date: TODAY, minutes: 17 * 60 + 30 };
+const now = { date: today(), minutes: 17 * 60 + 30 };
 const parse = (text: string): ReturnType<typeof parseOuting> =>
   parseOuting(text, people, pins, now);
 
@@ -42,7 +42,7 @@ describe('telling the assistant what someone did outdoors', () => {
     expect(got).toMatchObject({
       kind: 'add',
       person: { name: 'Asha' },
-      outing: { activity: 'walk', minutes: 40, trees: true, date: TODAY, pin: { name: 'Park' } },
+      outing: { activity: 'walk', minutes: 40, trees: true, date: today(), pin: { name: 'Park' } },
     });
     if (got?.kind === 'add') expect(got.outing.start).toBe(17 * 60 + 30 - 40);
   });
@@ -57,10 +57,10 @@ describe('telling the assistant what someone did outdoors', () => {
     });
     const evening = parse('Asha walked in the park this evening for 30 minutes');
     expect(evening).toMatchObject({ kind: 'add', outing: { start: 17 * 60 } });
-    const yesterday = parse('Asha went for a walk in the park yesterday morning for 45 minutes');
-    expect(yesterday).toMatchObject({
+    const gone = parse('Asha went for a walk in the park yesterday morning for 45 minutes');
+    expect(gone).toMatchObject({
       kind: 'add',
-      outing: { date: YESTERDAY, start: 7 * 60, minutes: 45 },
+      outing: { date: yesterday(), start: 7 * 60, minutes: 45 },
     });
     expect(parse('Dev walked at 6:30 am for 30 minutes')).toMatchObject({
       outing: { start: 6 * 60 + 30 },

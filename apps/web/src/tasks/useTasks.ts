@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { TODAY } from '../exposure/model';
+import { today } from '../exposure/model';
 import { POINTS } from './model';
 import { loadDone, rankFor, saveDone, streak, toggle, type Done } from './store';
 
@@ -19,12 +19,12 @@ export function useTasks(storage: Storage = window.localStorage): {
       0,
     );
   return {
-    done: new Set(all[TODAY] ?? []),
+    done: new Set(all[today()] ?? []),
     points,
-    streak: streak(all, TODAY),
+    streak: streak(all, today()),
     rank: rankFor(points),
     toggle: (id) => {
-      const next = toggle(all, TODAY, id);
+      const next = toggle(all, today(), id);
       saveDone(storage, next);
       setAll(next);
     },

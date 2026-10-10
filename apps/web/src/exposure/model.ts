@@ -2,13 +2,8 @@ import { compareWithWhoGuideline, usAqi } from '@vayu/core';
 import { pinId, type Pin } from '../data/pins';
 import { sampleIndoorPm25 } from '../devices/devices';
 import { levelForAqi, type Level } from '../design/levels';
-import { sampleIdForPin } from '../places/placeSample';
-import {
-  SAMPLE_AS_OF,
-  SAMPLE_HISTORY_DAYS,
-  SAMPLE_TODAY,
-  sampleAmbientPm25,
-} from '../today/sample';
+import { airStore } from '../air/store';
+import { nowIso, todayKey } from '../clock';
 import { dayMonth, hourOfDay, isoDate, weekday } from '../today/time';
 import { INDOOR_SHARE, TREE_SHARE } from './assumptions';
 import { AT_PLACE_KM, distanceKm } from './geo';
@@ -53,21 +48,26 @@ export const PRIORITY: readonly Where[] = ['live', 'outdoor', 'work', 'school', 
 
 // Dates
 
-export const TODAY: DateKey = SAMPLE_TODAY;
+/** Today's India calendar date, from the app's clock. */
+export const today = (): DateKey => todayKey();
 
 /** The date `n` days from `date`, negative for earlier. */
 export const addDays = (date: DateKey, n: number): DateKey =>
   isoDate(new Date(Date.parse(`${date}T12:00:00+05:30`) + n * 86_400_000).toISOString());
 
-export const YESTERDAY: DateKey = addDays(TODAY, -1);
-/** The earliest date we have any air for. */
-export const EARLIEST: DateKey = addDays(TODAY, -SAMPLE_HISTORY_DAYS);
+export const yesterday = (): DateKey => addDays(today(), -1);
 
-export const hasData = (date: DateKey): boolean => date >= EARLIEST && date <= TODAY;
+/** How many days back we look: the two weeks before today. */
+export const HISTORY_DAYS = 14;
+/** The earliest date we look for air on. */
+export const earliest = (): DateKey => addDays(today(), -HISTORY_DAYS);
+
+/** Whether a date is inside the two weeks we look back over. Whether there is air for it is up to the place. */
+export const hasData = (date: DateKey): boolean => date >= earliest() && date <= today();
 
 /** The seven days before today, oldest first. */
 export const lastWeek = (): readonly DateKey[] =>
-  Array.from({ length: 7 }, (_, i) => addDays(TODAY, i - 7));
+  Array.from({ length: 7 }, (_, i) => addDays(today(), i - 7));
 
 /** "Sat 4 Oct". */
 export function formatDate(date: DateKey): string {
@@ -77,14 +77,14 @@ export function formatDate(date: DateKey): string {
 
 /** Hours of a date (0 to 23) that have finished: 24 for past days, those so far for today, 0 for the rest. */
 export function hoursSoFar(date: DateKey): number {
-  if (date === TODAY) return Math.floor(hourOfDay(SAMPLE_AS_OF));
+  if (date === today()) return Math.floor(hourOfDay(nowIso()));
   return hasData(date) ? 24 : 0;
 }
 
 /** Open-air PM2.5 for each hour of a date at a place; `undefined` where we have no finished reading. */
 export function ambientByHour(pin: Pin, date: DateKey): readonly (number | undefined)[] {
   return hasData(date)
-    ? sampleAmbientPm25(sampleIdForPin(pin), date)
+    ? airStore().ambient(pin, date)
     : Array.from({ length: 24 }, () => undefined);
 }
 
@@ -160,7 +160,7 @@ export function dayCells(
     }
   }
   cells.push(...outdoorCells(outings, date, upTo));
-  if (date === TODAY) {
+  if (date === today()) {
     for (const [key, fix] of Object.entries(live)) {
       const hour = Number(key);
       // A fix can come from the hour in progress, which the schedule leaves out.
@@ -173,9 +173,7 @@ export function dayCells(
         lat: fix.lat,
         lng: fix.lng,
       };
-      const open =
-        sampleAmbientPm25(sampleIdForPin(pin), date)[hour] ??
-        sampleAmbientPm25(sampleIdForPin(pin), date)[hour - 1];
+      const open = ambientByHour(pin, date)[hour] ?? ambientByHour(pin, date)[hour - 1];
       if (open === undefined) continue;
       const near = unitNear(fix, units);
       let got: { pm25: number; source: Source };

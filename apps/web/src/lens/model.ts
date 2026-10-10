@@ -22,10 +22,16 @@ export interface LensHour {
   readonly at: string;
   readonly aqi: number;
   readonly pm25: number;
-  readonly windKmh: number;
-  readonly windFromDeg: number;
+  /** Missing when the weather model had no answer for this hour. */
+  readonly wind?: { readonly kmh: number; readonly fromDeg: number };
   readonly isDay: boolean;
 }
+
+/** Daylight, when the weather model did not say: roughly 6 am to 6 pm India time. Only the scene's brightness uses it. */
+const daylightByClock = (at: string): boolean => {
+  const hour = hourOfDay(at);
+  return hour >= 6 && hour < 18;
+};
 
 /** How many hours the time dial reaches, from now. */
 export const DIAL_HOURS = 36;
@@ -35,9 +41,10 @@ export function lensSeries(data: TodayData): readonly LensHour[] {
     at: point.at,
     aqi: point.aqi,
     pm25: point.pm25,
-    windKmh: point.weather.windKmh,
-    windFromDeg: point.weather.windFromDeg,
-    isDay: point.weather.isDay,
+    ...(point.weather === undefined
+      ? {}
+      : { wind: { kmh: point.weather.windKmh, fromDeg: point.weather.windFromDeg } }),
+    isDay: point.weather?.isDay ?? daylightByClock(point.at),
   }));
 }
 

@@ -54,43 +54,72 @@ export function Hourly({ data }: { readonly data: TodayData }): React.JSX.Elemen
             <Row
               label="Sky"
               points={points}
-              cell={(p) => <WeatherIcon condition={p.weather.condition} isDay={p.weather.isDay} />}
+              cell={(p) =>
+                p.weather === undefined ? (
+                  <Missing />
+                ) : (
+                  <WeatherIcon condition={p.weather.condition} isDay={p.weather.isDay} />
+                )
+              }
             />
             <Row
               label="Temp, °C"
               points={points}
-              cell={(p) => <span className="tnum">{p.weather.tempC}°</span>}
+              cell={(p) =>
+                p.weather === undefined ? (
+                  <Missing />
+                ) : (
+                  <span className="tnum">{p.weather.tempC}°</span>
+                )
+              }
             />
             <Row
               label="Wind, km/h"
               points={points}
-              cell={(p) => (
-                <span className="stack">
-                  <WindArrow fromDeg={p.weather.windFromDeg} size={18} />
-                  <span className="tnum">{p.weather.windKmh}</span>
-                  <span className="unit">km/h</span>
-                </span>
-              )}
+              cell={(p) =>
+                p.weather === undefined ? (
+                  <Missing />
+                ) : (
+                  <span className="stack">
+                    <WindArrow fromDeg={p.weather.windFromDeg} size={18} />
+                    <span className="tnum">{p.weather.windKmh}</span>
+                    <span className="unit">km/h</span>
+                  </span>
+                )
+              }
             />
             <Row
               label="Humidity, %"
               points={points}
-              cell={(p) => (
-                <span className="stack">
-                  <Droplet size={18} strokeWidth={1.75} className="ic-drop" aria-hidden="true" />
-                  <span className="tnum">{p.weather.humidityPct}%</span>
-                </span>
-              )}
+              cell={(p) =>
+                p.weather === undefined ? (
+                  <Missing />
+                ) : (
+                  <span className="stack">
+                    <Droplet size={18} strokeWidth={1.75} className="ic-drop" aria-hidden="true" />
+                    <span className="tnum">{p.weather.humidityPct}%</span>
+                  </span>
+                )
+              }
             />
             <Row
               label="Rain chance, %"
               points={points}
-              cell={(p) => (
-                <span className={`stack${p.weather.rainChancePct < 20 ? ' faint' : ''}`}>
-                  <CloudRain size={18} strokeWidth={1.75} className="ic-rain" aria-hidden="true" />
-                  <span className="tnum">{p.weather.rainChancePct}%</span>
-                </span>
-              )}
+              cell={(p) =>
+                p.weather === undefined ? (
+                  <Missing />
+                ) : (
+                  <span className={`stack${p.weather.rainChancePct < 20 ? ' faint' : ''}`}>
+                    <CloudRain
+                      size={18}
+                      strokeWidth={1.75}
+                      className="ic-rain"
+                      aria-hidden="true"
+                    />
+                    <span className="tnum">{p.weather.rainChancePct}%</span>
+                  </span>
+                )
+              }
             />
           </tbody>
         </table>
@@ -98,6 +127,13 @@ export function Hourly({ data }: { readonly data: TodayData }): React.JSX.Elemen
     </section>
   );
 }
+
+/** An hour the weather model had nothing for. */
+const Missing = (): React.JSX.Element => (
+  <span className="muted" title="No weather for this hour">
+    –
+  </span>
+);
 
 function Row({
   label,

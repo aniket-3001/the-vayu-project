@@ -2,7 +2,6 @@
 import { cleanup, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it } from 'vitest';
-import { App } from '../../App';
 import { levelForAqi } from '../../design/levels';
 import { SAMPLE_IDS, sampleDay } from '../sample';
 import { TodayScreen } from './TodayScreen';
@@ -71,36 +70,5 @@ describe('the Today screen', () => {
     unmount();
     render(<TodayScreen data={sampleDay('good')} />);
     expect(screen.getByText(/within the WHO 24-hour guideline/u)).toBeInTheDocument();
-  });
-});
-
-describe('the sample switcher', () => {
-  const openHome = (search = ''): void => {
-    window.location.hash = `#/place/${encodeURIComponent('28.59,77.05')}${search}`;
-  };
-
-  it('opens a place on its own made-up day, and changes the whole screen when another is picked', async () => {
-    window.localStorage.clear();
-    openHome();
-    render(<App />);
-    expect(screen.getByRole('region', { name: 'Unhealthy' })).toBeInTheDocument();
-    await userEvent.click(screen.getByRole('button', { name: /Winter smog/u }));
-    expect(screen.getByRole('region', { name: 'Hazardous' })).toBeInTheDocument();
-    expect(window.location.hash).toContain('day=hazardous');
-    expect(screen.getByRole('button', { name: /Winter smog/u })).toHaveAttribute(
-      'aria-pressed',
-      'true',
-    );
-  });
-
-  it('opens on the day named in the address, and falls back when the name is nonsense', () => {
-    window.localStorage.clear();
-    openHome('?day=good');
-    const { unmount } = render(<App />);
-    expect(screen.getByRole('region', { name: 'Good' })).toBeInTheDocument();
-    unmount();
-    openHome('?day=nope');
-    render(<App />);
-    expect(screen.getByRole('region', { name: 'Unhealthy' })).toBeInTheDocument();
   });
 });

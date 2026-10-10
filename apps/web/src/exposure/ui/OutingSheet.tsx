@@ -1,9 +1,9 @@
 import { Bike, Footprints, MapPin, Trees, TreePine, X, type LucideIcon } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import type { Pin } from '../../data/pins';
-import { SAMPLE_AS_OF } from '../../today/sample';
+import { nowIso } from '../../clock';
 import { hourOfDay } from '../../today/time';
-import { TODAY, EARLIEST, formatDate, type DateKey } from '../model';
+import { today, earliest, formatDate, type DateKey } from '../model';
 import {
   ACTIVITIES,
   ACTIVITY_LABELS,
@@ -31,8 +31,8 @@ export const ActivityIcon = ({
   return <Icon size={size} strokeWidth={1.75} aria-hidden="true" />;
 };
 
-/** The minutes after midnight at the moment the sample describes. */
-export const NOW_MINUTES = Math.round(hourOfDay(SAMPLE_AS_OF) * 60);
+/** The minutes after midnight, India time, right now. */
+export const nowMinutes = (): number => Math.round(hourOfDay(nowIso()) * 60);
 
 const DURATIONS = [15, 30, 45, 60, 90, 120] as const;
 
@@ -60,9 +60,9 @@ export function OutingSheet({
   const park = pins.find((p) => /park/iu.test(p.name)) ?? pins[0];
   const [activity, setActivity] = useState<Activity>('walk');
   const [pinId, setPinId] = useState(park?.id ?? '');
-  const [date, setDate] = useState<DateKey>(TODAY);
+  const [date, setDate] = useState<DateKey>(today());
   const [minutes, setMinutes] = useState(30);
-  const [start, setStart] = useState(clockOf(Math.max(0, NOW_MINUTES - 60)));
+  const [start, setStart] = useState(clockOf(Math.max(0, nowMinutes() - 60)));
   const [trees, setTrees] = useState(park !== undefined && /park/iu.test(park.name));
   const [problem, setProblem] = useState('');
 
@@ -83,7 +83,12 @@ export function OutingSheet({
       setProblem('Please pick where it was.');
       return;
     }
-    const found = problemWithOuting({ start: toMinutes(start), minutes }, date, TODAY, NOW_MINUTES);
+    const found = problemWithOuting(
+      { start: toMinutes(start), minutes },
+      date,
+      today(),
+      nowMinutes(),
+    );
     if (found !== undefined) {
       setProblem(found);
       return;
@@ -169,8 +174,8 @@ export function OutingSheet({
             <input
               type="date"
               value={date}
-              min={EARLIEST}
-              max={TODAY}
+              min={earliest()}
+              max={today()}
               onChange={(event) => {
                 if (event.target.value !== '') setDate(event.target.value);
               }}

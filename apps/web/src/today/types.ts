@@ -31,13 +31,12 @@ export interface HourlyPoint {
   readonly at: string;
   readonly aqi: number;
   readonly pm25: number;
-  readonly weather: Weather;
+  /** Missing when the weather model had no answer for this hour. */
+  readonly weather?: Weather;
 }
 
-export interface DailyPoint {
-  /** Midnight at the start of the day, India time, ISO. */
-  readonly date: string;
-  readonly aqi: number;
+/** The sky and the wind for one day. */
+export interface DaySky {
   readonly hiC: number;
   readonly loC: number;
   readonly windKmh: number;
@@ -47,25 +46,38 @@ export interface DailyPoint {
   readonly condition: Condition;
 }
 
-/** Concentrations in µg/m³. */
-export interface Pollutants {
-  readonly pm25: number;
-  readonly pm10: number;
-  readonly o3: number;
-  readonly no2: number;
-  readonly so2: number;
-  readonly co: number;
+export interface DailyPoint {
+  /** Midnight at the start of the day, India time, ISO. */
+  readonly date: string;
+  readonly aqi: number;
+  /** Missing when the weather model had no answer for this day. */
+  readonly sky?: DaySky;
 }
 
-/** Where the numbers came from. Every screen shows this; it is the one thing we add to the design. */
+/**
+ * Concentrations in µg/m³. PM2.5 is the reading itself. The others come from a regional model, so any of them can
+ * be missing.
+ */
+export interface Pollutants {
+  readonly pm25: number;
+  readonly pm10?: number;
+  readonly o3?: number;
+  readonly no2?: number;
+  readonly so2?: number;
+  readonly co?: number;
+}
+
+/**
+ * Where the number came from and how old it is (rule I2). `label` is the trust level: a nearby monitor with a recent
+ * reading, a model estimate where none has reported lately, or made-up days in the prototype.
+ */
 export interface Provenance {
-  /** `sample` means made up for the design; the screen says so. */
-  readonly mode: 'live' | 'sample';
-  readonly stationName: string;
-  readonly distanceKm: number;
+  readonly mode: 'live' | 'model' | 'sample';
+  readonly label: 'Nearby station' | 'Estimate' | 'Sample';
+  readonly stationName?: string;
+  readonly distanceKm?: number;
+  /** How old the reading is, in minutes. */
   readonly ageMinutes: number;
-  readonly stations: number;
-  readonly contributors: number;
 }
 
 export interface TodayData {
@@ -75,13 +87,15 @@ export interface TodayData {
   readonly asOf: string;
   readonly aqi: number;
   readonly pm25: number;
-  readonly weather: Weather;
+  /** Missing when the weather model had no answer. */
+  readonly weather?: Weather;
+  /** Where the gases came from, when there are any. */
   readonly pollutants: Pollutants;
   readonly hourly: readonly HourlyPoint[];
   readonly daily: readonly DailyPoint[];
   /** The past 48 hours of AQI, oldest first, ending at `asOf`. */
   readonly history: readonly { readonly at: string; readonly aqi: number; readonly pm25: number }[];
-  readonly sun: { readonly sunrise: string; readonly sunset: string };
+  readonly sun?: { readonly sunrise: string; readonly sunset: string };
   readonly provenance: Provenance;
 }
 

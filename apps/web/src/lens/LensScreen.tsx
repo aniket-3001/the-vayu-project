@@ -14,7 +14,8 @@ import {
 import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { levelForAqi } from '../design/levels';
-import { readingForPin } from '../places/placeSample';
+import { airStore, useToday } from '../air/store';
+import { AirError, AirLoading } from '../components/AirState';
 import { usePins } from '../places/usePins';
 import { compassPoint } from '../today/wind';
 import { clock24, dayMonth, weekday } from '../today/time';
@@ -61,7 +62,8 @@ export function LensScreen(): React.JSX.Element {
   const compass = useHeading();
 
   const pin = pins.find((p) => p.id === placeId) ?? pins[0];
-  const data = useMemo(() => (pin === undefined ? undefined : readingForPin(pin)), [pin]);
+  const state = useToday(pin);
+  const data = state?.status === 'ready' ? state.data : undefined;
   const series = useMemo(() => (data === undefined ? [] : lensSeries(data)), [data]);
   const hour = series[Math.min(step, series.length - 1)];
 
@@ -72,10 +74,21 @@ export function LensScreen(): React.JSX.Element {
           <h1>AR Lens</h1>
         </header>
         <main className="places-main">
-          <p className="empty">
-            Nothing pinned yet, so there is no air to show.{' '}
-            <Link to="/">Pin a place on My Air</Link>
-          </p>
+          {pin === undefined ? (
+            <p className="empty">
+              Nothing pinned yet, so there is no air to show.{' '}
+              <Link to="/">Pin a place on My Air</Link>
+            </p>
+          ) : state?.status === 'error' ? (
+            <AirError
+              message={state.message}
+              onRetry={() => {
+                airStore().ensureToday(pin, true);
+              }}
+            />
+          ) : (
+            <AirLoading what={`the air at ${pin.name}`} />
+          )}
         </main>
       </div>
     );
@@ -87,7 +100,7 @@ export function LensScreen(): React.JSX.Element {
   const sight = visibilityKm(hour.pm25);
   const best = bestHour(series);
   const heading = compass.heading ?? 0;
-  const arrow = windOnScreen(hour.windFromDeg, heading);
+  const arrow = hour.wind === undefined ? 0 : windOnScreen(hour.wind.fromDeg, heading);
   const when = step === 0 ? 'Now' : `${weekday(hour.at)} ${dayMonth(hour.at)}, ${clock24(hour.at)}`;
   const track = `linear-gradient(to right, ${series
     .map(
@@ -111,7 +124,7 @@ export function LensScreen(): React.JSX.Element {
         ) : (
           <SampleScene night={isNight(hour)} place={sceneFor(pin.name)} />
         )}
-        <HazeCanvas haze={haze} windToDeg={arrow} windKmh={hour.windKmh} />
+        <HazeCanvas haze={haze} windToDeg={arrow} windKmh={hour.wind?.kmh ?? 0} />
       </div>
 
       <div className="lens-hud">
@@ -162,15 +175,17 @@ export function LensScreen(): React.JSX.Element {
                   · {concentration(hour.pm25)} µg/m³ PM<sub>2.5</sub>
                 </span>
               </p>
-              <p className="lens-wind">
-                <Navigation
-                  size={16}
-                  strokeWidth={2}
-                  aria-hidden="true"
-                  style={{ transform: `rotate(${String(arrow)}deg)` }}
-                />
-                From the {compassPoint(hour.windFromDeg)}, {hour.windKmh} km/h
-              </p>
+              {hour.wind !== undefined && (
+                <p className="lens-wind">
+                  <Navigation
+                    size={16}
+                    strokeWidth={2}
+                    aria-hidden="true"
+                    style={{ transform: `rotate(${String(arrow)}deg)` }}
+                  />
+                  From the {compassPoint(hour.wind.fromDeg)}, {hour.wind.kmh} km/h
+                </p>
+              )}
             </div>
           </div>
           <SmokeNote pm25={hour.pm25} className="lens-smoke" />

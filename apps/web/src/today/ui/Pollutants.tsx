@@ -16,6 +16,8 @@ export function PollutantTiles({ data }: { readonly data: TodayData }): React.JS
       <ul className="tiles">
         {POLLUTANTS.map((info) => {
           const value = data.pollutants[info.key];
+          // A gas the regional model did not give is left out, never filled in.
+          if (value === undefined) return null;
           const [base, sub] = splitLabel(info.label);
           return (
             <li key={info.key} className="tile" style={levelVars(levelForReading(info, value))}>
@@ -45,6 +47,11 @@ export function PollutantTiles({ data }: { readonly data: TodayData }): React.JS
           );
         })}
       </ul>
+      {data.provenance.mode !== 'sample' && (
+        <p className="muted small">
+          PM2.5 is the reading. PM10 and the gases are from a regional model, not measured here.
+        </p>
+      )}
       {who !== undefined && (
         <p className="who">
           {who.within

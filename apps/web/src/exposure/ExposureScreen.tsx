@@ -8,8 +8,8 @@ import { Progress } from '../tasks/ui/TipsCard';
 import { SmokeNote } from '../units/AirUnits';
 import { ASSUMPTION_NOTES } from './assumptions';
 import {
-  TODAY,
-  YESTERDAY,
+  today,
+  yesterday,
   countedCells,
   dayCells,
   daySummary,
@@ -47,9 +47,9 @@ const hourSpan = (hour: number): string =>
 const titleFor = (view: View): string =>
   view === WEEK
     ? 'The past week'
-    : view === TODAY
+    : view === today()
       ? 'Today’s exposure'
-      : view === YESTERDAY
+      : view === yesterday()
         ? 'Yesterday’s exposure'
         : `Exposure on ${formatDate(view)}`;
 
@@ -73,7 +73,7 @@ export function ExposureScreen({
   const { devices } = useDevices();
   const { pins, add: addPin } = usePins();
   const live = useLive();
-  const [view, setView] = useState<View>(TODAY);
+  const [view, setView] = useState<View>(today());
   const [tab, setTab] = useState<Tab>('all');
   const [picked, setPicked] = useState(12);
   const [showInfo, setShowInfo] = useState(false);
@@ -98,7 +98,7 @@ export function ExposureScreen({
     [devices, spots, household.people],
   );
   const rings: readonly Where[] = [...info.kinds, 'live'];
-  const date = view === WEEK ? TODAY : view;
+  const date = view === WEEK ? today() : view;
   const shownTab: Tab = tab !== 'all' && !info.kinds.some((k) => k === tab) ? 'all' : tab;
 
   const cells = useMemo(
@@ -116,14 +116,14 @@ export function ExposureScreen({
   if (Object.keys(live.log).length > 0) setKinds.add('live');
   if (cells.some((cell) => cell.where === 'outdoor')) setKinds.add('outdoor');
   const atPicked = shown.filter((cell) => cell.hour === picked);
-  const isToday = date === TODAY;
+  const isToday = date === today();
   const span =
     summary?.fullDay === false ? `so far today (${String(summary.hours)} hours)` : 'over the day';
   const noData = view !== 'week' && !hasData(view);
 
   const open = (next: View): void => {
     setView(next);
-    setPicked(next === TODAY ? Math.max(0, hoursSoFar(TODAY) - 1) : 12);
+    setPicked(next === today() ? Math.max(0, hoursSoFar(today()) - 1) : 12);
   };
   const choosePerson = (id: string): void => {
     select(id);
@@ -246,18 +246,18 @@ export function ExposureScreen({
           </button>
           <button
             type="button"
-            aria-pressed={view === YESTERDAY}
+            aria-pressed={view === yesterday()}
             onClick={() => {
-              open(YESTERDAY);
+              open(yesterday());
             }}
           >
             Yesterday
           </button>
           <button
             type="button"
-            aria-pressed={view === TODAY}
+            aria-pressed={view === today()}
             onClick={() => {
-              open(TODAY);
+              open(today());
             }}
           >
             Today
@@ -306,7 +306,7 @@ export function ExposureScreen({
                 cells={shown}
                 rings={rings}
                 show={shownTab}
-                nowHour={isToday ? hoursSoFar(TODAY) + 0.5 : undefined}
+                nowHour={isToday ? hoursSoFar(today()) + 0.5 : undefined}
                 picked={picked}
                 onPick={setPicked}
                 set={setKinds}
@@ -346,7 +346,7 @@ export function ExposureScreen({
             <div className="readout" aria-live="polite">
               {atPicked.length === 0 ? (
                 <p className="muted">
-                  {isToday && picked >= hoursSoFar(TODAY)
+                  {isToday && picked >= hoursSoFar(today())
                     ? 'That hour has not happened yet.'
                     : shownTab === 'outdoor'
                       ? isMe

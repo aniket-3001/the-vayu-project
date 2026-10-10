@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { beforeEach, describe, expect, it } from 'vitest';
 import { LIVE_STORAGE_KEY, SAMPLE_TRACK, currentHour, loadLive, recordFix, saveLive } from './live';
-import { TODAY, dayCells } from './model';
+import { today, dayCells } from './model';
 import { sampleSpotsFor } from './spots';
 import { SAMPLE_UNITS } from './units';
 
@@ -32,14 +32,14 @@ describe('live location log', () => {
   });
 
   it('lets a fix from the hour in progress show on the live ring', () => {
-    const cells = dayCells(sampleSpotsFor('adult'), [], recordFix({}, 28.6, 77.2), TODAY);
+    const cells = dayCells(sampleSpotsFor('adult'), [], recordFix({}, 28.6, 77.2), today());
     expect(cells.some((c) => c.where === 'live' && c.hour === currentHour())).toBe(true);
   });
 
   it('has a sample track that only covers hours that have happened, and visits the park at lunch', () => {
     const hours = Object.keys(SAMPLE_TRACK).map(Number);
     expect(Math.max(...hours)).toBeLessThanOrEqual(currentHour());
-    const cells = dayCells(sampleSpotsFor('adult'), SAMPLE_UNITS, SAMPLE_TRACK, TODAY);
+    const cells = dayCells(sampleSpotsFor('adult'), SAMPLE_UNITS, SAMPLE_TRACK, today());
     expect(cells.some((c) => c.where === 'live' && c.hour === 13)).toBe(true);
     // The errand takes the person past a friend’s Vayu unit, and the sample picks it up on its own.
     expect(cells.find((c) => c.where === 'live' && c.hour === 15)?.source).toBe('unit');

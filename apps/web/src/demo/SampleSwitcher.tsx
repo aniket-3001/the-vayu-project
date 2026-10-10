@@ -1,7 +1,7 @@
-import { levelForAqi } from '../../design/levels';
-import { SAMPLE_IDS, SAMPLE_LABELS, sampleDay, type SampleId } from '../sample';
-import { Pill } from './Chip';
-import { levelVars } from './format';
+import { levelForAqi } from '../design/levels';
+import { SAMPLE_IDS, SAMPLE_LABELS, sampleDay, type SampleId } from '../today/sample';
+import { Pill } from '../today/ui/Chip';
+import { levelVars } from '../today/ui/format';
 
 /** Flips between the made-up days. Only exists while the data is a sample. */
 export function SampleSwitcher({

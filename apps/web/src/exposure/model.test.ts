@@ -4,9 +4,9 @@ import type { Device } from '../devices/devices';
 import { INDOOR_SHARE, TREE_SHARE } from './assumptions';
 import type { Outing } from './outings';
 import {
-  EARLIEST,
-  TODAY,
-  YESTERDAY,
+  earliest,
+  today,
+  yesterday,
   addDays,
   ambientByHour,
   breathed,
@@ -42,31 +42,31 @@ const ownHome: Unit = {
 
 describe('dates', () => {
   it('knows today, yesterday and the earliest date with data, two weeks back', () => {
-    expect(TODAY).toBe('2026-10-10');
-    expect(YESTERDAY).toBe('2026-10-09');
-    expect(EARLIEST).toBe('2026-09-26');
-    expect(addDays(TODAY, 3)).toBe('2026-10-13');
+    expect(today()).toBe('2026-10-10');
+    expect(yesterday()).toBe('2026-10-09');
+    expect(earliest()).toBe('2026-09-26');
+    expect(addDays(today(), 3)).toBe('2026-10-13');
     expect(addDays('2026-10-01', -1)).toBe('2026-09-30');
   });
 
   it('has data from two weeks ago to today, and none for the future or before that', () => {
-    expect(hasData(TODAY)).toBe(true);
-    expect(hasData(EARLIEST)).toBe(true);
-    expect(hasData(addDays(TODAY, 1))).toBe(false);
-    expect(hasData(addDays(EARLIEST, -1))).toBe(false);
+    expect(hasData(today())).toBe(true);
+    expect(hasData(earliest())).toBe(true);
+    expect(hasData(addDays(today(), 1))).toBe(false);
+    expect(hasData(addDays(earliest(), -1))).toBe(false);
     expect(hasData('1999-01-01')).toBe(false);
   });
 
   it('has 24 finished hours for a past day, 17 for today, and none where there is no data', () => {
-    expect(hoursSoFar(YESTERDAY)).toBe(24);
-    expect(hoursSoFar(TODAY)).toBe(17);
-    expect(hoursSoFar(addDays(TODAY, 2))).toBe(0);
+    expect(hoursSoFar(yesterday())).toBe(24);
+    expect(hoursSoFar(today())).toBe(17);
+    expect(hoursSoFar(addDays(today(), 2))).toBe(0);
   });
 
   it('lists the seven days before today, oldest first, and writes a date for people', () => {
     const week = lastWeek();
     expect(week).toHaveLength(7);
-    expect(week[6]).toBe(YESTERDAY);
+    expect(week[6]).toBe(yesterday());
     expect(week[0]).toBe('2026-10-03');
     expect(formatDate('2026-10-10')).toBe('Sat 10 Oct');
   });
@@ -75,7 +75,7 @@ describe('dates', () => {
     expect(ambientByHour(home.pin, '2026-10-02').every((v) => typeof v === 'number')).toBe(true);
     expect(ambientByHour(home.pin, '2025-01-01').every((v) => v === undefined)).toBe(true);
     expect(
-      ambientByHour(home.pin, TODAY)
+      ambientByHour(home.pin, today())
         .slice(17)
         .every((v) => v === undefined),
     ).toBe(true);
@@ -107,7 +107,7 @@ describe('what a person breathes', () => {
 
 describe('a day, hour by hour', () => {
   it('puts work in its own hours, and home in every hour, so the rest of the day is at home', () => {
-    const cells = dayCells(adult, [], {}, YESTERDAY);
+    const cells = dayCells(adult, [], {}, yesterday());
     const hoursOf = (where: string): number[] =>
       cells.filter((c) => c.where === where).map((c) => c.hour);
     expect(hoursOf('work')).toEqual([9, 10, 11, 12, 13, 14, 15, 16]);
@@ -136,26 +136,26 @@ describe('a day, hour by hour', () => {
   it('works for any past date, and gives nothing for a date with no data', () => {
     expect(dayCells(adult, [], {}, '2026-10-02').length).toBe(24);
     expect(dayCells(adult, [], {}, '2024-02-02')).toEqual([]);
-    expect(dayCells(adult, [], {}, addDays(TODAY, 1))).toEqual([]);
+    expect(dayCells(adult, [], {}, addDays(today(), 1))).toEqual([]);
   });
 
   it('stops at the present for today', () => {
-    const cells = dayCells(adult, [], {}, TODAY);
+    const cells = dayCells(adult, [], {}, today());
     expect(Math.max(...cells.map((c) => c.hour))).toBeLessThan(17);
   });
 
   it('gives a child school hours at school, and an adult none', () => {
     expect(
-      dayCells(child, [], {}, YESTERDAY)
+      dayCells(child, [], {}, yesterday())
         .filter((c) => c.where === 'school')
         .map((c) => c.hour),
     ).toEqual([8, 9, 10, 11, 12, 13, 14]);
-    expect(dayCells(adult, [], {}, YESTERDAY).some((c) => c.where === 'school')).toBe(false);
+    expect(dayCells(adult, [], {}, yesterday()).some((c) => c.where === 'school')).toBe(false);
   });
 
   it('breathes cleaner at school with the school’s own unit, for a child who added nothing', () => {
-    const without = dayCells(child, [], {}, YESTERDAY).filter((c) => c.where === 'school');
-    const withUnit = dayCells(child, SAMPLE_UNITS, {}, YESTERDAY).filter(
+    const without = dayCells(child, [], {}, yesterday()).filter((c) => c.where === 'school');
+    const withUnit = dayCells(child, SAMPLE_UNITS, {}, yesterday()).filter(
       (c) => c.where === 'school',
     );
     const mean = (cs: typeof without): number => cs.reduce((s, c) => s + c.pm25, 0) / cs.length;
@@ -166,15 +166,15 @@ describe('a day, hour by hour', () => {
   it('shares one home monitor across every kind of person who lives there', () => {
     const units = allUnits([monitor], [child, adult, sampleSpotsFor('senior')]);
     for (const spots of [child, adult, sampleSpotsFor('senior')]) {
-      const cells = dayCells(spots, units, {}, YESTERDAY).filter((c) => c.where === 'home');
+      const cells = dayCells(spots, units, {}, yesterday()).filter((c) => c.where === 'home');
       expect(cells.every((c) => c.source === 'device')).toBe(true);
     }
   });
 
   it('leaves unset places out, and an empty set of places gives an empty day', () => {
-    expect(dayCells({}, [], {}, TODAY)).toEqual([]);
+    expect(dayCells({}, [], {}, today())).toEqual([]);
     const justHome: Spots = { home };
-    expect(new Set(dayCells(justHome, [], {}, YESTERDAY).map((c) => c.where))).toEqual(
+    expect(new Set(dayCells(justHome, [], {}, yesterday()).map((c) => c.where))).toEqual(
       new Set(['home']),
     );
   });
@@ -188,11 +188,11 @@ describe('live location', () => {
 
   it('counts a live cell ahead of the schedule, today only', () => {
     const live = { '9': { lat: 28.7, lng: 77.5 } };
-    const counted = countedCells(dayCells(adult, [], live, TODAY));
+    const counted = countedCells(dayCells(adult, [], live, today()));
     expect(counted.find((c) => c.hour === 9)?.where).toBe('live');
-    expect(dayCells(adult, [], live, YESTERDAY).some((c) => c.where === 'live')).toBe(false);
+    expect(dayCells(adult, [], live, yesterday()).some((c) => c.where === 'live')).toBe(false);
     expect(
-      dayCells(adult, [], { '20': { lat: 28.6, lng: 77.2 } }, TODAY).some(
+      dayCells(adult, [], { '20': { lat: 28.6, lng: 77.2 } }, today()).some(
         (c) => c.where === 'live',
       ),
     ).toBe(false);
@@ -202,10 +202,12 @@ describe('live location', () => {
     const friend = SAMPLE_UNITS.find((u) => u.id === 'unit-friend');
     if (friend === undefined) throw new Error('no friend unit');
     const live = { '15': { lat: friend.lat, lng: friend.lng } };
-    const visit = dayCells(adult, SAMPLE_UNITS, live, TODAY).find(
+    const visit = dayCells(adult, SAMPLE_UNITS, live, today()).find(
       (c) => c.where === 'live' && c.hour === 15,
     );
-    const away = dayCells(adult, [], live, TODAY).find((c) => c.where === 'live' && c.hour === 15);
+    const away = dayCells(adult, [], live, today()).find(
+      (c) => c.where === 'live' && c.hour === 15,
+    );
     expect(visit?.source).toBe('unit');
     expect(away?.source).toBe('outdoor');
     expect(visit?.pm25).toBeLessThan(away?.pm25 ?? 0);
@@ -213,14 +215,14 @@ describe('live location', () => {
 });
 
 describe('the summary', () => {
-  const counted = countedCells(dayCells(adult, [], {}, YESTERDAY));
+  const counted = countedCells(dayCells(adult, [], {}, yesterday()));
 
   it('counts one cell per hour for a full day', () => {
     expect(counted).toHaveLength(24);
   });
 
   it('is a mean, an AQI, a level, the same hours in open air, and the WHO multiple', () => {
-    const summary = summarise(counted, openAirFor(counted, adult, {}, YESTERDAY));
+    const summary = summarise(counted, openAirFor(counted, adult, {}, yesterday()));
     expect(summary?.hours).toBe(24);
     expect(summary?.fullDay).toBe(true);
     expect(summary?.whoTimes).toBeCloseTo((summary?.meanPm25 ?? 0) / 15, 0);
@@ -244,7 +246,7 @@ describe('outdoor time that was logged', () => {
   const park = { id: 'p', name: 'Park', lat: 28.6, lng: 77.2 };
   const walk = (patch: Partial<Outing> = {}): Outing => ({
     id: 'o1',
-    date: YESTERDAY,
+    date: yesterday(),
     start: 17 * 60,
     minutes: 60,
     activity: 'walk',
@@ -253,7 +255,7 @@ describe('outdoor time that was logged', () => {
     ...patch,
   });
   const outdoorOf = (outings: readonly Outing[]): ReturnType<typeof dayCells> =>
-    dayCells(adult, [], {}, YESTERDAY, outings).filter((c) => c.where === 'outdoor');
+    dayCells(adult, [], {}, yesterday(), outings).filter((c) => c.where === 'outdoor');
 
   it('is nothing until something is logged, and only on the day it happened', () => {
     expect(outdoorOf([])).toEqual([]);
@@ -261,7 +263,7 @@ describe('outdoor time that was logged', () => {
   });
 
   it('is the open air for the hours it covered, a bit less with trees', () => {
-    const open = ambientByHour(park, YESTERDAY)[17] ?? 0;
+    const open = ambientByHour(park, yesterday())[17] ?? 0;
     const plain = outdoorOf([walk()]);
     expect(plain.map((c) => c.hour)).toEqual([17]);
     expect(plain[0]?.pm25).toBeCloseTo(open, 0);
@@ -278,25 +280,25 @@ describe('outdoor time that was logged', () => {
   });
 
   it('counts a part hour partly outside and partly where else the person was', () => {
-    const open = ambientByHour(park, YESTERDAY)[18] ?? 0;
+    const open = ambientByHour(park, yesterday())[18] ?? 0;
     const counted = countedCells(
-      dayCells(adult, [], {}, YESTERDAY, [walk({ start: 18 * 60, minutes: 20 })]),
+      dayCells(adult, [], {}, yesterday(), [walk({ start: 18 * 60, minutes: 20 })]),
     ).find((c) => c.hour === 18);
-    const home = countedCells(dayCells(adult, [], {}, YESTERDAY)).find((c) => c.hour === 18);
+    const home = countedCells(dayCells(adult, [], {}, yesterday())).find((c) => c.hour === 18);
     expect(counted?.where).toBe('outdoor');
     expect(counted?.pm25 ?? 0).toBeGreaterThan(home?.pm25 ?? 0);
     expect(counted?.pm25 ?? 0).toBeLessThan(open);
   });
 
   it('takes the open air from where the walk was, not from home', () => {
-    const counted = countedCells(dayCells(adult, [], {}, YESTERDAY, [walk()]));
-    const open = openAirFor(counted, adult, {}, YESTERDAY);
+    const counted = countedCells(dayCells(adult, [], {}, yesterday(), [walk()]));
+    const open = openAirFor(counted, adult, {}, yesterday());
     expect(open.length).toBe(24);
   });
 
   it('leaves out hours that have not finished today', () => {
-    const cells = dayCells(adult, [], {}, TODAY, [
-      walk({ date: TODAY, start: 16 * 60 + 30, minutes: 60 }),
+    const cells = dayCells(adult, [], {}, today(), [
+      walk({ date: today(), start: 16 * 60 + 30, minutes: 60 }),
     ]);
     expect(cells.filter((c) => c.where === 'outdoor').map((c) => c.hour)).toEqual([16]);
   });

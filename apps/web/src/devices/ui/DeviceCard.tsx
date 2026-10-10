@@ -2,9 +2,13 @@ import { Cpu, Droplets, Fan, Trash2, Wifi } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { usAqi } from '@vayu/core';
 import { levelForAqi } from '../../design/levels';
-import { SPOT_LABELS, sampleSpotsFor } from '../../exposure/spots';
-import { readingForPin, sampleIdForPin } from '../../places/placeSample';
-import { SAMPLE_TODAY, sampleAmbientPm25 } from '../../today/sample';
+import { airStore, useHistory, useToday } from '../../air/store';
+import { AirLoading } from '../../components/AirState';
+import type { Pin } from '../../data/pins';
+import { today } from '../../exposure/model';
+import { SPOT_LABELS } from '../../exposure/spots';
+import { useHousehold, useSpots } from '../../exposure/useExposure';
+import { usePins } from '../../places/usePins';
 import { Pill } from '../../today/ui/Chip';
 import { concentration, levelVars } from '../../today/ui/format';
 import {
@@ -23,15 +27,13 @@ const MODE_LABELS: Readonly<Record<DeviceMode, string>> = { auto: 'Auto', on: 'O
 const clock = (hour: number): string => `${String(hour).padStart(2, '0')}:00`;
 
 /** The outside air near a device, hour by hour so far today, ending with the reading now. */
-function outsideToday(where: Device['where']): readonly number[] {
-  const pin = (sampleSpotsFor('adult')[where] ?? sampleSpotsFor('child')[where])?.pin;
-  if (pin === undefined) return [70];
+function outsideToday(pin: Pin, nowPm25: number): readonly number[] {
   const done: number[] = [];
-  for (const value of sampleAmbientPm25(sampleIdForPin(pin), SAMPLE_TODAY)) {
+  for (const value of airStore().ambient(pin, today())) {
     if (value === undefined) break;
     done.push(value);
   }
-  return [...done, readingForPin(pin).pm25];
+  return [...done, nowPm25];
 }
 
 /**
@@ -39,18 +41,64 @@ function outsideToday(where: Device['where']): readonly number[] {
  * went, laid out the way air-quality apps do it (a big reading, a status line, a mode switch, a day chart,
  * the filter). All readings are made up until the device exists, and the card says so.
  */
-export function DeviceCard({
+export function DeviceCard(props: {
+  readonly device: Device;
+  readonly onRemove: () => void;
+  readonly onChange: (patch: { mode?: DeviceMode; autoAbove?: number }) => void;
+}): React.JSX.Element {
+  const { device } = props;
+  const { person } = useHousehold();
+  const { spots } = useSpots(person);
+  const { pins } = usePins();
+  // The air outside a device is the air at the place it lives in, or at your first place if that is not set.
+  const pin = spots[device.where]?.pin ?? pins[0];
+  const reading = useToday(pin);
+  const history = useHistory(pin === undefined ? [] : [pin]);
+  const waiting = (text: React.ReactNode): React.JSX.Element => (
+    <li className="device-card">
+      <div className="dc-top">
+        <span className={`dc-icon spot-${device.where}`}>
+          <Cpu size={22} strokeWidth={1.75} aria-hidden="true" />
+        </span>
+        <div>
+          <h2>{device.name}</h2>
+          <p className="muted small">In your {SPOT_LABELS[device.where].toLowerCase()}</p>
+        </div>
+        <button
+          type="button"
+          className="icon-button"
+          aria-label={`Remove ${device.name}`}
+          onClick={props.onRemove}
+        >
+          <Trash2 size={18} strokeWidth={1.75} aria-hidden="true" />
+        </button>
+      </div>
+      <p className="small">{text}</p>
+    </li>
+  );
+  if (pin === undefined)
+    return waiting('Pin a place on My Air, so there is outside air to compare with.');
+  if (reading?.status !== 'ready' || history === 'loading') return waiting(<AirLoading />);
+  const outdoor = outsideToday(pin, reading.data.pm25);
+  if (outdoor.length < 3)
+    return waiting('There is not enough air data for today yet to show this monitor’s day.');
+  return <DeviceDetails {...props} outdoor={outdoor} />;
+}
+
+function DeviceDetails({
   device,
+  outdoor,
   onRemove,
   onChange,
 }: {
   readonly device: Device;
+  readonly outdoor: readonly number[];
   readonly onRemove: () => void;
   readonly onChange: (patch: { mode?: DeviceMode; autoAbove?: number }) => void;
 }): React.JSX.Element {
   const mode = modeOf(device);
   const above = autoAboveOf(device);
-  const hours = simulateDay(outsideToday(device.where), mode, above);
+  const hours = simulateDay(outdoor, mode, above);
   const now = hours[hours.length - 1];
   const stats = statsFor(hours);
   const inside = now?.indoor ?? 0;

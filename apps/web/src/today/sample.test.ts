@@ -1,11 +1,11 @@
 import { usAqi } from '@vayu/core';
 import { describe, expect, it } from 'vitest';
 import { levelForAqi } from '../design/levels';
-import { SAMPLE_IDS, SAMPLE_LABELS, sampleDay } from './sample';
+import { SAMPLE_IDS, SAMPLE_LABELS, sampleDay, type SampleDay } from './sample';
 import { clock24, hourOfDay, isoDate } from './time';
-import type { Condition, TodayData } from './types';
+import type { Condition } from './types';
 
-const all = (): TodayData[] => SAMPLE_IDS.map((id) => sampleDay(id));
+const all = (): SampleDay[] => SAMPLE_IDS.map((id) => sampleDay(id));
 
 describe('the sample days', () => {
   it('has six, each with a label for the switcher', () => {
@@ -107,18 +107,18 @@ describe('the sample days', () => {
         if (w.rainMm > 0) expect(w.rainChancePct).toBeGreaterThan(0);
         if (!w.isDay) expect(w.uvIndex).toBe(0);
       }
-      for (const d of day.daily) expect(d.hiC).toBeGreaterThan(d.loC);
+      for (const d of day.daily) expect(d.sky.hiC).toBeGreaterThan(d.sky.loC);
     }
   });
 
   it('the days differ in the ways the names say', () => {
-    const by = (id: (typeof SAMPLE_IDS)[number]): TodayData => sampleDay(id);
+    const by = (id: (typeof SAMPLE_IDS)[number]): SampleDay => sampleDay(id);
     expect(by('good').aqi).toBeLessThan(by('moderate').aqi);
     expect(by('moderate').aqi).toBeLessThan(by('unhealthy').aqi);
     expect(by('unhealthy').aqi).toBeLessThan(by('hazardous').aqi);
     expect(by('hazardous').weather.tempC).toBeLessThanOrEqual(12);
     expect(by('hazardous').weather.humidityPct).toBeGreaterThanOrEqual(80);
-    expect(by('unhealthy').daily[0]?.hiC).toBeGreaterThanOrEqual(33);
+    expect(by('unhealthy').daily[0]?.sky.hiC).toBeGreaterThanOrEqual(33);
     expect(by('dusty').weather.windKmh).toBeGreaterThanOrEqual(30);
     expect(by('dusty').pollutants.pm10).toBeGreaterThan(by('dusty').pollutants.pm25 * 2.5);
     const rain = by('rainy').hourly.filter((h) => h.weather.rainMm > 0);
@@ -134,7 +134,7 @@ describe('the sample days', () => {
   it('is plainly marked as sample data, with a made-up station, not a real one', () => {
     for (const day of all()) {
       expect(day.provenance.mode).toBe('sample');
-      expect(day.provenance.stations).toBeGreaterThan(0);
+      expect(day.provenance.label).toBe('Sample');
     }
   });
 

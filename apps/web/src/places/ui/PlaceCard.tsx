@@ -8,7 +8,8 @@ import { AqiChip } from '../../today/ui/Chip';
 import { levelVars } from '../../today/ui/format';
 import { CONDITION_LABELS, FaceIcon, WeatherIcon } from '../../today/ui/icons';
 import { SmokeSquare } from '../../units/AirUnits';
-import { readingForPin } from '../placeSample';
+import { airStore, useToday } from '../../air/store';
+import { AirLoading } from '../../components/AirState';
 
 const age = (minutes: number): string =>
   minutes < 60 ? `${String(minutes)} min ago` : `${String(Math.round(minutes / 60))} h ago`;
@@ -27,7 +28,46 @@ export function PlaceCard({
 }): React.JSX.Element {
   const [open, setOpen] = useState(false);
   const detailId = useId();
-  const reading = readingForPin(pin);
+  const state = useToday(pin);
+  if (state?.status !== 'ready') {
+    return (
+      <li className="place-card pending">
+        <div className="pc-hit">
+          <span className="pc-name">{pin.name}</span>
+          <span className="pc-detail">{pin.detail ?? 'Delhi NCR'}</span>
+          {state?.status === 'error' ? (
+            <>
+              <span className="pc-level">No reading right now</span>
+              <button
+                type="button"
+                className="plain"
+                onClick={() => {
+                  airStore().ensureToday(pin, true);
+                }}
+              >
+                Try again
+              </button>
+            </>
+          ) : (
+            <AirLoading />
+          )}
+        </div>
+        <div className="pc-actions">
+          <button
+            type="button"
+            className="pc-icon-button"
+            aria-label={`Remove ${pin.name}`}
+            onClick={() => {
+              onRemove(pin);
+            }}
+          >
+            <X size={18} strokeWidth={2.25} aria-hidden="true" />
+          </button>
+        </div>
+      </li>
+    );
+  }
+  const reading = state.data;
   const level = levelForAqi(reading.aqi);
   const p = reading.provenance;
   const w = reading.weather;
@@ -45,13 +85,15 @@ export function PlaceCard({
           <span>AQI</span>
         </span>
         <span className="pc-level">{level.name}</span>
-        <span className="pc-sky">
-          <span className="pc-sky-disc">
-            <WeatherIcon condition={w.condition} isDay={w.isDay} size={18} />
+        {w !== undefined && (
+          <span className="pc-sky">
+            <span className="pc-sky-disc">
+              <WeatherIcon condition={w.condition} isDay={w.isDay} size={18} />
+            </span>
+            <span className="tnum">{w.tempC}°</span>
+            <span className="sr-only">{CONDITION_LABELS[w.condition]}</span>
           </span>
-          <span className="tnum">{w.tempC}°</span>
-          <span className="sr-only">{CONDITION_LABELS[w.condition]}</span>
-        </span>
+        )}
         <SmokeSquare pm25={reading.pm25} compact className="pc-smoke" />
         <span className="pc-face" aria-hidden="true">
           <FaceIcon face={level.face} size={open ? 88 : 66} />
@@ -93,19 +135,27 @@ export function PlaceCard({
               <li key={day.date}>
                 <span className="pc-day-name">{index === 0 ? 'Today' : weekday(day.date)}</span>
                 <AqiChip aqi={day.aqi} />
-                <WeatherIcon condition={day.condition} isDay size={22} />
-                <span className="tnum pc-day-temps">
-                  {day.hiC}° <span className="pc-lo">{day.loC}°</span>
-                </span>
-                <span className="tnum pc-day-rain">
-                  <Droplet size={13} strokeWidth={2} className="ic-drop" aria-hidden="true" />
-                  {day.rainChancePct}%
-                </span>
+                {day.sky !== undefined && (
+                  <>
+                    <WeatherIcon condition={day.sky.condition} isDay size={22} />
+                    <span className="tnum pc-day-temps">
+                      {day.sky.hiC}° <span className="pc-lo">{day.sky.loC}°</span>
+                    </span>
+                    <span className="tnum pc-day-rain">
+                      <Droplet size={13} strokeWidth={2} className="ic-drop" aria-hidden="true" />
+                      {day.sky.rainChancePct}%
+                    </span>
+                  </>
+                )}
               </li>
             ))}
           </ul>
           <p className="pc-source">
-            Sample data · {p.stationName}, {p.distanceKm} km · {age(p.ageMinutes)}
+            {p.mode === 'sample' ? 'Sample data' : p.label}
+            {p.stationName !== undefined && p.distanceKm !== undefined
+              ? ` · ${p.stationName}, ${String(Math.round(p.distanceKm * 10) / 10)} km`
+              : ''}{' '}
+            · {age(p.ageMinutes)}
           </p>
         </div>
       )}

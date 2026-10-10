@@ -1,7 +1,7 @@
 import { Cpu, MapPin } from 'lucide-react';
 import { useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { readingForPin } from '../places/placeSample';
+import { useToday } from '../air/store';
 import { usePins } from '../places/usePins';
 import { tasksFor } from '../tasks/model';
 import { AlertsStrip } from '../alerts/ui/AlertsStrip';
@@ -28,7 +28,8 @@ export function MyAirScreen({ search, locate }: Props): React.JSX.Element {
   const tab = params.get('tab') === 'devices' ? 'devices' : 'places';
   const { pins } = usePins();
   const first = pins[0];
-  const reading = useMemo(() => (first === undefined ? undefined : readingForPin(first)), [first]);
+  const state = useToday(first);
+  const reading = state?.status === 'ready' ? state.data : undefined;
   const tips = useMemo(() => (reading === undefined ? [] : tasksFor(reading)), [reading]);
   const fires = useFires();
   const alerts = useMemo(

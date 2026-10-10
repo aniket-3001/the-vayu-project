@@ -25,7 +25,9 @@ export function grapStage(cpcbAqi: number | null): 0 | 1 | 2 | 3 | 4 {
 /** The 24-hour CPCB AQI the last day points to, for the GRAP bands. Our estimate, from PM2.5 and a PM10 scaled from it. */
 export function cpcbAqiFor(data: TodayData): number | null {
   const last24 = data.history.slice(-24).map((h) => h.pm25);
-  const ratio = data.pollutants.pm25 > 0 ? data.pollutants.pm10 / data.pollutants.pm25 : 2;
+  // The 24-hour CPCB figure needs PM10 too. Without the model's PM10 we cannot work it out, so we say nothing.
+  if (data.pollutants.pm10 === undefined || data.pollutants.pm25 <= 0) return null;
+  const ratio = data.pollutants.pm10 / data.pollutants.pm25;
   const pm10 = last24.map((v) => v * ratio);
   return aqi24h(last24, pm10)?.aqi ?? null;
 }

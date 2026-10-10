@@ -1,5 +1,5 @@
 import type { Pin } from '../data/pins';
-import { YESTERDAY, TODAY, ambientByHour, formatDate, type DateKey } from '../exposure/model';
+import { yesterday, today, ambientByHour, formatDate, type DateKey } from '../exposure/model';
 import {
   ACTIVITY_LABELS,
   clockOf,
@@ -120,11 +120,11 @@ export function parseOuting(
       text: 'Pin a place on My Air first, so there is somewhere to put it.',
     };
 
-  const date = /\byesterday\b/u.test(t) ? YESTERDAY : now.date;
+  const date = /\byesterday\b/u.test(t) ? yesterday() : now.date;
   const said = startIn(t);
   let start = said ?? (date === now.date ? Math.max(0, now.minutes - minutes) : 17 * 60);
   if (start + minutes > 24 * 60) start = 24 * 60 - minutes;
-  const problem = problemWithOuting({ start, minutes }, date, TODAY, now.minutes);
+  const problem = problemWithOuting({ start, minutes }, date, today(), now.minutes);
   if (problem !== undefined)
     return { kind: 'problem', person, text: `${problem} Tell me again when it was.` };
   return {
@@ -147,7 +147,7 @@ export function addedText(person: Person, outing: Omit<Outing, 'id'>): string {
   const aqi = open === undefined ? undefined : usAqi(open)?.value;
   const what = ACTIVITY_LABELS[outing.activity].toLowerCase();
   const whose = person.id === 'me' ? 'your' : `${person.name}’s`;
-  return `Added to ${whose} day: ${what} in ${outing.pin.name}, ${String(outing.minutes)} minutes from ${clockOf(outing.start)}, ${outing.date === TODAY ? 'today' : formatDate(outing.date)}. ${
+  return `Added to ${whose} day: ${what} in ${outing.pin.name}, ${String(outing.minutes)} minutes from ${clockOf(outing.start)}, ${outing.date === today() ? 'today' : formatDate(outing.date)}. ${
     aqi === undefined ? '' : `The air there then was AQI ${String(aqi)}. `
   }It is counted as outside air${outing.trees ? ', a little lower for trees (assumed)' : ''}. You can see or remove it in ${whose} outdoor time.`;
 }

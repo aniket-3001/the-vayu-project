@@ -44,9 +44,9 @@ describe('the dial', () => {
     expect(series[0]?.at).toBe(day.asOf);
     expect(series[0]?.aqi).toBe(day.aqi);
     for (const hour of series) {
-      expect(hour.windKmh).toBeGreaterThanOrEqual(0);
-      expect(hour.windFromDeg).toBeGreaterThanOrEqual(0);
-      expect(hour.windFromDeg).toBeLessThan(360);
+      expect(hour.wind?.kmh).toBeGreaterThanOrEqual(0);
+      expect(hour.wind?.fromDeg).toBeGreaterThanOrEqual(0);
+      expect(hour.wind?.fromDeg).toBeLessThan(360);
     }
   });
 

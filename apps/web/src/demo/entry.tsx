@@ -1,4 +1,8 @@
 import { StrictMode } from 'react';
+import { sampleAirSource } from '../air/sampleSource';
+import { AirStore, setAirStoreFactory } from '../air/store';
+import { setClock } from '../clock';
+import { SAMPLE_AS_OF } from '../today/sample';
 import { createRoot } from 'react-dom/client';
 import { App } from '../App';
 import './demo.css';
@@ -11,6 +15,9 @@ import { applyScenario, scenarioById } from './scenarios';
  * a scenario before the app opens. None of this is in the deployed app.
  */
 export function startDemo(root: HTMLElement): void {
+  // The prototype runs on a made-up moment and made-up air, never the live ones.
+  setClock(() => SAMPLE_AS_OF);
+  setAirStoreFactory(() => new AirStore(sampleAirSource()));
   const params = new URLSearchParams(window.location.search);
   const staged = scenarioById(params.get('demo'));
   const alone = params.has('embed');

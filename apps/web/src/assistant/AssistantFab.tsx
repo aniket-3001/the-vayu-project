@@ -4,7 +4,7 @@ import { alertsFor } from '../alerts/model';
 import { useFires } from '../alerts/useFires';
 import { useHousehold } from '../exposure/useExposure';
 import { readDemo } from '../demo/state';
-import { readingForPin } from '../places/placeSample';
+import { useToday } from '../air/store';
 import { usePins } from '../places/usePins';
 import { Pill } from '../today/ui/Chip';
 import { apiAssistant } from './api';
@@ -12,10 +12,10 @@ import { buildContext } from './context';
 import { localAssistant } from './local';
 import { RequestForm } from './RequestForm';
 import { addedText, parseOuting } from './outingParse';
-import { TODAY } from '../exposure/model';
+import { today } from '../exposure/model';
 import { addOuting, loadOutings, newOuting, saveOutings } from '../exposure/outings';
 import { loadHousehold } from '../exposure/people';
-import { NOW_MINUTES } from '../exposure/ui/OutingSheet';
+import { nowMinutes } from '../exposure/ui/OutingSheet';
 import { loadPins } from '../data/pins';
 import { canListen, canSpeak, listen, speak, stopSpeaking } from './speech';
 import type { AssistantContext, AssistantSource } from './types';
@@ -69,11 +69,12 @@ export function AssistantFab({
   const fires = useFires();
   const first = pins[0];
 
+  const state = useToday(first);
+  const reading = state?.status === 'ready' ? state.data : undefined;
   const context = useMemo<AssistantContext | undefined>(() => {
-    if (first === undefined) return undefined;
-    const reading = readingForPin(first);
+    if (first === undefined || reading === undefined) return undefined;
     return buildContext(first.name, reading, alertsFor(reading, fires), fires, household.people);
-  }, [first, fires, household.people]);
+  }, [first, reading, fires, household.people]);
 
   useEffect(() => {
     if (open) input.current?.focus();
@@ -105,8 +106,8 @@ export function AssistantFab({
     // Something someone did outdoors is added to their day, not answered.
     const people = loadHousehold(window.localStorage).people;
     const logged = parseOuting(text, people, loadPins(window.localStorage), {
-      date: TODAY,
-      minutes: NOW_MINUTES,
+      date: today(),
+      minutes: nowMinutes(),
     });
     if (logged !== undefined) {
       let reply: string;
@@ -136,7 +137,12 @@ export function AssistantFab({
         {
           id: next.current++,
           from: 'vayu',
-          text: 'Pin a place on My Air first, so there is some air to talk about.',
+          text:
+            first === undefined
+              ? 'Pin a place on My Air first, so there is some air to talk about.'
+              : state?.status === 'error'
+                ? 'We could not get the air just now, so I have nothing to go on. Please try again in a moment.'
+                : 'Still getting the air for your first place. Ask again in a moment.',
         },
       ]);
       return;

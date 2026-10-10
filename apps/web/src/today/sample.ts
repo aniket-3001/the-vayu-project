@@ -3,6 +3,7 @@ import { hourOfDay, isoDate } from './time';
 import type {
   Condition,
   DailyPoint,
+  DaySky,
   HourlyPoint,
   Pollutants,
   TodayData,
@@ -227,9 +228,18 @@ function pmAt(spec: Spec, i: number): number {
 const aqiOf = (pm25: number): number => usAqi(pm25)?.value ?? 0;
 
 /** One day, built from a recipe and the real US AQI scale. Repeatable: the same id always gives the same day. */
-export function sampleDay(id: SampleId): TodayData {
+/** A made-up day always has everything: the weather, the sun and every gas. */
+export type SampleDay = Omit<TodayData, 'weather' | 'sun' | 'hourly' | 'daily' | 'pollutants'> & {
+  readonly weather: Weather;
+  readonly sun: { readonly sunrise: string; readonly sunset: string };
+  readonly hourly: readonly (HourlyPoint & { readonly weather: Weather })[];
+  readonly daily: readonly (DailyPoint & { readonly sky: DaySky })[];
+  readonly pollutants: Required<Pollutants>;
+};
+
+export function sampleDay(id: SampleId): SampleDay {
   const spec = SPECS[id];
-  const hourly: HourlyPoint[] = Array.from({ length: 48 }, (_, i) => {
+  const hourly: (HourlyPoint & { weather: Weather })[] = Array.from({ length: 48 }, (_, i) => {
     const pm25 = pmAt(spec, i);
     return { at: atHour(i), aqi: aqiOf(pm25), pm25, weather: weatherAt(spec, i, atHour(i)) };
   });
@@ -247,7 +257,7 @@ export function sampleDay(id: SampleId): TodayData {
   }
   const todayKey = isoDate(AS_OF);
   const dayKeys = [...byDate.keys()].filter((key) => key >= todayKey).slice(0, 7);
-  const daily: DailyPoint[] = dayKeys.map((key) => {
+  const daily: (DailyPoint & { sky: DaySky })[] = dayKeys.map((key) => {
     const hours = (byDate.get(key) ?? []).map(({ at, i }) => ({
       pm25: pmAt(spec, i),
       w: weatherAt(spec, i, at),
@@ -263,19 +273,21 @@ export function sampleDay(id: SampleId): TodayData {
     return {
       date: new Date(Date.parse(`${key}T00:00:00+05:30`)).toISOString(),
       aqi: aqiOf(mean(hours.map((hour) => hour.pm25))),
-      hiC: Math.max(...hours.map((hour) => hour.w.tempC)),
-      loC: Math.min(...hours.map((hour) => hour.w.tempC)),
-      windKmh: Math.round(mean(hours.map((hour) => hour.w.windKmh))),
-      windFromDeg: noon?.windFromDeg ?? 0,
-      humidityPct: Math.round(mean(hours.map((hour) => hour.w.humidityPct))),
-      rainChancePct: Math.max(...hours.map((hour) => hour.w.rainChancePct)),
-      condition: worst.w.rainMm > 0 ? worst.w.condition : (noon?.condition ?? 'clear'),
+      sky: {
+        hiC: Math.max(...hours.map((hour) => hour.w.tempC)),
+        loC: Math.min(...hours.map((hour) => hour.w.tempC)),
+        windKmh: Math.round(mean(hours.map((hour) => hour.w.windKmh))),
+        windFromDeg: noon?.windFromDeg ?? 0,
+        humidityPct: Math.round(mean(hours.map((hour) => hour.w.humidityPct))),
+        rainChancePct: Math.max(...hours.map((hour) => hour.w.rainChancePct)),
+        condition: worst.w.rainMm > 0 ? worst.w.condition : (noon?.condition ?? 'clear'),
+      },
     };
   });
 
   const now = hourly[0];
   if (now === undefined) throw new Error('A sample day needs a first hour');
-  const pollutants: Pollutants = {
+  const pollutants: Required<Pollutants> = {
     pm25: now.pm25,
     pm10: round1(now.pm25 * spec.pm10Ratio),
     ...spec.gases,
@@ -294,11 +306,10 @@ export function sampleDay(id: SampleId): TodayData {
     sun: { sunrise: SUNRISE, sunset: SUNSET },
     provenance: {
       mode: 'sample',
+      label: 'Sample',
       stationName: spec.station,
       distanceKm: 3.2,
       ageMinutes: 12,
-      stations: 12,
-      contributors: 3,
     },
   };
 }

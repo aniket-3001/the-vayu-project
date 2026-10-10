@@ -1,15 +1,7 @@
 import { ChevronLeft } from 'lucide-react';
-import { useMemo } from 'react';
-import {
-  HashRouter,
-  Link,
-  Route,
-  Routes,
-  useLocation,
-  useParams,
-  useSearchParams,
-} from 'react-router-dom';
+import { HashRouter, Link, Route, Routes, useLocation, useParams } from 'react-router-dom';
 import { DemoPill } from './demo/DemoPill';
+import { DemoPlaceRoute } from './demo/DemoPlaceRoute';
 import { ExposureScreen } from './exposure/ExposureScreen';
 import { LensScreen } from './lens/LensScreen';
 import { MapScreen } from './map/MapScreen';
@@ -17,22 +9,18 @@ import { MyAirScreen } from './myair/MyAirScreen';
 import { TabBar } from './nav/TabBar';
 import { AssistantFab } from './assistant/AssistantFab';
 import { AirUnitsProvider, SmokeToggle } from './units/AirUnits';
-import { readingForPin, sampleIdForPin } from './places/placeSample';
+import { airStore, useToday } from './air/store';
+import { AirError, AirLoading } from './components/AirState';
 import { usePins } from './places/usePins';
-import { SAMPLE_IDS } from './today/sample';
-import { SampleSwitcher } from './today/ui/SampleSwitcher';
 import { TodayScreen } from './today/ui/TodayScreen';
 
 function PlaceRoute(): React.JSX.Element {
   const { id = '' } = useParams();
   const { pins } = usePins();
-  const [params, setParams] = useSearchParams();
   const pin = pins.find((candidate) => candidate.id === id);
-  const wanted = SAMPLE_IDS.find((day) => day === params.get('day'));
-  const day = wanted ?? (pin === undefined ? 'unhealthy' : sampleIdForPin(pin));
-  const data = useMemo(() => (pin === undefined ? undefined : readingForPin(pin, day)), [pin, day]);
+  const state = useToday(pin);
 
-  if (data === undefined) {
+  if (pin === undefined) {
     return (
       <div className="page">
         <main className="layout">
@@ -43,25 +31,38 @@ function PlaceRoute(): React.JSX.Element {
       </div>
     );
   }
-  return (
-    <>
-      <div className="bar bar-switcher">
-        <SampleSwitcher
-          value={day}
-          onChange={(next) => {
-            setParams({ day: next }, { replace: true });
-          }}
-        />
+  const back = (
+    <Link to="/" className="back">
+      <ChevronLeft size={18} strokeWidth={2} aria-hidden="true" /> My Air
+    </Link>
+  );
+  if (state?.status !== 'ready') {
+    return (
+      <div className="page">
+        <header className="place">
+          {back}
+          <h1>{pin.name}</h1>
+        </header>
+        <main className="layout">
+          {state?.status === 'error' ? (
+            <AirError
+              message={state.message}
+              onRetry={() => {
+                airStore().ensureToday(pin, true);
+              }}
+            />
+          ) : (
+            <AirLoading what={`the air at ${pin.name}`} />
+          )}
+        </main>
       </div>
-      <TodayScreen
-        data={data}
-        back={
-          <Link to="/" className="back">
-            <ChevronLeft size={18} strokeWidth={2} aria-hidden="true" /> My Air
-          </Link>
-        }
-      />
-    </>
+    );
+  }
+  return (
+    <TodayScreen
+      data={{ ...state.data, place: { ...state.data.place, name: pin.name } }}
+      back={back}
+    />
   );
 }
 
@@ -72,7 +73,10 @@ function Frame(): React.JSX.Element {
     <div className="frame" data-route={route === '' ? 'home' : route}>
       <Routes>
         <Route path="/" element={<MyAirScreen />} />
-        <Route path="/place/:id" element={<PlaceRoute />} />
+        <Route
+          path="/place/:id"
+          element={import.meta.env.VITE_DEMO === '1' ? <DemoPlaceRoute /> : <PlaceRoute />}
+        />
         <Route path="/exposure" element={<ExposureScreen />} />
         <Route path="/map" element={<MapScreen />} />
         <Route path="/lens" element={<LensScreen />} />

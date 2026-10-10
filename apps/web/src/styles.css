@@ -3278,3 +3278,47 @@ button.alert-card {
   letter-spacing: 0.08em;
   text-transform: uppercase;
 }
+
+/* Loading and failing, said plainly. */
+.air-state {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0;
+  color: var(--muted);
+  font-size: 14px;
+}
+.air-error {
+  flex-wrap: wrap;
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: #fdeceb;
+  color: #7a2b25;
+}
+.air-error p {
+  margin: 0;
+}
+.air-pulse {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #3b82c4;
+  animation: air-pulse 1.1s ease-in-out infinite;
+}
+@keyframes air-pulse {
+  50% {
+    opacity: 0.25;
+    transform: scale(0.7);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .air-pulse {
+    animation: none;
+  }
+}
+.place-card.pending {
+  display: grid;
+  align-content: space-between;
+  background: var(--card);
+  color: var(--text);
+}
