@@ -152,7 +152,7 @@ export function SpotSection({
   return (
     <section className="spot spot-set" aria-label={label}>
       <div className="spot-head">
-        <span className="dc-icon">
+        <span className={`dc-icon spot-${kind}`}>
           <Icon size={22} strokeWidth={1.75} aria-hidden="true" />
         </span>
         <div>

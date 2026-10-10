@@ -46,7 +46,9 @@ export function PlaceCard({
         </span>
         <span className="pc-level">{level.name}</span>
         <span className="pc-sky">
-          <WeatherIcon condition={w.condition} isDay={w.isDay} size={18} />
+          <span className="pc-sky-disc">
+            <WeatherIcon condition={w.condition} isDay={w.isDay} size={18} />
+          </span>
           <span className="tnum">{w.tempC}°</span>
           <span className="sr-only">{CONDITION_LABELS[w.condition]}</span>
         </span>

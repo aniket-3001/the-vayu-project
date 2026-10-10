@@ -54,7 +54,7 @@ export function Hero({ data }: { readonly data: TodayData }): React.JSX.Element 
       {smoke && <p className="hero-fine small">Cigarettes: {SMOKE_CAVEAT}</p>}
       <ul className="hero-weather" aria-label="Weather now">
         <li>
-          <Thermometer size={20} strokeWidth={1.75} aria-hidden="true" />
+          <Thermometer size={20} strokeWidth={1.75} className="ic-temp" aria-hidden="true" />
           <span className="tnum">{w.tempC}°C</span>
         </li>
         <li>
@@ -63,7 +63,7 @@ export function Hero({ data }: { readonly data: TodayData }): React.JSX.Element 
           <span className="sr-only">, from the {compassPoint(w.windFromDeg)}</span>
         </li>
         <li>
-          <Droplets size={20} strokeWidth={1.75} aria-hidden="true" />
+          <Droplets size={20} strokeWidth={1.75} className="ic-drop" aria-hidden="true" />
           <span className="tnum">{w.humidityPct}%</span>
           <span className="sr-only"> humidity</span>
         </li>

@@ -1,5 +1,6 @@
 import { ChevronRight } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { readDemo } from '../../demo/state';
 import { Pill } from '../../today/ui/Chip';
 import type { TodayData } from '../../today/types';
 import { dayWord, type Alert } from '../model';
@@ -19,6 +20,15 @@ export function AlertsStrip({
 }): React.JSX.Element | null {
   const [open, setOpen] = useState<Alert | undefined>(undefined);
   const [calling, setCalling] = useState(false);
+  const staged = readDemo()?.openAlert;
+  useEffect(() => {
+    // A demo scenario can open an alert as soon as the strip shows.
+    if (staged === undefined) return;
+    const found = alerts.find((alert) => alert.id === staged);
+    if (found !== undefined) setOpen(found);
+    // Only on first show: closing the sheet must not open it again.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   if (alerts.length === 0) return null;
   return (
     <>
@@ -42,7 +52,7 @@ export function AlertsStrip({
                     setOpen(alert);
                   }}
                 >
-                  <span className="alert-icon">
+                  <span className={`alert-icon alert-${alert.kind}`}>
                     <Icon size={20} strokeWidth={2} aria-hidden="true" />
                   </span>
                   <span className="alert-words">

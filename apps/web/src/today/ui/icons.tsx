@@ -142,9 +142,18 @@ export function AdviceGlyph({
   readonly name: AdviceIcon;
   readonly size?: number;
 }): React.JSX.Element {
-  if (name === 'mask') return <MaskIcon size={size} />;
+  if (name === 'mask')
+    return (
+      <span className="adv adv-mask">
+        <MaskIcon size={size} />
+      </span>
+    );
   const Icon = ADVICE_ICONS[name];
-  return <Icon size={size} strokeWidth={1.75} aria-hidden="true" />;
+  return (
+    <span className={`adv adv-${name}`}>
+      <Icon size={size} strokeWidth={1.75} aria-hidden="true" />
+    </span>
+  );
 }
 
 const BROWS: Readonly<Partial<Record<Face, string>>> = {

@@ -392,6 +392,7 @@ h2 {
 }
 .wx {
   color: #5d6b7e;
+  fill: color-mix(in srgb, currentColor 20%, transparent);
 }
 .wx-clear:not(.wx-night),
 .wx-partly-cloudy:not(.wx-night) {
@@ -412,7 +413,7 @@ h2 {
   color: #b07a3c;
 }
 .wind-arrow {
-  color: var(--text);
+  color: #2f7fd0;
   flex: none;
 }
 
@@ -834,8 +835,13 @@ h2 {
   font-size: 13px;
   font-weight: 600;
 }
-.place-card .pc-sky .wx {
-  color: currentColor;
+.pc-sky-disc {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: rgb(255 255 255 / 0.78);
 }
 /* The face sits in the fourth quadrant: the bottom right of the square. */
 .pc-face {
@@ -2746,4 +2752,153 @@ button.alert-card {
 .legend-about[open] {
   max-height: 34dvh;
   overflow-y: auto;
+}
+
+/* Colour icons throughout: every glyph carries the colour of what it stands for. */
+.ic-temp {
+  color: #e8603c;
+  fill: color-mix(in srgb, #e8603c 22%, transparent);
+}
+.adv-walk {
+  color: #2e9d57;
+}
+.adv-open-windows {
+  color: #2f7fd0;
+}
+.adv-exercise {
+  color: #e0742f;
+}
+.adv-windows {
+  color: #7a6bc4;
+}
+.adv-purifier {
+  color: #1f9aa8;
+}
+.adv-indoors {
+  color: #c76a3b;
+}
+.adv-mask {
+  color: #d6568a;
+}
+.task-walk {
+  color: #2e9d57;
+}
+.task-stay-in {
+  color: #c76a3b;
+}
+.task-windows {
+  color: #2f7fd0;
+}
+.task-purifier {
+  color: #1f9aa8;
+}
+.task-grap {
+  color: #d9822b;
+}
+.task-mask {
+  color: #d6568a;
+}
+.alert-grap {
+  color: #d9822b;
+}
+.alert-smog {
+  color: #7a6bc4;
+}
+.alert-walk {
+  color: #2e9d57;
+}
+.alert-stubble {
+  color: #e8603c;
+}
+.alert-icon.alert-grap {
+  background: #fde7c8;
+}
+.alert-icon.alert-smog {
+  background: #e9e4fa;
+}
+.alert-icon.alert-walk {
+  background: #d9f2e0;
+}
+.alert-icon.alert-stubble {
+  background: #fddcd1;
+}
+.alert-big-icon.alert-grap {
+  background: radial-gradient(circle at 30% 25%, #fff4e0, #fbd9a3);
+}
+.alert-big-icon.alert-smog {
+  background: radial-gradient(circle at 30% 25%, #f3f0ff, #d8d0f5);
+}
+.alert-big-icon.alert-walk {
+  background: radial-gradient(circle at 30% 25%, #ecfaf0, #bfe8cc);
+}
+.alert-big-icon.alert-stubble {
+  background: radial-gradient(circle at 30% 25%, #fff0ea, #f9c4b2);
+}
+.dc-icon.spot-home {
+  color: #c76a3b;
+}
+.dc-icon.spot-work {
+  color: #2f7fd0;
+}
+.dc-icon.spot-school {
+  color: #7a6bc4;
+}
+.dc-icon.spot-outdoor {
+  color: #2e9d57;
+}
+.spot-set .dc-icon.spot-home {
+  background: #fbe6d9;
+}
+.spot-set .dc-icon.spot-work {
+  background: #dcebfa;
+}
+.spot-set .dc-icon.spot-school {
+  background: #e9e4fa;
+}
+.spot-set .dc-icon.spot-outdoor {
+  background: #d9f2e0;
+}
+.ic-flame {
+  color: #e8603c;
+  fill: #f6a66b;
+}
+.ic-star {
+  color: #d99a00;
+  fill: #f7cf4d;
+}
+.wx-windy {
+  color: #1f9aa8;
+}
+
+.demo-pill {
+  position: fixed;
+  bottom: 100px;
+  left: 10px;
+  z-index: 30;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 6px 4px 12px;
+  border-radius: 999px;
+  background: rgb(255 255 255 / 0.92);
+  box-shadow: 0 4px 14px -6px rgb(51 65 85 / 0.45);
+  color: var(--text);
+  font-size: 12px;
+  font-weight: 700;
+}
+.demo-pill button {
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  border: 0;
+  border-radius: 50%;
+  background: #fde2c6;
+  color: #9a4c1b;
+  cursor: pointer;
+}
+[data-route='map'] .demo-pill,
+[data-route='lens'] .demo-pill {
+  top: 10px;
+  bottom: auto;
 }

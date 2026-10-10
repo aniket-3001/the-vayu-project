@@ -57,7 +57,7 @@ export function AlertSheet({
           <X size={20} aria-hidden="true" />
         </button>
         <div className="alert-hero">
-          <span className="alert-big-icon">
+          <span className={`alert-big-icon alert-${alert.kind}`}>
             <Icon size={40} strokeWidth={1.75} aria-hidden="true" />
           </span>
           <Pill>{dayWord(alert.day, data)}</Pill>

@@ -7,6 +7,7 @@ import {
   remember,
   type WindPoint,
 } from './live';
+import { readDemo } from '../demo/state';
 import { sampleMonitors, type Monitor } from './monitors';
 import { sampleWindGrid } from './wind';
 
@@ -41,7 +42,7 @@ export function useMapData(fetchImpl: typeof fetch = fetch): MapData {
       air: isAir(air) ? air : sampleMonitors(),
       windLive: isWind(wind),
       airLive: isAir(air),
-      fires: undefined,
+      fires: readDemo()?.fires,
     };
   });
 
@@ -71,12 +72,14 @@ export function useMapData(fetchImpl: typeof fetch = fetch): MapData {
         () => undefined,
       );
     }
-    fetchFireCount(API_URL, fetchImpl).then(
-      (fires) => {
-        apply({ fires });
-      },
-      () => undefined,
-    );
+    if (readDemo()?.fires === undefined) {
+      fetchFireCount(API_URL, fetchImpl).then(
+        (fires) => {
+          apply({ fires });
+        },
+        () => undefined,
+      );
+    }
     return () => {
       current = false;
     };

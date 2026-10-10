@@ -1,3 +1,4 @@
+import { readDemo } from '../demo/state';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { loadLive, recordFix, saveLive, SAMPLE_TRACK } from './live';
 import type { LiveLog } from './model';
@@ -106,7 +107,7 @@ export function useLive(storage: Storage = window.localStorage): {
 } {
   const [log, setLog] = useState<LiveLog>(() => loadLive(storage));
   const [state, setState] = useState<LiveState>('off');
-  const [sample, setSample] = useState(false);
+  const [sample, setSample] = useState(() => readDemo()?.live === true);
   const watch = useRef<number | null>(null);
 
   const stop = useCallback(() => {

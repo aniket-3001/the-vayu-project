@@ -9,6 +9,7 @@ import {
   useParams,
   useSearchParams,
 } from 'react-router-dom';
+import { DemoPill } from './demo/DemoPill';
 import { ExposureScreen } from './exposure/ExposureScreen';
 import { LensScreen } from './lens/LensScreen';
 import { MapScreen } from './map/MapScreen';
@@ -77,6 +78,7 @@ function Frame(): React.JSX.Element {
         <Route path="/lens" element={<LensScreen />} />
         <Route path="*" element={<MyAirScreen />} />
       </Routes>
+      <DemoPill />
       <div className="dock">
         <SmokeToggle />
         <AssistantFab />

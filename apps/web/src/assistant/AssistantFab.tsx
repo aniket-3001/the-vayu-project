@@ -3,6 +3,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { alertsFor } from '../alerts/model';
 import { useFires } from '../alerts/useFires';
 import { useHousehold } from '../exposure/useExposure';
+import { readDemo } from '../demo/state';
 import { readingForPin } from '../places/placeSample';
 import { usePins } from '../places/usePins';
 import { Pill } from '../today/ui/Chip';
@@ -84,6 +85,9 @@ export function AssistantFab({
     end.current?.scrollIntoView({ block: 'end' });
   }, [messages, busy]);
 
+  const staged = useRef(readDemo()?.ask);
+  const asked = useRef(false);
+
   const ask = (question: string): void => {
     const text = question.trim();
     if (text === '' || busy) return;
@@ -129,6 +133,23 @@ export function AssistantFab({
       },
     );
   };
+
+  // A demo scenario can open the chat and put a question as soon as the app shows.
+  const stagedQuestion = staged.current;
+  useEffect(() => {
+    if (stagedQuestion === undefined || asked.current || context === undefined) return undefined;
+    asked.current = true;
+    setOpen(true);
+    const timer = window.setTimeout(() => {
+      ask(stagedQuestion);
+    }, 900);
+    return () => {
+      window.clearTimeout(timer);
+      asked.current = false;
+    };
+    // The question is put once, when the context is first known.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [context === undefined]);
 
   const byVoice = (): void => {
     setListening(true);

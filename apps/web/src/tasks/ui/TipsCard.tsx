@@ -70,11 +70,11 @@ export function Progress({
   return (
     <p className="tasks-foot">
       <span className="stat">
-        <Flame size={16} strokeWidth={2} aria-hidden="true" />
+        <Flame size={16} strokeWidth={2} className="ic-flame" aria-hidden="true" />
         {progress.streak === 0 ? 'No streak yet' : `${String(progress.streak)}-day streak`}
       </span>
       <span className="stat">
-        <Star size={16} strokeWidth={2} aria-hidden="true" />
+        <Star size={16} strokeWidth={2} className="ic-star" aria-hidden="true" />
         {progress.points} points · {rank.name}
       </span>
       {toNext !== undefined && (
@@ -130,7 +130,7 @@ export function TipsCard({
             >
               {checked && <Check size={18} strokeWidth={3} aria-hidden="true" />}
             </motion.button>
-            <span className="task-icon">
+            <span className={`task-icon task-${task.kind}`}>
               {Icon === undefined ? (
                 <MaskIcon size={20} />
               ) : (

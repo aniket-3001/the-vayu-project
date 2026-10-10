@@ -243,3 +243,74 @@
     padding: 10px 12px;
   }
 }
+
+.scenes {
+  display: grid;
+  gap: 8px;
+  padding: 10px 20px;
+  border-bottom: 1px solid var(--line);
+  background: rgb(255 255 255 / 0.55);
+}
+.scene-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.scene-chips button {
+  min-height: 36px;
+  padding: 0 12px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--card);
+  color: var(--text);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.scene-chips button[aria-pressed='true'] {
+  border-color: #2f6aa3;
+  background: #dcebfa;
+  color: #1f4f80;
+}
+.scene-play {
+  justify-self: start;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 40px;
+  padding: 0 16px;
+  border-radius: 999px;
+}
+.scene-caption {
+  position: relative;
+  margin: 0;
+  padding: 8px 12px 12px;
+  border-radius: 12px;
+  background: #fdf1de;
+  font-size: 14px;
+  overflow: hidden;
+}
+.scene-bar {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  height: 4px;
+  width: 100%;
+  background: #e0953f;
+  transform-origin: left;
+  animation: scene-run linear both;
+}
+@keyframes scene-run {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .scene-bar {
+    animation: none;
+  }
+}

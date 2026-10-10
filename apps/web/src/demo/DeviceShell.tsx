@@ -3,36 +3,22 @@ import {
   ChevronLeft,
   ChevronRight,
   Lock,
+  Play,
+  Square,
   RotateCw,
   RefreshCw,
   RotateCcw,
   SignalHigh,
   Wifi,
 } from 'lucide-react';
-import { useRef, useState } from 'react';
-import { PINS_STORAGE_KEY } from '../data/pins';
-import { DEVICES_STORAGE_KEY } from '../devices/devices';
-import { LIVE_STORAGE_KEY } from '../exposure/live';
-import { PEOPLE_STORAGE_KEY } from '../exposure/people';
-import { SPOTS_STORAGE_KEY } from '../exposure/spots';
-import { TASKS_STORAGE_KEY } from '../tasks/store';
-import { UNITS_STORAGE_KEY } from '../units/AirUnits';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { SAMPLE_AS_OF } from '../today/sample';
 import { clock24 } from '../today/time';
 import { DEVICES, deviceById, fitScale, geometry, type DeviceId } from './devices';
+import { applyScenario, SCENARIOS, scenarioById, TOUR_SECONDS, type Scenario } from './scenarios';
+import { APP_KEYS, readDemo } from './state';
 import { useSize } from './useSize';
 import './demo.css';
-
-/** Everything the app saves on the device, so "Start over" really starts over. */
-const RESETTABLE = [
-  PINS_STORAGE_KEY,
-  SPOTS_STORAGE_KEY,
-  DEVICES_STORAGE_KEY,
-  PEOPLE_STORAGE_KEY,
-  LIVE_STORAGE_KEY,
-  TASKS_STORAGE_KEY,
-  UNITS_STORAGE_KEY,
-];
 
 const fromUrl = (): DeviceId =>
   deviceById(new URLSearchParams(window.location.search).get('device')).id;
@@ -99,6 +85,11 @@ export function DeviceShell(): React.JSX.Element {
   const [deviceId, setDeviceId] = useState<DeviceId>(fromUrl);
   const [landscape, setLandscape] = useState(false);
   const [run, setRun] = useState(0);
+  const [route, setRoute] = useState(
+    () => scenarioById(new URLSearchParams(window.location.search).get('demo'))?.route ?? '/',
+  );
+  const [active, setActive] = useState<string | undefined>(() => readDemo()?.id);
+  const [step, setStep] = useState<number | undefined>(undefined);
   const [stageRef, stage] = useSize<HTMLDivElement>();
   const frame = useRef<HTMLIFrameElement>(null);
   const device = deviceById(deviceId);
@@ -123,9 +114,38 @@ export function DeviceShell(): React.JSX.Element {
   const restart = (): void => {
     setRun((n) => n + 1);
   };
+  const stageScenario = useCallback((scenario: Scenario): void => {
+    setRoute(applyScenario(window.localStorage, scenario));
+    setActive(scenario.id);
+    setRun((n) => n + 1);
+  }, []);
+  const pick = (scenario: Scenario): void => {
+    setStep(undefined);
+    stageScenario(scenario);
+  };
+  // The tour walks the scenarios in order, a few seconds each, and stops at the end.
+  useEffect(() => {
+    if (step === undefined) return undefined;
+    const scenario = SCENARIOS[step];
+    if (scenario === undefined) {
+      setStep(undefined);
+      return undefined;
+    }
+    stageScenario(scenario);
+    const timer = window.setTimeout(() => {
+      setStep(step + 1);
+    }, scenario.seconds * 1000);
+    return () => {
+      window.clearTimeout(timer);
+    };
+  }, [step, stageScenario]);
+  const playing = step === undefined ? undefined : SCENARIOS[step];
   const startOver = (): void => {
+    setStep(undefined);
+    setActive(undefined);
+    setRoute('/');
     try {
-      for (const key of RESETTABLE) window.localStorage.removeItem(key);
+      for (const key of APP_KEYS) window.localStorage.removeItem(key);
     } catch {
       // Storage may be blocked; the reload below still returns the app to its first screen.
     }
@@ -177,6 +197,53 @@ export function DeviceShell(): React.JSX.Element {
           </a>
         </div>
       </header>
+      <section className="scenes" aria-label="Demo scenarios">
+        <button
+          type="button"
+          className="primary scene-play"
+          onClick={() => {
+            setStep(step === undefined ? 0 : undefined);
+          }}
+        >
+          {step === undefined ? (
+            <>
+              <Play size={16} aria-hidden="true" /> Play the {String(Math.round(TOUR_SECONDS))}
+              -second tour
+            </>
+          ) : (
+            <>
+              <Square size={16} aria-hidden="true" /> Stop the tour
+            </>
+          )}
+        </button>
+        <div className="scene-chips" role="group" aria-label="Scenarios">
+          {SCENARIOS.map((scenario) => (
+            <button
+              key={scenario.id}
+              type="button"
+              aria-pressed={active === scenario.id}
+              onClick={() => {
+                pick(scenario);
+              }}
+            >
+              {scenario.label}
+            </button>
+          ))}
+        </div>
+        {playing !== undefined && step !== undefined && (
+          <p className="scene-caption" role="status">
+            <strong>
+              {String(step + 1)} of {String(SCENARIOS.length)} · {playing.label}.
+            </strong>{' '}
+            {playing.caption}
+            <span
+              key={step}
+              className="scene-bar"
+              style={{ animationDuration: `${String(playing.seconds)}s` }}
+            />
+          </p>
+        )}
+      </section>
       <div className="stage" ref={stageRef}>
         <div className="fit">
           <div className="lid-wrap" style={{ width: lidWidth * scale, height: lidHeight * scale }}>
@@ -211,7 +278,7 @@ export function DeviceShell(): React.JSX.Element {
                   ref={frame}
                   title="Vayu Air app"
                   allow="camera; geolocation; accelerometer; gyroscope; magnetometer"
-                  src="?embed#/"
+                  src={`?embed#${route}`}
                   width={g.appWidth}
                   height={g.appHeight}
                 />
