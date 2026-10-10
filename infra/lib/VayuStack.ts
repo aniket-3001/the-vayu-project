@@ -119,6 +119,13 @@ export class VayuStack extends Stack {
       removalPolicy: RemovalPolicy.DESTROY,
     });
 
+    // Mixed into the hash of a caller's address before the daily request limit is counted, so the hash cannot
+    // be looked up anywhere else. CDK makes it; nobody reads it.
+    const requestSalt = new Secret(this, 'RequestSalt', {
+      generateSecretString: { excludePunctuation: true, passwordLength: 32 },
+      removalPolicy: RemovalPolicy.DESTROY,
+    });
+
     const apiFunction = new NodejsFunction(this, 'ApiFunction', {
       entry: apiEntry,
       runtime: Runtime.NODEJS_22_X,
@@ -140,8 +147,10 @@ export class VayuStack extends Stack {
         TELEGRAM_WEBHOOK_SECRET_ARN: telegramWebhookSecret.secretArn,
         FIRMS_MAP_KEY_ARN: firmsMapKey.secretArn,
         OPENAQ_API_KEY_ARN: openAqKey.secretArn,
+        REQUEST_SALT_ARN: requestSalt.secretArn,
       },
     });
+    requestSalt.grantRead(apiFunction);
     cache.grantReadData(apiFunction);
     rooms.grantReadData(apiFunction);
     watch.grantReadWriteData(apiFunction);

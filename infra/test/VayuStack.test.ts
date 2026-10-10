@@ -84,7 +84,7 @@ describe('the Vayu stack', () => {
   });
 
   it('creates its own webhook secret and references the hand-created bot token secret, both readable by the API', () => {
-    template.resourceCountIs('AWS::SecretsManager::Secret', 1); // the webhook secret; the bot token is looked up, not created
+    template.resourceCountIs('AWS::SecretsManager::Secret', 2); // the webhook secret and the request salt; the bot token is looked up, not created
     template.hasResourceProperties('AWS::SecretsManager::Secret', {
       GenerateSecretString: Match.objectLike({ ExcludePunctuation: true, PasswordLength: 32 }),
     });
@@ -101,7 +101,7 @@ describe('the Vayu stack', () => {
           Action: ['secretsmanager:GetSecretValue', 'secretsmanager:DescribeSecret'],
         }).test(statement).isSuccess,
     );
-    expect(secretReads).toHaveLength(7); // the webhook secret, the bot token (API and Send), the FIRMS key, and the OpenAQ key (API, harvest and the map monitors)
+    expect(secretReads).toHaveLength(8); // the webhook secret, the request salt, the bot token (API and Send), the FIRMS key, and the OpenAQ key (API, harvest and the map monitors)
   });
 
   describe('the alert loop', () => {

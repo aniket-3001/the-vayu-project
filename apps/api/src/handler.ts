@@ -18,6 +18,8 @@ import {
 } from '@vayu/data';
 import { dynamoLinkStore, dynamoTokenStore, resumeAlertLoop } from '@vayu/watch';
 import { s3ReplayRepo } from './replayStore';
+import { dynamoQuota } from './quota';
+import { dynamoRequestsSave } from './requestsStore';
 import { dynamoCacheReader, dynamoRoomStore } from './roomStores';
 import { startFixCheck } from './fixCheck';
 import { dynamoFixCheckStore } from './fixCheckStore';
@@ -52,11 +54,12 @@ let routePromise: Promise<ReturnType<typeof createRouter>> | undefined;
 // no station has a recent reading (rule I12).
 function buildRoute(): Promise<ReturnType<typeof createRouter>> {
   routePromise ??= (async () => {
-    const [botToken, webhookSecret, firmsMapKey, openAqKey] = await Promise.all([
+    const [botToken, webhookSecret, firmsMapKey, openAqKey, requestSalt] = await Promise.all([
       readSecret(mustEnv('TELEGRAM_BOT_TOKEN_ARN')),
       readSecret(mustEnv('TELEGRAM_WEBHOOK_SECRET_ARN')),
       readSecret(mustEnv('FIRMS_MAP_KEY_ARN')),
       readSecret(mustEnv('OPENAQ_API_KEY_ARN')),
+      readSecret(mustEnv('REQUEST_SALT_ARN')),
     ]);
     const rooms = {
       store: dynamoRoomStore(mustEnv('ROOMS_TABLE')),
@@ -95,6 +98,12 @@ function buildRoute(): Promise<ReturnType<typeof createRouter>> {
           }),
       },
       cache: dynamoCacheReader(mustEnv('CACHE_TABLE')),
+      requests: {
+        save: dynamoRequestsSave(mustEnv('WATCH_TABLE'), docClient),
+        quota: dynamoQuota(mustEnv('WATCH_TABLE'), docClient),
+        clock: liveClock(),
+        salt: requestSalt,
+      },
       clock: liveClock(),
       mode: 'live',
       linkStore: dynamoLinkStore({ tableName: mustEnv('WATCH_TABLE'), docClient }),
@@ -118,6 +127,7 @@ export async function handler(event: APIGatewayProxyEventV2): Promise<APIGateway
     path: event.rawPath,
     query: event.queryStringParameters ?? {},
     headers: event.headers,
+    sourceIp: event.requestContext.http.sourceIp,
     ...(event.body === undefined ? {} : { body: event.body }),
   };
   const response = await route(request);

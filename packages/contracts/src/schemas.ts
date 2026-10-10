@@ -247,6 +247,40 @@ export const Stations = record({
 });
 export type Stations = z.infer<typeof Stations>;
 
+const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/u;
+const MOBILE = /^(?:\+?91[\s-]?)?[6-9]\d{9}$/u;
+
+/**
+ * What someone sends to ask for a demo or for monitors: who they are, where, and how to reach them. Only what is
+ * needed to get back to them. `POST /v1/requests` takes exactly this and refuses anything else.
+ */
+export const AccessRequest = z
+  .object({
+    who: z.enum(['school', 'society', 'person']),
+    name: z.string().trim().min(1).max(80),
+    organisation: z.string().trim().max(120),
+    area: z.string().trim().min(1).max(120),
+    contact: z
+      .string()
+      .trim()
+      .max(120)
+      .refine((value) => EMAIL.test(value) || MOBILE.test(value.replaceAll(/[\s-]/gu, '')), {
+        message: 'Give an email address or a 10-digit mobile number',
+      }),
+    wants: z
+      .array(z.enum(['demo', 'monitors']))
+      .min(1)
+      .max(2),
+    places: z.string().regex(/^\d{0,4}$/u),
+    sentAt: z.string().optional(),
+  })
+  .strict()
+  .refine((r) => r.who === 'person' || r.organisation.length > 0, {
+    message: 'A school or a society needs its name',
+    path: ['organisation'],
+  });
+export type AccessRequest = z.infer<typeof AccessRequest>;
+
 export const Leakiness = z.enum(['closed', 'typical', 'windows_open', 'custom']);
 export const RoomSpec = record({
   id: z.string(),

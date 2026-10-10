@@ -4,6 +4,8 @@ export interface ApiRequest {
   readonly query: Readonly<Record<string, string | undefined>>;
   readonly headers: Readonly<Record<string, string | undefined>>;
   readonly body?: string;
+  /** The caller's address, as API Gateway saw it. Only ever hashed, for a daily limit. */
+  readonly sourceIp?: string;
 }
 
 export interface ApiResponse {

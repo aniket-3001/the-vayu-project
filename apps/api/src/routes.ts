@@ -26,6 +26,7 @@ import type { CacheReader } from './roomStores';
 import { handleRoom, type RoomsDeps } from './roomsRoute';
 import { loadAir, placeFromQuery } from './air';
 import { handleHistory } from './historyRoute';
+import { handleRequests, type RequestsDeps } from './requestsRoute';
 import { handleStations } from './stationsRoute';
 import { handleToday } from './todayRoute';
 import { failure, ok, type ApiRequest, type ApiResponse } from './respond';
@@ -33,6 +34,8 @@ export type { ApiRequest, ApiResponse } from './respond';
 import { timelineFor } from './timeline';
 
 export interface RouterDeps {
+  /** Asking for a demo or monitors. Absent where nothing is wired: /v1/requests is then not found. */
+  readonly requests?: RequestsDeps | undefined;
   /** The Today screen's weather and gases. Absent, or failing, only means Today has none. */
   readonly weatherForecastRepo?: WeatherForecastRepo | undefined;
   readonly gasRepo?: GasRepo | undefined;
@@ -108,6 +111,11 @@ export function createRouter(deps: RouterDeps) {
   return async function route(request: ApiRequest): Promise<ApiResponse> {
     if (request.path === '/v1/watch/telegram/webhook') {
       return handleTelegramWebhook(request, deps);
+    }
+    if (request.path === '/v1/requests') {
+      return deps.requests === undefined
+        ? failure(404, 'not_found', `No route for ${request.path}`)
+        : handleRequests(request, deps.requests);
     }
     if (request.path === '/v1/fixchecks' || request.path.startsWith('/v1/fixchecks/')) {
       return deps.fixChecks === undefined
