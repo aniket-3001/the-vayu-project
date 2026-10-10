@@ -3,7 +3,7 @@ import { GetSecretValueCommand, SecretsManagerClient } from '@aws-sdk/client-sec
 import { liveClock } from '@vayu/core';
 import { openAqMapStationRepo } from '@vayu/data';
 import { dynamoCacheStore } from './harvestStores';
-import { STATIONS_KEY, STATIONS_TTL_SECONDS, snapshotStations } from './stationsSnapshot';
+import { STATION_CHUNKS, STATIONS_TTL_SECONDS, snapshotStations } from './stationsSnapshot';
 import { annotate, traced } from './tracing';
 
 const logger = new Logger({ serviceName: 'vayu-stations' });
@@ -15,8 +15,9 @@ function mustEnv(name: string): string {
 }
 
 /**
- * The scheduled snapshot of the monitors on the map (EventBridge Scheduler, every 30 minutes). It spaces its
- * OpenAQ requests to stay under the provider's limit, so a visitor opening the map never reaches OpenAQ.
+ * The scheduled snapshot of the monitors on the map, worldwide (EventBridge Scheduler, every 30 minutes). It reads
+ * OpenAQ's list of the latest PM2.5 a thousand at a time, spaced to stay under the provider's limit, so a visitor
+ * opening the map never reaches OpenAQ.
  */
 export async function handler(): Promise<{ readonly stations: number }> {
   const secret = await traced(new SecretsManagerClient({})).send(
@@ -24,15 +25,15 @@ export async function handler(): Promise<{ readonly stations: number }> {
   );
   if (!secret.SecretString) throw new Error('The OpenAQ secret has no value');
   const result = await snapshotStations({
-    // 75 monitors at a request a second is about 85 seconds, inside the function's two-minute limit.
-    repo: openAqMapStationRepo({ apiKey: secret.SecretString, maxStations: 75, budgetMs: 95_000 }),
+    // About ten pages of a thousand readings, a request a second: well inside the function's two-minute limit.
+    repo: openAqMapStationRepo({ apiKey: secret.SecretString, budgetMs: 95_000 }),
     cache: dynamoCacheStore(mustEnv('CACHE_TABLE')),
     now: liveClock().now(),
   });
   annotate('stations', result.stations);
   logger.info('stations snapshot done', {
     ...result,
-    key: STATIONS_KEY,
+    chunks: STATION_CHUNKS,
     ttl: STATIONS_TTL_SECONDS,
   });
   return result;

@@ -2,198 +2,144 @@ import { describe, expect, it, vi } from 'vitest';
 import { openAqMapStationRepo } from './mapStations';
 
 const AS_OF = '2026-10-10T12:00:00Z';
-const json = (body: unknown, ok = true): Response =>
+const ok = (results: unknown[]): Response =>
   ({
-    ok,
-    status: ok ? 200 : 429,
+    ok: true,
+    status: 200,
     headers: new Headers(),
-    json: () => Promise.resolve(body),
+    json: () => Promise.resolve({ results }),
+  }) as Response;
+const limited = (retryAfter?: string): Response =>
+  ({
+    ok: false,
+    status: 429,
+    headers: new Headers(retryAfter === undefined ? {} : { 'retry-after': retryAfter }),
   }) as Response;
 
-const location = (id: number, name: string, last: string, parameter = 'pm25'): unknown => ({
-  id,
-  name,
-  coordinates: { latitude: 28 + id / 100, longitude: 77 },
-  sensors: [{ id: id * 10, parameter: { name: parameter } }],
-  datetimeLast: { utc: last },
+const reading = (
+  locationsId: number,
+  value: number | null,
+  at = '2026-10-10T11:00:00Z',
+  lat = 28.6,
+  lng = 77.2,
+): unknown => ({
+  datetime: { utc: at },
+  value,
+  coordinates: { latitude: lat, longitude: lng },
+  locationsId,
 });
-const latest = (id: number, value: number | null, at: string): unknown => ({
-  results: [{ datetime: { utc: at }, value, sensorsId: id * 10 }],
-});
+const quick = { apiKey: 'k', sleep: () => Promise.resolve() };
 
-const fakeFetch = (routes: Record<string, unknown>): ReturnType<typeof vi.fn> =>
-  vi.fn((url: string) => {
-    const key = Object.keys(routes).find((k) => url.includes(k));
-    return Promise.resolve(key === undefined ? json({}, false) : json(routes[key]));
-  });
-
-describe('the map’s monitors', () => {
-  it('lists the recent PM2.5 monitors in the box and asks each for its latest value', async () => {
-    const fetchImpl = fakeFetch({
-      '/locations?': {
-        results: [
-          location(1, 'Anand Vihar', '2026-10-10T11:00:00Z'),
-          location(2, 'Old one', '2026-10-01T11:00:00Z'),
-          location(3, 'Gas only', '2026-10-10T11:00:00Z', 'no2'),
-        ],
-      },
-      '/locations/1/latest': latest(1, 142.5, '2026-10-10T11:00:00Z'),
-    });
-    const repo = openAqMapStationRepo({ apiKey: 'k', fetchImpl, sleep: () => Promise.resolve() });
-    expect(await repo.latest(AS_OF)).toEqual([
-      {
-        id: 'openaq-location-1',
-        name: 'Anand Vihar',
-        lat: 28.01,
-        lng: 77,
-        pm25: 142.5,
-        at: '2026-10-10T11:00:00.000Z',
-      },
+describe('the map’s monitors, worldwide', () => {
+  it('turns the latest PM2.5 of every monitor into a station, anywhere in the world', async () => {
+    const fetchImpl = vi
+      .fn()
+      .mockResolvedValue(
+        ok([reading(1, 55.44, undefined, 28.6, 77.2), reading(2, 8, undefined, 47.83, -122.25)]),
+      );
+    const stations = await openAqMapStationRepo({ ...quick, fetchImpl }).latest(AS_OF);
+    expect(stations).toEqual([
+      { id: '1', name: '', lat: 28.6, lng: 77.2, pm25: 55.4, at: '2026-10-10T11:00:00.000Z' },
+      { id: '2', name: '', lat: 47.83, lng: -122.25, pm25: 8, at: '2026-10-10T11:00:00.000Z' },
     ]);
-    expect(fetchImpl).toHaveBeenCalledTimes(2);
-    expect(fetchImpl.mock.calls[0]?.[0]).toContain('bbox=73,26,80,32&parameters_id=2');
   });
 
-  it('leaves off a value from the future, an old one, a missing one or one no sensor could give', async () => {
-    const fetchImpl = fakeFetch({
-      '/locations?': {
-        results: [1, 2, 3, 4, 5].map((id) =>
-          location(id, `S${String(id)}`, '2026-10-10T11:30:00Z'),
-        ),
-      },
-      '/locations/1/latest': latest(1, 80, '2026-10-10T13:00:00Z'),
-      '/locations/2/latest': latest(2, 80, '2026-10-09T01:00:00Z'),
-      '/locations/3/latest': latest(3, null, '2026-10-10T11:00:00Z'),
-      '/locations/4/latest': latest(4, 4000, '2026-10-10T11:00:00Z'),
-      '/locations/5/latest': latest(5, -3, '2026-10-10T11:00:00Z'),
-    });
-    const repo = openAqMapStationRepo({ apiKey: 'k', fetchImpl, sleep: () => Promise.resolve() });
-    expect(await repo.latest(AS_OF)).toEqual([]);
+  it('asks for the readings of the last six hours, a thousand to a page, and reads on while pages are full', async () => {
+    const page = (n: number): Response =>
+      ok(Array.from({ length: 1000 }, (_, i) => reading(n * 10_000 + i, 20)));
+    const fetchImpl = vi
+      .fn()
+      .mockResolvedValueOnce(page(1))
+      .mockResolvedValueOnce(page(2))
+      .mockResolvedValueOnce(ok([reading(99, 30)]));
+    const stations = await openAqMapStationRepo({ ...quick, fetchImpl }).latest(AS_OF);
+    expect(stations).toHaveLength(2001);
+    const url = fetchImpl.mock.calls[0]?.[0] as string;
+    expect(url).toContain('/parameters/2/latest?limit=1000&page=1');
+    expect(url).toContain('datetime_min=2026-10-10T06:00:00Z');
+    expect(fetchImpl.mock.calls[2]?.[0] as string).toContain('page=3');
   });
 
-  it('keeps going when one monitor fails, and spaces its requests to stay under the provider’s limit', async () => {
+  it('leaves off a reading that is old, from the future, missing, negative or beyond what a sensor can give (rules I1, I3)', async () => {
+    const fetchImpl = vi
+      .fn()
+      .mockResolvedValue(
+        ok([
+          reading(1, 40, '2026-10-10T05:00:00Z'),
+          reading(2, 40, '2026-10-10T13:00:00Z'),
+          reading(3, null),
+          reading(4, -3),
+          reading(5, 4000),
+          reading(6, 40),
+        ]),
+      );
+    const stations = await openAqMapStationRepo({ ...quick, fetchImpl }).latest(AS_OF);
+    expect(stations.map((s) => s.id)).toEqual(['6']);
+  });
+
+  it('counts a monitor once, by its newest reading', async () => {
+    const fetchImpl = vi
+      .fn()
+      .mockResolvedValue(
+        ok([reading(7, 10, '2026-10-10T09:00:00Z'), reading(7, 90, '2026-10-10T11:00:00Z')]),
+      );
+    const stations = await openAqMapStationRepo({ ...quick, fetchImpl }).latest(AS_OF);
+    expect(stations).toHaveLength(1);
+    expect(stations[0]?.pm25).toBe(90);
+  });
+
+  it('spaces its requests, and stops at its page limit', async () => {
     const sleep = vi.fn(() => Promise.resolve());
-    const fetchImpl = fakeFetch({
-      '/locations?': {
-        results: [
-          location(1, 'A', '2026-10-10T11:30:00Z'),
-          location(2, 'B', '2026-10-10T11:00:00Z'),
-        ],
-      },
-      '/locations/2/latest': latest(2, 60, '2026-10-10T11:00:00Z'),
-    });
-    const repo = openAqMapStationRepo({ apiKey: 'k', fetchImpl, sleep, now: () => 0 });
-    const stations = await repo.latest(AS_OF);
-    expect(stations.map((s) => s.name)).toEqual(['B']);
+    const full = ok(Array.from({ length: 1000 }, (_, i) => reading(i, 20)));
+    const fetchImpl = vi.fn().mockResolvedValue(full);
+    await openAqMapStationRepo({ apiKey: 'k', fetchImpl, sleep, maxPages: 3 }).latest(AS_OF);
+    expect(fetchImpl).toHaveBeenCalledTimes(3);
     expect(sleep).toHaveBeenCalledWith(1100);
-  });
-
-  it('starts requests a fixed time apart, so a slow answer does not add to the wait', async () => {
-    let t = 0;
-    const sleep = vi.fn(() => Promise.resolve());
-    const fetchImpl = fakeFetch({
-      '/locations?': {
-        results: [1, 2].map((id) => location(id, `S${String(id)}`, '2026-10-10T11:00:00Z')),
-      },
-      '/latest': latest(1, 50, '2026-10-10T11:00:00Z'),
-    });
-    // Each reading of the clock moves it on 400 ms, as an answer taking that long would.
-    const now = (): number => (t += 400);
-    await openAqMapStationRepo({ apiKey: 'k', fetchImpl, sleep, now }).latest(AS_OF);
-    const [asked] = sleep.mock.calls[0] as unknown as [number];
-    expect(asked).toBeLessThan(1100);
-    expect(asked).toBeGreaterThan(0);
   });
 
   it('stops asking when its time is spent, and keeps what it has read', async () => {
     let t = 0;
-    const fetchImpl = fakeFetch({
-      '/locations?': {
-        results: [1, 2, 3, 4].map((id) => location(id, `S${String(id)}`, '2026-10-10T11:00:00Z')),
-      },
-      '/latest': latest(1, 50, '2026-10-10T11:00:00Z'),
-    });
-    const repo = openAqMapStationRepo({
-      apiKey: 'k',
+    const full = ok(Array.from({ length: 1000 }, (_, i) => reading(i, 20)));
+    const fetchImpl = vi.fn().mockResolvedValue(full);
+    const stations = await openAqMapStationRepo({
+      ...quick,
       fetchImpl,
-      sleep: () => Promise.resolve(),
       budgetMs: 2500,
       now: () => (t += 1000),
-    });
-    await repo.latest(AS_OF);
-    // One list call, then monitors only while the time lasts.
+    }).latest(AS_OF);
     expect(fetchImpl.mock.calls.length).toBeLessThan(5);
-    expect(fetchImpl.mock.calls.length).toBeGreaterThan(1);
+    expect(stations.length).toBeGreaterThan(0);
   });
 
-  it('asks about no more monitors than it was allowed', async () => {
-    const fetchImpl = fakeFetch({
-      '/locations?': {
-        results: [1, 2, 3].map((id) => location(id, `S${String(id)}`, '2026-10-10T11:00:00Z')),
-      },
-      '/latest': latest(1, 50, '2026-10-10T11:00:00Z'),
-    });
-    const repo = openAqMapStationRepo({
-      apiKey: 'k',
-      fetchImpl,
-      maxStations: 2,
-      sleep: () => Promise.resolve(),
-    });
-    await repo.latest(AS_OF);
-    expect(fetchImpl).toHaveBeenCalledTimes(3); // one list, two latest
-  });
-
-  it('waits as OpenAQ asks when told to slow down, and asks again', async () => {
-    const limited = {
-      ok: false,
-      status: 429,
-      headers: new Headers({ 'retry-after': '7' }),
-    } as Response;
-    const good = json({ results: [] });
-    const fetchImpl = vi.fn().mockResolvedValueOnce(limited).mockResolvedValue(good);
+  it('waits as OpenAQ asks when told to slow down, gives up after a few waits, and not past its time', async () => {
     const sleep = vi.fn(() => Promise.resolve());
+    const fetchImpl = vi.fn().mockResolvedValueOnce(limited('7')).mockResolvedValue(ok([]));
     await openAqMapStationRepo({ apiKey: 'k', fetchImpl, sleep }).latest(AS_OF);
     expect(sleep).toHaveBeenCalledWith(7000);
-    expect(fetchImpl).toHaveBeenCalledTimes(2);
-  });
-
-  it('does not wait for a rate limit when that would carry it past its time', async () => {
-    const limited = {
-      ok: false,
-      status: 429,
-      headers: new Headers({ 'retry-after': '20' }),
-    } as Response;
-    const fetchImpl = vi.fn().mockResolvedValue(limited);
-    const sleep = vi.fn(() => Promise.resolve());
-    const repo = openAqMapStationRepo({
-      apiKey: 'k',
-      fetchImpl,
-      sleep,
-      budgetMs: 5000,
-      now: () => 0,
-    });
-    // 0 + 20 s is more than 5 s + 10 s, so it fails at once rather than wait.
-    await expect(repo.latest(AS_OF)).rejects.toThrow(/429/u);
-    expect(sleep).not.toHaveBeenCalled();
-  });
-
-  it('gives up after a few waits, so a provider that keeps refusing cannot hold a run for ever', async () => {
-    const limited = { ok: false, status: 429, headers: new Headers() } as Response;
-    const fetchImpl = vi.fn().mockResolvedValue(limited);
-    const sleep = vi.fn(() => Promise.resolve());
+    const always = vi.fn().mockResolvedValue(limited());
     await expect(
-      openAqMapStationRepo({ apiKey: 'k', fetchImpl, sleep }).latest(AS_OF),
+      openAqMapStationRepo({ apiKey: 'k', fetchImpl: always, sleep }).latest(AS_OF),
     ).rejects.toThrow(/429/u);
-    expect(sleep).toHaveBeenCalledTimes(3);
-    expect(fetchImpl).toHaveBeenCalledTimes(4);
+    const none = vi.fn().mockResolvedValue(limited('20'));
+    const quiet = vi.fn(() => Promise.resolve());
+    await expect(
+      openAqMapStationRepo({
+        apiKey: 'k',
+        fetchImpl: none,
+        sleep: quiet,
+        budgetMs: 5000,
+        now: () => 0,
+      }).latest(AS_OF),
+    ).rejects.toThrow(/429/u);
+    expect(quiet).not.toHaveBeenCalled();
   });
 
-  it('fails when the list itself cannot be read, so the schedule shows the failure', async () => {
-    const repo = openAqMapStationRepo({
-      apiKey: 'k',
-      fetchImpl: vi.fn().mockResolvedValue(json({}, false)),
-      sleep: () => Promise.resolve(),
-    });
-    await expect(repo.latest(AS_OF)).rejects.toThrow(/OpenAQ request failed: 429/u);
+  it('fails when the list cannot be read, so the schedule shows the failure', async () => {
+    const fetchImpl = vi
+      .fn()
+      .mockResolvedValue({ ok: false, status: 500, headers: new Headers() });
+    await expect(openAqMapStationRepo({ ...quick, fetchImpl }).latest(AS_OF)).rejects.toThrow(
+      /500/u,
+    );
   });
 });

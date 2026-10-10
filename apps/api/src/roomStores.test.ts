@@ -128,3 +128,34 @@ describe('dynamoCacheReader forecast', () => {
     expect(await reader.latestForecast('school', '2026-10-08T10:00:00.000Z')).toBeUndefined();
   });
 });
+
+describe('the world’s monitors in the cache', () => {
+  it('reads every chunk, puts them together, and uses the newest time', async () => {
+    const items = new Map<string, unknown>();
+    for (let i = 0; i < 12; i++)
+      items.set(`STATIONS#world#${String(i)}`, {
+        value: {
+          harvestedAt: `2026-10-10T12:0${String(i % 10)}:00.000Z`,
+          stations: [{ id: String(i) }],
+        },
+        expiresAt: 2_000_000_000,
+      });
+    items.delete('STATIONS#world#3');
+    const reader = dynamoCacheReader('cache', {
+      send: (command: { input: { Key: { pk: string } } }) =>
+        Promise.resolve({ Item: items.get(command.input.Key.pk) }),
+    });
+    const all = (await reader.stations?.('2026-10-10T12:30:00.000Z')) as {
+      harvestedAt: string;
+      stations: { id: string }[];
+    };
+    expect(all.stations).toHaveLength(11);
+    expect(all.stations.map((s) => s.id)).not.toContain('3');
+    expect(all.harvestedAt).toBe('2026-10-10T12:09:00.000Z');
+  });
+
+  it('says there is nothing when no chunk is there, or all have expired', async () => {
+    const reader = dynamoCacheReader('cache', { send: () => Promise.resolve({}) });
+    expect(await reader.stations?.('2026-10-10T12:30:00.000Z')).toBeUndefined();
+  });
+});

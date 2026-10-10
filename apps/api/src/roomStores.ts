@@ -1,3 +1,4 @@
+import { STATION_CHUNKS } from './stationsSnapshot';
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
 import {
   DynamoDBDocumentClient,
@@ -88,7 +89,26 @@ export function dynamoCacheReader(tableName: string, client: Doc = defaultClient
       const value = await read(`LATEST#${placeId}`, asOf);
       return value === undefined ? undefined : StationSnapshot.parse(value);
     },
-    stations: (asOf) => read('STATIONS#north-india', asOf),
+    async stations(asOf) {
+      const parts = await Promise.all(
+        Array.from({ length: STATION_CHUNKS }, (_, i) => read(`STATIONS#world#${String(i)}`, asOf)),
+      );
+      const found = parts.filter(
+        (part): part is { harvestedAt: string; stations: unknown[] } =>
+          typeof part === 'object' &&
+          part !== null &&
+          Array.isArray((part as { stations?: unknown }).stations),
+      );
+      if (found.length === 0) return undefined;
+      return {
+        harvestedAt:
+          found
+            .map((part) => part.harvestedAt)
+            .sort()
+            .at(-1) ?? '',
+        stations: found.flatMap((part) => part.stations),
+      };
+    },
     async latestForecast(placeId, asOf) {
       const value = await read(`FORECAST#${placeId}`, asOf);
       return value === undefined ? undefined : ForecastSnapshot.parse(value);

@@ -41,7 +41,7 @@ export async function handleStations(
       schemaVersion: 1,
       asOf,
       mode: stations.length > 0 ? 'live' : 'model',
-      source: 'OpenAQ monitors in north India with a reading in the last six hours',
+      source: 'OpenAQ monitors worldwide with a PM2.5 reading in the last six hours',
       stations,
     }),
     STATIONS_CACHE_SECONDS,
