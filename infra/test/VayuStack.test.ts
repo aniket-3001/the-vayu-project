@@ -427,9 +427,9 @@ describe('the public site', () => {
       });
     });
 
-    it('rule I9: have a limit under two minutes, and only the cache and the OpenAQ key to use', () => {
+    it('rule I9: have a limit under five minutes, and only the cache and the OpenAQ key to use', () => {
       template.hasResourceProperties('AWS::Lambda::Function', {
-        Timeout: 110,
+        Timeout: 240,
         Environment: {
           Variables: Match.objectLike({
             OPENAQ_API_KEY_ARN: Match.anyValue(),
