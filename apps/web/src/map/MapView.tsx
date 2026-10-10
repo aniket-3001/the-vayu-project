@@ -20,8 +20,6 @@ interface ImageUpdater {
   updateImage: (options: { url: string }) => void;
 }
 
-export type MapMode = 'map' | 'globe';
-
 export interface MapLayers {
   readonly monitors: boolean;
   readonly gradient: boolean;
@@ -41,17 +39,8 @@ const PLAIN: StyleSpecification = {
   layers: [{ id: 'ground', type: 'background', paint: { 'background-color': '#eef2f7' } }],
 };
 
-const VIEWS = {
-  map: { center: [79, 23] as [number, number] },
-  globe: { center: [80, 22] as [number, number] },
-};
-
-/** A zoom a little closer than the whole globe, so south Asia fills the view and the rest curves away. */
-const globeZoom = (box: { width: number; height: number }): number =>
-  Math.log2((0.85 * Math.min(box.width, box.height) * Math.PI) / 512) + 0.9;
-
-const zoomFor = (mode: MapMode, box: { width: number; height: number }): number =>
-  mode === 'globe' ? globeZoom(box) : 3.9;
+/** Where the map opens: south Asia at country level. Zoom out and it turns into a globe by itself. */
+const START = { center: [79, 23] as [number, number], zoom: 3.9 };
 
 /** The AQI colour for a number, as a map expression over the level starts. */
 const aqiColour = (value: unknown): unknown => [
@@ -62,8 +51,8 @@ const aqiColour = (value: unknown): unknown => [
 ];
 
 function fieldImage(air: readonly Monitor[]): string {
-  const cols = 136;
-  const rows = 144;
+  const cols = 272;
+  const rows = 288;
   const canvas = document.createElement('canvas');
   canvas.width = cols;
   canvas.height = rows;
@@ -77,13 +66,11 @@ function fieldImage(air: readonly Monitor[]): string {
 
 /** The map itself: monitors, the colour field between them, fires, and a switch between flat and globe. */
 export function MapView({
-  mode,
   layers,
   smoke,
   air,
   onReady,
 }: {
-  readonly mode: MapMode;
   readonly layers: MapLayers;
   /** Whether popups also say cigarettes a day. */
   readonly smoke: boolean;
@@ -94,8 +81,8 @@ export function MapView({
   const container = useRef<HTMLDivElement>(null);
   const map = useRef<MapLibreMap>();
   const ready = useRef(false);
-  const latest = useRef({ mode, layers, smoke, air });
-  latest.current = { mode, layers, smoke, air };
+  const latest = useRef({ layers, smoke, air });
+  latest.current = { layers, smoke, air };
   const monitors = useMemo(() => sampleMonitors(), []);
   const fires = useMemo(() => sampleFires(), []);
 
@@ -105,8 +92,8 @@ export function MapView({
     const m = new MapLibreMap({
       container: el,
       style: STYLE_URL,
-      center: VIEWS[latest.current.mode].center,
-      zoom: zoomFor(latest.current.mode, el.getBoundingClientRect()),
+      center: START.center,
+      zoom: START.zoom,
       minZoom: 0.4,
       maxZoom: 11,
       attributionControl: { compact: true },
@@ -119,8 +106,9 @@ export function MapView({
     const addLayers = (): void => {
       ready.current = true;
       if (m.getSource('field') !== undefined) return;
-      const { layers: on, mode: current } = latest.current;
-      m.setProjection({ type: current === 'globe' ? 'globe' : 'mercator' });
+      const { layers: on } = latest.current;
+      // A globe at country level looks flat, and MapLibre flattens it again as you zoom right in.
+      m.setProjection({ type: 'globe' });
       m.addSource('field', {
         type: 'image',
         url: fieldImage(latest.current.air),
@@ -135,7 +123,7 @@ export function MapView({
         id: 'field',
         type: 'raster',
         source: 'field',
-        paint: { 'raster-opacity': 0.85, 'raster-fade-duration': 0, 'raster-resampling': 'linear' },
+        paint: { 'raster-opacity': 0.6, 'raster-fade-duration': 0, 'raster-resampling': 'nearest' },
         layout: { visibility: on.gradient ? 'visible' : 'none' },
       });
       m.addSource('fires', { type: 'geojson', data: firesGeoJson(fires) });
@@ -264,20 +252,6 @@ export function MapView({
     // The map is built once; later changes arrive through the effects below.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-
-  useEffect(() => {
-    const m = map.current;
-    if (m === undefined || !ready.current) return;
-    const apply = (): void => {
-      m.setProjection({ type: mode === 'globe' ? 'globe' : 'mercator' });
-      void m.easeTo({
-        ...VIEWS[mode],
-        zoom: zoomFor(mode, m.getContainer().getBoundingClientRect()),
-        duration: 1400,
-      });
-    };
-    apply();
-  }, [mode]);
 
   useEffect(() => {
     const m = map.current;

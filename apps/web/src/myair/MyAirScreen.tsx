@@ -7,7 +7,6 @@ import { tasksFor } from '../tasks/model';
 import { AlertsStrip } from '../alerts/ui/AlertsStrip';
 import { alertsFor } from '../alerts/model';
 import { useFires } from '../alerts/useFires';
-import { SmokeCard } from '../units/SmokeCard';
 import { TipsCard } from '../tasks/ui/TipsCard';
 import { DevicesPanel } from '../devices/ui/DevicesPanel';
 import { PlacesPanel } from '../places/ui/PlacesPanel';
@@ -59,10 +58,9 @@ export function MyAirScreen({ search, locate }: Props): React.JSX.Element {
           ))}
         </div>
       </header>
-      {first !== undefined && reading !== undefined && (
+      {tab === 'places' && first !== undefined && reading !== undefined && (
         <div className="places-main tasks-wrap">
           <AlertsStrip alerts={alerts} data={reading} />
-          <SmokeCard pm25={reading.pm25} title={`${first.name} in cigarettes`} />
           {tips.length > 0 && <TipsCard tips={tips} placeName={first.name} />}
         </div>
       )}

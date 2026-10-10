@@ -68,8 +68,10 @@ describe('the rendered field', () => {
     const alphas: number[] = [];
     for (let i = 3; i < pixels.length; i += 4) alphas.push(pixels[i] ?? 0);
     expect(alphas.some((a) => a === 0)).toBe(true);
-    expect(alphas.some((a) => a > 150)).toBe(true);
+    expect(alphas.some((a) => a > 120)).toBe(true);
     expect(Math.max(...alphas)).toBeLessThanOrEqual(215);
+    // Washed out: even the strongest pixel stays well short of solid.
+    expect(Math.max(...alphas)).toBeLessThan(230);
   });
 
   it('puts the mercator rows in order, north above south', () => {
@@ -89,6 +91,18 @@ describe('the edge of the field', () => {
     const px = renderField(everywhere, cols, rows);
     const alpha = (row: number, col: number): number => px[(row * cols + col) * 4 + 3] ?? 0;
     expect(alpha(0, 0)).toBeLessThan(alpha(18, 17) / 3);
-    expect(alpha(18, 17)).toBeGreaterThan(150);
+    expect(alpha(18, 17)).toBeGreaterThan(70);
+  });
+});
+
+describe('the grain', () => {
+  it('varies from pixel to pixel over an even field, and is the same every time', () => {
+    const monitors = [at(20, 80, 120)];
+    const a = renderField(monitors, 40, 40);
+    const b = renderField(monitors, 40, 40);
+    expect(Array.from(a)).toEqual(Array.from(b));
+    const alphas = new Set<number>();
+    for (let i = 3; i < a.length; i += 4) if ((a[i] ?? 0) > 0) alphas.add(a[i] ?? 0);
+    expect(alphas.size).toBeGreaterThan(20);
   });
 });

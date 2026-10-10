@@ -19,10 +19,10 @@ describe('the alerts strip', () => {
     expect(screen.queryByRole('region', { name: 'Alerts' })).not.toBeInTheDocument();
   });
 
-  it('shows small cards, with the day on each, and today’s glow', () => {
+  it('shows small cards in a row, with the day on each, and a glow on today’s', () => {
     open('hazardous', 127);
     const strip = screen.getByRole('region', { name: 'Alerts' });
-    const cards = within(strip).getAllByRole('listitem');
+    const cards = within(strip).getAllByRole('button');
     expect(cards.length).toBeGreaterThanOrEqual(3);
     expect(cards[0]).toHaveTextContent('Today');
     expect(cards[0]).toHaveClass('now');
@@ -31,25 +31,50 @@ describe('the alerts strip', () => {
     expect(strip).toHaveTextContent('Tomorrow');
   });
 
-  it('opens out into a list, and folds back', async () => {
+  it('has no fold and unfold: the row is the row', () => {
     open('hazardous', 127);
-    const toggle = screen.getByRole('button', { name: /Alerts/u });
-    expect(toggle).toHaveAttribute('aria-expanded', 'false');
-    expect(screen.getByRole('list')).not.toHaveClass('expanded');
-    await userEvent.click(toggle);
-    expect(toggle).toHaveAttribute('aria-expanded', 'true');
-    expect(screen.getByRole('list')).toHaveClass('expanded');
-    await userEvent.click(toggle);
+    expect(screen.queryByRole('button', { name: /See all|Fold/u })).not.toBeInTheDocument();
     expect(screen.getByRole('list')).not.toHaveClass('expanded');
   });
 
-  it('puts a way to contact the authorities on the stubble alert only, and opens a sheet with official links', async () => {
+  it('opens an alert up close, with a short reason and what to do, and closes it again', async () => {
     open('hazardous', 127);
-    const buttons = screen.getAllByRole('button', { name: /Contact authorities/u });
-    expect(buttons).toHaveLength(1);
-    const [button] = buttons;
-    if (button === undefined) throw new Error('no button');
-    await userEvent.click(button);
+    await userEvent.click(screen.getByRole('button', { name: /GRAP Stage IV likely today/u }));
+    const sheet = screen.getByRole('dialog', { name: 'GRAP Stage IV likely today' });
+    expect(within(sheet).getByRole('region', { name: 'Why' })).toHaveTextContent(
+      /India’s own scale \(CPCB\)/u,
+    );
+    expect(
+      within(sheet).getByRole('region', { name: 'What to do' }).querySelectorAll('li').length,
+    ).toBeGreaterThanOrEqual(2);
+    expect(sheet).toHaveTextContent(/not an order/u);
+    expect(
+      within(sheet).queryByRole('button', { name: /Contact authorities/u }),
+    ).not.toBeInTheDocument();
+    await userEvent.click(within(sheet).getByRole('button', { name: 'Done' }));
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+  });
+
+  it('gives each kind of alert a reason of its own', async () => {
+    open('hazardous', 127);
+    for (const [name, why] of [
+      [/Avoid park walks today/u, /breathe several times more air/u],
+      [/Heavy stubble burning nearby/u, /127 fires.*Punjab and Haryana/su],
+    ] as const) {
+      await userEvent.click(screen.getByRole('button', { name }));
+      expect(
+        within(screen.getByRole('dialog')).getByRole('region', { name: 'Why' }),
+      ).toHaveTextContent(why);
+      await userEvent.keyboard('{Escape}');
+    }
+  });
+
+  it('offers the authorities on the stubble alert only, and opens a sheet with official links', async () => {
+    open('hazardous', 127);
+    await userEvent.click(screen.getByRole('button', { name: /Heavy stubble burning nearby/u }));
+    await userEvent.click(
+      within(screen.getByRole('dialog')).getByRole('button', { name: /Contact authorities/u }),
+    );
     const sheet = screen.getByRole('dialog', { name: 'Contact the authorities' });
     expect(within(sheet).getByRole('link', { name: /caqm\.nic\.in/u })).toHaveAttribute(
       'href',
@@ -65,13 +90,6 @@ describe('the alerts strip', () => {
     );
     expect(sheet).toHaveTextContent(/do not print one/u);
     await userEvent.keyboard('{Escape}');
-    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
-  });
-
-  it('closes the sheet with its button too', async () => {
-    open('hazardous', 127);
-    await userEvent.click(screen.getByRole('button', { name: /Contact authorities/u }));
-    await userEvent.click(screen.getByRole('button', { name: 'Close' }));
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
   });
 });

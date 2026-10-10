@@ -1,9 +1,8 @@
 // @vitest-environment jsdom
 import { cleanup, render, screen } from '@testing-library/react';
-import { useEffect } from 'react';
 import userEvent from '@testing-library/user-event';
+import { useEffect } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { defaultLayers } from './layers';
 
 const dataNow: { windLive: boolean; airLive: boolean; fires: number | undefined } = {
   windLive: false,
@@ -13,26 +12,22 @@ const dataNow: { windLive: boolean; airLive: boolean; fires: number | undefined 
 
 const seen: {
   mapObject?: unknown;
-  mode?: string;
   layers?: Record<string, boolean>;
   windOn?: boolean;
 } = {};
 
 vi.mock('./MapView', () => ({
   MapView: ({
-    mode,
     layers,
     onReady,
   }: {
-    mode: string;
     layers: Record<string, boolean>;
     onReady: (m: unknown) => void;
   }) => {
-    seen.mode = mode;
+    seen.layers = layers;
     useEffect(() => {
       if (seen.mapObject !== undefined) onReady(seen.mapObject);
     }, [onReady]);
-    seen.layers = layers;
     return <div data-testid="map" />;
   },
 }));
@@ -52,77 +47,78 @@ vi.mock('maplibre-gl', () => ({
 vi.mock('./useMapData', () => ({
   useMapData: () => ({ wind: [], air: [], ...dataNow }),
 }));
-vi.mock('./WindCanvas', () => ({
-  WindCanvas: ({ enabled }: { enabled: boolean }) => {
+vi.mock('./WindBlocks', () => ({
+  WindBlocks: ({ enabled }: { enabled: boolean }) => {
     seen.windOn = enabled;
     return null;
   },
-  angleBetween: () => 0,
 }));
 
 const { MapScreen } = await import('./MapScreen');
 
 afterEach(() => {
   cleanup();
+  seen.mapObject = undefined;
   dataNow.windLive = false;
   dataNow.airLive = false;
   dataNow.fires = undefined;
 });
 
 describe('the Map screen', () => {
-  it('opens on the flat map with monitors and fires, and says the data is a sample', () => {
+  it('is one view, with no Map and Globe to choose between', () => {
     render(<MapScreen />);
-    expect(seen.mode).toBe('map');
-    expect(seen.layers).toMatchObject({ monitors: true, fires: true, gradient: false });
-    expect(seen.windOn).toBe(false);
-    expect(screen.getByText('Sample data')).toBeInTheDocument();
-    expect(screen.getByText(/Fires, last 24 hours/u)).toBeInTheDocument();
-    expect(screen.queryByText(/Colour between monitors is an estimate/u)).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Globe' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Map' })).not.toBeInTheDocument();
   });
 
-  it('switches to the globe, which opens on the air colour and the wind, and says both are not measurements', async () => {
+  it('opens with the monitors, the washed-out air colour, the fires and the wind all on', () => {
     render(<MapScreen />);
-    await userEvent.click(screen.getByRole('button', { name: 'Globe' }));
-    expect(seen.mode).toBe('globe');
-    expect(seen.layers).toMatchObject({ gradient: true, monitors: false, fires: false });
+    expect(seen.layers).toMatchObject({ monitors: true, gradient: true, fires: true });
     expect(seen.windOn).toBe(true);
-    expect(screen.getByText(/Colour between monitors is an estimate/u)).toBeInTheDocument();
-    expect(screen.getByText(/Wind is a sample flow/u)).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Globe' })).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.getByText('Sample data')).toBeInTheDocument();
   });
 
-  it('opens a layers sheet with four switches, each described, and turns them on and off', async () => {
+  it('has a Wind button that turns the wind off and on, and says which it is', async () => {
     render(<MapScreen />);
-    await userEvent.click(screen.getByRole('button', { name: /Layers/u }));
-    for (const name of ['Monitors', 'Air colour', 'Wind', 'Fires']) {
+    const wind = screen.getByRole('button', { name: /Wind on/u });
+    expect(wind).toHaveAttribute('aria-pressed', 'true');
+    await userEvent.click(wind);
+    expect(seen.windOn).toBe(false);
+    expect(screen.getByRole('button', { name: /Wind off/u })).toHaveAttribute(
+      'aria-pressed',
+      'false',
+    );
+    expect(screen.queryByText(/Wind: ICON/u)).not.toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: /Wind off/u }));
+    expect(seen.windOn).toBe(true);
+  });
+
+  it('keeps the other layers in a sheet, each described, and leaves the wind to its own button', async () => {
+    render(<MapScreen />);
+    await userEvent.click(screen.getByRole('button', { name: 'Layers' }));
+    for (const name of ['Monitors', 'Air colour', 'Fires']) {
       expect(screen.getByRole('checkbox', { name: new RegExp(name, 'u') })).toBeInTheDocument();
     }
+    expect(screen.queryByRole('checkbox', { name: /Wind/u })).not.toBeInTheDocument();
     expect(
       screen.getByText(/An estimate between monitors, not a measurement/u),
     ).toBeInTheDocument();
-    await userEvent.click(screen.getByRole('checkbox', { name: /Wind/u }));
-    expect(seen.windOn).toBe(true);
     await userEvent.click(screen.getByRole('checkbox', { name: /Fires/u }));
     expect(seen.layers?.fires).toBe(false);
-    await userEvent.click(screen.getByRole('button', { name: /Layers/u }));
-    expect(screen.queryByRole('checkbox', { name: /Wind/u })).not.toBeInTheDocument();
+    await userEvent.click(screen.getByRole('checkbox', { name: /Air colour/u }));
+    expect(seen.layers?.gradient).toBe(false);
+    await userEvent.click(screen.getByRole('button', { name: 'Layers' }));
+    expect(screen.queryByRole('checkbox', { name: /Fires/u })).not.toBeInTheDocument();
   });
 
   it('draws a legend from Good to Hazardous', () => {
     render(<MapScreen />);
     expect(screen.getByRole('img', { name: /AQI colours/u })).toBeInTheDocument();
   });
-
-  it('resets the layers to the view’s own when switching back to the map', async () => {
-    render(<MapScreen />);
-    await userEvent.click(screen.getByRole('button', { name: 'Globe' }));
-    await userEvent.click(screen.getByRole('button', { name: 'Map' }));
-    expect(seen.layers).toMatchObject(defaultLayers('map'));
-  });
 });
 
 describe('what the map says about its data', () => {
-  it('names the live sources when it has them: the model and wind from Open-Meteo, the fire count from NASA', async () => {
+  it('names the live sources when it has them: the model and wind from Open-Meteo, the fire count from NASA', () => {
     dataNow.windLive = true;
     dataNow.airLive = true;
     dataNow.fires = 127;
@@ -133,30 +129,23 @@ describe('what the map says about its data', () => {
       ),
     ).toBeInTheDocument();
     expect(screen.getByText('Live')).toBeInTheDocument();
-    await userEvent.click(screen.getByRole('button', { name: 'Globe' }));
     expect(screen.getByText(/the CAMS model via Open-Meteo, right now/u)).toBeInTheDocument();
     expect(screen.getByText(/ICON and GFS models via Open-Meteo/u)).toBeInTheDocument();
     expect(screen.queryByText(/sample flow/u)).not.toBeInTheDocument();
   });
 
-  it('says sample, and not live, when the live data could not be reached', async () => {
+  it('says sample, and not live, when the live data could not be reached', () => {
     render(<MapScreen />);
     expect(screen.queryByText('Live')).not.toBeInTheDocument();
-    await userEvent.click(screen.getByRole('button', { name: 'Globe' }));
     expect(screen.getByText('Wind is a sample flow.')).toBeInTheDocument();
     expect(screen.getByText(/Colour between monitors is an estimate/u)).toBeInTheDocument();
   });
 });
 
 describe('Find me', () => {
-  afterEach(() => {
-    seen.mapObject = undefined;
-  });
-
   it('flies to where the person is, and says so', async () => {
     const flyTo = vi.fn();
-    const fakeMap = { flyTo } as unknown;
-    seen.mapObject = fakeMap;
+    seen.mapObject = { flyTo };
     Object.defineProperty(navigator, 'geolocation', {
       configurable: true,
       value: {

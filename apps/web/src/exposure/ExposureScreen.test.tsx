@@ -41,20 +41,37 @@ const addPerson = async (
   await userEvent.click(within(sheet).getByRole('button', { name: 'Add person' }));
 };
 
+/** Presses a person in the list, which opens their timetable. */
+const openPanel = async (name: string): Promise<HTMLElement> => {
+  await userEvent.click(screen.getByRole('button', { name: new RegExp(`^${name}\\b`, 'u') }));
+  return screen.getByRole('dialog', { name: new RegExp(`${name}’s day`, 'u') });
+};
+
+const closePanel = async (): Promise<void> => {
+  await userEvent.click(within(screen.getByRole('dialog')).getByRole('button', { name: 'Done' }));
+};
+
 const cellsFilled = (): number => document.querySelectorAll('.cell:not(.empty)').length;
 
 describe('the Exposure screen', () => {
-  it('opens on Today, for an adult, with a dial, an answer, and only the places that matter', () => {
+  it('opens on Today, for me, with a dial and an answer, and nothing to set up on the page', () => {
     open();
     expect(screen.getByRole('heading', { level: 1, name: 'Today’s exposure' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /^Me/u })).toHaveAttribute('aria-pressed', 'true');
     expect(screen.getByRole('img', { name: /24-hour dial/u })).toBeInTheDocument();
-    for (const name of ['Home', 'Work', 'Outdoor', 'Live location']) {
-      expect(screen.getByRole('region', { name })).toBeInTheDocument();
-    }
-    expect(screen.queryByRole('region', { name: 'School' })).not.toBeInTheDocument();
     expect(screen.getByText(/You breathed an average of AQI/u)).toHaveTextContent(
       'so far today (17 hours)',
+    );
+    for (const name of ['Home', 'Work', 'Outdoor', 'Live location']) {
+      expect(screen.queryByRole('region', { name })).not.toBeInTheDocument();
+    }
+  });
+
+  it('ends at Your day in the air: the last thing on the page is the answer', () => {
+    open();
+    const main = document.querySelector('.exposure-main');
+    expect(main?.lastElementChild).toBe(
+      screen.getByRole('region', { name: 'Your day in the air' }),
     );
   });
 
@@ -68,17 +85,31 @@ describe('the Exposure screen', () => {
     ).toEqual(['All', 'Home', 'Work', 'Outdoor']);
   });
 
+  it('opens a person’s timetable when they are pressed, with a place for each part of their day', async () => {
+    open();
+    const panel = await openPanel('Me');
+    for (const name of ['Home', 'Work', 'Outdoor', 'Live location']) {
+      expect(within(panel).getByRole('region', { name })).toBeInTheDocument();
+    }
+    expect(within(panel).queryByRole('region', { name: 'School' })).not.toBeInTheDocument();
+    await closePanel();
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+  });
+
   it('adds a child, whose day goes to school instead of work, with school hours of 8 to 3', async () => {
     open();
     await addPerson('Asha', '9');
     expect(screen.getByRole('button', { name: /^Asha/u })).toHaveAttribute('aria-pressed', 'true');
-    expect(screen.getByRole('region', { name: 'School' })).toBeInTheDocument();
-    expect(screen.queryByRole('region', { name: 'Work' })).not.toBeInTheDocument();
     expect(
       within(screen.getByRole('group', { name: 'Show' })).getByRole('button', { name: 'School' }),
     ).toBeInTheDocument();
-    expect(screen.getByLabelText('School from')).toHaveValue('8');
-    expect(screen.getByLabelText('School until')).toHaveValue('15');
+    expect(
+      within(screen.getByRole('group', { name: 'Show' })).queryByRole('button', { name: 'Work' }),
+    ).not.toBeInTheDocument();
+    const panel = await openPanel('Asha');
+    expect(within(panel).getByLabelText('School from')).toHaveValue('8');
+    expect(within(panel).getByLabelText('School until')).toHaveValue('15');
+    expect(within(panel).queryByRole('region', { name: 'Live location' })).not.toBeInTheDocument();
     expect(window.localStorage.getItem(PEOPLE_STORAGE_KEY)).toContain('Asha');
   });
 
@@ -99,7 +130,8 @@ describe('the Exposure screen', () => {
       const sheet = screen.getByRole('dialog', { name: 'Add a person' });
       await userEvent.selectOptions(within(sheet).getByLabelText('School until'), '14:00');
     });
-    expect(screen.getByLabelText('School until')).toHaveValue('14');
+    const panel = await openPanel('Asha');
+    expect(within(panel).getByLabelText('School until')).toHaveValue('14');
   });
 
   it('asks for a name and a sensible age, and says what is wrong', async () => {
@@ -107,7 +139,7 @@ describe('the Exposure screen', () => {
     await userEvent.click(screen.getByRole('button', { name: /Add person/u }));
     const sheet = screen.getByRole('dialog', { name: 'Add a person' });
     await userEvent.click(within(sheet).getByRole('button', { name: 'Add person' }));
-    expect(screen.getByRole('alert')).toHaveTextContent('Please give them a name.');
+    expect(within(sheet).getByRole('alert')).toHaveTextContent('Please give them a name.');
     await userEvent.type(within(sheet).getByRole('textbox', { name: 'Name' }), 'X');
     await userEvent.type(within(sheet).getByRole('spinbutton', { name: 'Age' }), '300');
     await userEvent.click(within(sheet).getByRole('button', { name: 'Add person' }));
@@ -116,19 +148,17 @@ describe('the Exposure screen', () => {
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
   });
 
-  it('switches between people, each with their own places, and can remove one', async () => {
+  it('removes a person from their own panel, and never the last one', async () => {
     open();
     await addPerson('Asha', '9');
-    await userEvent.click(screen.getByRole('button', { name: /^Me/u }));
-    expect(screen.getByRole('region', { name: 'Work' })).toBeInTheDocument();
-    await userEvent.click(screen.getByRole('button', { name: /^Asha/u }));
-    await userEvent.click(screen.getByRole('button', { name: 'Remove Asha' }));
+    const panel = await openPanel('Asha');
+    await userEvent.click(within(panel).getByRole('button', { name: 'Remove Asha' }));
     expect(screen.queryByRole('button', { name: /^Asha/u })).not.toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /^Me/u })).toHaveAttribute('aria-pressed', 'true');
-    expect(screen.queryByRole('button', { name: 'Remove Me' })).not.toBeInTheDocument();
+    const mine = await openPanel('Me');
+    expect(within(mine).queryByRole('button', { name: 'Remove Me' })).not.toBeInTheDocument();
   });
 
-  it('gives a child the school’s unit automatically, with nothing added, and says so', () => {
+  it('gives a child the school’s unit automatically, with nothing added, and says so', async () => {
     window.localStorage.setItem(
       PEOPLE_STORAGE_KEY,
       JSON.stringify({
@@ -137,10 +167,10 @@ describe('the Exposure screen', () => {
       }),
     );
     open();
-    const school = screen.getByRole('region', { name: 'School' });
+    const panel = await openPanel('Asha');
+    const school = within(panel).getByRole('region', { name: 'School' });
     expect(school).toHaveTextContent('Vayu unit at the school');
     expect(school).toHaveTextContent(/you did not have to add it/u);
-    expect(screen.getByRole('button', { name: 'How this is worked out' })).toBeInTheDocument();
   });
 
   it('puts the span in the order Past week, Yesterday, Today', () => {
@@ -180,7 +210,6 @@ describe('the Exposure screen', () => {
     expect(
       screen.getByRole('heading', { level: 1, name: 'Exposure on Sat 3 Oct' }),
     ).toBeInTheDocument();
-    expect(screen.getByText(/You breathed an average of AQI/u)).toHaveTextContent('over the day');
   });
 
   it('opens any date from the calendar when we have it, and says plainly when we do not', () => {
@@ -190,7 +219,6 @@ describe('the Exposure screen', () => {
     expect(
       screen.getByRole('heading', { level: 1, name: 'Exposure on Thu 1 Oct' }),
     ).toBeInTheDocument();
-    expect(screen.queryByRole('status', { name: '' })?.textContent ?? '').not.toMatch(/No data/u);
     fireEvent.change(date, { target: { value: '2026-03-01' } });
     expect(screen.getByRole('status')).toHaveTextContent('No data for Sun 1 Mar.');
     expect(screen.queryByRole('img', { name: /24-hour dial/u })).not.toBeInTheDocument();
@@ -215,110 +243,162 @@ describe('the Exposure screen', () => {
     expect(screen.getByText('That hour has not happened yet.')).toBeInTheDocument();
   });
 
-  it('narrows to one kind of place, and has no tab for live location', async () => {
+  it('narrows the dial to one kind of place, with no tab for live location', async () => {
     open();
     expect(screen.queryByRole('button', { name: 'Live' })).not.toBeInTheDocument();
     await userEvent.click(
       within(screen.getByRole('group', { name: 'Show' })).getByRole('button', { name: 'Home' }),
     );
-    expect(screen.getByRole('region', { name: 'Home' })).toBeInTheDocument();
-    expect(screen.queryByRole('region', { name: 'Work' })).not.toBeInTheDocument();
-    expect(screen.queryByRole('region', { name: 'Live location' })).not.toBeInTheDocument();
+    expect(
+      within(screen.getByRole('group', { name: 'Show' })).getByRole('button', { name: 'Home' }),
+    ).toHaveAttribute('aria-pressed', 'true');
   });
 
-  it('changes the hours a place is usually used, and the dial follows', async () => {
+  it('changes the hours a place is usually used from the timetable, and the dial follows', async () => {
     open();
-    const work = screen.getByRole('region', { name: 'Work' });
     const before = cellsFilled();
-    await userEvent.selectOptions(within(work).getByLabelText('Work until'), '12:00');
+    const panel = await openPanel('Me');
+    await userEvent.selectOptions(
+      within(within(panel).getByRole('region', { name: 'Work' })).getByLabelText('Work until'),
+      '12:00',
+    );
+    await closePanel();
     expect(cellsFilled()).toBeLessThan(before);
     expect(window.localStorage.getItem(SPOTS_STORAGE_KEY)).toContain('"to":12');
   });
 
   it('keeps each person’s changes apart', async () => {
     open();
+    const mine = await openPanel('Me');
     await userEvent.selectOptions(
-      within(screen.getByRole('region', { name: 'Work' })).getByLabelText('Work until'),
+      within(within(mine).getByRole('region', { name: 'Work' })).getByLabelText('Work until'),
       '12:00',
     );
+    await closePanel();
     await addPerson('Asha', '9');
-    expect(screen.getByLabelText('School until')).toHaveValue('15');
-    await userEvent.click(screen.getByRole('button', { name: /^Me/u }));
-    expect(screen.getByLabelText('Work until')).toHaveValue('12');
+    const hers = await openPanel('Asha');
+    expect(within(hers).getByLabelText('School until')).toHaveValue('15');
+    await closePanel();
+    const again = await openPanel('Me');
+    expect(within(again).getByLabelText('Work until')).toHaveValue('12');
   });
 
-  it('removes a place and says there is nothing to add up when none are left', async () => {
+  it('removes a place in the timetable and says there is nothing to add up when none are left', async () => {
     open();
+    const panel = await openPanel('Me');
     for (const name of ['Home', 'Work', 'Outdoor']) {
-      await userEvent.click(screen.getByRole('button', { name: `Remove ${name}` }));
+      await userEvent.click(within(panel).getByRole('button', { name: `Remove ${name}` }));
     }
+    await closePanel();
     expect(screen.getByText(/Nothing to add up yet/u)).toBeInTheDocument();
   });
 
-  it('uses a monitor at home for every kind of person who lives there, and says so', async () => {
+  it('uses a monitor at home for everyone who lives there, and says so', async () => {
     window.localStorage.setItem(
       DEVICES_STORAGE_KEY,
       JSON.stringify([{ id: 'd1', name: 'Bedroom unit', where: 'home' }]),
     );
     open();
-    expect(screen.getByRole('region', { name: 'Home' })).toHaveTextContent(
+    const mine = await openPanel('Me');
+    expect(within(mine).getByRole('region', { name: 'Home' })).toHaveTextContent(
       'Bedroom unit is here. It is yours',
     );
+    await closePanel();
     await addPerson('Asha', '9');
-    expect(screen.getByRole('region', { name: 'Home' })).toHaveTextContent(
+    const hers = await openPanel('Asha');
+    expect(within(hers).getByRole('region', { name: 'Home' })).toHaveTextContent(
       'Bedroom unit is here. It is yours',
     );
-    expect(screen.getByRole('region', { name: 'School' })).toHaveTextContent(
+    expect(within(hers).getByRole('region', { name: 'School' })).toHaveTextContent(
       'Vayu unit at the school',
     );
   });
 
-  it('adds cigarettes a day to the answer when the relatable measure is on', () => {
+  it('adds a small cigarettes card beside the answer when the relatable measure is on', async () => {
     window.localStorage.setItem(UNITS_STORAGE_KEY, 'smoke');
     open();
-    expect(screen.getAllByText(/cigarettes? a day/u).length).toBeGreaterThan(0);
+    await userEvent.click(
+      screen.getByRole('button', { name: /cigarettes? a day\. Tap for more/u }),
+    );
+    expect(
+      screen.getByRole('dialog', { name: 'What you breathed, in cigarettes' }),
+    ).toHaveTextContent(/Berkeley Earth/u);
   });
+});
 
-  it('shows a made-up day of live movement on request, and picks up a friend’s unit by itself', async () => {
-    open();
-    await userEvent.click(screen.getByRole('button', { name: 'Show a sample day' }));
-    expect(screen.getByText('Sample track')).toBeInTheDocument();
-    expect(screen.getByText(/10 hours logged today/u)).toBeInTheDocument();
-    fireEvent.change(screen.getByRole('slider', { name: 'Hour' }), { target: { value: '15' } });
-    expect(document.querySelector('.readout')).toHaveTextContent(/Live, .*\(from a nearby unit\)/u);
-    await userEvent.click(screen.getByRole('button', { name: 'Clear' }));
-    expect(screen.getByText('No hours logged yet.')).toBeInTheDocument();
-  });
-
-  it('asks the browser for the location, logs the hour, and handles a refusal', async () => {
-    let succeed: ((p: GeolocationPosition) => void) | undefined;
-    let fail: (() => void) | undefined;
+describe('working it out from where I am', () => {
+  const fakeLocation = (): { succeed: () => void; fail: () => void } => {
+    let ok: ((p: GeolocationPosition) => void) | undefined;
+    let no: (() => void) | undefined;
     Object.defineProperty(navigator, 'geolocation', {
       configurable: true,
       value: {
-        watchPosition: (ok: (p: GeolocationPosition) => void, no: () => void) => {
-          succeed = ok;
-          fail = no;
+        watchPosition: (success: (p: GeolocationPosition) => void, failure: () => void) => {
+          ok = success;
+          no = failure;
           return 1;
         },
         clearWatch: () => undefined,
       },
     });
+    return {
+      succeed: () => {
+        act(() => {
+          ok?.({ coords: { latitude: 28.6, longitude: 77.2 } } as GeolocationPosition);
+        });
+      },
+      fail: () => {
+        act(() => {
+          no?.();
+        });
+      },
+    };
+  };
+
+  it('is a switch for me, off to begin with, and not there for anyone else', async () => {
     open();
-    await userEvent.click(screen.getByRole('button', { name: 'Use live location' }));
-    expect(screen.getByRole('region', { name: 'Live location' })).toHaveTextContent(
-      'Asking your browser',
+    const toggle = screen.getByRole('switch', { name: /Work it out from where I am/u });
+    expect(toggle).not.toBeChecked();
+    await addPerson('Asha', '9');
+    expect(screen.queryByRole('switch', { name: /where I am/u })).not.toBeInTheDocument();
+  });
+
+  it('asks the browser when switched on, logs the hour, and stops and clears when switched off', async () => {
+    const location = fakeLocation();
+    open();
+    const toggle = screen.getByRole('switch', { name: /Work it out from where I am/u });
+    await userEvent.click(toggle);
+    expect(toggle).toBeChecked();
+    location.succeed();
+    expect(screen.getByText(/On\. Using your location/u)).toBeInTheDocument();
+    const panel = await openPanel('Me');
+    expect(within(panel).getByRole('region', { name: 'Live location' })).toHaveTextContent(
+      /1 hour logged today/u,
     );
-    act(() => {
-      succeed?.({ coords: { latitude: 28.6, longitude: 77.2 } } as GeolocationPosition);
-    });
-    expect(screen.getByRole('button', { name: 'Turn off live location' })).toBeInTheDocument();
-    expect(screen.getByText(/1 hour logged today/u)).toBeInTheDocument();
-    act(() => {
-      fail?.();
-    });
-    expect(screen.getByRole('region', { name: 'Live location' })).toHaveTextContent(
+    await closePanel();
+    await userEvent.click(toggle);
+    expect(toggle).not.toBeChecked();
+  });
+
+  it('says plainly when the browser would not share the location', async () => {
+    const location = fakeLocation();
+    open();
+    await userEvent.click(screen.getByRole('switch', { name: /Work it out from where I am/u }));
+    location.fail();
+    const panel = await openPanel('Me');
+    expect(within(panel).getByRole('region', { name: 'Live location' })).toHaveTextContent(
       /did not give us your location/u,
     );
+  });
+
+  it('shows a made-up day of movement from the timetable, and picks up a friend’s unit by itself', async () => {
+    open();
+    const panel = await openPanel('Me');
+    await userEvent.click(within(panel).getByRole('button', { name: 'Show a sample day' }));
+    expect(within(panel).getByText('Sample track')).toBeInTheDocument();
+    expect(within(panel).getByText(/10 hours logged today/u)).toBeInTheDocument();
+    await closePanel();
+    fireEvent.change(screen.getByRole('slider', { name: 'Hour' }), { target: { value: '15' } });
+    expect(document.querySelector('.readout')).toHaveTextContent(/Live, .*\(from a nearby unit\)/u);
   });
 });

@@ -7,6 +7,7 @@ import { compassPoint } from '../wind';
 import { FaceIcon, WindArrow } from './icons';
 import { concentration, splitLabel } from './format';
 import { useSettle } from './hooks';
+import { SmokeChip } from '../../units/SmokeCard';
 
 /** The status card: the number, what it means, the main pollutant, and the weather right now. */
 export function Hero({ data }: { readonly data: TodayData }): React.JSX.Element {
@@ -18,14 +19,22 @@ export function Hero({ data }: { readonly data: TodayData }): React.JSX.Element 
   return (
     <section className="hero" aria-labelledby="hero-title">
       <div className="hero-top">
-        <div className="badge">
-          <span className="sr-only">AQI {data.aqi}</span>
-          <span className="badge-num" aria-hidden="true">
-            {shown}
-          </span>
-          <span className="badge-unit" aria-hidden="true">
-            AQI
-          </span>
+        <div className="badge-col">
+          <div className="badge">
+            <span className="sr-only">AQI {data.aqi}</span>
+            <span className="badge-num" aria-hidden="true">
+              {shown}
+            </span>
+            <span className="badge-unit" aria-hidden="true">
+              AQI
+            </span>
+          </div>
+          <SmokeChip
+            pm25={data.pm25}
+            title="In cigarettes"
+            note="At today’s level, for a whole day."
+            className="on-card"
+          />
         </div>
         <div className="hero-words">
           <h2 id="hero-title" className="hero-level">

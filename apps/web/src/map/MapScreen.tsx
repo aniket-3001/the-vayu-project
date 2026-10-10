@@ -1,4 +1,4 @@
-import { Flame, Layers, LocateFixed } from 'lucide-react';
+import { Flame, Layers, LocateFixed, Wind } from 'lucide-react';
 import { Marker, type Map as MapLibreMap } from 'maplibre-gl';
 import { useMemo, useRef, useState } from 'react';
 import { inCoverage } from '../data/geocode';
@@ -6,22 +6,16 @@ import { LEVELS } from '../design/levels';
 import { Pill } from '../today/ui/Chip';
 import { useAirUnits } from '../units/AirUnits';
 import { LAYER_LABELS, defaultLayers, type Shown } from './layers';
-import { MapView, type MapMode } from './MapView';
-import { WindCanvas } from './WindCanvas';
+import { MapView } from './MapView';
+import { WindBlocks } from './WindBlocks';
 import { makeWindField } from './windTexture';
 import { useMapData } from './useMapData';
-
-const MODES: readonly { readonly id: MapMode; readonly label: string }[] = [
-  { id: 'map', label: 'Map' },
-  { id: 'globe', label: 'Globe' },
-];
 
 const STOPS = [0, 50, 100, 150, 200, 300] as const;
 
 /** Where the air is bad, and where it is going: a flat map of readings and fires, or a globe with the wind on it. */
 export function MapScreen(): React.JSX.Element {
-  const [mode, setMode] = useState<MapMode>('map');
-  const [shown, setShown] = useState<Shown>(defaultLayers('map'));
+  const [shown, setShown] = useState<Shown>(defaultLayers());
   const [open, setOpen] = useState(false);
   const [map, setMap] = useState<MapLibreMap>();
   const { smoke } = useAirUnits();
@@ -30,10 +24,6 @@ export function MapScreen(): React.JSX.Element {
   const marker = useRef<Marker>();
   const windField = useMemo(() => makeWindField(data.wind), [data.wind]);
 
-  const choose = (next: MapMode): void => {
-    setMode(next);
-    setShown(defaultLayers(next));
-  };
   /** Asks where the person is, drops a blue dot there and flies in close. */
   const findMe = (): void => {
     if (map === undefined) return;
@@ -68,49 +58,49 @@ export function MapScreen(): React.JSX.Element {
 
   return (
     <div className="map-screen">
-      <MapView mode={mode} layers={shown} smoke={smoke} air={data.air} onReady={setMap} />
-      <WindCanvas map={map} enabled={shown.wind} field={windField} />
+      <MapView layers={shown} smoke={smoke} air={data.air} onReady={setMap} />
+      <WindBlocks map={map} enabled={shown.wind} field={windField} />
 
       <div className="map-bottom">
         {open && (
           <fieldset className="map-sheet" id="map-layers">
             <legend>Show on the map</legend>
-            {(Object.keys(LAYER_LABELS) as (keyof Shown)[]).map((key) => (
-              // The label text is a computed name inside nested spans, which the rule cannot see.
-              // eslint-disable-next-line jsx-a11y/label-has-associated-control
-              <label key={key} className="map-toggle" htmlFor={`layer-${key}`}>
-                <input
-                  id={`layer-${key}`}
-                  type="checkbox"
-                  checked={shown[key]}
-                  onChange={() => {
-                    toggle(key);
-                  }}
-                />
-                <span>
-                  <strong>{LAYER_LABELS[key].name}</strong>
-                  <span className="muted small"> {LAYER_LABELS[key].note}</span>
-                </span>
-              </label>
-            ))}
+            {(Object.keys(LAYER_LABELS) as (keyof Shown)[])
+              .filter((key) => key !== 'wind')
+              .map((key) => (
+                // The label text is a computed name inside nested spans, which the rule cannot see.
+                // eslint-disable-next-line jsx-a11y/label-has-associated-control
+                <label key={key} className="map-toggle" htmlFor={`layer-${key}`}>
+                  <input
+                    id={`layer-${key}`}
+                    type="checkbox"
+                    checked={shown[key]}
+                    onChange={() => {
+                      toggle(key);
+                    }}
+                  />
+                  <span>
+                    <strong>{LAYER_LABELS[key].name}</strong>
+                    <span className="muted small"> {LAYER_LABELS[key].note}</span>
+                  </span>
+                </label>
+              ))}
           </fieldset>
         )}
 
         <div className="map-controls">
-          <div className="segmented" role="group" aria-label="View">
-            {MODES.map(({ id, label }) => (
-              <button
-                key={id}
-                type="button"
-                aria-pressed={mode === id}
-                onClick={() => {
-                  choose(id);
-                }}
-              >
-                {label}
-              </button>
-            ))}
-          </div>
+          <button
+            type="button"
+            className="map-layers-button wind-switch"
+            aria-pressed={shown.wind}
+            aria-label={shown.wind ? 'Wind on. Turn wind off' : 'Wind off. Turn wind on'}
+            onClick={() => {
+              toggle('wind');
+            }}
+          >
+            <Wind size={18} strokeWidth={1.75} aria-hidden="true" />{' '}
+            <span className="btn-label">Wind {shown.wind ? 'on' : 'off'}</span>
+          </button>
           <button type="button" className="map-layers-button" aria-label="Find me" onClick={findMe}>
             <LocateFixed size={18} strokeWidth={1.75} aria-hidden="true" />{' '}
             <span className="btn-label">Find me</span>

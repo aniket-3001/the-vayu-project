@@ -1,4 +1,4 @@
-import { CalendarDays, Info, Plus, Trash2 } from 'lucide-react';
+import { CalendarDays, Info, LocateFixed, Plus } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import type { PlaceMatch } from '../data/geocode';
 import { useDevices } from '../devices/useDevices';
@@ -6,7 +6,6 @@ import { levelForAqi } from '../design/levels';
 import { usePins } from '../places/usePins';
 import { Progress } from '../tasks/ui/TipsCard';
 import { SmokeNote } from '../units/AirUnits';
-import { SmokeCard } from '../units/SmokeCard';
 import { ASSUMPTION_NOTES } from './assumptions';
 import {
   TODAY,
@@ -24,17 +23,16 @@ import {
   type Where,
 } from './model';
 import { personaById } from './persona';
-import { DAY_LABELS, initials, MAX_PEOPLE, personaBlurb, personaOf } from './people';
+import { DAY_LABELS, initials, MAX_PEOPLE, personaOf } from './people';
 import { SPOT_LABELS, loadAllSpots, type SpotKind } from './spots';
 import { SAMPLE_SOURCES } from './sources';
 import { Dial, WHERE_LABELS } from './ui/Dial';
-import { LiveCard } from './ui/LiveCard';
-import { SpotSection } from './ui/SpotSection';
 import { Summary } from './ui/Summary';
 import { WeekStrip } from './ui/WeekStrip';
 import { allUnits } from './units';
 import { useHousehold, useLive, useSpots } from './useExposure';
 import { AddPerson } from './ui/AddPerson';
+import { PersonPanel } from './ui/PersonPanel';
 import { saveSpots } from './spots';
 
 /** The week overview, or one date. */
@@ -68,6 +66,7 @@ export function ExposureScreen({
   const persona = personaOf(person);
   const { spots, set, clear } = useSpots(person);
   const [adding, setAdding] = useState(false);
+  const [panel, setPanel] = useState(false);
   const { devices } = useDevices();
   const { pins, add: addPin } = usePins();
   const live = useLive();
@@ -125,7 +124,10 @@ export function ExposureScreen({
   const choosePerson = (id: string): void => {
     select(id);
     setTab('all');
+    setPanel(true);
   };
+  const isMe = person.id === 'me';
+  const autoOn = live.state === 'on' || live.state === 'asking' || live.sample;
 
   return (
     <div className="page places">
@@ -202,21 +204,31 @@ export function ExposureScreen({
             </button>
           )}
         </div>
-        <p className="muted small person-blurb">
-          {person.name}: {personaBlurb(person)}.{' '}
-          {household.people.length > 1 && (
-            <button
-              type="button"
-              className="link-button"
-              aria-label={`Remove ${person.name}`}
-              onClick={() => {
-                remove(person.id);
+        {isMe && (
+          <label className="auto-switch">
+            <LocateFixed size={18} strokeWidth={1.75} aria-hidden="true" />
+            <span>
+              <strong>Work it out from where I am</strong>
+              <span className="muted small">
+                {autoOn
+                  ? 'On. Using your location while this page is open.'
+                  : 'Off. Turn on to count the hours from your location.'}
+              </span>
+            </span>
+            <input
+              type="checkbox"
+              role="switch"
+              checked={autoOn}
+              onChange={(event) => {
+                if (event.target.checked) live.start();
+                else {
+                  live.stop();
+                  live.clearLog();
+                }
               }}
-            >
-              <Trash2 size={13} aria-hidden="true" /> Remove {person.name}
-            </button>
-          )}
-        </p>
+            />
+          </label>
+        )}
 
         <div className="segmented wide" role="group" aria-label="Span">
           <button
@@ -343,51 +355,41 @@ export function ExposureScreen({
                 </ul>
               )}
             </div>
-            {summary !== undefined && (
-              <SmokeCard
-                pm25={summary.meanPm25}
-                title="What you breathed, in cigarettes"
-                note={
-                  span === 'over the day'
-                    ? 'The average air you breathed over the day.'
-                    : `The average air you breathed ${span}.`
-                }
-              />
-            )}
             <Summary summary={summary} cells={counted} span={span} />
           </>
         )}
-
-        {(view === WEEK || !noData) &&
-          (shownTab === 'all' ? info.kinds : [shownTab]).map((kind) => (
-            <SpotSection
-              key={`${person.id}-${kind}`}
-              kind={kind}
-              spot={spots[kind]}
-              pins={pins}
-              units={units}
-              onSet={(spot) => {
-                set(kind, spot);
-              }}
-              onClear={() => {
-                clear(kind);
-              }}
-              onAddPin={addPin}
-              {...(search !== undefined ? { search } : {})}
-            />
-          ))}
-        {shownTab === 'all' && (view === TODAY || view === WEEK) && (
-          <LiveCard
-            state={live.state}
-            sample={live.sample}
-            hours={Object.keys(live.log).length}
-            onStart={live.start}
-            onStop={live.stop}
-            onSample={live.showSample}
-            onClear={live.clearLog}
-          />
-        )}
       </main>
+      {panel && (
+        <PersonPanel
+          person={person}
+          kinds={info.kinds}
+          spots={spots}
+          pins={pins}
+          units={units}
+          isMe={isMe}
+          live={{
+            state: live.state,
+            sample: live.sample,
+            hours: Object.keys(live.log).length,
+            start: live.start,
+            stop: live.stop,
+            showSample: live.showSample,
+            clear: live.clearLog,
+          }}
+          canRemove={household.people.length > 1}
+          onSet={set}
+          onClear={clear}
+          onAddPin={addPin}
+          onRemove={() => {
+            remove(person.id);
+            setPanel(false);
+          }}
+          onClose={() => {
+            setPanel(false);
+          }}
+          {...(search !== undefined ? { search } : {})}
+        />
+      )}
       {adding && (
         <AddPerson
           onClose={() => {

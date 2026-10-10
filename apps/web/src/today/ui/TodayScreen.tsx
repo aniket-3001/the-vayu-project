@@ -5,7 +5,6 @@ import { Attribution } from './Attribution';
 import { Daily } from './Daily';
 import { Health } from './Health';
 import { Hero } from './Hero';
-import { SmokeCard } from '../../units/SmokeCard';
 import { History } from './History';
 import { Hourly } from './Hourly';
 import { PollutantTiles } from './Pollutants';
@@ -35,7 +34,6 @@ export function TodayScreen({
       <main className="layout">
         <div className="col-main">
           <Hero data={data} />
-          <SmokeCard pm25={data.pm25} note="At today’s level, for a whole day." />
           <Attribution data={data} />
           <Hourly data={data} />
           <Daily data={data} />

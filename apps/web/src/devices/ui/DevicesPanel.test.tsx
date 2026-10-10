@@ -28,6 +28,15 @@ describe('the Devices tab', () => {
     expect(screen.getByRole('list', { name: 'Your places' })).toBeInTheDocument();
   });
 
+  it('is only about the devices: no alerts, no tips, no streak', async () => {
+    await openDevices();
+    expect(screen.queryByRole('region', { name: 'Alerts' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('region', { name: 'Breathe better today' })).not.toBeInTheDocument();
+    expect(screen.queryByText(/streak/u)).not.toBeInTheDocument();
+    await userEvent.click(screen.getByRole('tab', { name: 'Places' }));
+    expect(screen.getByRole('region', { name: 'Breathe better today' })).toBeInTheDocument();
+  });
+
   it('is honest that the monitor is not built or for sale', async () => {
     await openDevices();
     expect(screen.getByText(/In development. Not for sale yet/u)).toBeInTheDocument();

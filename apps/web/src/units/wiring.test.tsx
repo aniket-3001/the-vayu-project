@@ -1,5 +1,6 @@
 // @vitest-environment jsdom
 import { cleanup, render, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { MyAirScreen } from '../myair/MyAirScreen';
@@ -19,7 +20,7 @@ const withUnits = (node: React.ReactNode): React.JSX.Element => (
 );
 
 describe('the relatable measure on the screens', () => {
-  it('adds cigarettes a day beside the AQI on every place card, and the caveat on the Today hero', () => {
+  it('adds cigarettes a day on every place card, and a small card on the Today hero that opens the full picture', async () => {
     window.localStorage.setItem(UNITS_STORAGE_KEY, 'smoke');
     render(withUnits(<MyAirScreen />));
     expect(
@@ -27,10 +28,15 @@ describe('the relatable measure on the screens', () => {
     ).toBeGreaterThanOrEqual(4);
     cleanup();
     render(withUnits(<TodayScreen data={sampleDay('unhealthy')} />));
-    expect(screen.getByText(/Berkeley Earth/u)).toBeInTheDocument();
-    expect(screen.getByRole('region', { name: 'In cigarettes' })).toHaveTextContent(
-      /About \d+(\.\d)? cigarettes/u,
-    );
+
+    const chip = screen.getByRole('button', { name: /cigarettes? a day\. Tap for more/u });
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    await userEvent.click(chip);
+    const sheet = screen.getByRole('dialog', { name: 'In cigarettes' });
+    expect(sheet).toHaveTextContent(/Berkeley Earth/u);
+    expect(sheet).toHaveTextContent(/About \d+(\.\d)? cigarettes/u);
+    await userEvent.keyboard('{Escape}');
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
   });
 
   it('shows none of it when the measure is off', () => {

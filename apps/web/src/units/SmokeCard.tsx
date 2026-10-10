@@ -1,4 +1,11 @@
-import { cigarettesPerDay, describeCigarettes, SMOKE_CAVEAT } from './smoke';
+import { Cigarette as CigaretteIcon, X } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import {
+  cigarettesPerDay,
+  describeCigarettes,
+  describeCigarettesShort,
+  SMOKE_CAVEAT,
+} from './smoke';
 import { useAirUnits } from './AirUnits';
 
 /** How many whole cigarettes to draw before saying "and more". */
@@ -67,5 +74,77 @@ export function SmokeCard({
         {whole > MAX_DRAWN && <span className="cig-more">+{whole - MAX_DRAWN}</span>}
       </div>
     </section>
+  );
+}
+
+/**
+ * A small card beside the AQI, quiet until pressed: "3 cigarettes a day". Pressing it opens the full picture,
+ * with the cigarettes burning and the caveat. Nothing when the relatable measure is off.
+ */
+export function SmokeChip({
+  pm25,
+  title,
+  note,
+  className = '',
+}: {
+  readonly pm25: number;
+  readonly title: string;
+  readonly note?: string;
+  readonly className?: string;
+}): React.JSX.Element | null {
+  const { smoke } = useAirUnits();
+  const [open, setOpen] = useState(false);
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (event: KeyboardEvent): void => {
+      if (event.key === 'Escape') setOpen(false);
+    };
+    window.addEventListener('keydown', onKey);
+    return () => {
+      window.removeEventListener('keydown', onKey);
+    };
+  }, [open]);
+  if (!smoke) return null;
+  return (
+    <>
+      <button
+        type="button"
+        className={`smoke-chip ${className}`.trim()}
+        aria-haspopup="dialog"
+        aria-label={`${describeCigarettesShort(cigarettesPerDay(pm25))}. Tap for more`}
+        onClick={() => {
+          setOpen(true);
+        }}
+      >
+        <CigaretteIcon size={16} strokeWidth={2} aria-hidden="true" />
+        <span>{describeCigarettesShort(cigarettesPerDay(pm25))}</span>
+      </button>
+      {open && (
+        <div
+          className="sheet-backdrop"
+          role="presentation"
+          onClick={(event) => {
+            if (event.target === event.currentTarget) setOpen(false);
+          }}
+          onKeyDown={(event) => {
+            if (event.key === 'Escape') setOpen(false);
+          }}
+        >
+          <div className="sheet smoke-sheet" role="dialog" aria-modal="true" aria-label={title}>
+            <button
+              type="button"
+              className="icon-button sheet-x"
+              aria-label="Close"
+              onClick={() => {
+                setOpen(false);
+              }}
+            >
+              <X size={20} aria-hidden="true" />
+            </button>
+            <SmokeCard pm25={pm25} title={title} {...(note === undefined ? {} : { note })} />
+          </div>
+        </div>
+      )}
+    </>
   );
 }

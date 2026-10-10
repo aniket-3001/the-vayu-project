@@ -140,7 +140,7 @@ export function TipsCard({
           </li>
         );
       })}
-      <li className="tips-foot">
+      <li className="tip-stat">
         <Progress progress={progress} />
       </li>
     </Carousel>

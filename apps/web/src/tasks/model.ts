@@ -22,12 +22,17 @@ export function grapStage(cpcbAqi: number | null): 0 | 1 | 2 | 3 | 4 {
   return 4;
 }
 
-/** The GRAP stage the last 24 hours point to, by our own estimate. Official orders always come first. */
-export function grapStageFor(data: TodayData): 0 | 1 | 2 | 3 | 4 {
+/** The 24-hour CPCB AQI the last day points to, for the GRAP bands. Our estimate, from PM2.5 and a PM10 scaled from it. */
+export function cpcbAqiFor(data: TodayData): number | null {
   const last24 = data.history.slice(-24).map((h) => h.pm25);
   const ratio = data.pollutants.pm25 > 0 ? data.pollutants.pm10 / data.pollutants.pm25 : 2;
   const pm10 = last24.map((v) => v * ratio);
-  return grapStage(aqi24h(last24, pm10)?.aqi ?? null);
+  return aqi24h(last24, pm10)?.aqi ?? null;
+}
+
+/** The GRAP stage the last 24 hours point to, by our own estimate. Official orders always come first. */
+export function grapStageFor(data: TodayData): 0 | 1 | 2 | 3 | 4 {
+  return grapStage(cpcbAqiFor(data));
 }
 
 /** Points for each kind of task. */

@@ -87,6 +87,13 @@ export const mercatorY = (lat: number): number => {
 const latOfMercatorY = (y: number): number =>
   (Math.atan(Math.sinh(Math.PI * (1 - 2 * y))) * 180) / Math.PI;
 
+/** A repeatable number between 0 and 1 for a pixel, so the grain does not shimmer from one draw to the next. */
+const noise = (col: number, row: number): number => {
+  let h = (col * 374761393 + row * 668265263) | 0;
+  h = (h ^ (h >>> 13)) * 1274126177;
+  return ((h ^ (h >>> 16)) >>> 0) / 4294967295;
+};
+
 /** RGBA pixels for the field over `FIELD_BOUNDS`, `cols` by `rows`, rows spaced evenly in mercator y. */
 export function renderField(
   monitors: readonly Monitor[],
@@ -105,9 +112,11 @@ export function renderField(
       if (value === undefined) continue;
       const [r, g, b] = gradientColour(value.aqi);
       const i = (row * cols + col) * 4;
-      pixels[i] = r;
-      pixels[i + 1] = g;
-      pixels[i + 2] = b;
+      // A little grain in the colour and more in the opacity, so the field reads as washed out and gritty.
+      const grain = noise(col, row);
+      pixels[i] = Math.max(0, Math.min(255, r + (grain - 0.5) * 26));
+      pixels[i + 1] = Math.max(0, Math.min(255, g + (grain - 0.5) * 26));
+      pixels[i + 2] = Math.max(0, Math.min(255, b + (grain - 0.5) * 26));
       const edge = Math.min(
         lat - FIELD_BOUNDS.south,
         FIELD_BOUNDS.north - lat,
@@ -115,7 +124,9 @@ export function renderField(
         FIELD_BOUNDS.east - lng,
       );
       // Fade out towards the edge of the data, so the field does not end in a hard box.
-      pixels[i + 3] = Math.round(value.confidence * Math.min(1, edge / 5) * 215);
+      pixels[i + 3] = Math.round(
+        value.confidence * Math.min(1, edge / 5) * (150 + (noise(row, col) - 0.5) * 120),
+      );
     }
   }
   return pixels;

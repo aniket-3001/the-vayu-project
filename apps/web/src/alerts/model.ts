@@ -1,4 +1,4 @@
-import { grapStageFor } from '../tasks/model';
+import { cpcbAqiFor, grapStageFor } from '../tasks/model';
 import { levelForAqi } from '../design/levels';
 import { weekday } from '../today/time';
 import type { TodayData } from '../today/types';
@@ -12,6 +12,10 @@ export interface Alert {
   readonly day: 0 | 1 | 2;
   readonly title: string;
   readonly body: string;
+  /** One or two plain sentences on why this alert is up. */
+  readonly reason: string;
+  /** Two or three things to do about it. */
+  readonly todo: readonly string[];
   /** Whether the alert comes with a way to reach the authorities. */
   readonly authorities: boolean;
 }
@@ -44,6 +48,12 @@ export function alertsFor(data: TodayData, fires: number | undefined): readonly 
       day: 0,
       title: `GRAP Stage ${ROMAN[stage]} likely today`,
       body: 'Unofficial: our estimate, not an order. Check the official order at caqm.nic.in.',
+      reason: `The last 24 hours average about ${String(Math.round(cpcbAqiFor(data) ?? 0))} on India’s own scale (CPCB). That is in the band where GRAP Stage ${ROMAN[stage]} applies. Only the official order counts.`,
+      todo: [
+        'Read today’s official GRAP order at caqm.nic.in.',
+        'Keep children and older people indoors where you can.',
+        'Keep windows shut and run a purifier if you have one.',
+      ],
       authorities: false,
     });
   }
@@ -54,6 +64,12 @@ export function alertsFor(data: TodayData, fires: number | undefined): readonly 
       day: 0,
       title: 'Avoid park walks today',
       body: `AQI ${String(data.aqi)}, ${levelForAqi(data.aqi).name.toLowerCase()}. Walk indoors if you can.`,
+      reason: `The air outside is AQI ${String(data.aqi)}, ${levelForAqi(data.aqi).name.toLowerCase()}. A brisk walk makes you breathe several times more air than sitting still, so the harm adds up quickly.`,
+      todo: [
+        'Move your walk indoors today.',
+        'If you must go out, wear a well-fitted N95 or FFP2 mask.',
+        'Try again when the air clears.',
+      ],
       authorities: false,
     });
   }
@@ -66,6 +82,12 @@ export function alertsFor(data: TodayData, fires: number | undefined): readonly 
         day: offset,
         title: `Smog likely ${dayWord(offset, data).toLowerCase()}`,
         body: `AQI near ${String(day.aqi)}, ${levelForAqi(day.aqi).name.toLowerCase()}. Plan outdoor time before then.`,
+        reason: `Our forecast puts ${dayWord(offset, data).toLowerCase()}’s air near AQI ${String(day.aqi)}, ${String(day.aqi - data.aqi)} points worse than today’s ${String(data.aqi)}. It is a forecast, so it can change.`,
+        todo: [
+          'Do outdoor errands and exercise before then.',
+          'Plan for windows shut and a purifier on.',
+          'Check back; we update the forecast through the day.',
+        ],
         authorities: false,
       });
     }
@@ -77,6 +99,12 @@ export function alertsFor(data: TodayData, fires: number | undefined): readonly 
       day: 1,
       title: 'Heavy stubble burning nearby',
       body: `${String(fires)} fires seen by satellite in the last 24 hours. Smoke can reach Delhi within a day or two.`,
+      reason: `Satellites saw ${String(fires)} fires in the last 24 hours, in the stubble-burning belt of Punjab and Haryana. In October the wind blows from the north-west, towards Delhi.`,
+      todo: [
+        'Keep windows shut when the smoke arrives.',
+        'Run a purifier, and wear an N95 outside.',
+        'If you see burning near you, report it with a place, a time and a photo.',
+      ],
       authorities: true,
     });
   }

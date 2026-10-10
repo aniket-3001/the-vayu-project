@@ -1,7 +1,7 @@
 import { LEVELS } from '../../design/levels';
 import { AqiChip } from '../../today/ui/Chip';
 import { concentration } from '../../today/ui/format';
-import { SmokeNote } from '../../units/AirUnits';
+import { SmokeChip } from '../../units/SmokeCard';
 import type { Cell, Summary as SummaryData } from '../model';
 
 const SOURCE_WORDS: Readonly<Record<Cell['source'], string>> = {
@@ -48,7 +48,11 @@ export function Summary({
         <AqiChip aqi={summary.aqi} /> You breathed an average of AQI {summary.aqi},{' '}
         {summary.level.name.toLowerCase()}, {span}.
       </p>
-      <SmokeNote pm25={summary.meanPm25} />
+      <SmokeChip
+        pm25={summary.meanPm25}
+        title="What you breathed, in cigarettes"
+        note={`The average air you breathed ${span}.`}
+      />
       <p>
         {saved > 0
           ? `The same hours in open air would have averaged AQI ${String(summary.openAirAqi)}. Where you spent your time kept ${String(saved)} points off.`
