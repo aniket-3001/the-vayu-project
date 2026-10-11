@@ -1,7 +1,7 @@
 # Submission pack
 
 Words for the hackathon form and the video. Everything here matches `docs/AS-BUILT.md`; where the two differ, that page is right.
-Lines marked **(confirm)** are for the team to check or fill before sending.
+Lines marked **(confirm)** are for me to check or fill before sending.
 
 ## Project description (short)
 
@@ -47,14 +47,14 @@ pauses, arrow keys step, `#step=3` holds on a scene).
 
 ## What each person did **(confirm)**
 
-See `CONTRIBUTIONS.md`: each person writes their own part, and says how AI was used. In short, the app, the API and the
-AWS stack were written with an AI coding assistant (Claude Code), directed and reviewed by the team, and every change goes
-through `make prove` (lint, types, tests, `cdk synth`, bundle check). The measuring unit's design, wiring and assembly
-were done by the team. **(confirm names and roles for the form)**
+I built this alone (`CONTRIBUTIONS.md`). The app, the API and the AWS stack were written with an AI coding assistant
+(Claude Code), directed and reviewed by me, and every change goes through `make prove` (lint, types, tests, `cdk synth`,
+bundle check). I designed, wired, flashed and tested the measuring unit myself. **(confirm the prior-work answer: see
+`CONTRIBUTIONS.md`)**
 
 ## AI tools used
 
-- Claude Code: writing and testing the code, the firmware and the documents, from the team's direction.
+- Claude Code: writing and testing the code, the firmware and the documents, from my direction.
 - Amazon Bedrock, Nova Micro, with a guardrail: rewording the assistant's answers at run time. It has no tools and
   cannot act. See `docs/AGENT-BOUNDARIES.md`.
 - Amazon Polly: reads answers aloud in English and Hindi. Hindi answers are fixed wording and never go through the model.

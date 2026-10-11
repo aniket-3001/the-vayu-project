@@ -151,7 +151,7 @@ The stack deploys with `cd infra && npx cdk deploy`. It needs three secrets made
 
 ## AI tools used
 
-Claude Code wrote and tested most of the code and the documents, directed and reviewed by the team ([`CONTRIBUTIONS.md`](CONTRIBUTIONS.md)). At run time, Amazon Bedrock (Nova Micro, behind a guardrail) rewords the assistant's answers and cannot act ([`docs/AGENT-BOUNDARIES.md`](docs/AGENT-BOUNDARIES.md)).
+Claude Code wrote and tested most of the code and the documents, directed and reviewed by me, the only author ([`CONTRIBUTIONS.md`](CONTRIBUTIONS.md)). At run time, Amazon Bedrock (Nova Micro, behind a guardrail) rewords the assistant's answers and cannot act ([`docs/AGENT-BOUNDARIES.md`](docs/AGENT-BOUNDARIES.md)).
 
 ## Licence
 

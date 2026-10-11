@@ -1,6 +1,6 @@
 # One clear answer for the air at the places you care about
 
-_A draft for the team to edit into their own words, then publish on AWS Builder Center. Numbers are from this repository; the links go to the files that prove them._
+_A draft for me to edit into my own words, then publish on AWS Builder Center. Numbers are from this repository; the links go to the files that prove them._
 
 Delhi's air has plenty of numbers. What a parent lacks at seven in the morning is an answer: should the assembly be indoors, is a walk worth it, do we shut the windows. One city-wide AQI does not say. The nearest monitor may be kilometres from the school, and the reading may be hours old.
 
@@ -54,7 +54,7 @@ The whole list is in [`docs/learning-log.md`](learning-log.md).
 
 ## Numbers
 
-1,243 tests pass in one command with lint, types, `cdk synth` and a check that the deployed bundle holds no prototype code (`make prove`). The code was written with Claude Code, directed and reviewed by the team; the unit was wired, flashed and tested on a bench by the team.
+1,243 tests pass in one command with lint, types, `cdk synth` and a check that the deployed bundle holds no prototype code (`make prove`). The code was written with Claude Code, directed and reviewed by me; I wired, flashed and tested the unit on my desk.
 
 ## What is next
 
