@@ -21,6 +21,12 @@ interface Props {
   readonly address?: React.ComponentProps<typeof PlacesPanel>['address'];
 }
 
+/** Place names as a plain list: "Home", "Home and Park", "Home, School and Office". */
+const listNames = (names: readonly string[]): string =>
+  names.length < 3
+    ? names.join(' and ')
+    : `${names.slice(0, -1).join(', ')} and ${names[names.length - 1] ?? ''}`;
+
 /** The home tab: your places, with your measuring unit's room first, and a button to add a device. */
 export function MyAirScreen({ search, locate, address }: Props): React.JSX.Element {
   const [params, setParams] = useSearchParams();
@@ -98,7 +104,7 @@ export function MyAirScreen({ search, locate, address }: Props): React.JSX.Eleme
       }
     }
     return [...merged.values()]
-      .map(({ names, ...alert }) => (many ? { ...alert, place: names.join(' and ') } : alert))
+      .map(({ names, ...alert }) => (many ? { ...alert, place: listNames(names) } : alert))
       .sort(
         (a, b) =>
           (a.severity === 'severe' ? 0 : 1) - (b.severity === 'severe' ? 0 : 1) || a.day - b.day,
