@@ -3,20 +3,22 @@
 A small box that measures the air in a room and sends it to the app over Bluetooth. It is the one piece of hardware in
 the demo. The purifier build is separate and is shown only as a build with a measured CADR.
 
-Everything here is a plan and a code skeleton until the unit has been built and run. `firmware/vayu-unit/vayu-unit.ino`
-has not been compiled or run on a board yet, and nothing in the app claims a measurement it has not received.
+**Status (11 Oct):** the firmware `firmware/vayu-unit/vayu-unit.ino` compiles and runs on an ESP32-S3 (QFN56, with
+Wi-Fi and Bluetooth 5 LE) wired to an SPS30 over UART; the serial monitor shows the sensor's serial number and PM1, PM2.5,
+PM4 and PM10 every two seconds, and the board advertises as `Vayu-XXXX`. **Not yet done:** connecting the app to it over
+Bluetooth from a phone, and any comparison with a monitor. Nothing in the app claims a measurement it has not received.
 
 ## What it is
 
-| Part               | What                            | Notes                                                                            |
-| ------------------ | ------------------------------- | -------------------------------------------------------------------------------- |
-| Particle sensor    | Sensirion SPS30                 | Laser scattering; PM1.0, PM2.5, PM4.0 and PM10 in µg/m³; I2C or UART; 5 V supply |
-| Board              | ESP32 DevKit                    | Bluetooth Low Energy built in; 3.3 V logic                                       |
-| Climate (optional) | SHT31                           | Temperature and humidity, I2C, 0x44                                              |
-| Power              | 5 V USB                         | A phone charger; about 60 mA                                                     |
-| Box                | Any small enclosure with a vent | For outdoors: a radiation shield and a rain guard, which is not built            |
+| Part               | What                            | Notes                                                                          |
+| ------------------ | ------------------------------- | ------------------------------------------------------------------------------ |
+| Particle sensor    | Sensirion SPS30                 | Laser scattering; PM1.0, PM2.5, PM4.0 and PM10 in µg/m³; UART here; 5 V supply |
+| Board              | ESP32-S3 dev board              | Bluetooth LE and Wi-Fi built in; 3.3 V logic; USB-C native serial              |
+| Climate (optional) | SHT31                           | Temperature and humidity, I2C, 0x44                                            |
+| Power              | 5 V USB                         | A phone charger; about 60 mA                                                   |
+| Box                | Any small enclosure with a vent | For outdoors: a radiation shield and a rain guard, which is not built          |
 
-Wiring is in the header of the firmware file. `SEL` on the SPS30 must go to ground, or it speaks UART instead of I2C.
+Wiring is in the header of the firmware file: SPS30 pin 2 (RX) to GPIO17, pin 3 (TX) to GPIO18, VDD to 5 V, GND to GND, and `SEL` (pin 4) left unconnected, which selects UART (to ground it would be I2C).
 
 ## How it reaches the app
 
@@ -68,7 +70,7 @@ if that is what it is; the point is the measurement.
 ## Build steps
 
 1. Wire the SPS30 and the ESP32 as in the firmware header. Power from USB.
-2. Install the libraries listed there, open `firmware/vayu-unit/vayu-unit.ino`, pick the board "ESP32 Dev Module", upload.
+2. Install the "Sensirion UART SPS30" library, open `firmware/vayu-unit/vayu-unit.ino`, pick the board "ESP32S3 Dev Module" with USB CDC On Boot enabled, upload. Close the serial monitor first, or the port is busy.
 3. Open the serial monitor at 115200. You should see `Advertising as Vayu-XXXX`, then a line of readings every two
    seconds. PM2.5 of 0.0 for a few seconds is normal while the fan settles.
 4. On the phone, open the live site in Chrome, go to **My Air → Devices**, choose where the unit is, press **Connect
