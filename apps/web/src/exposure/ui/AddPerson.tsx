@@ -51,7 +51,17 @@ export function AddPerson({
   pins = [],
   onAddPin,
   search,
+  preset,
+  title = 'Add a person',
+  blurb = 'Track someone you look after. Just their school or work hours and days.',
 }: {
+  /** What is already known: a school was just added, so this is the child who goes there. */
+  readonly preset?: {
+    readonly day?: Day;
+    readonly places?: Partial<Record<SpotKind, Pin>>;
+  };
+  readonly title?: string;
+  readonly blurb?: string;
   readonly onAdd: (person: { name: string; age: number; day: Day }, spots: Spots) => void;
   readonly onClose: () => void;
   /** The places already pinned, offered when picking where something is. */
@@ -61,13 +71,13 @@ export function AddPerson({
 }): React.JSX.Element {
   const [name, setName] = useState('');
   const [age, setAge] = useState('');
-  const [chosen, setChosen] = useState<Day | undefined>(undefined);
+  const [chosen, setChosen] = useState<Day | undefined>(preset?.day);
   const [edited, setEdited] = useState<{ from?: number; to?: number; days?: readonly number[] }>(
     {},
   );
   const [problem, setProblem] = useState('');
   // Where they spend the day: empty squares to fill in, nothing assumed.
-  const [places, setPlaces] = useState<Partial<Record<SpotKind, Pin>>>({});
+  const [places, setPlaces] = useState<Partial<Record<SpotKind, Pin>>>(preset?.places ?? {});
   const [picking, setPicking] = useState<SpotKind | undefined>(undefined);
 
   useEffect(() => {
@@ -138,14 +148,12 @@ export function AddPerson({
         onSubmit={submit}
       >
         <div className="sheet-head">
-          <h2 id="add-person-title">Add a person</h2>
+          <h2 id="add-person-title">{title}</h2>
           <button type="button" className="icon-button" aria-label="Close" onClick={onClose}>
             <X size={20} aria-hidden="true" />
           </button>
         </div>
-        <p className="muted small">
-          Track someone you look after. Just their school or work hours and days.
-        </p>
+        <p className="muted small">{blurb}</p>
         <label className="field">
           <span>Name</span>
           <input

@@ -17,6 +17,8 @@ export interface Household {
 }
 
 export const MAX_PEOPLE = 6;
+/** Dispatched on the window whenever the family or anyone's places change, so every screen that shows them reloads. */
+export const HOUSEHOLD_CHANGED = 'vayu:household';
 export const PEOPLE_STORAGE_KEY = 'vayu.people.v1';
 
 /** You, to begin with. */
@@ -73,6 +75,7 @@ export function loadHousehold(storage: Storage): Household {
 export function saveHousehold(storage: Storage, household: Household): void {
   try {
     storage.setItem(PEOPLE_STORAGE_KEY, JSON.stringify(household));
+    if (typeof window !== 'undefined') window.dispatchEvent(new Event(HOUSEHOLD_CHANGED));
   } catch {
     // Best effort.
   }

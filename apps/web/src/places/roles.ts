@@ -1,6 +1,6 @@
 import type { Pin } from '../data/pins';
-import { loadHousehold, personaOf, saveHousehold } from '../exposure/people';
-import { DEFAULT_HOURS, loadSpots, saveSpots, type SpotKind } from '../exposure/spots';
+import { loadHousehold, personaOf, saveHousehold, type Person } from '../exposure/people';
+import { DEFAULT_HOURS, loadSpots, saveSpots, type Spot, type SpotKind } from '../exposure/spots';
 
 /**
  * What a named place stands for in a day: where you sleep, where you work or study, or where you go to be outdoors.
@@ -77,4 +77,42 @@ export function clearRole(storage: Storage, label: string): void {
     'me',
     Object.fromEntries(Object.entries(spots).filter(([kind]) => kind !== role)),
   );
+}
+
+/** Two places are the same place when they are within about 300 metres: the same school pinned two ways. */
+export const samePlace = (
+  a: { readonly lat: number; readonly lng: number },
+  b: { readonly lat: number; readonly lng: number },
+): boolean => Math.abs(a.lat - b.lat) < 0.003 && Math.abs(a.lng - b.lng) < 0.003;
+
+/** A name that says it is a school, whatever else it is called: "DAV Public School", "Sunrise Vidyalaya". */
+const SCHOOLISH = /\b(school|vidyalaya|vidyalay|academy|pathshala)\b/iu;
+
+/** The set places of everyone in the family that go by a given kind, with the person they are for. */
+export function familyPlaces(
+  storage: Storage,
+  kind: SpotKind,
+): readonly { readonly person: Person; readonly spot: Spot }[] {
+  const { people } = loadHousehold(storage);
+  return people.flatMap((person) => {
+    const spot = loadSpots(storage, person.id, personaOf(person))[kind];
+    return spot === undefined ? [] : [{ person, spot }];
+  });
+}
+
+/**
+ * Whether a pinned place is a school: it is called one (School, or a name with school in it), or someone in the
+ * family has set it as their school. The same test everywhere a school is treated as one, such as the assembly line
+ * on its card, whichever screen it was added from.
+ */
+export function isSchoolPin(
+  pin: Pin,
+  storage: Storage = typeof window === 'undefined' ? ({} as Storage) : window.localStorage,
+): boolean {
+  if (roleOfLabel(pin.name) === 'school' || SCHOOLISH.test(pin.name)) return true;
+  try {
+    return familyPlaces(storage, 'school').some((entry) => samePlace(entry.spot.pin, pin));
+  } catch {
+    return false;
+  }
 }

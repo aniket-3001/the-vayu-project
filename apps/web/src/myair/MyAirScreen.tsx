@@ -1,12 +1,13 @@
 import { Cpu, MapPin } from 'lucide-react';
-import { useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { useToday } from '../air/store';
-import { useLivePin } from '../places/liveLocation';
+import { useTodays } from '../air/store';
 import { usePins } from '../places/usePins';
-import { tasksFor } from '../tasks/model';
+import { tasksFor, type Task } from '../tasks/model';
+import { schoolTasksFor } from '../tasks/school';
+import { HOUSEHOLD_CHANGED, dayPlaces } from './dayPlaces';
 import { AlertsList } from '../alerts/ui/AlertsList';
-import { alertsFor } from '../alerts/model';
+import { alertsFor, type Alert } from '../alerts/model';
 import { useFires } from '../alerts/useFires';
 import { TipsCard } from '../tasks/ui/TipsCard';
 import { DevicesPanel } from '../devices/ui/DevicesPanel';
@@ -29,17 +30,79 @@ export function MyAirScreen({ search, locate, address }: Props): React.JSX.Eleme
   const [params, setParams] = useSearchParams();
   const tab = params.get('tab') === 'devices' ? 'devices' : 'places';
   const { pins } = usePins();
-  // The alerts are for where the device is while live location is on, else the first place pinned.
-  const livePin = useLivePin();
-  const first = livePin ?? pins[0];
-  const state = useToday(first);
-  const reading = state?.status === 'ready' ? state.data : undefined;
-  const tips = useMemo(() => (reading === undefined ? [] : tasksFor(reading)), [reading]);
-  const fires = useFires(first, reading?.hourly[0]?.weather?.windFromDeg);
-  const alerts = useMemo(
-    () => (reading === undefined ? [] : alertsFor(reading, fires)),
-    [reading, fires],
+  // The tips and alerts are for the day as it is set: home, school, work. A phone on the move is not a place the
+  // day can be arranged around, so where it is does not decide them.
+  const [householdVersion, setHouseholdVersion] = useState(0);
+  useEffect(() => {
+    const again = (): void => {
+      setHouseholdVersion((n) => n + 1);
+    };
+    window.addEventListener(HOUSEHOLD_CHANGED, again);
+    return () => {
+      window.removeEventListener(HOUSEHOLD_CHANGED, again);
+    };
+  }, []);
+  const places = useMemo(
+    () => dayPlaces(window.localStorage, pins),
+    // `householdVersion` is read so a change to the family or their places works the day out again.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [pins, householdVersion],
   );
+  const readings = useTodays(places.map((p) => p.pin));
+  const home = places.find((p) => p.role === 'home') ?? places[0];
+  const homeReading = home === undefined ? undefined : readings.get(home.pin.id);
+  const reading = homeReading?.status === 'ready' ? homeReading.data : undefined;
+  const fires = useFires(home?.pin, reading?.hourly[0]?.weather?.windFromDeg);
+  const many = places.length > 1;
+
+  const tips = useMemo(() => {
+    const out: Task[] = [];
+    for (const place of places) {
+      const loaded = readings.get(place.pin.id);
+      if (loaded?.status !== 'ready') continue;
+      if (place.role === 'home')
+        out.push(...tasksFor(loaded.data).map((t) => (many ? { ...t, place: place.pin.name } : t)));
+      else if (place.role === 'school')
+        out.push(
+          ...schoolTasksFor(
+            loaded.data,
+            { name: place.pin.name, key: place.key },
+            place.people
+              .filter((e) => e.person.day === 'school')
+              .map((e) => ({
+                person: e.person.id === 'me' ? { ...e.person, name: 'You' } : e.person,
+                hours: e.hours,
+              })),
+          ),
+        );
+    }
+    return out.slice(0, 8);
+  }, [places, readings, many]);
+
+  const alerts = useMemo(() => {
+    const merged = new Map<string, Alert & { readonly names: readonly string[] }>();
+    for (const place of places) {
+      const loaded = readings.get(place.pin.id);
+      if (loaded?.status !== 'ready') continue;
+      for (const alert of alertsFor(loaded.data, fires)) {
+        const key = `${alert.title}|${String(alert.day)}`;
+        const have = merged.get(key);
+        merged.set(
+          key,
+          have === undefined
+            ? { ...alert, names: [place.pin.name] }
+            : { ...have, names: [...have.names, place.pin.name] },
+        );
+      }
+    }
+    return [...merged.values()]
+      .map(({ names, ...alert }) => (many ? { ...alert, place: names.join(' and ') } : alert))
+      .sort(
+        (a, b) =>
+          (a.severity === 'severe' ? 0 : 1) - (b.severity === 'severe' ? 0 : 1) || a.day - b.day,
+      );
+  }, [places, readings, fires, many]);
+  const names = places.map((p) => p.pin.name).join(' · ');
   return (
     <div className="page places">
       <header className="place">
@@ -63,12 +126,12 @@ export function MyAirScreen({ search, locate, address }: Props): React.JSX.Eleme
           ))}
         </div>
       </header>
-      {tab === 'places' && first !== undefined && reading !== undefined && (
+      {tab === 'places' && home !== undefined && reading !== undefined && (
         <div className="places-main tasks-wrap">
           {(tips.length > 0 || alerts.length > 0) && (
             <TipsCard
               tips={tips}
-              placeName={first.name}
+              placeName={names}
               alerts={alerts.length > 0 ? <AlertsList alerts={alerts} data={reading} /> : undefined}
             />
           )}

@@ -124,6 +124,7 @@ export function saveSpots(storage: Storage, personId: string, spots: Spots): voi
     const raw = storage.getItem(SPOTS_STORAGE_KEY);
     const all = raw === null ? {} : (JSON.parse(raw) as Record<string, unknown>);
     storage.setItem(SPOTS_STORAGE_KEY, JSON.stringify({ ...all, [personId]: spots }));
+    if (typeof window !== 'undefined') window.dispatchEvent(new Event('vayu:household'));
   } catch {
     // Best effort: a blocked or full storage must never break the screen.
   }

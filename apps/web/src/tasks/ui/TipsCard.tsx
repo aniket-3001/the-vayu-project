@@ -5,6 +5,8 @@ import {
   Flame,
   Footprints,
   House,
+  School,
+  UserRound,
   Star,
   TriangleAlert,
   type LucideIcon,
@@ -16,6 +18,9 @@ import { POINTS, type Task, type TaskKind } from '../model';
 import { useTasks } from '../useTasks';
 
 const ICONS: Readonly<Record<Exclude<TaskKind, 'mask'>, LucideIcon>> = {
+  assembly: School,
+  'school-grap': TriangleAlert,
+  child: UserRound,
   walk: Footprints,
   'stay-in': House,
   windows: AppWindow,
@@ -187,6 +192,9 @@ export function TipsCard({
                   )}
                 </span>
                 <span className="task-words">
+                  {task.place !== undefined && (
+                    <span className="tip-place small">{task.place}</span>
+                  )}
                   <strong>{task.title}</strong>
                   <span className="muted small">{task.why}</span>
                 </span>

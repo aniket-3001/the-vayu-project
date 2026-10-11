@@ -58,6 +58,10 @@ Unticked means not yet seen live.
 | My Air         | A school's card says where the morning assembly should be; GRAP alerts are yellow, orange, red or purple         | [ ]  |
 | Exposure       | A half-hour walk colours half an hour's segment in the outdoor ring and the rest in the ring you were in         | [ ]  |
 | My Air         | The points are gold stars, true stars at any width; dots under the tips follow the swipe                         | [ ]  |
+| My Air         | With a child and school set, the tips name the school: assembly, GRAP and the child's AQI at school              | [ ]  |
+| My Air         | Setting a school asks who goes there; "My child" adds them to the family                                         | [ ]  |
+| Exposure       | A school added from Add a person is a card on My Air with the assembly line                                      | [ ]  |
+| Assistant      | "When can I walk today?" says indoors when a GRAP stage applies, otherwise the best hour                         | [ ]  |
 | Laptop         | Every screen at a laptop width                                                                                   | [ ]  |
 | Offline        | Switch the phone to airplane mode: the last good readings stay and say how old they are                          | [ ]  |
 

@@ -14,6 +14,8 @@ export interface Alert {
   readonly severity: AlertSeverity;
   /** For a GRAP alert: the stage, 1 to 4, which sets its colour: yellow, orange, red, purple. */
   readonly stage?: 1 | 2 | 3 | 4;
+  /** Where it applies, when more than one place is being watched: "DAV Public School", "Home and DAV Public School". */
+  readonly place?: string;
   /** What to avoid, in plain words: walks, outdoor sport, open-ground school assembly. */
   readonly avoid: readonly string[];
   /** 0 is today, 1 tomorrow, 2 the day after. */
@@ -32,10 +34,10 @@ export interface Alert {
 /** Fires near a place (within 100 km, or upwind within 300 km) that make a stubble alert. */
 export const HEAVY_FIRES = 10;
 
-const ROMAN = ['', 'I', 'II', 'III', 'IV'] as const;
+export const ROMAN = ['', 'I', 'II', 'III', 'IV'] as const;
 
 /** What each GRAP stage means for a day out, in words: our reading of it, never an order. */
-const GRAP_GUIDE: Readonly<
+export const GRAP_GUIDE: Readonly<
   Record<
     1 | 2 | 3 | 4,
     { readonly short: string; readonly avoid: readonly string[]; readonly todo: readonly string[] }

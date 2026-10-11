@@ -9,7 +9,7 @@ import { CONDITION_LABELS, FaceIcon, WeatherIcon } from '../../today/ui/icons';
 import { AirFigures } from '../../units/AirUnits';
 import { airStore, useToday } from '../../air/store';
 import { assemblyFor } from '../../alerts/assembly';
-import { roleOfLabel } from '../roles';
+import { isSchoolPin } from '../roles';
 import { AirLoading } from '../../components/AirState';
 
 const age = (minutes: number): string =>
@@ -72,7 +72,7 @@ export function PlaceCard({
   }
   const reading = state.data;
   // A school shows where its morning assembly should be held, from the air expected at eight.
-  const assembly = roleOfLabel(pin.name) === 'school' ? assemblyFor(reading) : undefined;
+  const assembly = isSchoolPin(pin) ? assemblyFor(reading) : undefined;
   const level = levelForAqi(reading.aqi);
   const p = reading.provenance;
   const w = reading.weather;

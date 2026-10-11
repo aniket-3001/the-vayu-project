@@ -4,6 +4,7 @@ import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { MyAirScreen } from '../../myair/MyAirScreen';
+import { setOwnerStartsWithSamples } from '../../exposure/spots';
 import { TASKS_STORAGE_KEY } from '../store';
 
 beforeEach(() => {
@@ -74,10 +75,18 @@ describe('the Breathe better tips on My Air', () => {
     ).toHaveAttribute('aria-checked', 'true');
   });
 
-  it('are hidden when no place is pinned, since there is no air to act on', () => {
+  it('are hidden when no place is pinned or set, since there is no air to act on', () => {
     window.localStorage.setItem('vayu.pins.v1', '[]');
-    open();
-    expect(screen.queryByRole('region', { name: 'Breathe better today' })).not.toBeInTheDocument();
+    // The deployed app starts with no timetable; the prototype starts with a sample one.
+    setOwnerStartsWithSamples(false);
+    try {
+      open();
+      expect(
+        screen.queryByRole('region', { name: 'Breathe better today' }),
+      ).not.toBeInTheDocument();
+    } finally {
+      setOwnerStartsWithSamples(true);
+    }
   });
 
   it('hold the tips as cards that scroll sideways, with a scroll indicator and no dots', () => {
@@ -121,5 +130,79 @@ describe('the Breathe better tips on My Air', () => {
       expect(coin.firstElementChild?.tagName.toLowerCase()).toBe('svg');
     }
     expect(within(card).getAllByRole('img', { name: /\d+ points/u }).length).toBe(coins.length);
+  });
+
+  describe('for the family’s timetable', () => {
+    const home = { id: '28.59,77.05', name: 'Home', lat: 28.59, lng: 77.05 };
+    const school = { id: '28.4,77.05', name: 'DAV Public School', lat: 28.4, lng: 77.05 };
+    const seed = (): void => {
+      window.localStorage.setItem('vayu.pins.v1', JSON.stringify([home, school]));
+      window.localStorage.setItem(
+        'vayu.people.v1',
+        JSON.stringify({
+          people: [
+            { id: 'me', name: 'Me', age: 38, day: 'work' },
+            { id: 'asha', name: 'Asha', age: 9, day: 'school' },
+          ],
+          current: 'me',
+        }),
+      );
+      window.localStorage.setItem(
+        'vayu.spots.v3',
+        JSON.stringify({
+          me: { home: { pin: home, from: 0, to: 24 } },
+          asha: {
+            home: { pin: home, from: 0, to: 24 },
+            school: { pin: school, from: 8, to: 15 },
+          },
+        }),
+      );
+    };
+
+    it('include the school: where assembly should be, and how the child’s school day looks in the air', () => {
+      seed();
+      open();
+      const card = screen.getByRole('region', { name: 'Breathe better today' });
+      expect(card).toHaveTextContent('Home');
+      expect(card).toHaveTextContent('DAV Public School');
+      expect(card).toHaveTextContent(/Morning assembly: (Inside|Open ground)/u);
+      expect(card).toHaveTextContent(/Asha, 9: AQI \d+ at school/u);
+      expect(card).toHaveTextContent(/8 am to 3 pm/u);
+      // Each school tip says which place it is for.
+      const places = Array.from(card.querySelectorAll('.tip-place')).map((el) => el.textContent);
+      expect(places).toContain('DAV Public School');
+    });
+
+    it('are for the timetable and not for where the phone is', async () => {
+      seed();
+      const { setLiveLocation } = await import('../../places/liveLocation');
+      const snapshot = {
+        enabled: true,
+        status: 'on',
+        position: { lat: 12.97, lng: 77.59 },
+        checkedAt: 1,
+      } as const;
+      setLiveLocation({
+        get: () => snapshot,
+        subscribe: () => () => undefined,
+        set: () => undefined,
+        resume: () => undefined,
+      });
+      try {
+        open();
+        const card = screen.getByRole('region', { name: 'Breathe better today' });
+        expect(card).not.toHaveTextContent(/Here|Live location/u);
+        expect(card).toHaveTextContent('Tips for Home');
+      } finally {
+        setLiveLocation(undefined);
+      }
+    });
+
+    it('add nothing for school when none is set, and keep to home', () => {
+      window.localStorage.setItem('vayu.pins.v1', JSON.stringify([home]));
+      open();
+      const card = screen.getByRole('region', { name: 'Breathe better today' });
+      expect(card).not.toHaveTextContent(/Morning assembly/u);
+    });
   });
 });

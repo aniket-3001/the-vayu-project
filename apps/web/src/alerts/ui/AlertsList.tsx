@@ -51,7 +51,10 @@ export function AlertsList({
                 </span>
                 <span className="alert-words">
                   <strong>{alert.title}</strong>
-                  <span className="small">{alert.body}</span>
+                  <span className="small">
+                    {alert.place !== undefined && <b className="alert-place">{alert.place} · </b>}
+                    {alert.body}
+                  </span>
                 </span>
                 <Pill>{dayWord(alert.day, data)}</Pill>
                 <ChevronRight size={18} aria-hidden="true" className="alert-go" />

@@ -137,7 +137,7 @@ describe('the Places screen', () => {
     expect(spots.me?.home?.pin?.name).toBe('Home');
   });
 
-  it('makes the work or school field a choice of the two, and the day follows it', async () => {
+  const chooseSchool = async (): Promise<void> => {
     window.localStorage.setItem('vayu.pins.v1', '[]');
     screenWith({
       locate: (found) => {
@@ -156,11 +156,39 @@ describe('the Places screen', () => {
     expect(within(name).queryByRole('textbox')).not.toBeInTheDocument();
     await userEvent.click(within(name).getByRole('button', { name: 'School' }));
     await userEvent.click(within(name).getByRole('button', { name: /Pin it/u }));
-    expect(await screen.findByRole('link', { name: 'Open School' })).toBeInTheDocument();
-    const people = JSON.parse(window.localStorage.getItem('vayu.people.v1') ?? '{}') as {
-      people?: { id: string; day: string }[];
+  };
+  const peopleStored = (): { people?: { id: string; name: string; age: number; day: string }[] } =>
+    JSON.parse(window.localStorage.getItem('vayu.people.v1') ?? '{}') as {
+      people?: { id: string; name: string; age: number; day: string }[];
     };
-    expect(people.people?.find((p) => p.id === 'me')?.day).toBe('school');
+
+  it('makes the work or school field a choice of the two, asks who goes to a school, and the day follows when it is you', async () => {
+    await chooseSchool();
+    const who = screen.getByRole('dialog', { name: 'Who goes to this school?' });
+    await userEvent.click(within(who).getByRole('button', { name: 'I do' }));
+    expect(await screen.findByRole('link', { name: 'Open School' })).toBeInTheDocument();
+    expect(peopleStored().people?.find((p) => p.id === 'me')?.day).toBe('school');
+  });
+
+  it('adds a child to the family when the school is theirs, with the school set as theirs and not as yours', async () => {
+    await chooseSchool();
+    const who = screen.getByRole('dialog', { name: 'Who goes to this school?' });
+    await userEvent.click(within(who).getByRole('button', { name: 'My child' }));
+    expect(await screen.findByRole('link', { name: 'Open School' })).toBeInTheDocument();
+    const form = screen.getByRole('dialog', { name: /Add the child who goes to School/u });
+    await userEvent.type(within(form).getByRole('textbox', { name: 'Name' }), 'Asha');
+    await userEvent.type(within(form).getByRole('spinbutton', { name: 'Age' }), '9');
+    await userEvent.click(within(form).getByRole('button', { name: 'Add person' }));
+    const people = peopleStored().people ?? [];
+    const asha = people.find((p) => p.name === 'Asha');
+    expect(asha).toMatchObject({ age: 9, day: 'school' });
+    // The owner's own day is not turned into a school day, and who Exposure looks at is unchanged.
+    expect(people.find((p) => p.id === 'me')?.day).not.toBe('school');
+    const spots = JSON.parse(window.localStorage.getItem('vayu.spots.v3') ?? '{}') as Record<
+      string,
+      { school?: { pin: { lat: number } } }
+    >;
+    expect(spots[asha?.id ?? '']?.school?.pin.lat).toBeCloseTo(28.4, 1);
   });
 
   it('adds a place from the plus square: where, then what to call it, then it is pinned under that name', async () => {

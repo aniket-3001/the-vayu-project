@@ -3,14 +3,28 @@ import { bestHour, lensSeries } from '../lens/model';
 import { hourName, hourOfDay, hourRange, isoDate } from '../today/time';
 import type { TodayData } from '../today/types';
 
-export type TaskKind = 'walk' | 'stay-in' | 'windows' | 'mask' | 'purifier' | 'grap';
+export type TaskKind =
+  | 'walk'
+  | 'stay-in'
+  | 'windows'
+  | 'mask'
+  | 'purifier'
+  | 'grap'
+  /** A school's morning assembly: inside or on the ground. */
+  | 'assembly'
+  /** A GRAP stage's meaning at a school. */
+  | 'school-grap'
+  /** How a child's school day looks in the air. */
+  | 'child';
 
 export interface Task {
-  readonly id: TaskKind;
+  readonly id: string;
   readonly kind: TaskKind;
   readonly title: string;
   readonly why: string;
   readonly points: number;
+  /** The place a tip is for, when the day has more than one: a school as well as home. */
+  readonly place?: string;
 }
 
 /** GRAP stage from the 24-hour CPCB AQI: I 201 to 300, II 301 to 400, III 401 to 450, IV above 450. 0 means none. */
@@ -48,6 +62,9 @@ export const POINTS: Readonly<Record<TaskKind, number>> = {
   mask: 10,
   purifier: 10,
   grap: 15,
+  assembly: 10,
+  'school-grap': 15,
+  child: 10,
 };
 
 const ROMAN = ['', 'I', 'II', 'III', 'IV'] as const;

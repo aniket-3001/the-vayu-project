@@ -4830,3 +4830,25 @@ h2 {
 .lens-best-advice {
   font-weight: 600;
 }
+
+.tip-place {
+  color: #2f6aa3;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+}
+.task-assembly,
+.task-child {
+  color: #2f6aa3;
+}
+.task-school-grap {
+  color: #c0541f;
+}
+
+/* A long name has room: only the cross sits in the corner now, and the name may take two lines */
+.pc-name {
+  display: -webkit-box;
+  padding-right: 40px;
+  white-space: normal;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}

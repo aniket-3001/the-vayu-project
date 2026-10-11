@@ -8,6 +8,7 @@ import { hourName } from '../today/time';
 import { airStore, useHistory } from '../air/store';
 import { AirError, AirLoading } from '../components/AirState';
 import { pinId, type Pin } from '../data/pins';
+import { samePlace } from '../places/roles';
 import { usePins } from '../places/usePins';
 import { Progress } from '../tasks/ui/TipsCard';
 import { ChipPair } from '../units/AirUnits';
@@ -533,6 +534,16 @@ export function ExposureScreen({
           onAdd={(details, newSpots) => {
             const id = add(details);
             saveSpots(window.localStorage, id, newSpots);
+            // Their places are pinned on My Air too, so each is a card there (a school with its assembly line).
+            for (const spot of Object.values(newSpots)) {
+              if (!pins.some((pin) => samePlace(pin, spot.pin)))
+                addPin({
+                  name: spot.pin.name,
+                  ...(spot.pin.detail === undefined ? {} : { detail: spot.pin.detail }),
+                  lat: spot.pin.lat,
+                  lng: spot.pin.lng,
+                });
+            }
             setAdding(false);
           }}
         />

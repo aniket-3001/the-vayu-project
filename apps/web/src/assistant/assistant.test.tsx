@@ -58,6 +58,20 @@ describe('the local answers', () => {
     expect(bad).not.toMatch(/No clean hour/iu);
   });
 
+  it('say to walk or exercise indoors when a GRAP stage applies, and still give the cleanest hour', async () => {
+    const text = await ask('When can I walk today?', {
+      ...base,
+      grapStage: 2,
+      best: { span: '4 to 5 pm', aqi: 180 },
+    });
+    expect(text).toMatch(/GRAP Stage II is likely today/u);
+    expect(text).toMatch(/Walk or exercise indoors today/u);
+    expect(text).toMatch(/cleanest hour is 4 to 5 pm, at AQI 180/u);
+    expect(text).toMatch(/unofficial/u);
+    // No stage: the best hour, as before, and no talk of GRAP.
+    expect(await ask('When can I walk today?', clean)).not.toMatch(/GRAP/u);
+  });
+
   it('answer about school, with the child by name, and point to official orders in a bad stage', async () => {
     const text = await ask('Is school safe today?');
     expect(text).toMatch(/Asha is on your list/u);

@@ -11,7 +11,11 @@ import { PlaceCard } from './PlaceCard';
 import { browserLocate, type Locate } from '../locate';
 import { PlaceSearch } from './PlaceSearch';
 import { addressOf } from '../../data/geocode';
-import { assignRole, clearRole, pinForRole } from '../roles';
+import { assignRole, clearRole, pinForRole, roleOfLabel } from '../roles';
+import { AddPerson } from '../../exposure/ui/AddPerson';
+import { addPerson, loadHousehold, saveHousehold } from '../../exposure/people';
+import { saveSpots } from '../../exposure/spots';
+import type { Pin } from '../../data/pins';
 import { AddPlaceSheet, type FoundPlace } from './AddPlaceSheet';
 import { SETUP_KINDS, SetupField, type SetupKind } from './SetupField';
 
@@ -47,8 +51,17 @@ export function PlacesPanel({
   );
   const settingUp = unset.length > 0;
 
-  /** Pins a place under its name, with its address, and makes it count in the day if the name is a role. */
-  const pinPlace = async (label: string, place: FoundPlace): Promise<void> => {
+  // A school was just set: who goes there, then, if it is a child, their name and age to add to the family.
+  const [whoGoes, setWhoGoes] = useState<
+    { readonly label: string; readonly place: FoundPlace } | undefined
+  >(undefined);
+  const [childAt, setChildAt] = useState<Pin | undefined>(undefined);
+
+  /**
+   * Pins a place under its name, with its address, and makes it count in the day if the name is a role. `assign`
+   * false pins it without putting it in the phone owner's own day, for a school a child goes to.
+   */
+  const pinPlace = async (label: string, place: FoundPlace, assign = true): Promise<Pin> => {
     // A place found by location has no address yet: look one up, and keep our words if there is none.
     const looked =
       place.detail === 'Your location' ? await address(place.lat, place.lng) : undefined;
@@ -60,11 +73,12 @@ export function PlacesPanel({
       .join(', ');
     const pin = { name: label, detail, lat: place.lat, lng: place.lng };
     add(pin);
-    assignRole(window.localStorage, label, {
-      ...pin,
-      id: `${place.lat.toFixed(2)},${place.lng.toFixed(2)}`,
-    });
+    const full: Pin = { ...pin, id: `${place.lat.toFixed(2)},${place.lng.toFixed(2)}` };
+    if (assign) assignRole(window.localStorage, label, full);
+    return full;
   };
+  const homePin = pinForRole('home', pins);
+  const homePlace: { home?: Pin } = homePin === undefined ? {} : { home: homePin };
   const [found, setFound] = useState<{ readonly lat: number; readonly lng: number } | undefined>(
     undefined,
   );
@@ -160,11 +174,93 @@ export function PlacesPanel({
           {...(search !== undefined ? { search } : {})}
           locate={locate}
           onSave={(label, place) => {
-            void pinPlace(label, place);
             setAdding(undefined);
+            // A school may be the owner's or a child's, so it is asked who goes there.
+            if (roleOfLabel(label) === 'school') setWhoGoes({ label, place });
+            else void pinPlace(label, place);
           }}
           onCancel={() => {
             setAdding(undefined);
+          }}
+        />
+      )}
+      {whoGoes !== undefined && (
+        <div
+          className="sheet-backdrop"
+          role="presentation"
+          onClick={(event) => {
+            if (event.target === event.currentTarget) setWhoGoes(undefined);
+          }}
+        >
+          <div
+            className="sheet here-sheet"
+            role="dialog"
+            aria-modal="true"
+            aria-label="Who goes to this school?"
+          >
+            <h2>Who goes to this school?</h2>
+            <p className="here-found">
+              <strong>{whoGoes.place.name}</strong>
+            </p>
+            <div className="choice-row">
+              <button
+                type="button"
+                className="choice"
+                onClick={() => {
+                  const chosen = whoGoes;
+                  setWhoGoes(undefined);
+                  void pinPlace(chosen.label, chosen.place, true);
+                }}
+              >
+                I do
+              </button>
+              <button
+                type="button"
+                className="choice"
+                onClick={() => {
+                  const chosen = whoGoes;
+                  setWhoGoes(undefined);
+                  void pinPlace(chosen.label, chosen.place, false).then(setChildAt);
+                }}
+              >
+                My child
+              </button>
+              <button
+                type="button"
+                className="choice"
+                onClick={() => {
+                  const chosen = whoGoes;
+                  setWhoGoes(undefined);
+                  void pinPlace(chosen.label, chosen.place, false);
+                }}
+              >
+                Just watch the air
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      {childAt !== undefined && (
+        <AddPerson
+          title={`Add the child who goes to ${childAt.name}`}
+          blurb="Their name and age add them to your family, so their school day shows in Exposure and in your tips."
+          pins={pins}
+          {...(search !== undefined ? { search } : {})}
+          preset={{
+            day: 'school',
+            places: { school: childAt, ...homePlace },
+          }}
+          onClose={() => {
+            setChildAt(undefined);
+          }}
+          onAdd={(details, spots) => {
+            // Added to the family without changing who Exposure is looking at.
+            const household = loadHousehold(window.localStorage);
+            const next = addPerson(household, details);
+            const created = next.people.find((p) => !household.people.some((o) => o.id === p.id));
+            saveHousehold(window.localStorage, { ...next, current: household.current });
+            if (created !== undefined) saveSpots(window.localStorage, created.id, spots);
+            setChildAt(undefined);
           }}
         />
       )}

@@ -5,6 +5,16 @@ import { walkAdviceFor } from './walkAdvice';
 const bad = (c: AssistantContext): boolean => c.aqi >= 151;
 
 function walk(c: AssistantContext): string {
+  // A GRAP stage, by our estimate, settles it: walk and exercise indoors. The cleanest hour is still given, for
+  // anyone who has to go out.
+  if (c.grapStage >= 1) {
+    const stage = `GRAP Stage ${['', 'I', 'II', 'III', 'IV'][c.grapStage] ?? String(c.grapStage)} is likely today at ${c.place} by our estimate (unofficial; the official order counts).`;
+    const outside =
+      c.best === undefined
+        ? ''
+        : ` If you must go out, the cleanest hour is ${c.best.span}, at AQI ${String(c.best.aqi)}: ${walkAdviceFor(c.best.aqi).long}`;
+    return `${stage} Walk or exercise indoors today.${outside}`;
+  }
   if (c.best === undefined) {
     return `I could not find a daylight hour ahead at ${c.place} to suggest. Right now it is AQI ${String(c.aqi)}, so keep any exercise to what you need.`;
   }
