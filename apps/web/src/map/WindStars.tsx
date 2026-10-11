@@ -11,8 +11,8 @@ const MAX_STARS = 1100;
 const LIFE_MIN = 90;
 const LIFE_MAX = 170;
 const TAIL = 44;
-/** Half the widest the sliver gets, in pixels: fine, so there can be many. */
-const WIDTH = 1.5;
+/** The side of the square at a star's head, in pixels; the ones behind it are smaller. */
+const SQUARE = 2;
 
 interface Star {
   lat: number;
@@ -28,7 +28,8 @@ export const WIND_MAX_ZOOM = 18;
 
 /**
  * Wind as little shooting stars, the way Windy draws it: each one is born at a random spot, shoots along the
- * wind with a tapering tail a little broader than a line, and fades in as it starts and out as it ends. They
+ * wind with a tapering tail, and fades in as it starts and out as it ends. Each is built from small cold blue-white
+ * squares, a larger one at the head and smaller, fainter ones behind it. They
  * follow the map as it pans and zooms, stay inside the area the wind data covers, hide round the back of the
  * globe, and hold still when the person prefers reduced motion.
  */
@@ -124,42 +125,25 @@ export function WindStars({
       const envelope = Math.sin(Math.PI * Math.min(1, s.age / s.life));
       if (envelope <= 0.02 || s.trail.length < 2) return;
       const speed = speedOf(field(s.lat, s.lng));
-      const strength = Math.min(1, 0.62 + speed / 14) * envelope;
+      const strength = Math.min(1, 0.7 + speed / 14) * envelope;
       const n = s.trail.length;
-      // A sliver, as Windy draws it: full width a little behind the head, tapering to a point at the tail.
-      // Drawn twice: the grey-blue body, then a narrower pale shine down its middle.
-      const sliver = (scale: number, fill: string): void => {
-        const left: { x: number; y: number }[] = [];
-        const right: { x: number; y: number }[] = [];
-        for (let i = 0; i < n; i++) {
-          const here = s.trail[i];
-          const before = s.trail[Math.max(0, i - 1)];
-          const after = s.trail[Math.min(n - 1, i + 1)];
-          if (here === undefined || before === undefined || after === undefined) return;
-          const dx = before.x - after.x;
-          const dy = before.y - after.y;
-          const length = Math.hypot(dx, dy) || 1;
-          const along = i / (n - 1);
-          // Round at the head, a long taper behind it.
-          const half = WIDTH * scale * (along < 0.12 ? 0.55 + along * 3.75 : (1 - along) ** 0.9);
-          left.push({ x: here.x - (dy / length) * half, y: here.y + (dx / length) * half });
-          right.push({ x: here.x + (dy / length) * half, y: here.y - (dx / length) * half });
-        }
-        ctx.beginPath();
-        left.forEach((p, i) => {
-          if (i === 0) ctx.moveTo(p.x, p.y);
-          else ctx.lineTo(p.x, p.y);
-        });
-        for (let i = right.length - 1; i >= 0; i--) {
-          const p = right[i];
-          if (p !== undefined) ctx.lineTo(p.x, p.y);
-        }
-        ctx.closePath();
-        ctx.fillStyle = fill;
-        ctx.fill();
-      };
-      sliver(1, `rgba(52, 72, 108, ${(strength * 0.85).toFixed(3)})`);
-      sliver(0.3, `rgba(226, 236, 252, ${(strength * 0.55).toFixed(3)})`);
+      // Built from squares, the way a pixel streak is: a square at the head, smaller ones behind it, each fainter than
+      // the last, so it still reads as a shooting star with a tail. Cold: white at the head, going to icy blue.
+      // Every second position is enough: the squares overlap, so the line has no gaps.
+      for (let i = n - 1; i >= 0; i -= 2) {
+        const p = s.trail[i];
+        if (p === undefined) continue;
+        const along = i / (n - 1);
+        const size = along < 0.45 ? SQUARE : 1;
+        const alpha = strength * (1 - along) ** 1.15;
+        if (alpha < 0.04) continue;
+        const x = Math.round(p.x - size / 2);
+        const y = Math.round(p.y - size / 2);
+        const r = Math.round(248 - along * 96);
+        const g = Math.round(252 - along * 52);
+        ctx.fillStyle = `rgba(${String(r)}, ${String(g)}, 255, ${alpha.toFixed(3)})`;
+        ctx.fillRect(x, y, size, size);
+      }
     };
 
     const tick = (): void => {

@@ -30,7 +30,7 @@ describe('the fog', () => {
 
   it('is a haze: even where we are sure it is well short of solid', () => {
     const fog = buildFog(monitors, asia, W, H);
-    expect(Math.max(...fog.alpha)).toBeLessThanOrEqual(215);
+    expect(Math.max(...fog.alpha)).toBeLessThanOrEqual(240);
     const out = new Uint8ClampedArray(W * H * 4);
     paintFog(fog, out, 0);
     let lit = 0;
@@ -43,7 +43,7 @@ describe('the fog', () => {
     expect(solid / lit).toBeLessThan(0.04);
   });
 
-  it('is in the washed-out colours of the AQI scale, graded smoothly between levels', () => {
+  it('is in the AQI scale’s colours made more vivid, graded smoothly between levels', () => {
     const fog = buildFog(monitors, asia, W, H);
     const colours = new Set<string>();
     for (let i = 0; i < fog.alpha.length; i += 7) {

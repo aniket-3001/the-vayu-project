@@ -2,8 +2,8 @@ import { gradientColour, mercatorY, sampleField, type Window } from './field';
 import type { Monitor } from './monitors';
 
 /**
- * The air as a translucent fog in the AQI scale's washed-out colours, blended smoothly from one level to the next, with
- * a fine grain through it like dust hanging in the air. It is light enough that the wind lines show through it. The
+ * The air as a translucent fog in the AQI scale's colours (made more vivid than the scale's pastels), blended smoothly
+ * from one level to the next, with a fine grain through it like dust hanging in the air. The wind lines show over it. The
  * grain stirs very slightly, a pixel or so every moment, so where two kinds of air meet they seem to mix.
  */
 export interface Fog {
@@ -20,8 +20,20 @@ export interface Fog {
 
 /** The picture is worked out on a coarse grid this many pixels across, and stretched up smoothly. */
 const COARSE = 6;
-/** The strongest the fog is, out of 255: it is a haze, so the map shows through. */
-const STRONGEST = 215;
+/** The strongest the fog is, out of 255: strong enough for the colours to read, with the map still showing through. */
+const STRONGEST = 240;
+/** How much more vivid than the scale's own pastels the fog is drawn: the colours are not washed out. */
+const VIVID = 1.45;
+
+/** A colour pushed away from its own grey by `k`, so it is more vivid and the same lightness. */
+const vivid = (
+  [r, g, b]: readonly [number, number, number],
+  k: number,
+): readonly [number, number, number] => {
+  const grey = 0.299 * r + 0.587 * g + 0.114 * b;
+  const push = (c: number): number => Math.max(0, Math.min(255, Math.round(grey + (c - grey) * k)));
+  return [push(r), push(g), push(b)];
+};
 
 /** A repeatable number between 0 and 1 for a grain cell. */
 const cell = (x: number, y: number): number => {
@@ -70,7 +82,7 @@ export function buildFog(
         weighted += w * c * (aqi[i] ?? 0);
       }
       if (sure < 0.02) continue;
-      const [r, g, b] = gradientColour(weighted / sure);
+      const [r, g, b] = vivid(gradientColour(weighted / sure), VIVID);
       const at = y * width + x;
       rgb[at * 3] = r;
       rgb[at * 3 + 1] = g;
