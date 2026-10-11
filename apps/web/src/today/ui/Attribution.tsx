@@ -1,5 +1,6 @@
 import { MapPin } from 'lucide-react';
 import type { TodayData } from '../types';
+import { weekActive } from '../../week/active';
 import { Pill } from './Chip';
 
 const age = (minutes: number): string => {
@@ -15,14 +16,25 @@ const age = (minutes: number): string => {
  */
 export function Attribution({ data }: { readonly data: TodayData }): React.JSX.Element {
   const p = data.provenance;
+  // On a day of the recorded week the reading is real but not current, and the hours after it were recorded, not modelled.
+  const recorded = weekActive();
   return (
     <section className="attribution" aria-label="Where this comes from">
-      <Pill>{p.mode === 'live' ? 'Live' : p.mode === 'model' ? 'Estimate' : 'Sample data'}</Pill>
+      <Pill>
+        {recorded
+          ? 'Recorded'
+          : p.mode === 'live'
+            ? 'Live'
+            : p.mode === 'model'
+              ? 'Estimate'
+              : 'Sample data'}
+      </Pill>
       {p.stationName !== undefined && p.distanceKm !== undefined ? (
         <p>
           <MapPin size={16} strokeWidth={1.75} aria-hidden="true" />
           <span>
-            {p.stationName}, {Math.round(p.distanceKm * 10) / 10} km away · {age(p.ageMinutes)}
+            {p.stationName}, {Math.round(p.distanceKm * 10) / 10} km away ·{' '}
+            {recorded ? 'as recorded' : age(p.ageMinutes)}
           </span>
         </p>
       ) : (
@@ -36,7 +48,11 @@ export function Attribution({ data }: { readonly data: TodayData }): React.JSX.E
         </p>
       )}
       {p.mode === 'live' && (
-        <p className="muted">Real monitor readings; the forecast hours are a model.</p>
+        <p className="muted">
+          {recorded
+            ? 'Real monitor readings from the archive; the hours after this moment are what was recorded next, shown as a forecast would be.'
+            : 'Real monitor readings; the forecast hours are a model.'}
+        </p>
       )}
     </section>
   );

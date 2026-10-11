@@ -3,6 +3,7 @@ import { readDemo } from '../demo/state';
 import { firesAffecting, fetchFires, type Fire } from '../map/fires';
 import { recall, remember } from '../map/live';
 import { API_URL } from '../config';
+import { weekScene } from '../week/active';
 
 interface Seen {
   readonly count: number;
@@ -29,7 +30,7 @@ export function useFires(
     return isSeen(saved) ? saved : undefined;
   });
   useEffect(() => {
-    if (readDemo()?.fires !== undefined) return undefined;
+    if (readDemo()?.fires !== undefined || weekScene() !== undefined) return undefined;
     let current = true;
     fetchFires(API_URL, fetchImpl).then(
       (found) => {
@@ -50,6 +51,10 @@ export function useFires(
     // A demo scenario states the count that is near.
     const staged = readDemo()?.fires;
     if (staged !== undefined) return staged;
+    // A recorded day counts the fires recorded for it, never today's.
+    const recorded = weekScene()?.fires;
+    if (recorded !== undefined && lat !== undefined && lng !== undefined)
+      return firesAffecting(recorded, { lat, lng }, windFromDeg).length;
     if (seen === undefined || lat === undefined || lng === undefined) return undefined;
     return firesAffecting(seen.fires, { lat, lng }, windFromDeg).length;
   }, [seen, lat, lng, windFromDeg]);

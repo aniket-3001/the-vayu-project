@@ -36,6 +36,7 @@ import {
   type Role,
 } from '../roles';
 import { usePins } from '../usePins';
+import { weekActive } from '../../week/active';
 import { AddPlaceSheet, type FoundPlace } from './AddPlaceSheet';
 import { PlaceCard, markDragEnd } from './PlaceCard';
 import { SETUP_KINDS, SetupField, type SetupKind } from './SetupField';
@@ -392,8 +393,10 @@ export function PlacesPanel({
           </>
         ) : (
           <>
-            <Pill>Live</Pill> Each reading is the nearest monitor within 25 km, with how far and how
-            old. Where there is none, it is a regional estimate.{' '}
+            <Pill>{weekActive() ? 'Recorded' : 'Live'}</Pill>{' '}
+            {weekActive()
+              ? 'Each reading is the nearest recorded monitor within 40 km, with how far. Where there is none, there is no reading.'
+              : 'Each reading is the nearest monitor within 25 km, with how far and how old. Where there is none, it is a regional estimate.'}{' '}
           </>
         )}
         Places are saved on this device only (up to {MAX_PINS}). Drag a card to put it where you

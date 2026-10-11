@@ -7,6 +7,7 @@ import { useHousehold } from '../exposure/useExposure';
 import { readDemo } from '../demo/state';
 import { airStore, useToday } from '../air/store';
 import { API_URL } from '../config';
+import { weekActive } from '../week/active';
 import { useLivePin } from '../places/liveLocation';
 import { usePins } from '../places/usePins';
 import { Pill } from '../today/ui/Chip';
@@ -549,7 +550,16 @@ export function AssistantFab({
                     </>
                   ) : (
                     <>
-                      <Pill>{lang === 'hi' ? 'लाइव' : 'Live'}</Pill> {t.liveNote}
+                      <Pill>
+                        {weekActive()
+                          ? lang === 'hi'
+                            ? 'रिकॉर्ड किया हुआ'
+                            : 'Recorded'
+                          : lang === 'hi'
+                            ? 'लाइव'
+                            : 'Live'}
+                      </Pill>{' '}
+                      {t.liveNote}
                     </>
                   )}
                 </p>

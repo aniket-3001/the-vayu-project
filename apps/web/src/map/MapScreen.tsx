@@ -19,6 +19,7 @@ import { MapView } from './MapView';
 import { WindStars } from './WindStars';
 import { makeWindField } from './windTexture';
 import { useMapData } from './useMapData';
+import { weekActive } from '../week/active';
 
 /** Where the air is bad, and where it is going: a flat map of readings and fires, or a globe with the wind on it. */
 export function MapScreen(): React.JSX.Element {
@@ -30,6 +31,8 @@ export function MapScreen(): React.JSX.Element {
   const data = useMapData();
   const stations = useStations();
   const sample = airStore().kind === 'sample';
+  // A recorded day of the past: what its monitors, fires and wind were then, not now.
+  const recorded = weekActive();
   const monitors = useMemo(
     () =>
       stations.status === 'ready' ? monitorsFromStations(stations.data, Date.parse(nowIso())) : [],
@@ -118,9 +121,11 @@ export function MapScreen(): React.JSX.Element {
               <p className="legend-pills">
                 {sample && data.fires === undefined && <Pill>Sample data</Pill>}
                 {byModel && <Pill>Model estimate</Pill>}
-                {((!sample && monitors.length > 0) ||
-                  data.windLive ||
-                  data.fires !== undefined) && <Pill>Live</Pill>}
+                {recorded && <Pill>Recorded</Pill>}
+                {!recorded &&
+                  ((!sample && monitors.length > 0) ||
+                    data.windLive ||
+                    data.fires !== undefined) && <Pill>Live</Pill>}
               </p>
               <DetectLocation />
             </div>
@@ -140,7 +145,9 @@ export function MapScreen(): React.JSX.Element {
                           ? byModel
                             ? 'No monitor has reported in the last six hours, so none are shown. The colour is the regional air model (CAMS via Open-Meteo): an estimate, not a measurement.'
                             : 'No monitor has reported in the last six hours, so none are shown.'
-                          : `${String(monitors.length)} monitors worldwide with a PM2.5 reading in the last six hours (OpenAQ). Each is a dot; zoom in for its number.`}
+                          : recorded
+                            ? `${String(monitors.length)} Delhi monitors with a PM2.5 reading in the six hours before this recorded moment (OpenAQ archive). Each is a dot; zoom in for its number.`
+                            : `${String(monitors.length)} monitors worldwide with a PM2.5 reading in the last six hours (OpenAQ). Each is a dot; zoom in for its number.`}
                     </span>
                   )}
                   {shown.gradient && (
@@ -159,11 +166,13 @@ export function MapScreen(): React.JSX.Element {
                   )}
                   {shown.wind && (
                     <span>
-                      {data.windLive
-                        ? 'Wind: ICON and GFS models via Open-Meteo, right now: close detail over south Asia, coarser elsewhere.'
-                        : sample
-                          ? 'Wind is a sample flow.'
-                          : 'The wind could not be loaded just now, so none is shown.'}
+                      {recorded
+                        ? 'Wind: what was recorded at central Delhi that hour (Open-Meteo archive), drawn the same across the map.'
+                        : data.windLive
+                          ? 'Wind: ICON and GFS models via Open-Meteo, right now: close detail over south Asia, coarser elsewhere.'
+                          : sample
+                            ? 'Wind is a sample flow.'
+                            : 'The wind could not be loaded just now, so none is shown.'}
                     </span>
                   )}
                 </p>

@@ -9,6 +9,7 @@ import {
 } from './live';
 import { API_URL } from '../config';
 import { readDemo } from '../demo/state';
+import { weekScene } from '../week/active';
 import { airStore } from '../air/store';
 import { fetchFires, type Fire } from './fires';
 import { usAqi } from '@vayu/core';
@@ -43,6 +44,17 @@ export function useMapData(fetchImpl: typeof fetch = fetch): MapData {
     // Only the prototype's source has made-up map data; the deployed app starts empty.
     const made = airStore().madeUpMap();
     const staged = readDemo()?.fires;
+    // A recorded day draws its own wind and fires, and asks for nothing.
+    const week = weekScene();
+    if (week !== undefined)
+      return {
+        wind: week.wind,
+        air: [],
+        modelAir: [],
+        windLive: true,
+        fires: week.fires.length,
+        fireList: week.fires,
+      };
     return {
       wind: isWind(wind) ? wind : (made?.wind ?? []),
       air: made?.air ?? [],
@@ -57,6 +69,7 @@ export function useMapData(fetchImpl: typeof fetch = fetch): MapData {
   const missing = useRef({ wind: !data.windLive });
 
   useEffect(() => {
+    if (weekScene() !== undefined) return undefined;
     let current = true;
     const apply = (patch: Partial<MapData>): void => {
       if (current) setData((now) => ({ ...now, ...patch }));

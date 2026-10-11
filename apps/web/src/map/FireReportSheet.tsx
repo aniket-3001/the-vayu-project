@@ -2,6 +2,7 @@ import { Flame, X } from 'lucide-react';
 import { useState } from 'react';
 import { airStore } from '../air/store';
 import { API_URL } from '../config';
+import { weekActive } from '../week/active';
 import {
   FIRE_REPORT_WORDS,
   sentWords,
@@ -10,8 +11,12 @@ import {
   type FireReportSent,
 } from './fireReport';
 
-/** The deployed app sends to our API; the prototype and the tests keep it on the device. */
-const reportUrl = (): string | undefined => (airStore().kind === 'live' ? API_URL : undefined);
+/**
+ * The deployed app sends to our API; the prototype, the tests and the recorded week keep it on the device: a report
+ * made on a day of the past must not reach anyone.
+ */
+const reportUrl = (): string | undefined =>
+  airStore().kind === 'live' && !weekActive() ? API_URL : undefined;
 
 /**
  * Report a fire: where it is (and what the satellite saw, if it was picked on the map), a line to add if the person

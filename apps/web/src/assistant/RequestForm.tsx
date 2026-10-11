@@ -2,6 +2,7 @@ import { ArrowLeft, Check } from 'lucide-react';
 import { useState } from 'react';
 import { airStore } from '../air/store';
 import { API_URL } from '../config';
+import { weekActive } from '../week/active';
 import {
   EMPTY_DRAFT,
   WANTS,
@@ -16,8 +17,9 @@ import {
   type Who,
 } from './requests';
 
-/** The deployed app sends to our API; the prototype and the tests keep it on the device. */
-const requestUrl = (): string | undefined => (airStore().kind === 'live' ? API_URL : undefined);
+/** The deployed app sends to our API; the prototype, the tests and the recorded week keep it on the device. */
+const requestUrl = (): string | undefined =>
+  airStore().kind === 'live' && !weekActive() ? API_URL : undefined;
 
 const ORG_LABELS: Readonly<Record<Exclude<Who, 'person'>, string>> = {
   school: 'School name',

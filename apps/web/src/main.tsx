@@ -18,6 +18,9 @@ if (import.meta.env.VITE_DEMO === '1') {
   void import('./demo/entry').then(({ startDemo }) => {
     startDemo(root);
   });
+} else if (window.location.hash.startsWith('#/week')) {
+  // The recorded week: seven real days played through the same app, opened by an unlisted address.
+  void import('./week/entry').then(({ startWeek }) => startWeek(root));
 } else {
   // The deployed app reads the real air from our API on AWS.
   setAirStoreFactory(() => new AirStore(liveAirSource(API_URL)));
