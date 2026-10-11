@@ -4,14 +4,14 @@ All taken from the live site (https://d3lmq1mze2gup3.cloudfront.net) on 11 Octob
 
 | File                                      | What it shows                                                                                                                                        |
 | ----------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `01-recorded-week-grap-iv-phone.png`      | The recorded days on 22 Dec 2025: a GRAP Stage IV alert at the top (our estimate), the day chips above                                               |
+| `01-recorded-week-grap-iv-phone.png`      | The recorded days on 21 Oct 2025, the day after Diwali: a GRAP Stage IV alert at the top (our estimate, from the last 24 hours' average AQI 500), the day chips above                                               |
 | `02-my-air-after-diwali-desktop.png`      | My Air on 21 Oct 2025, the morning after Diwali                                                                                                      |
 | `02b-place-insights-desktop.png`          | A place page the same day: AQI 500, the nearest monitor's name, distance and "as recorded", and "Insights for this place"                            |
 | `03-map-stubble-fires-phone.png`          | The map on 31 Oct 2025: NASA satellite fire detections over Punjab and Haryana, the wind, the colour between monitors                                |
-| `04-exposure-phone.png`                   | Exposure: the air a person breathed, hour by hour, in the recorded days                                                                              |
-| `05-air-lens-phone.png`                   | AIR Lens: the air as particles in front of the camera                                                                                                |
-| `06-assistant-answer-phone.png`           | The assistant's answer, from fixed rules. The small print shows the cap working: when the assistant's daily limit is reached, the rules still answer |
-| `07-live-my-air-phone.png`                | My Air on live data (today), four places set                                                                                                         |
+| `04-exposure-phone.png`                   | Exposure on 9 Nov 2025: the air a person breathed, hour by hour, in the recorded days                                                                              |
+| `05-air-lens-phone.png`                   | AIR Lens on 9 Nov 2025: the air as particles in front of the camera                                                                                                |
+| `06-assistant-answer-phone.png`           | The assistant's answer on 9 Nov 2025, from fixed rules (GRAP Stage III likely at Home, the cleanest hour, a mask) |
+| `07-live-my-air-phone.png`                | My Air on live data (today), the four places of the Use preset button                                                                                                         |
 | `08-architecture-scene-1.png` to `-5.png` | The five scenes of `docs/architecture-animated.html`                                                                                                 |
 
 ## The cleaner and the unit (taken by me, in `build/`)

@@ -64,18 +64,18 @@ Checked against the deployed stack and the live address on 11 October 2026. Ever
 
 ## The recorded days (live)
 
-Open `/#/week` and the same app runs on seven real days instead of on the air of this minute: 6 Oct, 7 Oct, 21 Oct,
-31 Oct, 12 Nov and 22 Dec 2025, and 30 Mar 2026. Each day is "now" at 8 am India time, with the days before it as
+Open `/#/week` and the same app runs on seven real days instead of on the air of this minute: 7 Oct, 21 Oct, 31 Oct, 9 Nov and
+22 Dec 2025, and 23 Jan and 30 Mar 2026. Each day is "now" at 8 am India time, with the days before it as
 history and the days after it shown as the forecast would be. What is real: PM2.5 and PM10 from four Delhi monitors
 (OpenAQ public archive), weather (Open-Meteo archive), gases (the CAMS model through Open-Meteo), fires (NASA FIRMS
 VIIRS, north-west box). `scripts/record-week.mjs` writes `apps/web/src/week/recorded.json` (about 235 KB, its own
 chunk, loaded only on this address). Cleaning is two rules and nothing else: a feed value of 999 or more, or a PM10
 below the same hour's PM2.5, is dropped; and an hour in which one monitor reads over three times the median of the
-others (at least two others reporting, and itself over 200 for PM2.5) is dropped as a lone spike (81 readings across
+others (at least two others reporting, and itself over 200 for PM2.5) is dropped as a lone spike (86 readings across
 all seven days, counted in the file). A monitor with no reading in the six hours before the moment, or none within 40
 km, gives no air: the app says so.
 
-- It starts with two places, Home and a Park, and one person who is mostly at home: no school and no office, so each day is about the air itself (the GRAP stage, fires, rain, wind, the best hour for a walk, the windows). Stage IV appears, by the app's own estimate, on 22 Dec (it needs the monitor's PM10 and the 24-hour history). It is our unofficial estimate, as everywhere in the app; the official order for those dates is not claimed.
+- It starts with two places, Home and a Park, and one person who is mostly at home: no school and no office, so each day is about the air itself (the GRAP stage, fires, rain, wind, the best hour for a walk, the windows). Home is a spot near R K Puram and the Park is Lodhi Garden. The GRAP stage is the app's own estimate from the last 24 hours of PM2.5 and the monitor's PM10: Stage IV on 21 Oct, III on 9 Nov, II on 31 Oct and 22 Dec and 23 Jan (Home), I or none on the others. Checked against the monitors' own PM10 on 24 station-days, with no day in the wrong stage. It is our unofficial estimate, as everywhere in the app; the official order for those dates is not claimed.
 - Nothing leaves the page: places, people and anything added live in memory (the person's own saved data is not read or
   written); fire reports and requests are kept on the device; the fires, wind and clock come from the recording. The
   assistant and the voice are the real AWS ones, answering about the recorded day.

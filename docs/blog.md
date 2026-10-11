@@ -2,21 +2,21 @@
 
 Delhi has plenty of air-quality numbers. A city figure cannot see one street or one room, and none says what to do. The Vayu Project gives one answer for one place, with the monitor's name, its distance and the age of the reading beside it. It is free, has no sign-up, and opens now: https://d3lmq1mze2gup3.cloudfront.net.
 
-Picture a parent in Dwarka at 8 am on 21 October 2025, the morning after Diwali. The phone shows one city-wide Air Quality Index (AQI) figure. The child's bag is by the door. The question is small: do we walk to school, or not? A city figure cannot answer it. The monitor 2.3 km from Home can.
+Picture a parent in South Delhi at 8 am on 21 October 2025, the morning after Diwali. The phone shows one city-wide Air Quality Index (AQI) figure. The child's bag is by the door. The question is small: do we walk to school, or not? A city figure cannot answer it. The monitor 3.8 km from Home can.
 
-The parent is a picture I use to keep the app honest. The morning is real. The nearest monitor that day, NSIT Dwarka, 2.3 km from the place I had set as "Home", read an AQI of 500, the top of the scale, with PM2.5 (fine particles) at 461 µg/m³. The app added what to do: stay in where you can, and if you must go out, 5 to 6 pm is the cleanest daylight hour, at AQI 74.
+The parent is a picture I use to keep the app honest. The morning is real. The nearest monitor with a fresh reading that day, Lodhi Road, 3.8 km from the spot I had set as "Home" (near R K Puram), read an AQI of 500, the top of the scale, with PM2.5 (fine particles) at 980 µg/m³. The app added what to do: stay in where you can, and if you must go out, 4 to 5 pm is the cleanest daylight hour, at AQI 134.
 
 ![Home on the recorded morning after Diwali: AQI 500, the monitor's name and distance, and advice for this place](images/02b-place-insights-desktop.png)
-_The recorded morning after Diwali, 21 Oct 2025, 8 am. The card names the monitor (NSIT Dwarka, 2.3 km away) and says "as recorded". The alert row, "GRAP Stage II likely today", is our estimate (GRAP is Delhi's Graded Response Action Plan, the official pollution stages), and the footer says "Our estimate, not an order. Official orders come first."_
+_The recorded morning after Diwali, 21 Oct 2025, 8 am. The card names the monitor (Lodhi Road, 3.8 km away) and says "as recorded". The alert row, "GRAP Stage IV likely today", is our estimate from the last 24 hours' average AQI of 500 (GRAP is Delhi's Graded Response Action Plan, the official pollution stages), and the footer says "Our estimate, not an order. Official orders come first."_
 
 ## What it is
 
 You add the places you care about: Home, a school, an office, a park. A usual dashboard shows the city's number. Each card here shows the air from the monitor nearest that place, with its name, distance and age, the weather, and what to do about it.
 
-Beyond My Air, the recorded days plays seven real days. The map shows monitors, wind and satellite fires. AIR Lens draws the air as particles in front of your camera. The assistant answers questions. Exposure adds up what a person breathed, hour by hour. "Nearest" means the nearest monitor with a fresh reading, so on the day I took the screenshot, Home in Dwarka showed a monitor in Vasant Kunj.
+Beyond My Air, the recorded days plays seven real days. The map shows monitors, wind and satellite fires. AIR Lens draws the air as particles in front of your camera. The assistant answers questions. Exposure adds up what a person breathed, hour by hour. "Nearest" means the nearest monitor with a fresh reading, so on the day I took the live screenshot, Home in Dwarka showed a monitor in Vasant Kunj, 12 km away, and said so.
 
 ![Six screens of the app](images/collage-features.jpg)
-_The six screens. Top row: My Air on live data with four places set (each card names the nearest monitor, its distance and the age of its reading); the recorded days on 22 Dec 2025, where the alerts include GRAP Stage IV, "by our estimate"; the map on 31 Oct 2025 with NASA satellite fire detections and wind. Bottom row: AIR Lens; the assistant; Exposure. All but My Air on live data are from the recorded days._
+_The six screens. Top row: My Air on live data with four places set (each card names the nearest monitor, its distance and the age of its reading); the recorded days on 21 Oct 2025, where the alert is GRAP Stage IV, "by our estimate"; the map on 31 Oct 2025 with NASA satellite fire detections and wind. Bottom row: AIR Lens; the assistant; Exposure. All but My Air on live data are from the recorded days._
 
 A small measuring unit, an ESP32-S3 board with a Sensirion SPS30 laser particle sensor, adds the air in one room over Bluetooth. I built the whole thing alone, with an AI coding assistant (Claude Code). I chose what it should do and what it must never claim. The assistant wrote most of the code, and I read every change and sent it back when it was wrong. I wired, flashed and tested the unit and built the cleaner myself. The stack runs in my own AWS account.
 
@@ -32,9 +32,9 @@ A GRAP stage in the app is my estimate from the last 24 hours, and the official 
 
 ## It is all real data
 
-There is no demo mode: the nearest thing is a Use preset button that loads a sample family's places, and the air at them is still read live. The live app reads real monitors (OpenAQ), weather, forecast and wind (Open-Meteo, with MET Norway as a second source for wind) and satellite fires (NASA FIRMS), through my own API on AWS. To show every feature without waiting for a bad day, the app also plays a recorded days (https://d3lmq1mze2gup3.cloudfront.net/#/week): seven real days, from a rainy day in October to the smog of December and a windy day in March, each played as if it were today at 8 am. Every screen says "recorded". The air comes from four Delhi monitors in OpenAQ's public archive, and the weather and fires are archives too.
+There is no demo mode: the nearest thing is a Use preset button that loads a sample family's places, and the air at them is still read live. The live app reads real monitors (OpenAQ), weather, forecast and wind (Open-Meteo, with MET Norway as a second source for wind) and satellite fires (NASA FIRMS), through my own API on AWS. To show every feature without waiting for a bad day, the app also plays a recorded days (https://d3lmq1mze2gup3.cloudfront.net/#/week): seven real days, from a rainy day in October to the smog of December, a heavy rain in January and a windy day in March, each played as if it were today at 8 am. Every screen says "recorded". The air comes from four Delhi monitors in OpenAQ's public archive, and the weather and fires are archives too.
 
-The archive had mess in it, so I cleaned it with two written rules. The first drops any value of 999 or more (the feed's "out of range"), or a PM10 below the same hour's PM2.5, which cannot happen. The second drops an hour when one monitor reads over three times the median of the others. The file counts what the second rule removed: 81 lone spikes across the seven days. I changed nothing else. In the recorded days the map's wind is one recorded wind for central Delhi, drawn the same everywhere, and the map says so.
+The archive had mess in it, so I cleaned it with two written rules. The first drops any value of 999 or more (the feed's "out of range"), or a PM10 below the same hour's PM2.5, which cannot happen. The second drops an hour when one monitor reads over three times the median of the others. The file counts what the second rule removed: 86 lone spikes across the seven days. I changed nothing else. In the recorded days the map's wind is one recorded wind for central Delhi, drawn the same everywhere, and the map says so.
 
 ## The unit, and where it stops
 
@@ -98,7 +98,7 @@ Other fixes are in [`docs/learning-log.md`](learning-log.md).
 
 ## Numbers
 
-- 1,243 tests pass in one command, `make prove`, which also runs lint, types, `cdk synth`, and a check that the deployed bundle holds no prototype code.
+- 1,255 tests pass in one command, `make prove`, which also runs lint, types, `cdk synth`, and a check that the deployed bundle holds no prototype code.
 - The stack costs about $4.50 a month idle, at list prices. An assistant question costs about $0.0008 (almost all of it the guardrail), and a visit at most $0.00014.
 - Caps: 40 assistant questions per caller and 500 a day, 12,000 spoken characters per caller and 60,000 a day, 25 API requests a second. One parameter switches the assistant off.
 

@@ -12,7 +12,7 @@ AWS Air track submission, 8 to 11 October 2026.
 
 Every number in the live app comes from a real source (OpenAQ monitors, Open-Meteo weather, forecast and wind, MET Norway wind as a second source, NASA FIRMS fires) through our own API on AWS. There is no demo mode and no made-up number in the deployed bundle; `make prove` fails if one gets in. **Use preset** on My Air (shown only when you have no places) loads a family with Home, School, Office and Park so you can see a filled profile at once: it sets places and people, and every reading at them is still the real, live one.
 
-**The recorded days is real too.** Open `/#/week` and the same app plays seven real days from last winter, one at a time, as if each were today at 8 am: 6 Oct 2025 (rain), 7 Oct (the clean day after), 21 Oct (after Diwali), 31 Oct (stubble fires), 12 Nov (smog), 22 Dec (GRAP Stage IV by our estimate) and 30 Mar 2026 (wind). The air comes from four Delhi monitors in OpenAQ's public archive, the weather from Open-Meteo's archive, the fires from NASA FIRMS. It is there so you can see every feature without waiting for a bad day, and the page says it is recorded. Cleaning is two rules, written in the file and counted (see [`docs/AS-BUILT.md`](docs/AS-BUILT.md)).
+**The recorded days is real too.** Open `/#/week` and the same app plays seven real days from last winter, one at a time, as if each were today at 8 am: 7 Oct 2025 (rain, and the cleanest of the seven), 21 Oct (the day after Diwali, GRAP Stage IV by our estimate), 31 Oct (stubble fires), 9 Nov (smog, Stage III), 22 Dec (smog, Stage II), 23 Jan 2026 (heavy rain clears the smog overnight) and 30 Mar (wind). The air comes from four Delhi monitors in OpenAQ's public archive, the weather from Open-Meteo's archive, the fires from NASA FIRMS. It is there so you can see every feature without waiting for a bad day, and the page says it is recorded. Cleaning is two rules, written in the file and counted (see [`docs/AS-BUILT.md`](docs/AS-BUILT.md)).
 
 The only made-up days in the repository are in the separate prototype build (`npm run build:demo`: device frames, scenarios, a simulated Bluetooth unit), which is never uploaded and is labelled "Sample data" wherever it shows a number.
 
@@ -98,7 +98,7 @@ Needs Node 22 or later.
 
 ```bash
 npm ci
-make prove     # lint, types, every test (1,243), cdk synth, and a check that the deployed bundle holds no prototype code
+make prove     # lint, types, every test (1,255), cdk synth, and a check that the deployed bundle holds no prototype code
 make local-api # in one terminal: the API on your machine (real monitors need OPENAQ_API_KEY in the environment)
 make local     # in another: the app on your machine, reading it
 ```

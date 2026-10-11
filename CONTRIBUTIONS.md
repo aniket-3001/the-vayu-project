@@ -29,7 +29,7 @@ I built this alone, and I used an AI coding assistant for most of the typing. Th
 - **Claude Code** wrote and tested most of the code, the firmware and the documents in this repository, in long working
   sessions, from my instructions: the app and its tests, the API, the CDK stack, the Hindi answers' framework, the recorded
   week and its recording script, the Bluetooth link, the live chart, and this documentation. Every change went through
-  `make prove` (lint, types, 1,243 tests, `cdk synth`, a bundle check) before I accepted it.
+  `make prove` (lint, types, 1,255 tests, `cdk synth`, a bundle check) before I accepted it.
 - **At run time**, Amazon Bedrock (Nova Micro, behind a guardrail) only rewords answers that fixed rules already decided, and
   every number in its wording is checked. It has no tools and cannot act. Amazon Polly reads answers aloud. See
   `docs/AGENT-BOUNDARIES.md`.
