@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { sampleDay } from '../today/sample';
+import { sampleDay } from '../testing/sampleDays';
 import {
   DIAL_HOURS,
   bestHour,

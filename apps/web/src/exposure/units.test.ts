@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { Device } from '../devices/devices';
-import { SAMPLE_UNITS } from '../air/sampleExposure';
+import { SAMPLE_UNITS } from '../testing/sampleExposure';
 import { allUnits, ownUnits, unitNear } from './units';
 import { sampleSpotsFor } from './spots';
 

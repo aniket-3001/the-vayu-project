@@ -4,7 +4,7 @@ import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { answerFromRules } from '@vayu/core';
-import { sampleDay } from '../today/sample';
+import { sampleDay } from '../testing/sampleDays';
 import { apiAssistant } from './api';
 import { AssistantFab } from './AssistantFab';
 import { spanWords, buildContext } from './context';

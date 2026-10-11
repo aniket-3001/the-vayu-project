@@ -9,7 +9,6 @@ export default tseslint.config(
     ignores: [
       '**/node_modules/**',
       '**/dist/**',
-      '**/dist-demo/**',
       '**/cdk.out/**',
       // Hand-run browser checks against the live site, not part of the build.
       'tests/live-check/**',

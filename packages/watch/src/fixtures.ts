@@ -1,6 +1,6 @@
 import type { Alert } from '@vayu/contracts';
 
-/** A minimal, contract-valid alert for tests and the demo scenarios. */
+/** A minimal, contract-valid alert for tests and the scenarios. */
 export function fixtureAlert(overrides: Partial<Alert> = {}): Alert {
   return {
     schemaVersion: 1,

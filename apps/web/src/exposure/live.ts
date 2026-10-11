@@ -26,7 +26,7 @@ export function saveLive(storage: Storage, log: LiveLog): void {
   }
 }
 
-/** The hour a fix belongs to. All the prototype's data is for the sample moment, so a fix lands on its hour. */
+/** The hour a fix belongs to. In the tests all the data is for the sample moment, so a fix lands on its hour. */
 export const currentHour = (): number => hoursSoFar(today());
 
 /** Records where the person is for the current hour; a later fix in the same hour replaces the earlier one. */

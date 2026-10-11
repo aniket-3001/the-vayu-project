@@ -4,7 +4,6 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { alertsFor } from '../alerts/model';
 import { useFires } from '../alerts/useFires';
 import { useHousehold } from '../exposure/useExposure';
-import { readDemo } from '../demo/state';
 import { airStore, useToday } from '../air/store';
 import { API_URL } from '../config';
 import { writeUrl } from './writeUrl';
@@ -50,11 +49,11 @@ interface Message {
   readonly link?: { readonly to: string; readonly label: string };
 }
 
-/** The deployed app asks our API; the prototype and the tests answer from the rules alone. */
+/** The deployed app asks our API; the tests answer from the rules alone. */
 const configured = (): AssistantSource =>
   airStore().kind === 'live' ? apiAssistant(API_URL) : localAssistant;
 
-/** The deployed app reads answers in Amazon Polly's voice through our API; the prototype and the tests use the browser's. */
+/** The deployed app reads answers in Amazon Polly's voice through our API; the tests use the browser's. */
 const configuredVoice = (): Voice =>
   airStore().kind === 'live' ? pollyVoice(API_URL) : browserVoice();
 
@@ -195,8 +194,6 @@ export function AssistantFab({
     end.current?.scrollIntoView({ block: 'end' });
   }, [messages, busy]);
 
-  const staged = useRef(readDemo()?.ask);
-  const asked = useRef(false);
   const waitingFor = useRef<string | undefined>(undefined);
   const logging = useRef<LogDraft | undefined>(undefined);
   const fire = useRef<FireDraft | undefined>(undefined);
@@ -452,23 +449,6 @@ export function AssistantFab({
     // Only when the air arrives.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [context, state?.status]);
-
-  // A demo scenario can open the chat and put a question as soon as the app shows.
-  const stagedQuestion = staged.current;
-  useEffect(() => {
-    if (stagedQuestion === undefined || asked.current || context === undefined) return undefined;
-    asked.current = true;
-    setOpen(true);
-    const timer = window.setTimeout(() => {
-      ask(stagedQuestion);
-    }, 900);
-    return () => {
-      window.clearTimeout(timer);
-      asked.current = false;
-    };
-    // The question is put once, when the context is first known.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [context === undefined]);
 
   // Listening shows the words as they are understood, and stops by itself after a few quiet seconds.
   const byVoice = (): void => {

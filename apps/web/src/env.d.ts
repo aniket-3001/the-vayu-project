@@ -3,8 +3,6 @@ interface ImportMetaEnv {
   readonly VITE_API_URL?: string;
   /** Base URL of the deployed assistant (Bedrock and Polly behind our API). Unset means local answers. */
   readonly VITE_ASSISTANT_URL?: string;
-  /** `1` only in the prototype build (device frames, scenarios). Never set for the deployed app. */
-  readonly VITE_DEMO?: string;
   /** The build mode: development, production, or test. */
   readonly MODE: string;
   /** True while running the dev server. */

@@ -3,7 +3,7 @@ import { cleanup, render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { MyAirScreen } from '../myair/MyAirScreen';
-import { sampleDay } from '../today/sample';
+import { sampleDay } from '../testing/sampleDays';
 import { TodayScreen } from '../today/ui/TodayScreen';
 import { AirUnitsProvider, UNITS_STORAGE_KEY } from './AirUnits';
 

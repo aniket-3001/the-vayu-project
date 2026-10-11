@@ -8,7 +8,7 @@ const place = (id: string): { lat: number; lng: number } => {
   return { lat: found?.lat ?? 28.6, lng: found?.lng ?? 77.2 };
 };
 
-/** Units in the world, which anyone standing near gets the benefit of. Made up for the prototype. */
+/** Units in the world, which anyone standing near gets the benefit of. Made up for the tests. */
 export const SAMPLE_UNITS: readonly Unit[] = [
   { id: 'unit-school', name: 'Vayu unit at the school', ...place('school'), own: false },
   { id: 'unit-office', name: 'Vayu unit at the office', ...place('office'), own: false },

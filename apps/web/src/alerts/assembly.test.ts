@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { sampleDay } from '../today/sample';
+import { sampleDay } from '../testing/sampleDays';
 import { grapStageFor } from '../tasks/model';
 import type { TodayData } from '../today/types';
 import { assemblyFor } from './assembly';

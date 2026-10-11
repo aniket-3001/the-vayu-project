@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { beforeEach, describe, expect, it } from 'vitest';
-import { SAMPLE_TRACK, SAMPLE_UNITS } from '../air/sampleExposure';
+import { SAMPLE_TRACK, SAMPLE_UNITS } from '../testing/sampleExposure';
 import { LIVE_STORAGE_KEY, currentHour, loadLive, recordFix, saveLive } from './live';
 import { today, dayCells } from './model';
 import { sampleSpotsFor } from './spots';

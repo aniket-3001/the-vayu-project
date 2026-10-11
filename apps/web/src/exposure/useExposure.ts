@@ -1,4 +1,3 @@
-import { readDemo } from '../demo/state';
 import { useCallback, useEffect, useState } from 'react';
 import { useLiveLocation } from '../places/liveLocation';
 import { airStore } from '../air/store';
@@ -113,13 +112,13 @@ export function useLive(storage: Storage = window.localStorage): {
   readonly sample: boolean;
   readonly start: () => void;
   readonly stop: () => void;
-  /** Shows a made-up day of movement. Only the prototype has one; the deployed app has none. */
+  /** Shows a made-up day of movement. Only the test source has one; the deployed app has none. */
   readonly showSample: (() => void) | undefined;
   readonly clearLog: () => void;
 } {
   const [log, setLog] = useState<LiveLog>(() => loadLive(storage));
   const track = airStore().madeUpExposure()?.track;
-  const [sample, setSample] = useState(() => track !== undefined && readDemo()?.live === true);
+  const [sample, setSample] = useState(false);
   const here = useLiveLocation();
 
   // Each fix, while live location is on, is written down against the hour it came in.

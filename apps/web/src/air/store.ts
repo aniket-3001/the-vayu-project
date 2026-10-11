@@ -50,12 +50,12 @@ export class AirStore {
   private readonly listeners = new Set<() => void>();
   private version = 0;
 
-  /** The made-up units and movement a prototype source can give, or undefined for the live source. */
+  /** The made-up units and movement the test source can give, or undefined for the live source. */
   madeUpExposure(): ReturnType<NonNullable<AirSource['peekExposure']>> | undefined {
     return this.source.peekExposure?.();
   }
 
-  /** The made-up map data a prototype source can give, or undefined for the live source. */
+  /** The made-up map data the test source can give, or undefined for the live source. */
   madeUpMap(): ReturnType<NonNullable<AirSource['peekMap']>> | undefined {
     return this.source.peekMap?.();
   }
@@ -212,7 +212,7 @@ export class AirStore {
   }
 }
 
-// The store the app runs on. Set once at start-up; tests and the prototype set their own.
+// The store the app runs on. Set once at start-up; tests set their own.
 
 let current: AirStore | undefined;
 let make: (() => AirStore) | undefined;

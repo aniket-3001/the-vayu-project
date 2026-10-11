@@ -71,7 +71,7 @@ export function problemsWith(draft: Draft): readonly string[] {
 export type Sent = 'sent' | 'saved';
 
 /**
- * Sends the request to our API (`POST {base}/v1/requests`). With no address (the prototype and the tests) it is
+ * Sends the request to our API (`POST {base}/v1/requests`). With no address (the tests, local runs) it is
  * kept on this device only. If the API cannot be reached, or refuses, this throws with words for the person: a
  * request is never reported as sent when it was not.
  */

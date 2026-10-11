@@ -1,7 +1,6 @@
-import { readDemo } from '../demo/state';
 import { DEMO_PLACES } from '../data/places';
 import { pinId, type Pin } from '../data/pins';
-import { SAMPLE_IDS, sampleDay, type SampleId } from '../today/sample';
+import { SAMPLE_IDS, sampleDay, type SampleId } from './sampleDays';
 import type { TodayData } from '../today/types';
 
 /**
@@ -23,7 +22,7 @@ const hash = (text: string): number => {
 };
 
 export const sampleIdForPin = (pin: Pin): SampleId =>
-  readDemo()?.day ?? STARTERS[pin.id] ?? SAMPLE_IDS[hash(pin.id) % SAMPLE_IDS.length] ?? 'moderate';
+  STARTERS[pin.id] ?? SAMPLE_IDS[hash(pin.id) % SAMPLE_IDS.length] ?? 'moderate';
 
 /** A pin's made-up reading, wearing the pin's own name. Replaced by the real reading once the API is plugged in. */
 export function readingForPin(pin: Pin, day: SampleId = sampleIdForPin(pin)): TodayData {

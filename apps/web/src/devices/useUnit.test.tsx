@@ -23,7 +23,7 @@ const base: UnitReading = {
 };
 
 /** A transport the test drives by hand. */
-function fake(options: { simulated?: boolean; fail?: Error } = {}): {
+function fake(options: { fail?: Error } = {}): {
   transport: UnitTransport;
   send: (bytes: Uint8Array) => void;
   drop: () => void;
@@ -35,11 +35,7 @@ function fake(options: { simulated?: boolean; fail?: Error } = {}): {
       connect(h) {
         if (options.fail !== undefined) return Promise.reject(options.fail);
         handlers = h;
-        const link: UnitLink = {
-          name: 'Vayu-3F2A',
-          ...(options.simulated === true ? { simulated: true } : {}),
-          disconnect: () => undefined,
-        };
+        const link: UnitLink = { name: 'Vayu-3F2A', disconnect: () => undefined };
         return Promise.resolve(link);
       },
     },
@@ -121,22 +117,6 @@ describe('connecting a unit', () => {
     });
     expect(result.current.state.status).toBe('lost');
     expect(result.current.state.latest?.reading.pm25).toBeCloseTo(30);
-  });
-
-  it('does not keep readings from a simulated unit', async () => {
-    const unit = fake({ simulated: true });
-    const { result } = renderHook(() =>
-      useUnit({ transport: unit.transport, storage: window.localStorage, now: () => AT }),
-    );
-    await act(async () => {
-      await result.current.connect((name) => `unit:${name}`);
-    });
-    for (let i = 0; i < 70; i++)
-      act(() => {
-        unit.send(encodePacket(base));
-      });
-    expect(result.current.state.simulated).toBe(true);
-    expect(measuredHourly(window.localStorage, 'unit:Vayu-3F2A', '2026-10-10')[11]).toBeUndefined();
   });
 
   it('goes quietly back to idle when the person declines, and says so when it fails', async () => {

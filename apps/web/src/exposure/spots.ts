@@ -35,7 +35,7 @@ const pinOf = (id: string): Pin => {
 };
 
 /**
- * What the prototype starts with for each kind of person, so the dial is never empty: a child at school
+ * What the tests and the recorded days start with for each kind of person, so the dial is never empty: a child at school
  * from 8 to 3, an adult at an office from 9 to 5, a senior at home. Everyone is at home the rest of the time,
  * and outdoor time is logged, never assumed.
  */
@@ -82,7 +82,7 @@ const isSpot = (value: unknown): value is Spot => {
 };
 
 let ownerStartsWithSamples = true;
-/** The deployed app starts the phone's owner with no places too, to be filled in; the prototype and tests do not. */
+/** The deployed app starts the phone's owner with no places too, to be filled in; the tests and the recorded days do not. */
 export function setOwnerStartsWithSamples(on: boolean): void {
   ownerStartsWithSamples = on;
 }

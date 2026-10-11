@@ -1,9 +1,10 @@
 import type { Monitor } from './monitors';
 import { describe, expect, it } from 'vitest';
 import { levelForAqi } from '../design/levels';
-import { firesGeoJson, sampleFires } from './fires';
-import { monitorsGeoJson, sampleMonitors } from './monitors';
-import { advect, speedOf, windAt } from './wind';
+import { firesGeoJson } from './fires';
+import { monitorsGeoJson } from './monitors';
+import { advectWith, speedOf } from './wind';
+import { sampleFires, sampleMonitors, windAt } from '../testing/sampleMap';
 
 describe('sample monitors', () => {
   const monitors = sampleMonitors();
@@ -93,7 +94,7 @@ describe('the sample wind', () => {
 
   it('moves a parcel of air the way the wind blows, by about speed times time', () => {
     const start = { lat: 29, lng: 77 };
-    const end = advect(start.lat, start.lng, 3600);
+    const end = advectWith(windAt, start.lat, start.lng, 3600);
     expect(end.lng).toBeGreaterThan(start.lng);
     expect(end.lat).toBeLessThan(start.lat);
     const km = Math.hypot(

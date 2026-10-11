@@ -2,7 +2,7 @@
 import { cleanup, render, screen, within } from '@testing-library/react';
 import { afterEach, describe, expect, it } from 'vitest';
 import { levelForAqi } from '../../design/levels';
-import { SAMPLE_IDS, sampleDay } from '../sample';
+import { SAMPLE_IDS, sampleDay } from '../../testing/sampleDays';
 import { TodayScreen } from './TodayScreen';
 
 afterEach(cleanup);

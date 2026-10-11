@@ -3,7 +3,7 @@ import { alertsFor } from '../alerts/model';
 import { NoAirError } from '../air/fromApi';
 import { setClock } from '../clock';
 import { firesAffecting } from '../map/fires';
-import { SAMPLE_AS_OF } from '../today/sample';
+import { SAMPLE_AS_OF } from '../testing/sampleDays';
 import { grapStageFor } from '../tasks/model';
 import { WEEK_PINS } from './storage';
 import recordedJson from './recorded.json';

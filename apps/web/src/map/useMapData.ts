@@ -8,7 +8,6 @@ import {
   type WindPoint,
 } from './live';
 import { API_URL } from '../config';
-import { readDemo } from '../demo/state';
 import { weekScene } from '../week/active';
 import { airStore } from '../air/store';
 import { fetchFires, type Fire } from './fires';
@@ -17,11 +16,11 @@ import type { Monitor } from './monitors';
 
 export interface MapData {
   readonly wind: readonly WindPoint[];
-  /** A made-up grid of air quality, for the prototype only: the deployed map is coloured from real monitors. */
+  /** A made-up grid of air quality, for the tests only: the deployed map is coloured from real monitors. */
   readonly air: readonly Monitor[];
   /**
    * The regional air model across the globe, from our API, for colouring the map where no monitor reports. A model
-   * estimate: empty in the prototype, which has its own made-up grid, and until it arrives.
+   * estimate: empty in the tests, which have their own made-up grid, and until it arrives.
    */
   readonly modelAir: readonly Monitor[];
   readonly windLive: boolean;
@@ -36,14 +35,13 @@ const isWind = (v: unknown): v is readonly WindPoint[] => Array.isArray(v) && v.
 /**
  * What the map is drawn from. In the deployed app it starts empty and fills in as the live wind and air
  * (Open-Meteo) and the fires (our API, from NASA) arrive; whatever fails stays empty and the screen says so. Only
- * the prototype build and the tests start from made-up data.
+ * the tests start from made-up data.
  */
 export function useMapData(fetchImpl: typeof fetch = fetch): MapData {
   const [data, setData] = useState<MapData>(() => {
     const wind = recall('wind');
-    // Only the prototype's source has made-up map data; the deployed app starts empty.
+    // Only the test source has made-up map data; the deployed app starts empty.
     const made = airStore().madeUpMap();
-    const staged = readDemo()?.fires;
     // A recorded day draws its own wind and fires, and asks for nothing.
     const week = weekScene();
     if (week !== undefined)
@@ -60,7 +58,7 @@ export function useMapData(fetchImpl: typeof fetch = fetch): MapData {
       air: made?.air ?? [],
       modelAir: [],
       windLive: isWind(wind),
-      fires: staged,
+      fires: undefined,
       fireList: made?.fires ?? [],
     };
   });
@@ -107,14 +105,12 @@ export function useMapData(fetchImpl: typeof fetch = fetch): MapData {
         () => undefined,
       );
     }
-    if (readDemo()?.fires === undefined) {
-      fetchFires(API_URL, fetchImpl).then(
-        (found) => {
-          if (found !== undefined) apply({ fires: found.count, fireList: found.fires });
-        },
-        () => undefined,
-      );
-    }
+    fetchFires(API_URL, fetchImpl).then(
+      (found) => {
+        if (found !== undefined) apply({ fires: found.count, fireList: found.fires });
+      },
+      () => undefined,
+    );
     return () => {
       current = false;
     };

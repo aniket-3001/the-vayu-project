@@ -3,7 +3,7 @@ import { cleanup, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it } from 'vitest';
 import { GRAP_COLOURS } from '../../design/levels';
-import { sampleDay } from '../../today/sample';
+import { sampleDay } from '../../testing/sampleDays';
 import { alertsFor } from '../model';
 import { AlertsList } from './AlertsList';
 

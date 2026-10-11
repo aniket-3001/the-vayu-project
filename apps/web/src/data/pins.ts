@@ -35,7 +35,7 @@ function isPin(value: unknown): value is Pin {
 
 let starter: readonly Pin[] = SAMPLES;
 /**
- * What a person who has never saved a place starts with. The prototype and the tests start with four sample
+ * What a person who has never saved a place starts with. The tests start with four sample
  * places; the deployed app starts with none, so a new person sets their own.
  */
 export function setStarterPins(pins: readonly Pin[]): void {

@@ -1,5 +1,5 @@
 import { seededRandom, usAqi } from '@vayu/core';
-import { hourOfDay, isoDate } from './time';
+import { hourOfDay, isoDate } from '../today/time';
 import type {
   Condition,
   DailyPoint,
@@ -9,7 +9,7 @@ import type {
   TodayData,
   TodaySource,
   Weather,
-} from './types';
+} from '../today/types';
 
 /** The moment every sample day describes: 17:30 on a Saturday evening in Delhi, so most of today has happened. */
 export const SAMPLE_AS_OF = '2026-10-10T12:00:00.000Z';
@@ -21,7 +21,7 @@ const SUNSET = '2026-10-10T12:29:00.000Z'; // 17:59 India time
 export const SAMPLE_IDS = ['good', 'moderate', 'rainy', 'unhealthy', 'dusty', 'hazardous'] as const;
 export type SampleId = (typeof SAMPLE_IDS)[number];
 
-/** Short names for the switcher. */
+/** Short names for each sample day. */
 export const SAMPLE_LABELS: Readonly<Record<SampleId, string>> = {
   good: 'Clear and breezy',
   moderate: 'Mild and hazy',

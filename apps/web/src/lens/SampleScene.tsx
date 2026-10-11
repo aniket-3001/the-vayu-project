@@ -265,7 +265,7 @@ const SCENES: Readonly<Record<ScenePlace, () => React.JSX.Element>> = {
 /**
  * A stand-in for the camera: a calm scene in pale colours that matches where you are looking, a living room
  * for Home, a school with a playground, an office block, a park, or a street for anywhere else. So the Lens
- * still works on a laptop, in a prototype frame, or when the camera is off. It dims at night.
+ * still works on a laptop, or when the camera is off. It dims at night.
  */
 export function SampleScene({
   night,

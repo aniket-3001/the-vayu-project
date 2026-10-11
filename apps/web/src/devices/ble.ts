@@ -4,8 +4,6 @@ import { UNIT_NAME_PREFIX, UNIT_READING_UUID, UNIT_SERVICE_UUID } from './unitPr
 export interface UnitLink {
   /** The name the unit advertises, such as "Vayu-3F2A". */
   readonly name: string;
-  /** True for the made-up unit of the prototype, whose numbers are shown but never kept or counted. */
-  readonly simulated?: boolean;
   disconnect(): void;
 }
 
@@ -16,7 +14,7 @@ export interface UnitHandlers {
   readonly onDisconnect: () => void;
 }
 
-/** What connects to a unit: Bluetooth in the app, or a made-up one in the prototype and the tests. */
+/** What connects to a unit: Bluetooth in the app, or a fake one in the tests. */
 export interface UnitTransport {
   /** Whether this browser can do it at all. */
   supported(): boolean;

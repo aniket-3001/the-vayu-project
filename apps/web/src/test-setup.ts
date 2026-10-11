@@ -1,8 +1,8 @@
 import '@testing-library/jest-dom/vitest';
 import { AirStore, setAirStoreFactory } from './air/store';
-import { sampleAirSource } from './air/sampleSource';
+import { sampleAirSource } from './testing/sampleAirSource';
 import { setClock } from './clock';
-import { SAMPLE_AS_OF } from './today/sample';
+import { SAMPLE_AS_OF } from './testing/sampleDays';
 
 // Tests run on a made-up moment and made-up air, so a screen is the same on every run.
 setClock(() => SAMPLE_AS_OF);

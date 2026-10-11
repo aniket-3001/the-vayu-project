@@ -2,20 +2,18 @@ import type { MapStation } from '@vayu/contracts';
 import { nowIso } from '../clock';
 import type { Pin } from '../data/pins';
 import { SAMPLE_TRACK, SAMPLE_UNITS } from './sampleExposure';
-import { sampleFires } from '../map/fires';
-import { sampleMonitors } from '../map/monitors';
-import { sampleWindGrid } from '../map/wind';
-import { readingForPin, sampleIdForPin } from '../places/placeSample';
-import { SAMPLE_HISTORY_DAYS, sampleAmbientPm25 } from '../today/sample';
+import { sampleFires, sampleMonitors, sampleWindGrid } from './sampleMap';
+import { readingForPin, sampleIdForPin } from './placeSample';
+import { SAMPLE_HISTORY_DAYS, sampleAmbientPm25 } from './sampleDays';
 import { isoDate } from '../today/time';
 import { addDays } from '../exposure/model';
-import type { AirSource, HourPm } from './types';
+import type { AirSource, HourPm } from '../air/types';
 
 const hourStart = (date: string, hour: number): string =>
   new Date(`${date}T${String(hour).padStart(2, '0')}:00:00+05:30`).toISOString();
 
 /**
- * Made-up air, the same every time: the prototype build and the tests run on this, never the deployed app. The
+ * Made-up air, the same every time: the tests run on this, never the deployed app. The
  * days come from a fixed recipe and the clock is a fixed moment, so a screen looks the same on every run.
  */
 export function sampleAirSource(): AirSource {

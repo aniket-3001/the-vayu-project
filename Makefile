@@ -21,10 +21,9 @@ test:
 synth:
 	cd infra && npx cdk synth --quiet
 
-# The deployed app must hold no prototype code (device frames, scenarios, the tour); the prototype build must still have it.
+# The deployed app must hold no made-up data or test fixtures, and no local addresses.
 bundle:
 	VITE_API_URL= npm run build -w @vayu/web
-	npm run build:demo -w @vayu/web
 	node scripts/check-bundle.mjs
 
 # One command that proves the claims: lint, types, tests and the stack, and it fails closed.

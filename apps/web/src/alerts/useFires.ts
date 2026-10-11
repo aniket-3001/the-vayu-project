@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useState } from 'react';
-import { readDemo } from '../demo/state';
 import { firesAffecting, fetchFires, type Fire } from '../map/fires';
 import { recall, remember } from '../map/live';
 import { API_URL } from '../config';
@@ -30,7 +29,7 @@ export function useFires(
     return isSeen(saved) ? saved : undefined;
   });
   useEffect(() => {
-    if (readDemo()?.fires !== undefined || weekScene() !== undefined) return undefined;
+    if (weekScene() !== undefined) return undefined;
     let current = true;
     fetchFires(API_URL, fetchImpl).then(
       (found) => {
@@ -48,9 +47,6 @@ export function useFires(
   const lat = place?.lat;
   const lng = place?.lng;
   return useMemo(() => {
-    // A demo scenario states the count that is near.
-    const staged = readDemo()?.fires;
-    if (staged !== undefined) return staged;
     // A recorded day counts the fires recorded for it, never today's.
     const recorded = weekScene()?.fires;
     if (recorded !== undefined && lat !== undefined && lng !== undefined)

@@ -38,7 +38,7 @@ export function MapScreen(): React.JSX.Element {
       stations.status === 'ready' ? monitorsFromStations(stations.data, Date.parse(nowIso())) : [],
     [stations],
   );
-  // The colour between monitors is worked out from the real monitors; the prototype has a made-up grid instead. Where
+  // The colour between monitors is worked out from the real monitors; the test source has a made-up grid instead. Where
   // no monitor has reported, the regional air model colours the map instead, and the map says so.
   const byModel = !sample && monitors.length === 0 && data.modelAir.length > 0;
   const air = useMemo(

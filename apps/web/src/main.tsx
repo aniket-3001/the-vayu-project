@@ -14,12 +14,7 @@ import './styles.css';
 const root = document.getElementById('root');
 if (root === null) throw new Error('index.html needs a #root');
 
-// The prototype shell is a separate build: this branch is removed from the deployed bundle.
-if (import.meta.env.VITE_DEMO === '1') {
-  void import('./demo/entry').then(({ startDemo }) => {
-    startDemo(root);
-  });
-} else if (window.location.hash.startsWith('#/week')) {
+if (window.location.hash.startsWith('#/week')) {
   // The recorded days: seven real days played through the same app, opened by an unlisted address.
   void import('./week/entry').then(({ startWeek }) => startWeek(root));
 } else {

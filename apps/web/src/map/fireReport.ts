@@ -17,7 +17,7 @@ export const FIRE_REPORT_WORDS =
 export type FireReportSent = 'sent' | 'saved';
 
 /**
- * Sends the report to our API (`POST {base}/v1/fire-reports`). With no address (the prototype and the tests) it is
+ * Sends the report to our API (`POST {base}/v1/fire-reports`). With no address (the tests, local runs) it is
  * kept on this device only. If the API cannot be reached, or refuses, this throws with words for the person: a
  * report is never called sent when it was not.
  */

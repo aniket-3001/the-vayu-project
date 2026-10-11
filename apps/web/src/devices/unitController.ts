@@ -10,8 +10,6 @@ export interface UnitState {
   readonly name?: string;
   /** The app's device id the readings are kept under. */
   readonly deviceId?: string;
-  /** True for the prototype's made-up unit: shown, never kept. */
-  readonly simulated?: boolean;
   readonly latest?: { readonly reading: UnitReading; readonly atMs: number };
   /** The last few minutes of PM2.5, for the live chart. */
   readonly recent: readonly { readonly atMs: number; readonly pm25: number }[];
@@ -40,7 +38,6 @@ export class UnitController {
   private readonly listeners = new Set<() => void>();
   private link: UnitLink | undefined;
   private deviceId: string | undefined;
-  private simulated = false;
   /** Bumped on each connect and disconnect, so a late packet from an old link is ignored. */
   private session = 0;
 
@@ -70,7 +67,6 @@ export class UnitController {
     this.link?.disconnect();
     this.link = undefined;
     this.deviceId = undefined;
-    this.simulated = false;
     this.set({ status: 'idle', recent: [] });
   };
 
@@ -98,7 +94,7 @@ export class UnitController {
             return;
           }
           const atMs = now();
-          if (!parsed.warming && !this.simulated && this.deviceId !== undefined) {
+          if (!parsed.warming && this.deviceId !== undefined) {
             const storage = this.options.storage?.() ?? window.localStorage;
             recordReading(storage, this.deviceId, atMs, parsed.pm25);
           }
@@ -106,7 +102,6 @@ export class UnitController {
           this.set({
             ...(s.name === undefined ? {} : { name: s.name }),
             ...(s.deviceId === undefined ? {} : { deviceId: s.deviceId }),
-            ...(s.simulated === true ? { simulated: true } : {}),
             status: 'connected',
             latest: { reading: parsed, atMs },
             recent: parsed.warming
@@ -125,13 +120,11 @@ export class UnitController {
         return;
       }
       this.link = opened;
-      this.simulated = opened.simulated === true;
       this.deviceId = named(opened.name);
       this.set({
         ...this.state,
         name: opened.name,
         deviceId: this.deviceId,
-        ...(this.simulated ? { simulated: true } : {}),
       });
     } catch (error) {
       if (session !== this.session) return;

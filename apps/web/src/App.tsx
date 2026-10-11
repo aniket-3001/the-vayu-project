@@ -1,8 +1,6 @@
 import { ChevronLeft } from 'lucide-react';
 import { HashRouter, Link, Route, Routes, useLocation, useParams } from 'react-router-dom';
 import { AccountScreen } from './account/AccountScreen';
-import { DemoPill } from './demo/DemoPill';
-import { DemoPlaceRoute } from './demo/DemoPlaceRoute';
 import { ExposureScreen } from './exposure/ExposureScreen';
 import { LensScreen } from './lens/LensScreen';
 import { RoomScreen } from './devices/ui/RoomScreen';
@@ -79,10 +77,7 @@ function Frame(): React.JSX.Element {
     <div className="frame" data-route={route === '' ? 'home' : route}>
       <Routes>
         <Route path="/" element={<MyAirScreen />} />
-        <Route
-          path="/place/:id"
-          element={import.meta.env.VITE_DEMO === '1' ? <DemoPlaceRoute /> : <PlaceRoute />}
-        />
+        <Route path="/place/:id" element={<PlaceRoute />} />
         <Route path="/account" element={<AccountScreen />} />
         <Route path="/exposure" element={<ExposureScreen />} />
         <Route path="/map" element={<MapScreen />} />
@@ -90,7 +85,6 @@ function Frame(): React.JSX.Element {
         <Route path="/room" element={<RoomScreen />} />
         <Route path="*" element={<MyAirScreen />} />
       </Routes>
-      {import.meta.env.VITE_DEMO === '1' && <DemoPill />}
       {route !== 'map' && route !== 'lens' && (
         <div className="dock">
           <DockButtons />

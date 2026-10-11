@@ -87,7 +87,7 @@ export function parsePacket(bytes: Uint8Array): UnitReading | PacketProblem {
   };
 }
 
-/** Makes a packet, for tests and for the simulated unit in the prototype. */
+/** Makes a packet, for tests. */
 export function encodePacket(reading: UnitReading): Uint8Array {
   const bytes = new Uint8Array(PACKET_BYTES);
   const view = new DataView(bytes.buffer);

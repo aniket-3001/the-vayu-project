@@ -22,7 +22,7 @@ import {
   summarise,
 } from './model';
 import { sampleSpotsFor, type Spot, type Spots } from './spots';
-import { SAMPLE_UNITS } from '../air/sampleExposure';
+import { SAMPLE_UNITS } from '../testing/sampleExposure';
 import { allUnits, type Unit } from './units';
 
 const need = (spot: Spot | undefined): Spot => {

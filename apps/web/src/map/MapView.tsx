@@ -223,7 +223,7 @@ export function MapView({
   /** The monitors with a recent reading. */
   readonly monitors: readonly Monitor[];
   readonly fires: readonly Fire[];
-  /** Whether the readings are made up (the prototype), for the popup's small print. */
+  /** Whether the readings are made up (the tests), for the popup's small print. */
   readonly sample: boolean;
   /** Where to open, from a link; otherwise south Asia at country level. */
   readonly start?: { readonly center: [number, number]; readonly zoom: number } | undefined;

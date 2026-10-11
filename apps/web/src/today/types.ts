@@ -70,7 +70,7 @@ export interface Pollutants {
 
 /**
  * Where the number came from and how old it is (rule I2). `label` is the trust level: a nearby monitor with a recent
- * reading, a model estimate where none has reported lately, or made-up days in the prototype.
+ * reading, a model estimate where none has reported lately, or made-up days in the tests.
  */
 export interface Provenance {
   readonly mode: 'live' | 'model' | 'sample';

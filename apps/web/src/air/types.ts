@@ -20,19 +20,19 @@ export type Loaded<T> =
   | { readonly status: 'error'; readonly message: string };
 
 /**
- * Where the air comes from. The deployed app asks our API on AWS; the prototype build and the tests use made-up
- * days. A source that can answer at once (the made-up one) also offers `peek*`, so a screen can draw without
+ * Where the air comes from. The deployed app asks our API on AWS; the tests use made-up days.
+ * A source that can answer at once (the made-up one) also offers `peek*`, so a screen can draw without
  * waiting; the live one cannot, and the store shows "loading" until it answers.
  */
 export interface AirSource {
-  /** `live` is our API on AWS; `sample` is made-up days, for the prototype build and the tests. */
+  /** `live` is our API on AWS; `sample` is made-up days, for the tests. */
   readonly kind: 'live' | 'sample';
   peekToday?(pin: Pin): TodayData | undefined;
   peekHistory?(pin: Pin): readonly HourPm[] | undefined;
   peekStations?(): readonly MapStation[] | undefined;
-  /** Made-up shared Vayu units and a made-up day of movement, for the prototype's Exposure. The live source has none. */
+  /** Made-up shared Vayu units and a made-up day of movement, for the tests. The live source has none. */
   peekExposure?(): { readonly units: readonly Unit[]; readonly track: LiveLog };
-  /** Made-up wind, colour and fires for the map, so the prototype's map is never empty. The live source has none. */
+  /** Made-up wind, colour and fires for the map, for the tests. The live source has none. */
   peekMap?(): {
     readonly wind: readonly WindPoint[];
     readonly air: readonly Monitor[];

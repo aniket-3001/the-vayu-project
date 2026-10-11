@@ -46,7 +46,7 @@ export function ownUnits(devices: readonly Device[], allSpots: readonly Spots[])
 /**
  * Every unit that can help: the person's own first, then the shared ones. The Vayu monitor is not built, so in the
  * deployed app only the person's own measured units count, and every other indoor hour is the labelled assumption;
- * only the prototype has made-up units, and they are labelled there too.
+ * only the tests have made-up units.
  */
 export const allUnits = (
   devices: readonly Device[],

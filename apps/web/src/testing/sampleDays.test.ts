@@ -1,14 +1,14 @@
 import { usAqi } from '@vayu/core';
 import { describe, expect, it } from 'vitest';
 import { levelForAqi } from '../design/levels';
-import { SAMPLE_IDS, SAMPLE_LABELS, sampleDay, type SampleDay } from './sample';
-import { clock24, hourOfDay, isoDate } from './time';
-import type { Condition } from './types';
+import { SAMPLE_IDS, SAMPLE_LABELS, sampleDay, type SampleDay } from './sampleDays';
+import { clock24, hourOfDay, isoDate } from '../today/time';
+import type { Condition } from '../today/types';
 
 const all = (): SampleDay[] => SAMPLE_IDS.map((id) => sampleDay(id));
 
 describe('the sample days', () => {
-  it('has six, each with a label for the switcher', () => {
+  it('has six, each with a label', () => {
     expect(SAMPLE_IDS).toEqual(['good', 'moderate', 'rainy', 'unhealthy', 'dusty', 'hazardous']);
     for (const id of SAMPLE_IDS) expect(SAMPLE_LABELS[id].length).toBeGreaterThan(3);
   });
@@ -150,7 +150,7 @@ describe('the sample days', () => {
 
 describe('the sample air for any date', () => {
   it('has 24 hours for each of the past 14 days, hours so far for today, and nothing beyond', async () => {
-    const { sampleAmbientPm25, SAMPLE_TODAY, SAMPLE_HISTORY_DAYS } = await import('./sample');
+    const { sampleAmbientPm25, SAMPLE_TODAY, SAMPLE_HISTORY_DAYS } = await import('./sampleDays');
     const key = (offset: number): string =>
       new Date(Date.parse(SAMPLE_TODAY + 'T12:00:00+05:30') + offset * 86_400_000)
         .toISOString()
@@ -169,7 +169,7 @@ describe('the sample air for any date', () => {
   });
 
   it('agrees with the 48-hour history, and lets earlier days differ from each other', async () => {
-    const { sampleAmbientPm25, SAMPLE_TODAY } = await import('./sample');
+    const { sampleAmbientPm25, SAMPLE_TODAY } = await import('./sampleDays');
     const day = sampleDay('moderate');
     const today = sampleAmbientPm25('moderate', SAMPLE_TODAY);
     const last = day.history.at(-1);

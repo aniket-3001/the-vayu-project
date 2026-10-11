@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { beforeEach, describe, expect, it } from 'vitest';
-import { sampleDay, SAMPLE_IDS } from '../today/sample';
+import { sampleDay, SAMPLE_IDS } from '../testing/sampleDays';
 import { POINTS, cpcbAqiFor, grapStage, grapStageFor, tasksFor } from './model';
 import { RANKS, TASKS_STORAGE_KEY, loadDone, rankFor, saveDone, streak, toggle } from './store';
 
