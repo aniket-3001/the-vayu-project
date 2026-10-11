@@ -175,6 +175,11 @@ export function MapScreen(): React.JSX.Element {
                             : 'The wind could not be loaded just now, so none is shown.'}
                     </span>
                   )}
+                  <span>
+                    Data: OpenAQ, Open-Meteo, MET Norway, NASA FIRMS, OpenStreetMap and OpenFreeMap.
+                    Your places and outdoor time stay on this device, and your location is used only
+                    when you ask.
+                  </span>
                 </p>
               </details>
             </div>
