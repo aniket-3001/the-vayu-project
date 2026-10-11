@@ -50,9 +50,9 @@ const fillSlot = async (kind: string, pinName: string): Promise<void> => {
   await userEvent.click(within(picker).getByRole('button', { name: pinName }));
 };
 
-/** Presses a person in the list, which opens their timetable. */
+/** Presses the pencil by a person in the list, which opens their timetable. */
 const openPanel = async (name: string): Promise<HTMLElement> => {
-  await userEvent.click(screen.getByRole('button', { name: new RegExp(`^${name}\\b`, 'u') }));
+  await userEvent.click(screen.getByRole('button', { name: `Edit ${name}’s day` }));
   return screen.getByRole('dialog', {
     name: name === 'Me' ? /My day/u : new RegExp(`${name}’s day`, 'u'),
   });
@@ -145,6 +145,21 @@ describe('the Exposure screen', () => {
     const size = Number(person?.getAttribute('width'));
     expect(Number(person?.getAttribute('x')) + size / 2).toBe(Number(centre?.getAttribute('cx')));
     expect(Number(person?.getAttribute('y')) + size / 2).toBe(Number(centre?.getAttribute('cy')));
+  });
+
+  it('switches to a person when their profile is pressed, and opens their day only from the pencil', async () => {
+    open();
+    await addPerson('Asha', '9');
+    // Adding opens nothing more; switch back to me, then press Asha's profile.
+    await userEvent.click(screen.getByRole('button', { name: /^Me/u }));
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: /^Asha/u }));
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /^Asha/u })).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.getByRole('heading', { name: /Today’s exposure/u })).toBeInTheDocument();
+    // The pencil beside each profile edits.
+    await userEvent.click(screen.getByRole('button', { name: 'Edit Asha’s day' }));
+    expect(screen.getByRole('dialog', { name: /Asha’s day/u })).toBeInTheDocument();
   });
 
   it('opens a person’s timetable when they are pressed, with a place for each part of their day', async () => {
@@ -485,7 +500,7 @@ describe('working it out from where I am', () => {
 
   it('is a switch for me, off to begin with, and not there for anyone else', async () => {
     open();
-    const toggle = screen.getByRole('switch', { name: /Detect my location/u });
+    const toggle = screen.getByRole('switch', { name: /Auto calculate based on my location/u });
     expect(toggle).not.toBeChecked();
     await addPerson('Asha', '9');
     expect(screen.queryByRole('switch', { name: /where I am/u })).not.toBeInTheDocument();
@@ -494,7 +509,7 @@ describe('working it out from where I am', () => {
   it('asks the browser when switched on, logs the hour, and stops and clears when switched off', async () => {
     const location = fakeLocation();
     open();
-    const toggle = screen.getByRole('switch', { name: /Detect my location/u });
+    const toggle = screen.getByRole('switch', { name: /Auto calculate based on my location/u });
     await userEvent.click(toggle);
     expect(toggle).toBeChecked();
     location.succeed();
@@ -511,7 +526,9 @@ describe('working it out from where I am', () => {
   it('says plainly when the browser would not share the location', async () => {
     const location = fakeLocation();
     open();
-    await userEvent.click(screen.getByRole('switch', { name: /Detect my location/u }));
+    await userEvent.click(
+      screen.getByRole('switch', { name: /Auto calculate based on my location/u }),
+    );
     location.fail();
     const panel = await openPanel('Me');
     expect(within(panel).getByRole('region', { name: 'Live outdoor location' })).toHaveTextContent(

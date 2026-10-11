@@ -35,23 +35,23 @@ export const ROLE_WORDS: Readonly<Record<Role, string>> = {
 };
 
 /**
- * Makes a place the one for its role in the phone owner's day, so it is on their Exposure dial from now on. A person
+ * Makes a place the one for its role in a person's day, so it is on their Exposure dial from now on. A person
  * mostly goes to work or to school, not both, so setting one clears the other and says which the day is.
  */
-export function assignRole(storage: Storage, label: string, pin: Pin): void {
+export function assignRoleFor(storage: Storage, personId: string, label: string, pin: Pin): void {
   const role = roleOfLabel(label);
   if (role === undefined) return;
   const household = loadHousehold(storage);
-  const me = household.people.find((p) => p.id === 'me');
-  if (me === undefined) return;
-  const day = role === 'school' ? 'school' : role === 'work' ? 'work' : me.day;
-  const owner = { ...me, day };
-  if (day !== me.day)
+  const who = household.people.find((p) => p.id === personId);
+  if (who === undefined) return;
+  const day = role === 'school' ? 'school' : role === 'work' ? 'work' : who.day;
+  const owner = { ...who, day };
+  if (day !== who.day)
     saveHousehold(storage, {
       ...household,
-      people: household.people.map((p) => (p.id === 'me' ? owner : p)),
+      people: household.people.map((p) => (p.id === personId ? owner : p)),
     });
-  const spots = loadSpots(storage, 'me', personaOf(owner));
+  const spots = loadSpots(storage, personId, personaOf(owner));
   // Keep the hours already set for this role; a person goes to work or to school, so the other is dropped.
   const dropped: SpotKind | undefined =
     role === 'school' ? 'work' : role === 'work' ? 'school' : undefined;
@@ -61,7 +61,23 @@ export function assignRole(storage: Storage, label: string, pin: Pin): void {
       [role]: { ...DEFAULT_HOURS[role], ...(spots[role] ?? {}), pin },
     }).filter(([kind]) => kind !== dropped),
   );
-  saveSpots(storage, 'me', next);
+  saveSpots(storage, personId, next);
+}
+
+/** The phone owner's own day, as before. */
+export function assignRole(storage: Storage, label: string, pin: Pin): void {
+  assignRoleFor(storage, 'me', label, pin);
+}
+
+/**
+ * Who a place of a role is most likely for, to be ticked before anyone is asked: school for the children, work for
+ * the adults who go to work, home for everyone, and a park for the owner.
+ */
+export function defaultsFor(role: Role, people: readonly Person[]): readonly string[] {
+  if (role === 'home') return people.map((p) => p.id);
+  if (role === 'school') return people.filter((p) => p.day === 'school').map((p) => p.id);
+  if (role === 'work') return people.filter((p) => p.day === 'work').map((p) => p.id);
+  return people.filter((p) => p.id === 'me').map((p) => p.id);
 }
 
 /** Takes a place off the owner's day when it is no longer pinned. */
@@ -79,11 +95,12 @@ export function clearRole(storage: Storage, label: string): void {
   );
 }
 
-/** Two places are the same place when they are within about 300 metres: the same school pinned two ways. */
+/** Two places are the same place when they are within about 300 metres (`within` degrees): a school pinned two ways. */
 export const samePlace = (
   a: { readonly lat: number; readonly lng: number },
   b: { readonly lat: number; readonly lng: number },
-): boolean => Math.abs(a.lat - b.lat) < 0.003 && Math.abs(a.lng - b.lng) < 0.003;
+  within = 0.003,
+): boolean => Math.abs(a.lat - b.lat) < within && Math.abs(a.lng - b.lng) < within;
 
 /** A name that says it is a school, whatever else it is called: "DAV Public School", "Sunrise Vidyalaya". */
 const SCHOOLISH = /\b(school|vidyalaya|vidyalay|academy|pathshala)\b/iu;

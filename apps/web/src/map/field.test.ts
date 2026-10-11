@@ -6,6 +6,9 @@ import {
   fieldAt,
   gradientColour,
   grainyField,
+  fieldAtIndexed,
+  indexMonitors,
+  visibleWindow,
   mercatorY,
   renderField,
 } from './field';
@@ -149,5 +152,51 @@ describe('the fine grain', () => {
     for (let i = 3; i < pixels.length; i += 4) if ((pixels[i] ?? 0) > 100) strong += 1;
     expect(strong).toBeGreaterThan(200);
     expect(strong).toBeLessThan(width * height);
+  });
+});
+
+describe('the field for what is on screen', () => {
+  const monitors = [
+    { id: 'a', name: 'A', lat: 28.6, lng: 77.2, aqi: 180, pm25: 100, ageMinutes: 10 },
+    { id: 'b', name: 'B', lat: 31.1, lng: 75.4, aqi: 90, pm25: 30, ageMinutes: 10 },
+    { id: 'c', name: 'C', lat: -33.9, lng: 151.2, aqi: 40, pm25: 9, ageMinutes: 10 },
+    { id: 'd', name: 'D', lat: 51.5, lng: -0.1, aqi: 60, pm25: 17, ageMinutes: 10 },
+  ];
+
+  it('gives the same answer through the index as by looking at every monitor', () => {
+    const index = indexMonitors(monitors);
+    for (const [lat, lng] of [
+      [28.7, 77.3],
+      [30, 76],
+      [-30, 150],
+      [51, 0],
+      [0, 0],
+      [60, 170],
+      [40, 179.5],
+    ] as const) {
+      const direct = fieldAt(lat, lng, monitors);
+      const indexed = fieldAtIndexed(lat, lng, index);
+      expect(indexed === undefined, `${String(lat)},${String(lng)}`).toBe(direct === undefined);
+      if (direct !== undefined && indexed !== undefined) {
+        expect(indexed.aqi).toBeCloseTo(direct.aqi, 6);
+        expect(indexed.confidence).toBeCloseTo(direct.confidence, 6);
+      }
+    }
+  });
+
+  it('takes only the part of a tile that is on screen, with a little over, and none when it is off screen', () => {
+    const tile = { west: 0, east: 90, south: -80, north: 80 };
+    const view = { west: 70, east: 80, south: 20, north: 30 };
+    const window = visibleWindow(tile, view);
+    expect(window?.west).toBeCloseTo(68.5, 5);
+    expect(window?.east).toBeCloseTo(81.5, 5);
+    expect(window?.north).toBeCloseTo(31.5, 5);
+    expect(visibleWindow(tile, { west: 120, east: 130, south: 0, north: 10 })).toBeUndefined();
+  });
+
+  it('keeps the grain on the ground: the same place has the same grain in two different windows', () => {
+    const wide = grainyField(monitors, 40, 40, 4, { west: 60, east: 100, south: 10, north: 40 });
+    const narrow = grainyField(monitors, 40, 40, 4, { west: 60, east: 100, south: 10, north: 40 });
+    expect(Array.from(wide.pixels.slice(0, 400))).toEqual(Array.from(narrow.pixels.slice(0, 400)));
   });
 });

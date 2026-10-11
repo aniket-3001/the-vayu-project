@@ -80,3 +80,15 @@ export function addPin(
 export function removePin(pins: readonly Pin[], id: string): readonly Pin[] {
   return pins.filter((pin) => pin.id !== id);
 }
+
+/** The pins with one moved to another's place, for a card dragged to a new spot in the grid. */
+export function movePin(pins: readonly Pin[], fromId: string, toId: string): readonly Pin[] {
+  const from = pins.findIndex((pin) => pin.id === fromId);
+  const to = pins.findIndex((pin) => pin.id === toId);
+  if (from < 0 || to < 0 || from === to) return pins;
+  const next = [...pins];
+  const [moved] = next.splice(from, 1);
+  if (moved === undefined) return pins;
+  next.splice(to, 0, moved);
+  return next;
+}

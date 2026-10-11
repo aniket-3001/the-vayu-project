@@ -9,8 +9,8 @@ import type { TodayData } from '../today/types';
 import { AirFigures } from '../units/AirUnits';
 import type { LensHour } from './model';
 
-/** The name the place switch gives the live place, everywhere it is named. */
-export const LIVE_OUTDOOR_NAME = 'Live outdoor location';
+/** The name the place switch gives the live place. */
+export const LIVE_LOCATION_NAME = 'Live location';
 
 /**
  * The air at the place and hour being looked at, as the same card the home screen uses for a place: the name, the
@@ -24,6 +24,7 @@ export function LensCard({
   hour,
   step,
   best,
+  sameAs,
   camera,
   places,
   cameraWords,
@@ -36,6 +37,8 @@ export function LensCard({
   readonly step: number;
   /** The cleanest daylight hour ahead, if there is one. */
   readonly best: LensHour | undefined;
+  /** For the live place: the saved place it is the same as, if it is at one. */
+  readonly sameAs?: string | undefined;
   readonly camera: { readonly on: boolean; readonly toggle: () => void };
   readonly places: {
     readonly options: readonly { readonly id: string; readonly name: string }[];
@@ -50,7 +53,12 @@ export function LensCard({
   const point = data.hourly.find((h) => h.at === hour.at);
   const w = point?.weather ?? (step === 0 ? data.weather : undefined);
   const when = step === 0 ? 'Now' : `${weekday(hour.at)} ${dayMonth(hour.at)}, ${clock12(hour.at)}`;
-  const name = pin.id === 'live' ? LIVE_OUTDOOR_NAME : pin.name;
+  const name =
+    pin.id === 'live'
+      ? sameAs === undefined
+        ? LIVE_LOCATION_NAME
+        : `Same as ${sameAs}`
+      : pin.name;
   const active = places.options.find((o) => o.id === places.activeId);
   // The cleanest daylight hour is always named, and how long to stay out follows from how clean it is.
   const bestWords =
@@ -77,7 +85,7 @@ export function LensCard({
             ) : (
               <Camera size={18} strokeWidth={2} aria-hidden="true" />
             )}
-            <span>{camera.on ? 'Stop camera' : 'See it live'}</span>
+            <span>{camera.on ? 'Stop camera' : 'Experience on camera'}</span>
           </button>
           <label className="lens-tool lens-switch" title="Place to look at">
             <PlaceIcon size={18} strokeWidth={2} aria-hidden="true" />

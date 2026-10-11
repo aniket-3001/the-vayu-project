@@ -2,6 +2,7 @@ import { LocateFixed } from 'lucide-react';
 import { useState } from 'react';
 import type { PlaceMatch } from '../../data/geocode';
 import { pinId, type Pin } from '../../data/pins';
+import { GPS_OFF_WORDS, gpsOn } from '../../places/gps';
 import { browserLocate, type Locate } from '../../places/locate';
 import { PlaceSearch } from '../../places/ui/PlaceSearch';
 
@@ -35,7 +36,11 @@ export function PlacePicker({
         onPick({ id: pinId(lat, lng), name, detail: 'Detected', lat, lng });
       },
       () => {
-        setNote('We could not get your location. You can search for the place instead.');
+        setNote(
+          gpsOn()
+            ? 'We could not get your location. You can search for the place instead.'
+            : GPS_OFF_WORDS,
+        );
       },
     );
   };
@@ -43,7 +48,7 @@ export function PlacePicker({
     <div className="picker">
       <button type="button" className="locate" onClick={detect}>
         <LocateFixed size={20} strokeWidth={1.75} aria-hidden="true" />
-        Detect me
+        Detect my location
       </button>
       <p className="muted small" role="status">
         {note}

@@ -121,6 +121,23 @@ describe('the Map screen', () => {
     expect(document.querySelector('.lens-top')).not.toBeInTheDocument();
   });
 
+  it('puts the three buttons in a column at the right of the card, and lets the scale and notes use the rest', () => {
+    render(
+      <MemoryRouter>
+        <MapScreen />
+      </MemoryRouter>,
+    );
+    const card = document.querySelector('.map-legend');
+    expect(Array.from(card?.children ?? []).map((el) => el.className.split(' ')[0])).toEqual([
+      'legend-main',
+      'dock-buttons',
+    ]);
+    const buttons = Array.from(card?.querySelectorAll('.dock-buttons button') ?? []);
+    expect(buttons).toHaveLength(3);
+    expect(buttons[2]).toHaveAccessibleName('GPS');
+    expect(document.querySelector('.legend-main .aqi-scale')).toBeInTheDocument();
+  });
+
   it('opens a report for a fire pressed on the map, and says plainly what happens to it', async () => {
     render(
       <MemoryRouter>

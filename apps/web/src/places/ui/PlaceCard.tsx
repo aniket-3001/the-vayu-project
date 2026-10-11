@@ -12,6 +12,12 @@ import { assemblyFor } from '../../alerts/assembly';
 import { isSchoolPin } from '../roles';
 import { AirLoading } from '../../components/AirState';
 
+/** When a card was last let go after being dragged, so the press that ends a drag does not open it. */
+export const dragState = { endedAt: 0 };
+export const markDragEnd = (): void => {
+  dragState.endedAt = Date.now();
+};
+
 const age = (minutes: number): string =>
   minutes < 60 ? `${String(minutes)} min ago` : `${String(Math.round(minutes / 60))} h ago`;
 
@@ -24,10 +30,25 @@ const age = (minutes: number): string =>
 export function PlaceCard({
   pin,
   onRemove,
+  drag,
+  live,
 }: {
   readonly pin: Pin;
   /** Without it the card has no cross: the live place goes by turning live location off. */
   readonly onRemove?: (pin: Pin) => void;
+  /** What a dragging library hands the card so it can be moved: a ref, a style and the handlers. */
+  readonly drag?: {
+    readonly setNodeRef: (node: HTMLElement | null) => void;
+    readonly style: React.CSSProperties;
+    readonly attributes: React.HTMLAttributes<HTMLElement>;
+    readonly listeners: React.DOMAttributes<HTMLElement> | undefined;
+    readonly dragging: boolean;
+  };
+  /**
+   * For the live card: the name of the saved place it is the same as, or none if it is out somewhere else. The card
+   * then says “Same as Home”, or “Live location” with an Outdoor tag, and wears the live marking.
+   */
+  readonly live?: { readonly sameAs: string | undefined };
 }): React.JSX.Element {
   const state = useToday(pin);
   const removeButton =
@@ -45,7 +66,13 @@ export function PlaceCard({
     );
   if (state?.status !== 'ready') {
     return (
-      <li className="place-card pending">
+      <li
+        className="place-card pending"
+        ref={drag?.setNodeRef}
+        style={drag?.style}
+        {...(drag?.attributes ?? {})}
+        {...(drag?.listeners ?? {})}
+      >
         <div className="pc-hit">
           <span className="pc-name">{pin.name}</span>
           <span className="pc-detail">{pin.detail ?? 'Delhi NCR'}</span>
@@ -71,23 +98,47 @@ export function PlaceCard({
     );
   }
   const reading = state.data;
+  // The live card is called what it is the same as, or Live location; a saved place is called by its name.
+  const heading =
+    live === undefined
+      ? pin.name
+      : live.sameAs === undefined
+        ? 'Live location'
+        : `Same as ${live.sameAs}`;
   // A school shows where its morning assembly should be held, from the air expected at eight.
   const assembly = isSchoolPin(pin) ? assemblyFor(reading) : undefined;
   const level = levelForAqi(reading.aqi);
   const p = reading.provenance;
   const w = reading.weather;
   return (
-    <li className="place-card" style={levelVars(level)}>
+    <li
+      className={`place-card${live === undefined ? '' : ' live-card'}${drag?.dragging === true ? ' dragging' : ''}`}
+      ref={drag?.setNodeRef}
+      style={{ ...levelVars(level), ...(drag?.style ?? {}) }}
+      {...(drag?.attributes ?? {})}
+      {...(drag?.listeners ?? {})}
+    >
       <Link
         to={`/place/${encodeURIComponent(pin.id)}`}
         className="pc-hit"
-        aria-label={`Open ${pin.name}`}
+        aria-label={`Open ${heading}`}
+        draggable={false}
+        onClick={(event) => {
+          // A card that was just dragged is not also pressed.
+          if (Date.now() - dragState.endedAt < 300) event.preventDefault();
+        }}
       >
-        <span className="pc-name">
-          {pin.name}
-          {pin.id === 'live' && <span className="pc-live">Live</span>}
-        </span>
+        <span className="pc-name">{heading}</span>
         <span className="pc-detail">{pin.detail ?? 'Delhi NCR'}</span>
+        {live !== undefined && (
+          <span className="live-tags">
+            <span className="live-pill">
+              <i className="live-dot" aria-hidden="true" />
+              LIVE
+            </span>
+            {live.sameAs === undefined && <span className="outdoor-tag">Outdoor</span>}
+          </span>
+        )}
         <AirFigures aqi={reading.aqi} pm25={reading.pm25} layout="auto" />
         <span className="pc-line">
           <span className="pc-level">{level.name}</span>

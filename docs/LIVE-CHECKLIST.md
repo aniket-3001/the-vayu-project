@@ -29,13 +29,13 @@ Unticked means not yet seen live.
 | Map            | Monitor dots appear once the stations job has run                                                                | [x]  |
 | Assistant      | A question gets an answer from the rules, reworded by Bedrock, with "Wording by AI, checked against the facts"   | [x]  |
 | Assistant      | The answer names the monitor, its distance and its age                                                           | [x]  |
-| AR Lens        | Camera, location and microphone prompts, on a real phone                                                         | [ ]  |
+| AIR Lens       | Camera, location and microphone prompts, on a real phone                                                         | [ ]  |
 | Request form   | Sending a real request, then reading it in the table                                                             | [ ]  |
 | Live location  | The switch is on every screen, is remembered after a reload, and a Here card follows the device                  | [ ]  |
 | Detect me      | Asks live or pin with a name; a pinned place keeps its name                                                      | [ ]  |
 | Search         | "DAV Public School Sector 49 Gurugram" is found, and shows a reading with its monitor's distance or an Estimate  | [ ]  |
 | Voice          | Every answer is read in Kajal's voice; the mic shows listening, then the words, and lets go after a few seconds  | [ ]  |
-| AR Lens        | Particles have a black outline and spray; the colour scale is at the top; the whole scene fits on a laptop       | [ ]  |
+| AIR Lens       | Particles have a black outline and spray; the colour scale is at the top; the whole scene fits on a laptop       | [ ]  |
 | Set-up         | A new profile shows Home, Work or school and Park as dotted fields; setting one puts a card over it              | [ ]  |
 | Exposure       | Three rings only; an hour fills one ring; "i" opens the guide card; the centre has only the person icon          | [ ]  |
 | Assistant      | "I took a walk" asks where, then how long; "at school" with no school set says to add one on My Air first        | [ ]  |
@@ -62,6 +62,11 @@ Unticked means not yet seen live.
 | My Air         | Setting a school asks who goes there; "My child" adds them to the family                                         | [ ]  |
 | Exposure       | A school added from Add a person is a card on My Air with the assembly line                                      | [ ]  |
 | Assistant      | "When can I walk today?" says indoors when a GRAP stage applies, otherwise the best hour                         | [ ]  |
+| My Air         | The first card adds a place; dragging a card moves it and it snaps; the live card glows with LIVE                | [ ]  |
+| My Air         | Adding a place asks who it is for                                                                                | [ ]  |
+| Map            | The map's colour is grainy at every zoom; wind stays when zoomed in; cigarette symbols show before numbers       | [ ]  |
+| GPS            | The GPS button turns location off for the whole app; Detect my location says so while it is off                  | [ ]  |
+| AIR Lens       | One card: scale, air, then the 36-hour window with the three buttons                                             | [ ]  |
 | Laptop         | Every screen at a laptop width                                                                                   | [ ]  |
 | Offline        | Switch the phone to airplane mode: the last good readings stay and say how old they are                          | [ ]  |
 

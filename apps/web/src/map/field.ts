@@ -45,6 +45,51 @@ export function fieldAt(
   return { aqi: valueSum / weightSum, confidence };
 }
 
+/** The monitors in 4-degree cells, so a point looks only at those near it and not at all of them. */
+const CELL_DEG = 4;
+export interface FieldIndex {
+  readonly cells: ReadonlyMap<string, readonly Monitor[]>;
+}
+const cellKey = (lat: number, lng: number): string =>
+  `${String(Math.floor(lat / CELL_DEG))}:${String(Math.floor(lng / CELL_DEG))}`;
+
+export function indexMonitors(monitors: readonly Monitor[]): FieldIndex {
+  const cells = new Map<string, Monitor[]>();
+  for (const m of monitors) {
+    const key = cellKey(m.lat, m.lng);
+    const list = cells.get(key);
+    if (list === undefined) cells.set(key, [m]);
+    else list.push(m);
+  }
+  return { cells };
+}
+
+/** `fieldAt` over an index: the same answer, looking only at the cells within reach. */
+export function fieldAtIndexed(
+  lat: number,
+  lng: number,
+  index: FieldIndex,
+): FieldValue | undefined {
+  const reach = REACH_DEG * 1.6;
+  const rowsOut = Math.ceil(reach / CELL_DEG);
+  const colsOut = Math.min(
+    12,
+    Math.ceil(reach / (CELL_DEG * Math.max(0.2, Math.cos((lat * Math.PI) / 180)))),
+  );
+  const row = Math.floor(lat / CELL_DEG);
+  const col = Math.floor(lng / CELL_DEG);
+  const wrap = Math.round(360 / CELL_DEG);
+  const nearby: Monitor[] = [];
+  for (let dr = -rowsOut; dr <= rowsOut; dr++) {
+    for (let dc = -colsOut; dc <= colsOut; dc++) {
+      const c = ((((col + dc) % wrap) + wrap + wrap / 2) % wrap) - wrap / 2;
+      const cell = index.cells.get(`${String(row + dr)}:${String(c)}`);
+      if (cell !== undefined) nearby.push(...cell);
+    }
+  }
+  return fieldAt(lat, lng, nearby);
+}
+
 const hexToRgb = (hex: string): [number, number, number] => [
   parseInt(hex.slice(1, 3), 16),
   parseInt(hex.slice(3, 5), 16),
@@ -121,13 +166,14 @@ export function renderField(
   window: Window = FIELD_BOUNDS,
 ): Uint8ClampedArray {
   const pixels = new Uint8ClampedArray(cols * rows * 4);
+  const index = indexMonitors(monitors);
   const yTop = mercatorY(window.north);
   const yBottom = mercatorY(window.south);
   for (let row = 0; row < rows; row++) {
     const lat = latOfMercatorY(yTop + ((row + 0.5) / rows) * (yBottom - yTop));
     for (let col = 0; col < cols; col++) {
       const lng = window.west + ((col + 0.5) / cols) * (window.east - window.west);
-      const value = fieldAt(lat, lng, monitors);
+      const value = fieldAtIndexed(lat, lng, index);
       if (value === undefined) continue;
       const [r, g, b] = gradientColour(value.aqi);
       const i = (row * cols + col) * 4;
@@ -162,6 +208,12 @@ export function grainyField(
   const coarse = renderField(monitors, cols, rows, window);
   const width = cols * scale;
   const height = rows * scale;
+  // The grain is fixed to the ground, not to the picture: a pixel at a place has the same grain whichever window
+  // it was drawn in, so the dust does not crawl when the map is moved and the picture drawn again.
+  const degPerPx = (window.east - window.west) / width;
+  const yPerPx = (mercatorY(window.south) - mercatorY(window.north)) / height;
+  const offsetX = Math.round(window.west / degPerPx);
+  const offsetY = Math.round(mercatorY(window.north) / yPerPx);
   const pixels = new Uint8ClampedArray(width * height * 4);
   const at = (c: number, r: number, k: number): number =>
     coarse[
@@ -193,8 +245,8 @@ export function grainyField(
         bb += w * alpha * at(c0 + dc, r0 + dr, 2);
       }
       if (a < 0.5) continue;
-      const n = noise(x, y);
-      const n2 = noise(y + 7919, x + 104729);
+      const n = noise(x + offsetX, y + offsetY);
+      const n2 = noise(y + offsetY + 7919, x + offsetX + 104729);
       // Grain in the opacity: mostly 60 to 100 percent, with the odd brighter speck and the odd hole.
       let grain = 0.6 + 0.4 * n;
       if (n2 > 0.97) grain = 1.35;
@@ -208,4 +260,25 @@ export function grainyField(
     }
   }
   return { pixels, width, height };
+}
+
+/** What part of a window the viewport sees, padded a little so a small pan does not show an edge; undefined if none. */
+export function visibleWindow(
+  tile: Window,
+  view: {
+    readonly west: number;
+    readonly east: number;
+    readonly south: number;
+    readonly north: number;
+  },
+  pad = 0.15,
+): Window | undefined {
+  const padLng = (view.east - view.west) * pad;
+  const padLat = (view.north - view.south) * pad;
+  const west = Math.max(tile.west, view.west - padLng);
+  const east = Math.min(tile.east, view.east + padLng);
+  const south = Math.max(tile.south, view.south - padLat);
+  const north = Math.min(tile.north, view.north + padLat);
+  if (east - west < 0.01 || north - south < 0.01) return undefined;
+  return { west, east, south, north };
 }

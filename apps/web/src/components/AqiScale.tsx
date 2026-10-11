@@ -15,6 +15,16 @@ export function scalePosition(aqi: number): number {
   return (index + within) / LEVELS.length;
 }
 
+/** Short forms for a narrow scale, such as the one beside the map's buttons. */
+const ABBR: Readonly<Record<string, string>> = {
+  Good: 'Good',
+  Moderate: 'Mod.',
+  'Unhealthy for sensitive groups': 'Sens.',
+  Unhealthy: 'Unh.',
+  'Very unhealthy': 'V. bad',
+  Hazardous: 'Haz.',
+};
+
 /**
  * What each colour means: the six AQI levels as a bar, each with its short name and its range, and, when an
  * AQI is given, a marker where it falls.
@@ -45,7 +55,10 @@ export function AqiScale({
       <div className="aqi-scale-names" aria-hidden="true">
         {LEVELS.map((level, i) => (
           <span key={level.name}>
-            <b>{level.short}</b>
+            <b>
+              <span className="full">{level.short}</span>
+              <span className="abbr">{ABBR[level.name] ?? level.short}</span>
+            </b>
             <small>
               {smoke ? cigaretteFigure(cigarettesForAqi(level.from)) : level.from}
               {i === LEVELS.length - 1 ? '+' : ''}

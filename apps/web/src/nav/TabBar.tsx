@@ -5,7 +5,7 @@ const TABS = [
   { to: '/', label: 'My Air', Icon: Wind, end: true },
   { to: '/exposure', label: 'Exposure', Icon: UserRound, end: false },
   { to: '/map', label: 'Map', Icon: Globe, end: false },
-  { to: '/lens', label: 'AR Lens', Icon: ScanEye, end: false },
+  { to: '/lens', label: 'AIR Lens', Icon: ScanEye, end: false },
 ] as const;
 
 /** The four places the app goes, in a pill at the bottom of the screen. */

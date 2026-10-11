@@ -4,6 +4,7 @@ import {
   Popup,
   setWorkerUrl,
   type GeoJSONSource,
+  type StyleImageInterface,
   type StyleSpecification,
 } from 'maplibre-gl';
 import workerUrl from 'maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url';
@@ -12,13 +13,16 @@ import { useEffect, useRef } from 'react';
 import { LEVELS } from '../design/levels';
 import type { Monitor } from './monitors';
 import { cigarettesPerDay, describeCigarettes } from '../units/smoke';
-import { FIELD_TILES, grainyField, type Window } from './field';
+import { FIELD_TILES, grainyField, mercatorY, visibleWindow, type Window } from './field';
 import { firesGeoJson, type Fire } from './fires';
 import { monitorsGeoJson } from './monitors';
 
 /** The part of MapLibre's image source that swaps the picture. */
 interface ImageUpdater {
-  updateImage: (options: { url: string }) => void;
+  updateImage: (options: {
+    url: string;
+    coordinates?: [[number, number], [number, number], [number, number], [number, number]];
+  }) => void;
 }
 
 export interface MapLayers {
@@ -62,18 +66,101 @@ function clearPixel(): string {
   return canvas.toDataURL();
 }
 
-function fieldImage(air: readonly Monitor[], tile: Window): string {
+/**
+ * The air colour for a window of the world, as a picture. The picture's detail follows the zoom (about one
+ * picture pixel to two screen pixels), so the dust is as fine in a street view as across a continent, and it is
+ * only drawn for the part of the world that is on screen.
+ */
+function fieldImage(air: readonly Monitor[], window: Window, pxPerDeg: number): string {
   if (air.length === 0) return clearPixel();
-  const { pixels, width, height } = grainyField(air, 48, 100, 4, tile);
+  const SCALE = 3;
+  const widthDeg = window.east - window.west;
+  const yShare = mercatorY(window.south) - mercatorY(window.north);
+  const width = Math.min(840, Math.max(24, Math.round(widthDeg * pxPerDeg)));
+  const height = Math.min(840, Math.max(24, Math.round((width * yShare) / (widthDeg / 360))));
+  const {
+    pixels,
+    width: w,
+    height: h,
+  } = grainyField(air, Math.ceil(width / SCALE), Math.ceil(height / SCALE), SCALE, window);
   const canvas = document.createElement('canvas');
-  canvas.width = width;
-  canvas.height = height;
+  canvas.width = w;
+  canvas.height = h;
   const ctx = canvas.getContext('2d');
   if (ctx === null) return '';
-  const data = ctx.createImageData(width, height);
+  const data = ctx.createImageData(w, h);
   data.data.set(pixels);
   ctx.putImageData(data, 0, 0);
   return canvas.toDataURL();
+}
+
+/**
+ * A cigarette with a glowing ember and smoke that rises, drawn fresh each frame, for the map's labels while the
+ * cigarette switch is on. It repaints the map only while it is wanted, so it costs nothing the rest of the time.
+ */
+function cigaretteImage(wanted: () => boolean): StyleImageInterface & { data: Uint8ClampedArray } {
+  const size = 48;
+  const canvas = document.createElement('canvas');
+  canvas.width = size;
+  canvas.height = size;
+  let map: MapLibreMap | undefined;
+  const image = {
+    width: size,
+    height: size,
+    data: new Uint8ClampedArray(size * size * 4),
+    onAdd(m: MapLibreMap): void {
+      map = m;
+    },
+    render(): boolean {
+      const ctx = canvas.getContext('2d');
+      if (ctx === null || !wanted()) return false;
+      const t = performance.now() / 1000;
+      ctx.clearRect(0, 0, size, size);
+      // The smoke: three puffs, each rising and fading on its own beat.
+      for (let i = 0; i < 3; i++) {
+        const phase = (t / 2.4 + i / 3) % 1;
+        ctx.globalAlpha = Math.sin(phase * Math.PI) * 0.75;
+        ctx.fillStyle = '#9a8f86';
+        ctx.beginPath();
+        ctx.arc(
+          36 + phase * 6 + Math.sin(t * 2 + i) * 1.5,
+          18 - phase * 16,
+          2.2 + phase * 4,
+          0,
+          Math.PI * 2,
+        );
+        ctx.fill();
+      }
+      ctx.globalAlpha = 1;
+      ctx.save();
+      ctx.translate(24, 30);
+      ctx.rotate(-0.61);
+      const body = (x: number, w: number, fill: string, stroke: string): void => {
+        ctx.fillStyle = fill;
+        ctx.strokeStyle = stroke;
+        ctx.lineWidth = 2.4;
+        ctx.beginPath();
+        ctx.roundRect(x, -4, w, 8, 2);
+        ctx.fill();
+        ctx.stroke();
+      };
+      body(-22, 12, '#e0953f', '#b8702a');
+      body(-10, 22, '#ffffff', '#8a96a8');
+      body(12, 6, '#ff6a2b', '#d9481a');
+      ctx.restore();
+      // The ember pulses.
+      ctx.fillStyle = '#ff7a2e';
+      ctx.globalAlpha = 0.55 + 0.4 * Math.sin(t * 5);
+      ctx.beginPath();
+      ctx.arc(37, 22, 3.6, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.globalAlpha = 1;
+      image.data.set(ctx.getImageData(0, 0, size, size).data);
+      map?.triggerRepaint();
+      return true;
+    },
+  };
+  return image;
 }
 
 /** A flame, drawn once from an SVG, for the fires on the map. Undefined where images cannot be made. */
@@ -114,7 +201,14 @@ const FIELD_IDS = FIELD_TILES.map((_, i) => `field-${String(i)}`);
  * covered at a glance), growing as you come in. Numbers are added from city level (zoom 6), and where numbers would
  * collide the worse air keeps its place and the rest wait for more room, which more zoom gives.
  */
-const DOT_RADIUS = ['interpolate', ['linear'], ['zoom'], 0, 2.2, 3, 3.2, 6, 7, 9, 11, 14, 14];
+const DOT_RADIUS = ['interpolate', ['linear'], ['zoom'], 0, 2.4, 3, 3.6, 6, 9, 9, 13, 14, 16];
+/** Larger, so a cigarette and its number fit in the dot as well as an AQI number does. */
+const DOT_RADIUS_SMOKE = ['interpolate', ['linear'], ['zoom'], 0, 2.6, 3, 4, 6, 12, 9, 17, 14, 20];
+const LABEL_SIZE = ['interpolate', ['linear'], ['zoom'], 6, 12, 12, 16];
+const LABEL_SIZE_SMOKE = ['interpolate', ['linear'], ['zoom'], 6, 11, 12, 15];
+
+/** Picture pixels to a degree for a zoom: about one for every two screen pixels. */
+const pxPerDegAt = (zoom: number): number => (512 * 2 ** zoom) / 360 / 2;
 const LABEL_FROM_ZOOM = 6;
 
 /** The map itself: monitors, the colour field between them, fires, and a switch between flat and globe. */
@@ -179,7 +273,7 @@ export function MapView({
         const id = FIELD_IDS[i] ?? `field-${String(i)}`;
         m.addSource(id, {
           type: 'image',
-          url: fieldImage(latest.current.air, tile),
+          url: fieldImage(latest.current.air, tile, pxPerDegAt(m.getZoom())),
           coordinates: [
             [tile.west, tile.north],
             [tile.east, tile.north],
@@ -222,7 +316,7 @@ export function MapView({
         source: 'monitors',
         paint: {
           'circle-color': aqiColour(['get', 'aqi']) as never,
-          'circle-radius': DOT_RADIUS as never,
+          'circle-radius': (latest.current.smoke ? DOT_RADIUS_SMOKE : DOT_RADIUS) as never,
           'circle-stroke-color': '#ffffff',
           'circle-stroke-width': [
             'interpolate',
@@ -251,7 +345,15 @@ export function MapView({
         layout: {
           'text-field': ['to-string', ['get', latest.current.smoke ? 'cigs' : 'aqi']] as never,
           'text-font': ['Noto Sans Bold'],
-          'text-size': ['interpolate', ['linear'], ['zoom'], 6, 10, 12, 13] as never,
+          'text-size': (latest.current.smoke ? LABEL_SIZE_SMOKE : LABEL_SIZE) as never,
+          // With the cigarette switch on, the cigarette sits left of the middle of the dot and the number right.
+          'icon-image': latest.current.smoke ? 'cigarette' : '',
+          'icon-anchor': 'right',
+          'icon-size': ['interpolate', ['linear'], ['zoom'], 6, 0.42, 12, 0.6] as never,
+          'icon-offset': [-1, 0],
+          'text-anchor': latest.current.smoke ? 'left' : 'center',
+          'text-offset': [0.1, 0],
+          'icon-allow-overlap': false,
           // Where two numbers would touch, the worse air keeps its number; the other waits for more zoom.
           'text-allow-overlap': false,
           'text-padding': 2,
@@ -276,6 +378,12 @@ export function MapView({
         },
         layout: { visibility: on.fires ? 'visible' : 'none' },
       });
+      if (!m.hasImage('cigarette'))
+        m.addImage(
+          'cigarette',
+          cigaretteImage(() => latest.current.smoke),
+          { pixelRatio: 2 },
+        );
       void loadFlame().then((image) => {
         if (image === undefined || m.getSource('fires') === undefined) return;
         if (!m.hasImage('flame')) m.addImage('flame', image, { pixelRatio: 2 });
@@ -420,20 +528,11 @@ export function MapView({
   useEffect(() => {
     const m = map.current;
     if (m === undefined || !ready.current) return;
-    FIELD_TILES.forEach((tile, i) => {
-      const source = m.getSource(FIELD_IDS[i] ?? '');
-      if (source !== undefined && 'updateImage' in source)
-        (source as unknown as ImageUpdater).updateImage({ url: fieldImage(air, tile) });
-    });
-  }, [air]);
-
-  useEffect(() => {
-    const m = map.current;
-    if (m === undefined || !ready.current) return;
     void m.getSource<GeoJSONSource>('monitors')?.setData(monitorsGeoJson(monitors));
   }, [monitors]);
 
-  // The cigarette switch changes the numbers on the map from AQI to cigarettes a day, straight away.
+  // The cigarette switch changes the numbers on the map from AQI to cigarettes a day, straight away, with a moving
+  // cigarette before each number, and makes the dots and numbers a little larger to hold them.
   useEffect(() => {
     const m = map.current;
     if (m === undefined || !ready.current || m.getLayer('monitors-label') === undefined) return;
@@ -441,7 +540,69 @@ export function MapView({
       'to-string',
       ['get', smoke ? 'cigs' : 'aqi'],
     ]);
+    m.setLayoutProperty('monitors-label', 'icon-image', smoke ? 'cigarette' : '');
+    m.setLayoutProperty('monitors-label', 'text-anchor', smoke ? 'left' : 'center');
+    m.setLayoutProperty(
+      'monitors-label',
+      'text-size',
+      (smoke ? LABEL_SIZE_SMOKE : LABEL_SIZE) as never,
+    );
+    m.setPaintProperty(
+      'monitors-dot',
+      'circle-radius',
+      (smoke ? DOT_RADIUS_SMOKE : DOT_RADIUS) as never,
+    );
+    if (smoke) m.triggerRepaint();
   }, [smoke]);
+
+  // The air colour is drawn for what is on screen, finer as you come in, and again when the map has stopped moving.
+  useEffect(() => {
+    const m = map.current;
+    if (m === undefined || !ready.current) return;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const draw = (): void => {
+      const zoom = m.getZoom();
+      const bounds = m.getBounds();
+      const view = {
+        west: bounds.getWest(),
+        east: bounds.getEast(),
+        south: Math.max(-80, bounds.getSouth()),
+        north: Math.min(80, bounds.getNorth()),
+      };
+      FIELD_TILES.forEach((tile, i) => {
+        const id = FIELD_IDS[i] ?? '';
+        const source = m.getSource(id);
+        if (source === undefined || !('updateImage' in source)) return;
+        // Zoomed right out, the whole tile; otherwise only the part of it that is in view.
+        const window = zoom < 2.5 ? tile : visibleWindow(tile, view);
+        if (m.getLayer(id) === undefined) return;
+        if (window === undefined) {
+          m.setLayoutProperty(id, 'visibility', 'none');
+          return;
+        }
+        if (layers.gradient) m.setLayoutProperty(id, 'visibility', 'visible');
+        (source as unknown as ImageUpdater).updateImage({
+          url: fieldImage(air, window, pxPerDegAt(zoom)),
+          coordinates: [
+            [window.west, window.north],
+            [window.east, window.north],
+            [window.east, window.south],
+            [window.west, window.south],
+          ],
+        });
+      });
+    };
+    const soon = (): void => {
+      if (timer !== undefined) clearTimeout(timer);
+      timer = setTimeout(draw, 140);
+    };
+    draw();
+    m.on('moveend', soon);
+    return () => {
+      m.off('moveend', soon);
+      if (timer !== undefined) clearTimeout(timer);
+    };
+  }, [air, layers.gradient]);
 
   useEffect(() => {
     const m = map.current;

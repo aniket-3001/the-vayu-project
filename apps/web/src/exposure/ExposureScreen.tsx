@@ -1,4 +1,4 @@
-import { CalendarDays, Info, LocateFixed, Plus } from 'lucide-react';
+import { CalendarDays, Info, LocateFixed, Pencil, Plus } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import type { PlaceMatch } from '../data/geocode';
@@ -8,6 +8,7 @@ import { hourName } from '../today/time';
 import { airStore, useHistory } from '../air/store';
 import { AirError, AirLoading } from '../components/AirState';
 import { pinId, type Pin } from '../data/pins';
+import { GPS_OFF_WORDS, useGps } from '../places/gps';
 import { samePlace } from '../places/roles';
 import { usePins } from '../places/usePins';
 import { Progress } from '../tasks/ui/TipsCard';
@@ -188,6 +189,7 @@ export function ExposureScreen({
     setPanel(true);
   };
   const isMe = person.id === 'me';
+  const gps = useGps();
   const autoOn = live.state === 'on' || live.state === 'asking' || live.sample;
 
   return (
@@ -227,25 +229,37 @@ export function ExposureScreen({
         </div>
         <div className="people-row" role="group" aria-label="Who is this for">
           {household.people.map((p) => (
-            <button
-              key={p.id}
-              type="button"
-              className="person"
-              aria-pressed={person.id === p.id}
-              onClick={() => {
-                choosePerson(p.id);
-              }}
-            >
-              <span className="avatar" aria-hidden="true">
-                {initials(p.name)}
-              </span>
-              <span className="person-words">
-                <strong>{p.name}</strong>
-                <span className="muted small">
-                  {p.age}, {DAY_LABELS[p.day].toLowerCase()}
+            <span key={p.id} className="person-wrap">
+              <button
+                type="button"
+                className="person"
+                aria-pressed={person.id === p.id}
+                onClick={() => {
+                  // Pressing a profile only switches to them.
+                  select(p.id);
+                }}
+              >
+                <span className="avatar" aria-hidden="true">
+                  {initials(p.name)}
                 </span>
-              </span>
-            </button>
+                <span className="person-words">
+                  <strong>{p.name}</strong>
+                  <span className="muted small">
+                    {p.age}, {DAY_LABELS[p.day].toLowerCase()}
+                  </span>
+                </span>
+              </button>
+              <button
+                type="button"
+                className="person-edit"
+                aria-label={`Edit ${p.name}’s day`}
+                onClick={() => {
+                  choosePerson(p.id);
+                }}
+              >
+                <Pencil size={16} strokeWidth={2} aria-hidden="true" />
+              </button>
+            </span>
           ))}
           {household.people.length < MAX_PEOPLE && (
             <button
@@ -269,17 +283,20 @@ export function ExposureScreen({
           <label className="auto-switch">
             <LocateFixed size={18} strokeWidth={1.75} aria-hidden="true" />
             <span>
-              <strong>Detect my location</strong>
+              <strong>Auto calculate based on my location</strong>
               <span className="muted small">
-                {autoOn
-                  ? 'On, while this page is open. Counted as live outdoor location.'
-                  : 'Off. Counts the hours from where you are.'}
+                {!gps.on
+                  ? GPS_OFF_WORDS
+                  : autoOn
+                    ? 'On, while this page is open.'
+                    : 'Off. Counts the hours from where you are.'}
               </span>
             </span>
             <input
               type="checkbox"
               role="switch"
-              checked={autoOn}
+              checked={autoOn && gps.on}
+              disabled={!gps.on}
               onChange={(event) => {
                 if (event.target.checked) live.start();
                 else {

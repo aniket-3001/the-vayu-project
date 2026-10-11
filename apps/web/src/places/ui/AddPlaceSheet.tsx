@@ -25,6 +25,7 @@ export function AddPlaceSheet({
   title = 'Add a place',
   fixedLabel,
   choices,
+  onLive,
 }: {
   readonly initial?: FoundPlace | undefined;
   /** What the sheet is for, when it is for one thing: “Where is home?”. */
@@ -36,6 +37,8 @@ export function AddPlaceSheet({
   readonly search?: (query: string) => Promise<readonly PlaceMatch[]>;
   readonly locate?: Locate;
   readonly onSave: (label: string, place: FoundPlace) => void;
+  /** Offered when the place was found by Detect my location: follow the device instead of pinning it. */
+  readonly onLive?: () => void;
   readonly onCancel: () => void;
 }): React.JSX.Element {
   const [found, setFound] = useState<FoundPlace | undefined>(initial);
@@ -59,7 +62,7 @@ export function AddPlaceSheet({
         {found === undefined ? (
           <>
             <h2>{title}</h2>
-            <p className="muted">Use where you are, or search for it.</p>
+            <p className="muted">Detect where you are, or search for it.</p>
             <PlacePicker
               name="Here"
               pins={[]}
@@ -92,6 +95,11 @@ export function AddPlaceSheet({
                 <span className="muted small"> · {found.detail}</span>
               )}
             </p>
+            {onLive !== undefined && found.detail === 'Your location' && (
+              <button type="button" className="primary live-follow" onClick={onLive}>
+                Follow me instead (live location)
+              </button>
+            )}
             <LabelForm
               {...(choices !== undefined ? { choices, custom: false } : {})}
               onSave={(label) => {

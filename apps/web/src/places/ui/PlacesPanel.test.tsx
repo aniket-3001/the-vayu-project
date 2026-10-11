@@ -123,7 +123,7 @@ describe('the Places screen', () => {
     });
     await userEvent.click(screen.getByRole('button', { name: 'Set Home' }));
     const sheet = screen.getByRole('dialog', { name: 'Where is home?' });
-    await userEvent.click(within(sheet).getByRole('button', { name: 'Detect me' }));
+    await userEvent.click(within(sheet).getByRole('button', { name: 'Detect my location' }));
     // Home needs no name: it goes straight to a card, with the address under it.
     const card = (await screen.findByRole('link', { name: 'Open Home' })).closest('li');
     expect(card?.querySelector('.pc-name')).toHaveTextContent('Home');
@@ -138,7 +138,8 @@ describe('the Places screen', () => {
   });
 
   const chooseSchool = async (): Promise<void> => {
-    window.localStorage.setItem('vayu.pins.v1', '[]');
+    if (window.localStorage.getItem('vayu.pins.v1') === null)
+      window.localStorage.setItem('vayu.pins.v1', '[]');
     screenWith({
       locate: (found) => {
         found(28.4, 77.05);
@@ -148,7 +149,7 @@ describe('the Places screen', () => {
     await userEvent.click(
       within(screen.getByRole('dialog', { name: 'Where do you work or study?' })).getByRole(
         'button',
-        { name: 'Detect me' },
+        { name: 'Detect my location' },
       ),
     );
     const name = screen.getByRole('dialog', { name: 'Name this place' });
@@ -162,27 +163,52 @@ describe('the Places screen', () => {
       people?: { id: string; name: string; age: number; day: string }[];
     };
 
-  it('makes the work or school field a choice of the two, asks who goes to a school, and the day follows when it is you', async () => {
+  it('makes the work or school field a choice of the two, asks who it is for, and the day follows when it is you', async () => {
     await chooseSchool();
-    const who = screen.getByRole('dialog', { name: 'Who goes to this school?' });
-    await userEvent.click(within(who).getByRole('button', { name: 'I do' }));
+    const who = screen.getByRole('dialog', { name: 'Who is this for?' });
+    await userEvent.click(within(who).getByRole('checkbox', { name: /Me/u }));
+    await userEvent.click(within(who).getByRole('button', { name: 'Done' }));
     expect(await screen.findByRole('link', { name: 'Open School' })).toBeInTheDocument();
     expect(peopleStored().people?.find((p) => p.id === 'me')?.day).toBe('school');
   });
 
-  it('adds a child to the family when the school is theirs, with the school set as theirs and not as yours', async () => {
+  it('asks who it is for with the right people ticked: a school for the children, home for everyone', async () => {
+    window.localStorage.setItem(
+      'vayu.people.v1',
+      JSON.stringify({
+        people: [
+          { id: 'me', name: 'Me', age: 38, day: 'work' },
+          { id: 'asha', name: 'Asha', age: 9, day: 'school' },
+        ],
+        current: 'me',
+      }),
+    );
     await chooseSchool();
-    const who = screen.getByRole('dialog', { name: 'Who goes to this school?' });
-    await userEvent.click(within(who).getByRole('button', { name: 'My child' }));
+    const who = screen.getByRole('dialog', { name: 'Who is this for?' });
+    expect(within(who).getByRole('checkbox', { name: /Asha/u })).toBeChecked();
+    expect(within(who).getByRole('checkbox', { name: /Me/u })).not.toBeChecked();
+    await userEvent.click(within(who).getByRole('button', { name: 'Done' }));
+    const spots = JSON.parse(window.localStorage.getItem('vayu.spots.v3') ?? '{}') as Record<
+      string,
+      { school?: { pin: { lat: number } } }
+    >;
+    expect(spots.asha?.school?.pin.lat).toBeCloseTo(28.4, 1);
+    // The owner's own day is not turned into a school day.
+    expect(peopleStored().people?.find((p) => p.id === 'me')?.day).toBe('work');
+  });
+
+  it('adds someone new to the family when it is for them, with the place set as theirs and not as yours', async () => {
+    await chooseSchool();
+    const who = screen.getByRole('dialog', { name: 'Who is this for?' });
+    await userEvent.click(within(who).getByRole('button', { name: 'Someone new' }));
     expect(await screen.findByRole('link', { name: 'Open School' })).toBeInTheDocument();
-    const form = screen.getByRole('dialog', { name: /Add the child who goes to School/u });
+    const form = screen.getByRole('dialog', { name: /Add the person for School/u });
     await userEvent.type(within(form).getByRole('textbox', { name: 'Name' }), 'Asha');
     await userEvent.type(within(form).getByRole('spinbutton', { name: 'Age' }), '9');
     await userEvent.click(within(form).getByRole('button', { name: 'Add person' }));
     const people = peopleStored().people ?? [];
     const asha = people.find((p) => p.name === 'Asha');
     expect(asha).toMatchObject({ age: 9, day: 'school' });
-    // The owner's own day is not turned into a school day, and who Exposure looks at is unchanged.
     expect(people.find((p) => p.id === 'me')?.day).not.toBe('school');
     const spots = JSON.parse(window.localStorage.getItem('vayu.spots.v3') ?? '{}') as Record<
       string,
@@ -200,7 +226,7 @@ describe('the Places screen', () => {
     });
     await userEvent.click(screen.getByRole('button', { name: 'Add a place' }));
     const where = screen.getByRole('dialog', { name: 'Add a place' });
-    await userEvent.click(within(where).getByRole('button', { name: 'Detect me' }));
+    await userEvent.click(within(where).getByRole('button', { name: 'Detect my location' }));
     const name = screen.getByRole('dialog', { name: 'Name this place' });
     // It cannot be pinned without a name.
     expect(within(name).getByRole('button', { name: /Pin it/u })).toBeDisabled();
@@ -210,10 +236,24 @@ describe('the Places screen', () => {
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
   });
 
+  const openAdd = async (): Promise<HTMLElement> => {
+    await userEvent.click(screen.getByRole('button', { name: 'Add a place' }));
+    return screen.getByRole('dialog', { name: 'Add a place' });
+  };
+
+  it('has no search bar on the page: the first card adds a place', () => {
+    screenWith();
+    expect(screen.queryByRole('searchbox')).not.toBeInTheDocument();
+    const first = screen.getByRole('list', { name: 'Your places' }).firstElementChild;
+    expect(first).toHaveClass('add-place');
+    expect(first?.querySelector('button')).toHaveAccessibleName('Add a place');
+  });
+
   it('asks for a name before a searched place is pinned, and accepts any name', async () => {
     screenWith({ search: () => Promise.resolve([lucknow]) });
-    await userEvent.type(screen.getByRole('searchbox'), 'Lucknow');
-    await userEvent.click(screen.getByRole('button', { name: 'Search' }));
+    const where = await openAdd();
+    await userEvent.type(within(where).getByRole('searchbox'), 'Lucknow');
+    await userEvent.click(within(where).getByRole('button', { name: 'Search' }));
     await userEvent.click(await screen.findByRole('button', { name: 'Add Lucknow' }));
     // Not pinned yet: it is waiting for a name, and says which place it is.
     expect(screen.queryByRole('link', { name: 'Open Lucknow' })).not.toBeInTheDocument();
@@ -232,24 +272,27 @@ describe('the Places screen', () => {
 
   it('says so when no monitors cover the search, and when search is down', async () => {
     screenWith({ search: () => Promise.resolve([]) });
-    await userEvent.type(screen.getByRole('searchbox'), 'Paris');
-    await userEvent.click(screen.getByRole('button', { name: 'Search' }));
+    let where = await openAdd();
+    await userEvent.type(within(where).getByRole('searchbox'), 'Paris');
+    await userEvent.click(within(where).getByRole('button', { name: 'Search' }));
     expect(await screen.findByText(/could not find that/u)).toBeInTheDocument();
     cleanup();
     screenWith({ search: () => Promise.reject(new Error('offline')) });
-    await userEvent.type(screen.getByRole('searchbox'), 'Delhi');
-    await userEvent.click(screen.getByRole('button', { name: 'Search' }));
+    where = await openAdd();
+    await userEvent.type(within(where).getByRole('searchbox'), 'Delhi');
+    await userEvent.click(within(where).getByRole('button', { name: 'Search' }));
     expect(await screen.findByText(/Search is not working right now/u)).toBeInTheDocument();
   });
 
-  it('asks what to do with where you are: pin it under a name you choose', async () => {
+  it('pins where you are under a name you choose, from Detect my location in the add sheet', async () => {
     screenWith({
       locate: (found) => {
         found(28.6, 77.2);
       },
     });
-    await userEvent.click(screen.getByRole('button', { name: 'Detect me' }));
-    const sheet = screen.getByRole('dialog', { name: 'Where you are' });
+    const where = await openAdd();
+    await userEvent.click(within(where).getByRole('button', { name: 'Detect my location' }));
+    const sheet = screen.getByRole('dialog', { name: 'Name this place' });
     await userEvent.type(
       within(sheet).getByRole('textbox', { name: 'Name for this place' }),
       'Gym',
@@ -257,10 +300,9 @@ describe('the Places screen', () => {
     await userEvent.click(within(sheet).getByRole('button', { name: /Pin it/u }));
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Open Gym' })).toBeInTheDocument();
-    expect(screen.queryByRole('link', { name: 'Open Near you' })).not.toBeInTheDocument();
   });
 
-  it('keeps it live instead: the switch is on, and a card that follows you appears', async () => {
+  it('keeps it live instead: the switch is on, and a live card that says so appears', async () => {
     const store = createLiveLocation({
       storage: window.localStorage,
       geolocation: () =>
@@ -276,32 +318,67 @@ describe('the Places screen', () => {
         found(28.6, 77.2);
       },
     });
-    await userEvent.click(screen.getByRole('button', { name: 'Detect me' }));
-    await userEvent.click(
-      within(screen.getByRole('dialog')).getByRole('button', { name: /Live/u }),
-    );
+    const where = await openAdd();
+    await userEvent.click(within(where).getByRole('button', { name: 'Detect my location' }));
+    await userEvent.click(screen.getByRole('button', { name: /Follow me instead/u }));
     expect(store.get().enabled).toBe(true);
-    expect(await screen.findByRole('link', { name: 'Open Here' })).toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: 'Remove Here' })).not.toBeInTheDocument();
+    const link = await screen.findByRole('link', { name: 'Open Live location' });
+    const card = link.closest('li');
+    expect(card).toHaveClass('live-card');
+    expect(card?.querySelector('.live-pill')).toHaveTextContent('LIVE');
+    expect(card?.querySelector('.live-pill .live-dot')).toBeInTheDocument();
+    expect(card?.querySelector('.outdoor-tag')).toHaveTextContent('Outdoor');
+    // The address sits under the heading, and the live card cannot be removed.
+    expect(card?.querySelector('.pc-detail')).toHaveTextContent('Sector 49, Gurugram');
+    expect(screen.queryByRole('button', { name: /Remove Live location/u })).not.toBeInTheDocument();
     setLiveLocation(undefined);
   });
 
-  it('says so when the place is outside our area, and when the location cannot be read', async () => {
-    screenWith({
-      locate: (found) => {
-        found(48.8, 2.3);
-      },
+  it('calls the live card “Same as Home” when it is at a saved place, and drops the Outdoor tag', async () => {
+    const store = createLiveLocation({
+      storage: window.localStorage,
+      geolocation: () =>
+        ({
+          getCurrentPosition: (ok: PositionCallback) => {
+            // Within a few metres of the sample Home, 28.59, 77.05.
+            ok({ coords: { latitude: 28.5902, longitude: 77.0501 } } as GeolocationPosition);
+          },
+        }) as unknown as Geolocation,
     });
-    await userEvent.click(screen.getByRole('button', { name: 'Detect me' }));
-    expect(screen.getByRole('dialog')).toHaveTextContent(/outside north India/u);
-    cleanup();
+    setLiveLocation(store);
+    store.set(true);
+    screenWith();
+    const link = await screen.findByRole('link', { name: 'Open Same as Home' });
+    const card = link.closest('li');
+    expect(card).toHaveClass('live-card');
+    expect(card?.querySelector('.outdoor-tag')).not.toBeInTheDocument();
+    expect(card?.querySelector('.live-pill')).toHaveTextContent('LIVE');
+    setLiveLocation(undefined);
+  });
+
+  it('says so when the location cannot be read', async () => {
     screenWith({
       locate: (_found, fail) => {
         fail();
       },
     });
-    await userEvent.click(screen.getByRole('button', { name: 'Detect me' }));
-    expect(screen.getByRole('status')).toHaveTextContent(/could not get your location/u);
+    const where = await openAdd();
+    await userEvent.click(within(where).getByRole('button', { name: 'Detect my location' }));
+    expect(within(where).getByRole('status')).toHaveTextContent(/could not get your location/u);
+  });
+
+  it('keeps the order of the cards when one is moved to another’s place', async () => {
+    const { movePin } = await import('../../data/pins');
+    const order = movePin(
+      [
+        { id: 'a', name: 'A', lat: 1, lng: 1 },
+        { id: 'b', name: 'B', lat: 2, lng: 2 },
+        { id: 'c', name: 'C', lat: 3, lng: 3 },
+      ],
+      'a',
+      'c',
+    ).map((p) => p.id);
+    expect(order).toEqual(['b', 'c', 'a']);
   });
 });
 

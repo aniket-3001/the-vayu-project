@@ -1,5 +1,6 @@
 import { useMemo, useSyncExternalStore } from 'react';
 import type { Pin } from '../data/pins';
+import { gpsOn } from './gps';
 
 export const LIVE_LOCATION_KEY = 'vayu.liveLocation.v1';
 
@@ -145,6 +146,12 @@ export function createLiveLocation(options: Options = {}): LiveLocation {
       };
     },
     set: (enabled) => {
+      // With the app's GPS switch off, nothing starts following the device.
+      if (enabled && !gpsOn()) {
+        stop();
+        change({ enabled: false, status: 'off' });
+        return;
+      }
       remember(enabled);
       if (enabled) start();
       else {
@@ -153,7 +160,7 @@ export function createLiveLocation(options: Options = {}): LiveLocation {
       }
     },
     resume: () => {
-      if (snapshot.enabled && !running) start();
+      if (snapshot.enabled && !running && gpsOn()) start();
     },
   };
 }

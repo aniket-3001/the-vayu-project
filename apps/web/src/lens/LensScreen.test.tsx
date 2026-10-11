@@ -25,7 +25,7 @@ const open = (): void => {
   );
 };
 
-describe('the AR Lens', () => {
+describe('the AIR Lens', () => {
   it('opens on the first place with the air, the weather and the cleanest hour, and says what is sample', () => {
     open();
     expect(screen.getByRole('img', { name: /illustration of a home/u })).toBeInTheDocument();
@@ -70,25 +70,32 @@ describe('the AR Lens', () => {
     expect(sceneFor('My flat')).toBe('home');
   });
 
-  it('has the card and, under it, the slider with the colour scale in it; nothing at the top', () => {
+  it('is one card: the scale on top, the coloured air card, then the hour window with the three buttons', () => {
     open();
     expect(document.querySelector('.lens-top')).not.toBeInTheDocument();
     const hud = document.querySelector('.lens-hud');
-    const kids = Array.from(hud?.children ?? []);
-    expect(kids).toHaveLength(2);
-    expect(kids[0]).toHaveClass('place-card', 'lens-card');
-    expect(kids[1]).toHaveClass('lens-dial');
-    expect(kids[1]?.querySelector('.aqi-scale')).toBeInTheDocument();
+    const unit = hud?.querySelector('.lens-unit');
+    expect(hud?.children).toHaveLength(1);
+    const parts = Array.from(unit?.children ?? []).map((el) => el.className.split(' ')[0]);
+    expect(parts).toEqual(['lens-unit-scale', 'place-card', 'lens-unit-time']);
+    expect(unit?.querySelector('.lens-unit-scale .aqi-scale')).toBeInTheDocument();
+    const time = unit?.querySelector('.lens-unit-time');
+    expect(time?.querySelector('.timeline')).toBeInTheDocument();
+    // After the slider, in a row: Ask, cigarettes, GPS.
+    const buttons = Array.from(time?.querySelectorAll('.dock-buttons button') ?? []);
+    expect(buttons).toHaveLength(3);
+    expect(buttons[2]).toHaveAccessibleName('GPS');
+    expect(screen.getByText('Slide the window along the next 36 hours')).toBeInTheDocument();
   });
 
   it('keeps the camera and the place switch in the top corner of the card', () => {
     open();
     const card = screen.getByRole('region', { name: 'The air here' });
     const tools = card.querySelector('.lens-tools');
-    expect(within(card).getByRole('button', { name: /See it live/u })).toBeInTheDocument();
+    expect(within(card).getByRole('button', { name: /Experience on camera/u })).toBeInTheDocument();
     expect(tools?.querySelector('select')).toBeInTheDocument();
     const names = Array.from(card.querySelectorAll('option')).map((o) => o.textContent);
-    expect(names[0]).toBe('Live outdoor location');
+    expect(names[0]).toBe('Live location');
     expect(names).toContain('Home');
     expect(screen.queryByRole('button', { name: 'Use camera' })).not.toBeInTheDocument();
   });
@@ -160,11 +167,11 @@ describe('the AR Lens', () => {
       value: { getUserMedia: vi.fn().mockResolvedValue(stream) },
     });
     open();
-    await userEvent.click(screen.getByRole('button', { name: /See it live/u }));
+    await userEvent.click(screen.getByRole('button', { name: /Experience on camera/u }));
     await userEvent.click(await screen.findByRole('button', { name: /Stop camera/u }));
     expect(stop).toHaveBeenCalled();
     expect(screen.getByRole('img', { name: /illustration of a home/u })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /See it live/u })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Experience on camera/u })).toBeInTheDocument();
   });
 
   it('carries on with an illustration when the camera is refused or missing', async () => {
@@ -173,14 +180,14 @@ describe('the AR Lens', () => {
       value: { getUserMedia: vi.fn().mockRejectedValue(new Error('no')) },
     });
     open();
-    await userEvent.click(screen.getByRole('button', { name: /See it live/u }));
+    await userEvent.click(screen.getByRole('button', { name: /Experience on camera/u }));
     expect(
       await screen.findByText('Camera not allowed, so an illustration stands in.'),
     ).toBeInTheDocument();
     cleanup();
     Reflect.deleteProperty(navigator, 'mediaDevices');
     open();
-    await userEvent.click(screen.getByRole('button', { name: /See it live/u }));
+    await userEvent.click(screen.getByRole('button', { name: /Experience on camera/u }));
     expect(screen.getByText('No camera here, so an illustration stands in.')).toBeInTheDocument();
   });
 

@@ -10,6 +10,7 @@ import { useLiveLocation } from '../places/liveLocation';
 import { Pill } from '../today/ui/Chip';
 import { useAirUnits } from '../units/AirUnits';
 import { DetectLocation } from '../nav/DetectLocation';
+import { DockButtons } from '../nav/Dock';
 import { defaultLayers } from './layers';
 import { FireReportSheet } from './FireReportSheet';
 import type { Fire } from './fires';
@@ -57,7 +58,6 @@ export function MapScreen(): React.JSX.Element {
   }, []);
   const marker = useRef<Marker>();
   const windField = useMemo(() => makeWindField(data.wind), [data.wind]);
-  const bottom = useRef<HTMLDivElement>(null);
 
   // The live location switch is on every screen. Here, on, it puts a blue dot where the device is and flies there.
   const live = useLiveLocation();
@@ -94,23 +94,6 @@ export function MapScreen(): React.JSX.Element {
       ? 'You are outside north India, so the monitors and fires shown are far away.'
       : '';
 
-  // The buttons that stay on every screen sit just above this panel, so tell the page how tall it is.
-  useEffect(() => {
-    const panel = bottom.current;
-    const root = document.documentElement;
-    if (panel === null || typeof ResizeObserver === 'undefined') return;
-    const report = (): void => {
-      root.style.setProperty('--dock-lift', `${String(Math.round(panel.offsetHeight) + 6)}px`);
-    };
-    report();
-    const watcher = new ResizeObserver(report);
-    watcher.observe(panel);
-    return () => {
-      watcher.disconnect();
-      root.style.removeProperty('--dock-lift');
-    };
-  }, []);
-
   return (
     <div className="map-screen">
       <MapView
@@ -126,60 +109,63 @@ export function MapScreen(): React.JSX.Element {
       />
       <WindStars map={map} enabled={shown.wind} field={windField} />
 
-      <div className="map-bottom" ref={bottom}>
+      <div className="map-bottom">
         <div className="map-legend">
-          <div className="legend-head">
-            <p className="legend-pills">
-              {sample && data.fires === undefined && <Pill>Sample data</Pill>}
-              {((!sample && monitors.length > 0) || data.windLive || data.fires !== undefined) && (
-                <Pill>Live</Pill>
-              )}
-            </p>
-            <DetectLocation />
-          </div>
-          <p className="small" role="status">
-            {where}
-          </p>
-          <div className="legend-body">
-            <AqiScale />
-            <details className="legend-about">
-              <summary>About this data</summary>
-              <p className="legend-notes small">
-                {shown.monitors && !sample && (
-                  <span>
-                    {stations.status === 'loading'
-                      ? 'Getting the monitors…'
-                      : monitors.length === 0
-                        ? 'No monitor has reported in the last six hours, so none are shown.'
-                        : `${String(monitors.length)} monitors worldwide with a PM2.5 reading in the last six hours (OpenAQ). Each is a dot; zoom in for its number.`}
-                  </span>
-                )}
-                {shown.gradient && (
-                  <span>
-                    Colour between monitors is an estimate from the nearest ones. It fades out about
-                    450 km from any monitor, where we know nothing.
-                  </span>
-                )}
-                {shown.fires && (
-                  <span className="legend-fire">
-                    <Flame size={14} strokeWidth={2} aria-hidden="true" />{' '}
-                    {data.fires === undefined
-                      ? 'Fires, last 24 hours'
-                      : `${String(data.fires)} fires in the last 24 hours (NASA satellite).${sample ? ' Positions are a sample.' : ''}`}
-                  </span>
-                )}
-                {shown.wind && (
-                  <span>
-                    {data.windLive
-                      ? 'Wind: ICON and GFS models via Open-Meteo, right now: close detail over south Asia, coarser elsewhere.'
-                      : sample
-                        ? 'Wind is a sample flow.'
-                        : 'The wind could not be loaded just now, so none is shown.'}
-                  </span>
-                )}
+          <div className="legend-main">
+            <div className="legend-head">
+              <p className="legend-pills">
+                {sample && data.fires === undefined && <Pill>Sample data</Pill>}
+                {((!sample && monitors.length > 0) ||
+                  data.windLive ||
+                  data.fires !== undefined) && <Pill>Live</Pill>}
               </p>
-            </details>
+              <DetectLocation />
+            </div>
+            <p className="small" role="status">
+              {where}
+            </p>
+            <div className="legend-body">
+              <AqiScale />
+              <details className="legend-about">
+                <summary>About this data</summary>
+                <p className="legend-notes small">
+                  {shown.monitors && !sample && (
+                    <span>
+                      {stations.status === 'loading'
+                        ? 'Getting the monitors…'
+                        : monitors.length === 0
+                          ? 'No monitor has reported in the last six hours, so none are shown.'
+                          : `${String(monitors.length)} monitors worldwide with a PM2.5 reading in the last six hours (OpenAQ). Each is a dot; zoom in for its number.`}
+                    </span>
+                  )}
+                  {shown.gradient && (
+                    <span>
+                      Colour between monitors is an estimate from the nearest ones. It fades out
+                      about 450 km from any monitor, where we know nothing.
+                    </span>
+                  )}
+                  {shown.fires && (
+                    <span className="legend-fire">
+                      <Flame size={14} strokeWidth={2} aria-hidden="true" />{' '}
+                      {data.fires === undefined
+                        ? 'Fires, last 24 hours'
+                        : `${String(data.fires)} fires in the last 24 hours (NASA satellite).${sample ? ' Positions are a sample.' : ''}`}
+                    </span>
+                  )}
+                  {shown.wind && (
+                    <span>
+                      {data.windLive
+                        ? 'Wind: ICON and GFS models via Open-Meteo, right now: close detail over south Asia, coarser elsewhere.'
+                        : sample
+                          ? 'Wind is a sample flow.'
+                          : 'The wind could not be loaded just now, so none is shown.'}
+                    </span>
+                  )}
+                </p>
+              </details>
+            </div>
           </div>
+          <DockButtons layout="column" />
         </div>
       </div>
       {reporting !== undefined && (

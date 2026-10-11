@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { addPin, loadPins, removePin, savePins, type Pin } from '../data/pins';
+import { addPin, loadPins, movePin, removePin, savePins, type Pin } from '../data/pins';
 
 type Place = Parameters<typeof addPin>[1];
 
@@ -15,6 +15,8 @@ export function usePins(storage: Storage = window.localStorage): {
   readonly pins: readonly Pin[];
   readonly add: (place: Place) => void;
   readonly remove: (id: string) => void;
+  /** Puts one place where another was, so the order of the cards is the person's own. */
+  readonly move: (fromId: string, toId: string) => void;
 } {
   const [pins, setPins] = useState<readonly Pin[]>(() => loadPins(storage));
   useEffect(() => {
@@ -41,6 +43,9 @@ export function usePins(storage: Storage = window.localStorage): {
     },
     remove: (id) => {
       change((current) => removePin(current, id));
+    },
+    move: (fromId, toId) => {
+      change((current) => movePin(current, fromId, toId));
     },
   };
 }

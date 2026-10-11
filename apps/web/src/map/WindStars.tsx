@@ -23,8 +23,8 @@ interface Star {
   trail: { x: number; y: number }[];
 }
 
-/** The wind is drawn up to this zoom (about a city) and not beyond. */
-export const WIND_MAX_ZOOM = 9;
+/** The wind is drawn at every zoom the map has: it thins, it does not vanish, as you come in. */
+export const WIND_MAX_ZOOM = 18;
 
 /**
  * Wind as little shooting stars, the way Windy draws it: each one is born at a random spot, shoots along the
@@ -110,7 +110,7 @@ export function WindStars({
       const dy = probe.y - here.y;
       const length = Math.hypot(dx, dy);
       if (length > 1e-6) {
-        // Slow and steady, about the pace of the specks in the AR Lens.
+        // Slow and steady, about the pace of the specks in the AIR Lens.
         const px = (0.45 + Math.min(speed, 10) * 0.07) * zoomScale;
         const moved = map.unproject([here.x + (dx / length) * px, here.y + (dy / length) * px]);
         s.lat = moved.lat;

@@ -1,4 +1,5 @@
 import { LocateFixed } from 'lucide-react';
+import { GPS_OFF_WORDS, useGps } from '../places/gps';
 import { useLiveLocation } from '../places/liveLocation';
 
 const NOTES = {
@@ -16,14 +17,20 @@ export function DetectLocation({
   readonly className?: string;
 }): React.JSX.Element {
   const { enabled, status, set } = useLiveLocation();
-  const on = enabled && status !== 'refused' && status !== 'unavailable';
-  const note = status === 'refused' || status === 'unavailable' ? NOTES[status] : undefined;
+  const gps = useGps();
+  const on = gps.on && enabled && status !== 'refused' && status !== 'unavailable';
+  const note = !gps.on
+    ? GPS_OFF_WORDS
+    : status === 'refused' || status === 'unavailable'
+      ? NOTES[status]
+      : undefined;
   return (
     <span className={`detect ${className}`.trim()}>
       <button
         type="button"
         className={`detect-button${on ? ' on' : ''}${status === 'asking' ? ' asking' : ''}`}
         aria-pressed={on}
+        disabled={!gps.on}
         onClick={() => {
           set(!on);
         }}

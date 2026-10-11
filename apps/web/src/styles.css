@@ -4852,3 +4852,237 @@ h2 {
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
 }
+
+/* The first card adds a place; a card being dragged lifts a little and snaps into the grid */
+.add-first {
+  grid-column: auto;
+}
+.place-card {
+  touch-action: manipulation;
+}
+.place-card.dragging {
+  box-shadow: 0 18px 36px -14px rgb(51 65 85 / 0.6);
+  cursor: grabbing;
+}
+.who-list {
+  display: grid;
+  gap: 4px;
+  margin: 0 0 10px;
+  padding: 0;
+  list-style: none;
+}
+.live-follow {
+  justify-self: start;
+  margin-bottom: 8px;
+}
+
+/* The live card: it glows, and says it is live with a red dot and a pill */
+.place-card.live-card {
+  box-shadow:
+    0 0 0 2px rgb(255 255 255 / 0.9),
+    0 0 0 4px rgb(224 49 49 / 0.55),
+    0 0 26px 4px rgb(224 49 49 / 0.35);
+  animation: live-glow 2.4s ease-in-out infinite;
+}
+@keyframes live-glow {
+  50% {
+    box-shadow:
+      0 0 0 2px rgb(255 255 255 / 0.9),
+      0 0 0 4px rgb(224 49 49 / 0.3),
+      0 0 34px 8px rgb(224 49 49 / 0.5);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .place-card.live-card {
+    animation: none;
+  }
+}
+.live-tags {
+  display: flex;
+  grid-column: 1 / -1;
+  align-items: center;
+  gap: 6px;
+  margin-top: 4px;
+}
+.live-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 9px 2px 7px;
+  border-radius: 999px;
+  background: #fff;
+  color: #b3261e;
+  font-size: 11.5px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+}
+.live-pill .live-dot {
+  position: static;
+  width: 9px;
+  height: 9px;
+  border: 0;
+  border-radius: 50%;
+  background: #e03131;
+  animation: live-blink 1.2s ease-in-out infinite;
+}
+@keyframes live-blink {
+  50% {
+    opacity: 0.35;
+  }
+}
+.outdoor-tag {
+  padding: 2px 9px;
+  border-radius: 999px;
+  background: rgb(255 255 255 / 0.6);
+  font-size: 11.5px;
+  font-weight: 700;
+}
+
+/* A profile in Exposure: press it to switch to them, the pencil beside it to edit their day */
+.person-wrap {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: 2px;
+}
+.person-edit {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border: 1px solid var(--line);
+  border-radius: 50%;
+  background: var(--card);
+  color: #2f6aa3;
+  cursor: pointer;
+}
+
+/* The three buttons sit inside the bottom card of the map (a column to its right) and the AIR Lens (a row after the
+   slider), so they never cover what the card shows */
+.dock-buttons {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: 8px;
+}
+.dock-buttons.column {
+  flex-direction: column;
+  justify-content: center;
+}
+.dock-buttons.row {
+  flex-direction: row;
+}
+.dock-buttons.row .assistant-fab,
+.dock-buttons.row .smoke-toggle {
+  width: 44px;
+  height: 44px;
+}
+.gps-toggle.on {
+  border-color: #8fd0a4;
+  background: #e8f7ee;
+  color: #1f7a42;
+}
+.gps-toggle.off {
+  border-color: #e3b0ab;
+  background: #fdeceb;
+  color: #b3261e;
+}
+.map-legend {
+  display: flex;
+  align-items: stretch;
+  gap: 10px;
+}
+.map-legend .legend-main {
+  display: grid;
+  flex: 1 1 auto;
+  gap: 6px;
+  min-width: 0;
+}
+[data-route='map'] .map-bottom {
+  width: min(520px, calc(100% - 24px));
+}
+
+/* The AQI colour scale is read at a glance, so its names and numbers are larger and bold */
+.aqi-scale-names b {
+  font-size: 11.5px;
+  font-weight: 800;
+}
+.aqi-scale-names small {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text);
+}
+.aqi-scale-unit {
+  font-size: 11px;
+  font-weight: 700;
+}
+
+/* AIR Lens: one card, with the scale above, the air in the middle and the hour window and buttons below */
+.lens-hud {
+  width: min(520px, calc(100% - 24px));
+}
+.lens-unit {
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: rgb(255 255 255 / 0.94);
+  box-shadow: 0 10px 28px -14px rgb(51 65 85 / 0.55);
+}
+.lens-unit-scale {
+  padding: 8px 12px 6px;
+}
+.lens-unit-scale .aqi-scale {
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
+.lens-unit .place-card {
+  border-radius: 0;
+  box-shadow: none;
+}
+.lens-unit-time {
+  display: flex;
+  align-items: flex-end;
+  gap: 10px;
+  padding: 0 12px 10px;
+}
+.lens-time-slider {
+  flex: 1 1 0;
+  min-width: 0;
+}
+.lens-unit-time .timeline {
+  padding-top: 34px;
+}
+.lens-unit-time .dock-buttons {
+  padding-bottom: 20px;
+}
+
+/* A narrow scale uses short names, so six bold names never run into each other */
+.aqi-scale {
+  container-type: inline-size;
+}
+.aqi-scale-names b .abbr {
+  display: none;
+}
+@container (max-width: 345px) {
+  .aqi-scale-names b .full {
+    display: none;
+  }
+  .aqi-scale-names b .abbr {
+    display: inline;
+  }
+}
+.aqi-scale-names span {
+  white-space: nowrap;
+}
+
+/* The assembly note is white or pale whatever colour the card is, so its words are always dark */
+.pc-assembly,
+.pc-assembly strong,
+.pc-assembly-words {
+  color: #2b3645;
+}
+.pc-assembly.inside {
+  color: #2b3645;
+}

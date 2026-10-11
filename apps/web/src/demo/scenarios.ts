@@ -115,7 +115,7 @@ export const SCENARIOS: readonly Scenario[] = [
   },
   {
     id: 'lens',
-    label: 'AR Lens',
+    label: 'AIR Lens',
     caption: 'Point the camera: what the number means where you stand.',
     route: '/lens',
     seconds: 5,

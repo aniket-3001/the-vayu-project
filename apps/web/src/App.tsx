@@ -7,8 +7,8 @@ import { LensScreen } from './lens/LensScreen';
 import { MapScreen } from './map/MapScreen';
 import { MyAirScreen } from './myair/MyAirScreen';
 import { TabBar } from './nav/TabBar';
-import { AssistantFab } from './assistant/AssistantFab';
-import { AirUnitsProvider, SmokeToggle } from './units/AirUnits';
+import { DockButtons } from './nav/Dock';
+import { AirUnitsProvider } from './units/AirUnits';
 import { airStore, useToday } from './air/store';
 import { AirError, AirLoading } from './components/AirState';
 import { useLivePin } from './places/liveLocation';
@@ -86,10 +86,11 @@ function Frame(): React.JSX.Element {
         <Route path="*" element={<MyAirScreen />} />
       </Routes>
       {import.meta.env.VITE_DEMO === '1' && <DemoPill />}
-      <div className="dock">
-        <AssistantFab />
-        <SmokeToggle />
-      </div>
+      {route !== 'map' && route !== 'lens' && (
+        <div className="dock">
+          <DockButtons />
+        </div>
+      )}
       <TabBar />
     </div>
   );
