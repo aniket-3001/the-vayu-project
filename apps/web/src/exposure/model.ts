@@ -10,7 +10,7 @@ import { AT_PLACE_KM, distanceKm } from './geo';
 import type { Outing } from './outings';
 import { SPOT_KINDS, isThere, runsOn, type Spot, type SpotKind, type Spots } from './spots';
 import { measuredHourly } from '../devices/measured';
-import { unitNear, type Unit } from './units';
+import { isRoomPin, unitNear, type Unit } from './units';
 
 /** An India calendar date, "2026-10-10". */
 export type DateKey = string;
@@ -241,10 +241,13 @@ export function dayCells(
   for (const kind of SPOT_KINDS) {
     const spot = spots[kind];
     if (spot === undefined || kind === 'outdoor' || !runsOn(kind, spot, date)) continue;
+    const room = isRoomPin(spot.pin);
     for (let hour = 0; hour < upTo; hour++) {
-      const open = openAt(spot.pin, date, hour);
+      // A room with no address has no outside air: only the hours its unit measured count.
+      const open = room ? 0 : openAt(spot.pin, date, hour);
       if (open === undefined || (kind !== 'home' && !isThere(spot, hour))) continue;
       const { pm25, source } = breathed(spot, open, units, { date, hour });
+      if (room && source !== 'measured') continue;
       cells.push(cellOf(hour, kind, pm25, source));
     }
   }
@@ -449,7 +452,7 @@ export function openAirFor(
     } else {
       pin = cell.pin ?? spots[cell.where]?.pin;
     }
-    const open = pin === undefined ? undefined : openAt(pin, date, cell.hour);
+    const open = pin === undefined || isRoomPin(pin) ? undefined : openAt(pin, date, cell.hour);
     if (open !== undefined) out.push(open);
   }
   return out;

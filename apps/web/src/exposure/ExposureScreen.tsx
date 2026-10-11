@@ -36,7 +36,7 @@ import { TimelineWindow } from '../components/TimelineWindow';
 import { DayLines, DialInfo, WHERE_LABELS, type DialRing } from './ui/DayLines';
 import { Summary } from './ui/Summary';
 import { WeekStrip } from './ui/WeekStrip';
-import { allUnits } from './units';
+import { allUnits, isRoomPin, withRooms } from './units';
 import { useHousehold, useLive, useOutings, useSpots } from './useExposure';
 import { AddPerson } from './ui/AddPerson';
 import { OutingSheet } from './ui/OutingSheet';
@@ -100,23 +100,25 @@ export function ExposureScreen({
   const [showInfo, setShowInfo] = useState(false);
 
   const info = personaById(persona);
+  // A real unit with no address set for its place is still the room that part of the day is spent in.
+  const placed = useMemo(() => withRooms(spots, devices), [spots, devices]);
   const visible = useMemo(
     () =>
       Object.fromEntries(
-        Object.entries(spots).filter(([kind]) => info.kinds.some((k) => k === kind)),
+        Object.entries(placed).filter(([kind]) => info.kinds.some((k) => k === kind)),
       ),
-    [spots, info],
+    [placed, info],
   );
   const units = useMemo(
     () =>
       allUnits(devices, [
-        spots,
+        placed,
         ...loadAllSpots(
           window.localStorage,
           household.people.map((p) => ({ id: p.id, persona: personaOf(p) })),
         ),
       ]),
-    [devices, spots, household.people],
+    [devices, placed, household.people],
   );
   const date = view === WEEK ? today() : view;
 
@@ -124,7 +126,10 @@ export function ExposureScreen({
   // their location put them. It loads, and the dial fills in as it arrives.
   const needed = useMemo(() => {
     const pinsHere: Pin[] = [
-      ...Object.values(visible).map((spot) => spot.pin),
+      // A room with no address has no outside air to load.
+      ...Object.values(visible)
+        .map((spot) => spot.pin)
+        .filter((pin) => !isRoomPin(pin)),
       ...outings.map((o) => o.pin),
       ...Object.values(live.log).map((fix) => ({
         id: pinId(fix.lat, fix.lng),

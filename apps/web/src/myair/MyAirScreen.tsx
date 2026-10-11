@@ -11,6 +11,7 @@ import { alertsFor, type Alert } from '../alerts/model';
 import { useFires } from '../alerts/useFires';
 import { TipsCard } from '../tasks/ui/TipsCard';
 import { DevicesPanel } from '../devices/ui/DevicesPanel';
+import { YourRoomCard } from '../devices/ui/YourRoomCard';
 import { PlacesPanel } from '../places/ui/PlacesPanel';
 import type { PlaceMatch } from '../data/geocode';
 
@@ -126,6 +127,11 @@ export function MyAirScreen({ search, locate, address }: Props): React.JSX.Eleme
           ))}
         </div>
       </header>
+      {tab === 'places' && (
+        <div className="places-main room-wrap">
+          <YourRoomCard />
+        </div>
+      )}
       {tab === 'places' && home !== undefined && reading !== undefined && (
         <div className="places-main tasks-wrap">
           {(tips.length > 0 || alerts.length > 0) && (

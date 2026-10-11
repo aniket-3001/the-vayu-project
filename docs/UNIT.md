@@ -33,9 +33,14 @@ is). It does not work in Safari on an iPhone. The person picks the unit from the
 
 ## What the app does with a reading
 
-- Shows it live on the **Devices** tab: PM2.5 and its AQI, PM1 and PM10, room temperature and humidity.
+- Shows a **Your room** card at the top of **My Air** while the unit is connected (it stays connected as you move between
+  tabs): the live AQI in the level's colour, PM2.5, PM1 and PM10, a live chart of the last minutes on a white card over the
+  standard six AQI bands, and the room set beside the air outside.
+- Shows it on the **Devices** tab too, with the same live chart.
 - Sets it against the air outside at the place the unit is in (the nearest monitor's reading, with its name, distance
   and age) and says how much lower or higher the room is.
+- Uses it **in place of** the outside reading at the address for the hours spent there. With no address set for that
+  place, the unit's room is still the place: only the hours it measured count, and nothing is made up for the rest.
 - Keeps the **hourly mean** of each hour (14 days, on the phone), and counts those hours in **Exposure** as "measured
   by your unit", for anyone in that place. An hour needs about two minutes of readings to count; an hour with fewer
   is the labelled assumption, never a made-up number.

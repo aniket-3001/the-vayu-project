@@ -1,7 +1,8 @@
 import { airStore } from '../air/store';
 import type { Device } from '../devices/devices';
 import { AT_PLACE_KM, distanceKm } from './geo';
-import type { Spots } from './spots';
+import { DEFAULT_HOURS, type Spots } from './spots';
+import type { Pin } from '../data/pins';
 
 /**
  * A Vayu unit somewhere. A unit helps everyone who is in that place, whoever owns it: a monitor at home
@@ -69,4 +70,31 @@ export function unitNear(
       best = { unit, distance };
   }
   return best?.unit;
+}
+
+/** The id prefix of a place that is only a measuring unit's room: it has no address, so there is no outside air for it. */
+export const ROOM_PIN_PREFIX = 'room:';
+
+/** Whether a place is just a unit's room, with no address. */
+export const isRoomPin = (pin: Pin): boolean => pin.id.startsWith(ROOM_PIN_PREFIX);
+
+/**
+ * The places of a person's day with a room added for each real unit that has none: a unit connected for Home, when
+ * no home address was set, is still the home the day is spent in. The room has no coordinates, so nothing outside is
+ * looked up for it, and only the hours the unit measured count. A place the person did set always wins, and then the
+ * unit's readings take the place of the outside reading at that address.
+ */
+export function withRooms(spots: Spots, devices: readonly Device[]): Spots {
+  const out: { -readonly [K in keyof Spots]: Spots[K] } = { ...spots };
+  for (const device of devices) {
+    if (device.measured !== true || device.where === 'outdoor' || out[device.where] !== undefined)
+      continue;
+    const hours = DEFAULT_HOURS[device.where];
+    out[device.where] = {
+      pin: { id: `${ROOM_PIN_PREFIX}${device.id}`, name: 'Your room', lat: 0, lng: 0 },
+      from: hours.from,
+      to: hours.to,
+    };
+  }
+  return out;
 }

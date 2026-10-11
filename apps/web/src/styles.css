@@ -5894,22 +5894,6 @@ table.hourly .row-label {
   margin: 8px 0 0;
   color: #9a3b2e;
 }
-.unit-spark {
-  display: block;
-  width: 100%;
-  max-width: 320px;
-  height: 36px;
-  margin: 12px 0 4px;
-  overflow: visible;
-}
-.unit-spark path {
-  fill: none;
-  stroke: var(--ink);
-  stroke-width: 2;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-  vector-effect: non-scaling-stroke;
-}
 .unit-age,
 .unit-wait {
   margin: 4px 0 0;
@@ -5925,4 +5909,109 @@ table.hourly .row-label {
   background: rgb(255 255 255 / 0.65);
   font-size: 14px;
   line-height: 1.4;
+}
+
+/* The live chart: a white card, the standard level bands, the wash under the line in level colours */
+
+.chart-live {
+  margin-top: 12px;
+  padding: 12px 12px 4px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: #fff;
+}
+.chart-live-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 4px;
+}
+.chart-live-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 24px;
+  padding: 0 10px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--ink);
+}
+.chart-live-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #3aa66b;
+  animation: chart-live-beat 1.6s ease-in-out infinite;
+}
+@keyframes chart-live-beat {
+  50% {
+    opacity: 0.35;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .chart-live-dot {
+    animation: none;
+  }
+}
+.chart-live-band {
+  opacity: 0.28;
+}
+.chart-live-area {
+  opacity: 0.85;
+}
+
+/* Your room, on My Air: a white card with the level's colour in the number */
+
+.room-wrap {
+  margin-bottom: 14px;
+}
+.room-card {
+  background: #fff;
+}
+.room-more {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  font-size: 14px;
+  color: var(--ink);
+}
+.room-now {
+  display: grid;
+  grid-template-columns: minmax(140px, 0.9fr) minmax(0, 1fr);
+  gap: 12px 16px;
+  align-items: center;
+}
+.room-aqi {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: var(--level);
+  color: var(--on-level, var(--ink));
+}
+.room-aqi strong {
+  font-size: 40px;
+  line-height: 1;
+}
+.room-level {
+  font-weight: 700;
+}
+.room-facts {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+}
+.room-facts dt {
+  font-size: 12px;
+  color: var(--muted);
+}
+.room-facts dd {
+  margin: 0;
+  font-size: 17px;
+  font-weight: 700;
 }

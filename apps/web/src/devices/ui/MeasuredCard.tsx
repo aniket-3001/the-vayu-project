@@ -14,41 +14,10 @@ import { measuredHourly } from '../measured';
 import type { DeviceHour } from '../sim';
 import type { UnitState } from '../useUnit';
 import { DeviceChart } from './DeviceChart';
+import { LiveChart } from './LiveChart';
 
 /** How long without a packet before the reading is called stale, in seconds. */
 const STALE_S = 10;
-
-/** The recent readings as a thin line, so the person can see it move. */
-function Spark({
-  points,
-}: {
-  readonly points: readonly { readonly pm25: number }[];
-}): React.JSX.Element | null {
-  if (points.length < 3) return null;
-  // The line spans what was seen lately, so a small movement can be seen; never less than 5 µg/m³ of range.
-  const values = points.map((p) => p.pm25);
-  const lo = Math.min(...values);
-  const hi = Math.max(Math.max(...values), lo + 5);
-  const w = 160;
-  const h = 34;
-  const path = points
-    .map((p, i) => {
-      const x = (i / (points.length - 1)) * w;
-      const y = h - ((p.pm25 - lo) / (hi - lo)) * (h - 4) - 2;
-      return `${i === 0 ? 'M' : 'L'}${x.toFixed(1)} ${y.toFixed(1)}`;
-    })
-    .join(' ');
-  return (
-    <svg
-      className="unit-spark"
-      viewBox={`0 0 ${String(w)} ${String(h)}`}
-      preserveAspectRatio="none"
-      aria-hidden="true"
-    >
-      <path d={path} />
-    </svg>
-  );
-}
 
 /**
  * A real measuring unit, connected over Bluetooth. Its reading is measured, not worked out: this card says what the
@@ -166,7 +135,7 @@ export function MeasuredCard({
               )}
             </dl>
           </div>
-          <Spark points={unit.recent} />
+          <LiveChart points={unit.recent} />
           <p className="small unit-age" role="status">
             {reading.warming
               ? 'The sensor is warming up. This number is shown but not counted yet.'
