@@ -13,7 +13,7 @@ import { useEffect, useRef } from 'react';
 import { LEVELS } from '../design/levels';
 import type { Monitor } from './monitors';
 import { cigarettesPerDay, describeCigarettes } from '../units/smoke';
-import { buildDust, paintDust, type Dust } from './dust';
+import { buildFog, paintFog, stirOf, type Fog } from './fog';
 import { FIELD_TILES, mercatorY, visibleWindow, type Window } from './field';
 import { firesGeoJson, type Fire } from './fires';
 import { monitorsGeoJson } from './monitors';
@@ -57,15 +57,15 @@ const aqiColour = (value: unknown): unknown => [
   ...LEVELS.slice(1).flatMap((level) => [level.from, level.solid]),
 ];
 
-/** The longest side of the dust picture, in pixels. */
+/** The longest side of the fog picture, in pixels. */
 const MAX_SIDE = 1400;
 
 /**
- * How big the picture of a window of the world should be: about a pixel for each screen pixel, so the dust is as fine
+ * How big the picture of a window of the world should be: about a pixel for each screen pixel, so the grain is as fine
  * in a street view as across a continent, and as tall as the ground is (a tall strip of the globe is much taller than
  * wide in mercator). When it would be too big both sides shrink together, so a pixel is always square.
  */
-function dustSize(window: Window, pxPerDeg: number): { width: number; height: number } {
+function fogSize(window: Window, pxPerDeg: number): { width: number; height: number } {
   const widthDeg = window.east - window.west;
   const yShare = mercatorY(window.south) - mercatorY(window.north);
   let width = Math.max(24, widthDeg * pxPerDeg);
@@ -78,12 +78,14 @@ function dustSize(window: Window, pxPerDeg: number): { width: number; height: nu
   return { width: Math.max(24, Math.round(width)), height: Math.max(24, Math.round(height)) };
 }
 
-/** A tile of the dust: a picture that is redrawn a few times a second, laid on the map where its window is. */
-interface DustTile {
+/** A tile of the fog: a picture whose grain is stirred now and then, laid on the map where its window is. */
+interface FogTile {
   readonly canvas: HTMLCanvasElement;
   readonly ctx: CanvasRenderingContext2D | null;
   image: ImageData | undefined;
-  dust: Dust | undefined;
+  fog: Fog | undefined;
+  /** The stir last drawn, so the same one is not drawn twice. */
+  stir: number;
 }
 
 /**
@@ -256,9 +258,9 @@ export function MapView({
     if (import.meta.env.DEV) Object.assign(window, { __vayuMap: m });
     m.addControl(new NavigationControl({ showCompass: false }), 'top-right');
 
-    // The air is dust, built for what is on screen (finer as you come in) when the map has stopped moving, and
-    // redrawn a few times a second so each speck jostles about its place.
-    const dustTiles: DustTile[] = FIELD_TILES.map(() => {
+    // The air is a fog with a grain in it, built for what is on screen (finer as you come in) when the map has
+    // stopped moving, and the grain is stirred a pixel every moment or so.
+    const fogTiles: FogTile[] = FIELD_TILES.map(() => {
       const canvas = document.createElement('canvas');
       canvas.width = 2;
       canvas.height = 2;
@@ -268,14 +270,17 @@ export function MapView({
       } catch {
         ctx = null;
       }
-      return { canvas, ctx, image: undefined, dust: undefined };
+      return { canvas, ctx, image: undefined, fog: undefined, stir: -1 };
     });
     const reduced =
       typeof window.matchMedia === 'function' &&
       window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    const frame = (tile: DustTile, source: CanvasPlacer, ms: number): void => {
-      if (tile.dust === undefined || tile.image === undefined || tile.ctx === null) return;
-      paintDust(tile.dust, tile.image.data, ms);
+    const frame = (tile: FogTile, source: CanvasPlacer, ms: number, force = false): void => {
+      if (tile.fog === undefined || tile.image === undefined || tile.ctx === null) return;
+      const stir = stirOf(ms);
+      if (!force && stir === tile.stir) return;
+      tile.stir = stir;
+      paintFog(tile.fog, tile.image.data, ms);
       tile.ctx.putImageData(tile.image, 0, 0);
       // The source refreshes its texture only while it plays, so play for one frame.
       source.play();
@@ -296,32 +301,32 @@ export function MapView({
       };
       FIELD_TILES.forEach((tile, i) => {
         const id = FIELD_IDS[i] ?? '';
-        const dustTile = dustTiles[i];
+        const fogTile = fogTiles[i];
         const source = m.getSource(id) as unknown as CanvasPlacer | undefined;
-        if (dustTile === undefined || source === undefined || !('setCoordinates' in source)) return;
+        if (fogTile === undefined || source === undefined || !('setCoordinates' in source)) return;
         // Zoomed right out, the whole tile; otherwise only the part of it that is in view.
         const window = zoom < 2.5 ? tile : visibleWindow(tile, view);
         if (m.getLayer(id) === undefined) return;
-        if (window === undefined || monitorsForField.length === 0 || dustTile.ctx === null) {
-          dustTile.dust = undefined;
+        if (window === undefined || monitorsForField.length === 0 || fogTile.ctx === null) {
+          fogTile.fog = undefined;
           m.setLayoutProperty(id, 'visibility', 'none');
           return;
         }
         if (on.gradient) m.setLayoutProperty(id, 'visibility', 'visible');
-        const { width, height } = dustSize(window, pxPerDegAt(zoom));
-        if (dustTile.canvas.width !== width || dustTile.canvas.height !== height) {
-          dustTile.canvas.width = width;
-          dustTile.canvas.height = height;
-          dustTile.image = dustTile.ctx.createImageData(width, height);
+        const { width, height } = fogSize(window, pxPerDegAt(zoom));
+        if (fogTile.canvas.width !== width || fogTile.canvas.height !== height) {
+          fogTile.canvas.width = width;
+          fogTile.canvas.height = height;
+          fogTile.image = fogTile.ctx.createImageData(width, height);
         }
-        dustTile.dust = buildDust(monitorsForField, window, width, height);
+        fogTile.fog = buildFog(monitorsForField, window, width, height);
         source.setCoordinates([
           [window.west, window.north],
           [window.east, window.north],
           [window.east, window.south],
           [window.west, window.south],
         ]);
-        frame(dustTile, source, performance.now());
+        frame(fogTile, source, performance.now(), true);
       });
     };
     redrawField.current = draw;
@@ -330,7 +335,8 @@ export function MapView({
       if (fieldTimer !== undefined) clearTimeout(fieldTimer);
       fieldTimer = setTimeout(draw, 140);
     });
-    // The jostling: a few frames a second, only while the page is shown and motion is welcome.
+    // The stirring: checked a few times a second, drawn about once a second, only while the page is shown and
+    // motion is welcome.
     const jostle =
       reduced || typeof window === 'undefined'
         ? undefined
@@ -338,12 +344,12 @@ export function MapView({
             if (document.hidden || !ready.current) return;
             const now = performance.now();
             FIELD_TILES.forEach((_, i) => {
-              const dustTile = dustTiles[i];
+              const fogTile = fogTiles[i];
               const source = m.getSource(FIELD_IDS[i] ?? '') as unknown as CanvasPlacer | undefined;
-              if (dustTile?.dust === undefined || source === undefined) return;
-              frame(dustTile, source, now);
+              if (fogTile?.fog === undefined || source === undefined) return;
+              frame(fogTile, source, now);
             });
-          }, 130);
+          }, 300);
 
     const addLayers = (): void => {
       ready.current = true;
@@ -355,7 +361,7 @@ export function MapView({
         const id = FIELD_IDS[i] ?? `field-${String(i)}`;
         m.addSource(id, {
           type: 'canvas',
-          canvas: dustTiles[i]?.canvas ?? document.createElement('canvas'),
+          canvas: fogTiles[i]?.canvas ?? document.createElement('canvas'),
           animate: false,
           coordinates: [
             [tile.west, tile.north],
@@ -375,13 +381,13 @@ export function MapView({
               ['linear'],
               ['zoom'],
               0,
-              1,
+              0.8,
               7,
-              0.95,
+              0.7,
               11,
-              0.6,
+              0.3,
               14,
-              0.22,
+              0.12,
             ] as never,
             'raster-fade-duration': 0,
             'raster-resampling': 'linear',
