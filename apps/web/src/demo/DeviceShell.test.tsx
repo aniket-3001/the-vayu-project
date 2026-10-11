@@ -18,7 +18,7 @@ afterEach(() => {
   vi.unstubAllEnvs();
 });
 
-const appFrame = (): HTMLIFrameElement => screen.getByTitle('Vayu Air app');
+const appFrame = (): HTMLIFrameElement => screen.getByTitle('The Vayu Project app');
 
 describe('the prototype shell', () => {
   it('opens on an iPhone with the app inside a frame, and says the air is made up', () => {

@@ -1,6 +1,6 @@
-# Vayu Air
+# The Vayu Project
 
-**One clear answer for the air at the places you care about.** Vayu Air is a free web app that turns public air-quality data into a daily decision for a Delhi family, school or society: is it a good time for a walk, is school safe, do we need a mask, are the windows better shut. A small measuring unit (an ESP32 and a laser particle sensor) adds the air in your own room, and a prototype cleaner (a fan, a filter and a foam pre-filter in a box) is the thing it will watch.
+**One clear answer for the air at the places you care about.** The Vayu Project is a free web app that turns public air-quality data into a daily decision for a Delhi family, school or society: is it a good time for a walk, is school safe, do we need a mask, are the windows better shut. A small measuring unit (an ESP32 and a laser particle sensor) adds the air in your own room, and a prototype cleaner (a fan, a filter and a foam pre-filter in a box) is the thing it will watch.
 
 > A parent in Delhi sees "AQI 162" for the city. Their child's school is kilometres from the nearest monitor, and the morning assembly is in the open. The app says which monitor the number came from, how far away it is and how old the reading is, what GRAP stage the last day points to (our estimate, never the order), and whether assembly should be inside.
 

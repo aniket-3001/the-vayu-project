@@ -1,6 +1,6 @@
 # The morning after Diwali: one clear answer for Delhi's air, built on AWS
 
-Delhi has plenty of air-quality numbers. A city figure cannot see one street or one room, and none says what to do. Vayu Air gives one answer for one place, with the monitor's name, its distance and the age of the reading beside it. It is free, has no sign-up, and opens now: https://d3lmq1mze2gup3.cloudfront.net.
+Delhi has plenty of air-quality numbers. A city figure cannot see one street or one room, and none says what to do. The Vayu Project gives one answer for one place, with the monitor's name, its distance and the age of the reading beside it. It is free, has no sign-up, and opens now: https://d3lmq1mze2gup3.cloudfront.net.
 
 Picture a parent in Dwarka at 8 am on 21 October 2025, the morning after Diwali. The phone shows one city-wide Air Quality Index (AQI) figure. The child's bag is by the door. The question is small: do we walk to school, or not? A city figure cannot answer it. The monitor 2.3 km from Home can.
 

@@ -26,5 +26,5 @@ What the Dyson figures are, where they come from, and what we can and cannot say
 
 - Dyson's number is a **CADR**. Ours is **airflow**. They are different quantities, and CADR is always lower than airflow, so "325 m³/h against 250 m³/h" proves nothing and must not be shown as a win.
 - To compare like with like we need our own CADR: run the smoke-decay test with the measuring unit (see `PURIFIER.md`) and report the figure it gives, with its fit.
-- **Price** can be compared now, but only with a real total for our build (fan, filter, foam, box, wiring), every line from a receipt or a stated price. Known single prices in the author's notes: the fan ₹3,300 and a foam sheet ₹200; the filter and the rest are not yet totalled. Do not quote a total until it is.
+- **Price** can be compared now, and only as a price: the parts for our prototype cost ₹5,000 (box free, fan ₹3,300, filter ₹1,500, foam ₹200) against ₹29,900 for the Dyson, about one sixth. Say "parts", and that a cable, plug or switch is not itemised. A price says nothing about how well it cleans, so do not set the two prices beside a performance claim.
 - Say what each is: Dyson is a finished, certified, quiet product with a five-year filter claim. Ours is a prototype with no noise, power or efficiency measurement.

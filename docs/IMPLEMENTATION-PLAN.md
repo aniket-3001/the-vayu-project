@@ -1,4 +1,4 @@
-# Making Vayu Air a real, deployed app
+# Making the Vayu Project a real, deployed app
 
 > **Historical.** This is the plan the deployed app was first built to, on 10 October. The app has grown since (the measuring unit, the room card, the recorded week, Hindi). For what is true now, read `docs/AS-BUILT.md`.
 

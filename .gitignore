@@ -13,3 +13,6 @@ cdk.out/
 site-out.json
 dist-demo/
 photos/
+
+# Arduino IDE build output
+firmware/**/build/

@@ -14,7 +14,7 @@ describe('the frame around every screen', () => {
   it('has no pinned top bar: no wordmark, no header strip', () => {
     render(<App />);
     expect(document.querySelector('.bar')).not.toBeInTheDocument();
-    expect(screen.queryByRole('link', { name: 'Vayu Air' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: 'The Vayu Project' })).not.toBeInTheDocument();
   });
 
   it('puts the cigarette beside the Ask button, in one dock that stays on every screen', async () => {

@@ -1,6 +1,6 @@
 A Delhi parent opens an air app before school and sees one city number. The nearest monitor may be kilometres from the school. The numbers exist; what is missing is an answer for one place, with the monitor's name, its distance and the reading's age.
 
-Vayu Air is a free web app that turns those numbers into that decision for a family, school or society in Delhi. No sign-in, no install: add a place (search, or Detect my location) and its card shows today and the next three days: walk, mask, windows. Every number says it is Live (a named monitor, how far, how old), an Estimate (worked out by a regional air model, not read from a monitor) or Measured (my own unit). No advice from a reading over six hours old.
+The Vayu Project is a free web app that turns those numbers into that decision for a family, school or society in Delhi. No sign-in, no install: add a place (search, or Detect my location) and its card shows today and the next three days: walk, mask, windows. Every number says it is Live (a named monitor, how far, how old), an Estimate (worked out by a regional air model, not read from a monitor) or Measured (my own unit). No advice from a reading over six hours old.
 
 A city average cannot see your room, so I built a small unit (ESP32-S3, Sensirion SPS30 laser sensor) that shows your room's air beside the outside air over Bluetooth.
 

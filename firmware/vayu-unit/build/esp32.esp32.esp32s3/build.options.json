@@ -1,9 +1,0 @@
-{
-  "additionalFiles": "",
-  "compiler.optimization_flags": "-Os",
-  "customBuildProperties": "",
-  "fqbn": "esp32:esp32:esp32s3:USBMode=hwcdc,CDCOnBoot=cdc",
-  "hardwareFolders": "/Users/hrshkr/Library/Arduino15/packages/esp32/hardware/esp32/3.3.12,/Users/hrshkr/Library/Arduino15/packages/esp32/hardware/esp32/3.3.12",
-  "otherLibrariesFolders": "/Users/hrshkr/Documents/Arduino/libraries,/Users/hrshkr/Documents/Arduino/libraries",
-  "sketchLocation": "/Users/hrshkr/Downloads/wmd/vayu-air/firmware/vayu-unit"
-}

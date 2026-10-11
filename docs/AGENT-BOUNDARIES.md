@@ -1,6 +1,6 @@
 # What the AI may and may not do
 
-Vayu Air uses AI in one place that visitors can reach: the assistant. This page says what it can do, what it cannot, the limits on it, and which test fails if a limit breaks.
+The Vayu Project uses AI in one place that visitors can reach: the assistant. This page says what it can do, what it cannot, the limits on it, and which test fails if a limit breaks.
 The numbers below are held in one place in the code, `ASSISTANT_LIMITS` in `apps/api/src/assistantAgent.ts`, and a test checks that this page's promises are in the instructions the model is given.
 
 ## The rule

@@ -16,6 +16,18 @@ The measuring unit (an ESP32-S3 and an SPS30 laser particle sensor) is separate 
 
 ![The measuring unit: an ESP32-S3 board wired to the particle sensor](images/build/measuring-unit.jpg)
 
+## What it cost
+
+| Part                     | Cost       |
+| ------------------------ | ---------- |
+| Box                      | free       |
+| Fan (Hicool BCF-250)     | ₹3,300     |
+| Pleated filter           | ₹1,500     |
+| Foam pre-filter          | ₹200       |
+| **Total of these parts** | **₹5,000** |
+
+That is the cost of the four parts above. A cable, plug or switch is not itemised here. The filter is the only part that recurs.
+
 ## What was measured
 
 Airflow at the cleaner's outlet, with a handheld vane anemometer (HTC): **about 191 cubic feet per minute** (two readings in the video, 191.3 and 191.5; the display also showed 29.4 °C and 63.1 % relative humidity). That is about 325 m³ an hour.

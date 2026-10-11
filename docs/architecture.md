@@ -1,6 +1,6 @@
 # Architecture
 
-Vayu Air is one web app and one API, served from one address. The page and the API share a CloudFront address, so the app needs no cross-site settings and a visitor makes one TLS connection.
+The Vayu Project is one web app and one API, served from one address. The page and the API share a CloudFront address, so the app needs no cross-site settings and a visitor makes one TLS connection.
 
 Live address: https://d3lmq1mze2gup3.cloudfront.net. Stack: `Vayu`, account 534212416249, `ap-south-1`.
 
