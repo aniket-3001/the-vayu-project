@@ -447,6 +447,7 @@ export function ExposureScreen({
                               ? ' (assumed)'
                               : ''}
                             {cell.source === 'unit' ? ' (from a nearby unit)' : ''}
+                            {cell.source === 'measured' ? ' (measured by your unit)' : ''}
                             {cell.where === 'outdoor' && (cell.share ?? 1) < 1
                               ? ` · ${String(Math.round((cell.share ?? 1) * 60))} min of this hour outside, the rest where you were`
                               : ''}

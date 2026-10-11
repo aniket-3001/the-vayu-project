@@ -1,10 +1,12 @@
 // @vitest-environment jsdom
-import { cleanup, render, screen, within } from '@testing-library/react';
+import { act, cleanup, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { DEVICES_STORAGE_KEY } from '../devices';
 import { DevicesPanel } from './DevicesPanel';
+import type { UnitHandlers, UnitTransport } from '../ble';
+import { encodePacket } from '../unitProtocol';
 
 beforeEach(() => {
   window.localStorage.clear();
@@ -57,5 +59,74 @@ describe('a device on the Devices tab', () => {
       'href',
       '/exposure',
     );
+  });
+});
+
+describe('a real measuring unit on the Devices tab', () => {
+  const sender = (): { transport: UnitTransport; send: (pm25: number) => void } => {
+    let handlers: UnitHandlers | undefined;
+    return {
+      transport: {
+        supported: () => true,
+        connect(h) {
+          handlers = h;
+          return Promise.resolve({ name: 'Vayu-3F2A', disconnect: () => undefined });
+        },
+      },
+      send: (pm25) => {
+        handlers?.onPacket(
+          encodePacket({
+            pm1: pm25 * 0.7,
+            pm25,
+            pm4: pm25 * 1.1,
+            pm10: pm25 * 1.3,
+            temperatureC: 27.5,
+            humidityPct: 49,
+            uptimeS: 10,
+            warming: false,
+          }),
+        );
+      },
+    };
+  };
+
+  it('is connected over Bluetooth, becomes a card marked Measured, and shows the room against outside', async () => {
+    window.localStorage.removeItem(DEVICES_STORAGE_KEY);
+    const unit = sender();
+    render(
+      <MemoryRouter>
+        <DevicesPanel transport={unit.transport} />
+      </MemoryRouter>,
+    );
+    expect(screen.getByRole('region', { name: 'Connect a measuring unit' })).toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: 'Connect over Bluetooth' }));
+    const card = await screen.findByRole('heading', { name: 'Vayu-3F2A' });
+    expect(card).toBeInTheDocument();
+    await act(async () => {
+      unit.send(24);
+      await Promise.resolve();
+    });
+    const list = screen.getByRole('list', { name: 'Your devices' });
+    expect(within(list).getByText('Measured')).toBeInTheDocument();
+    expect(within(list).getByText('AQI in the room')).toBeInTheDocument();
+    expect(within(list).getByText(/24\.0 µg\/m³/u)).toBeInTheDocument();
+    expect(within(list).getByText(/Connected/u)).toBeInTheDocument();
+    expect(within(list).getByText(/than outside/u)).toBeInTheDocument();
+    // It is kept as a measured device, so it is there after a reload.
+    expect(window.localStorage.getItem(DEVICES_STORAGE_KEY)).toContain('"measured":true');
+  });
+
+  it('says plainly when the browser cannot do Bluetooth', () => {
+    render(
+      <MemoryRouter>
+        <DevicesPanel
+          transport={{ supported: () => false, connect: () => Promise.reject(new Error('no')) }}
+        />
+      </MemoryRouter>,
+    );
+    expect(screen.getByText(/cannot connect to a unit over Bluetooth/u)).toBeInTheDocument();
+    expect(
+      screen.queryByRole('button', { name: 'Connect over Bluetooth' }),
+    ).not.toBeInTheDocument();
   });
 });

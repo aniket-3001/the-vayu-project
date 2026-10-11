@@ -9,6 +9,11 @@ export interface Device {
   readonly mode?: DeviceMode;
   /** The indoor PM2.5, in µg/m³, above which Auto switches the cleaner on. */
   readonly autoAbove?: number;
+  /**
+   * True for a real measuring unit, connected over Bluetooth, whose readings are measured and kept. Everything else is
+   * a sample device whose numbers are worked out from the outside air and never counted.
+   */
+  readonly measured?: boolean;
 }
 
 export type DeviceMode = 'auto' | 'on' | 'off';
@@ -70,6 +75,20 @@ export function addDevice(
   const name = device.name.trim() === '' ? 'Vayu monitor' : device.name.trim();
   const id = `d${String(Date.now())}${String(devices.length)}`;
   return [...devices, { id, name, where: device.where }].slice(0, MAX_DEVICES);
+}
+
+/** A real unit, by the name it advertises; connecting the same unit again finds it rather than adding it twice. */
+export function addMeasuredDevice(
+  devices: readonly Device[],
+  unit: { readonly bleName: string; readonly where: SpotKind },
+): readonly Device[] {
+  const id = `unit:${unit.bleName}`;
+  if (devices.some((d) => d.id === id))
+    return devices.map((d) => (d.id === id ? { ...d, where: unit.where } : d));
+  return [...devices, { id, name: unit.bleName, where: unit.where, measured: true }].slice(
+    0,
+    MAX_DEVICES,
+  );
 }
 
 export const removeDevice = (devices: readonly Device[], id: string): readonly Device[] =>

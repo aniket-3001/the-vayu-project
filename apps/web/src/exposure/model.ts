@@ -9,6 +9,7 @@ import { INDOOR_SHARE, TREE_SHARE } from './assumptions';
 import { AT_PLACE_KM, distanceKm } from './geo';
 import type { Outing } from './outings';
 import { SPOT_KINDS, isThere, runsOn, type Spot, type SpotKind, type Spots } from './spots';
+import { measuredHourly } from '../devices/measured';
 import { unitNear, type Unit } from './units';
 
 /** An India calendar date, "2026-10-10". */
@@ -27,7 +28,9 @@ export type Source =
   /** Indoors, from a Vayu monitor the person added. */
   | 'device'
   /** Indoors, from a Vayu unit someone else put there, picked up automatically. */
-  | 'unit';
+  | 'unit'
+  /** Indoors, measured by the person's own unit over Bluetooth: the hour's mean of real readings. */
+  | 'measured';
 
 export interface Cell {
   /** For a cell from the phone's location: the set place it was in, or outdoors if it was in none. */
@@ -167,8 +170,19 @@ export function breathed(
   spot: Spot,
   ambient: number,
   units: readonly Unit[],
+  when?: { readonly date: DateKey; readonly hour: number },
 ): { readonly pm25: number; readonly source: Source } {
   const unit = unitNear(spot.pin, units);
+  if (unit?.measured === true) {
+    // A real unit: the hour's measured mean, or, for an hour it has not measured, the labelled assumption. Never a
+    // made-up reading.
+    const got =
+      when === undefined || unit.deviceId === undefined
+        ? undefined
+        : measuredHourly(window.localStorage, unit.deviceId, when.date)[when.hour];
+    if (got !== undefined) return { pm25: got, source: 'measured' };
+    return { pm25: round1(ambient * INDOOR_SHARE), source: 'assumed' };
+  }
   if (unit !== undefined)
     return { pm25: sampleIndoorPm25(ambient), source: unit.own ? 'device' : 'unit' };
   return { pm25: round1(ambient * INDOOR_SHARE), source: 'assumed' };
@@ -230,7 +244,7 @@ export function dayCells(
     for (let hour = 0; hour < upTo; hour++) {
       const open = openAt(spot.pin, date, hour);
       if (open === undefined || (kind !== 'home' && !isThere(spot, hour))) continue;
-      const { pm25, source } = breathed(spot, open, units);
+      const { pm25, source } = breathed(spot, open, units, { date, hour });
       cells.push(cellOf(hour, kind, pm25, source));
     }
   }
@@ -251,8 +265,18 @@ export function dayCells(
       if (open === undefined) continue;
       const near = unitNear(fix, units);
       let got: { pm25: number; source: Source };
-      if (here !== undefined && spot !== undefined) got = breathed(spot, open, units);
-      else if (near !== undefined)
+      if (here !== undefined && spot !== undefined)
+        got = breathed(spot, open, units, { date, hour });
+      else if (near?.measured === true) {
+        const measured =
+          near.deviceId === undefined
+            ? undefined
+            : measuredHourly(window.localStorage, near.deviceId, date)[hour];
+        got =
+          measured === undefined
+            ? { pm25: round1(open * INDOOR_SHARE), source: 'assumed' }
+            : { pm25: measured, source: 'measured' };
+      } else if (near !== undefined)
         got = { pm25: sampleIndoorPm25(open), source: near.own ? 'device' : 'unit' };
       else got = { pm25: open, source: 'outdoor' };
       cells.push({ ...cellOf(hour, 'live', got.pm25, got.source), at: here ?? 'outdoor' });

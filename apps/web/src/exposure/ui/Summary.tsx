@@ -11,6 +11,8 @@ const SOURCE_WORDS: Readonly<Record<Cell['source'], string>> = {
   assumed: 'indoors, scaled by an assumption',
   device: 'indoors, from your own monitor (sample for now)',
   unit: 'indoors, from a Vayu unit nearby, picked up automatically (sample for now)',
+  measured:
+    'indoors, measured by your own unit over Bluetooth (the hour’s average of its readings)',
 };
 
 /** The answer first, then the reasons: what you breathed, what open air would have been, and how sure we are. */

@@ -4,4 +4,4 @@ import { airStore } from '../air/store';
 export const sourcesNote = (): string =>
   airStore().kind === 'sample'
     ? 'Right now the outdoor air is made-up sample data. The method is the real one.'
-    : 'Outdoor air is the nearest monitor’s hourly reading (OpenAQ), or the regional model’s where no monitor has reported lately. Indoor air is assumed from it. The Vayu monitor is not built yet, so no indoor reading is measured.';
+    : 'Outdoor air is the nearest monitor’s hourly reading (OpenAQ), or the regional model’s where no monitor has reported lately. Indoor air is assumed from it, except for hours spent where you have connected a Vayu measuring unit, which count what it measured.';
