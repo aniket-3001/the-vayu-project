@@ -1,6 +1,6 @@
-CDK assertion tests. I could check the synthesized CloudFormation before any deploy, so a rule I wrote down could fail the build. The tests hold that every function has a time limit of at most two minutes, every bucket blocks public access, exactly one policy grants `states:SendTaskSuccess`, and the scheduled jobs have retries off.
+CDK assertion tests. I could check the synthesized CloudFormation before any deploy, so a rule I wrote down could fail the build. Two examples that fail the build: a function without a time limit of at most two minutes, and a second policy granting `states:SendTaskSuccess`.
 
-DynamoDB. The assistant's 500-a-day cap in `apps/api/src/quota.ts` is one conditional `UpdateItem`. It adds to a counter only if there is room, so two requests at once cannot both take the last one. There is no lock and no extra service. TTL deletes the counter after the day, and on-demand mode left nothing to size.
+DynamoDB. The assistant's 500-a-day cap in `apps/api/src/quota.ts` is one conditional `UpdateItem`. It adds to a counter only if there is room, so two requests at once cannot both take the last one. There is no lock and no extra service. TTL deletes the counter two days later, and on-demand mode left nothing to size.
 
 Bedrock. One Converse call to Nova Micro rewords an answer. The guardrail checks the question and the answer, one text unit each, and it is 98% of a question's cost. The response trace listed the units and tokens, so the figure in `docs/cost.md` is measured.
 

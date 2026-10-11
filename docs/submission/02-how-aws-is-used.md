@@ -1,4 +1,4 @@
-One AWS stack in Mumbai (ap-south-1). A visitor's browser never calls an air or fire provider: scheduled jobs and a cache do. Only place search, map tiles and, if my API has no wind data, a wind fallback go straight from the browser.
+One AWS stack in Mumbai (ap-south-1). A visitor's browser never calls an air or fire provider: two scheduled jobs and my API do, and keep what they fetch. Only place search, map tiles and, if my API has no wind data, a wind fallback go straight from the browser.
 
 AWS open source
 
@@ -10,14 +10,14 @@ AWS services
 - CloudFront and S3: one address for app and API; private bucket. CloudFront keeps an answer as the API says, up to 15 minutes.
 - API Gateway and Lambda: every /v1 route in one function, at 25 requests a second.
 - DynamoDB: cache, daily quotas, alert records. The Rooms table for device readings is built but unused.
-- EventBridge Scheduler: a 15-minute job fetching the nearest monitor and forecast for saved places, and a 30-minute job reading 7,268 monitors for the map. Retries are off, so a bad run cannot pile up.
-- Bedrock: Nova Micro through the `apac.amazon.nova-micro-v1:0` inference profile, behind a Guardrail. The model only rewords an answer the rules decided. Code checks every number against the facts; if one is missing, or the model is slow or off, fixed text goes out.
+- EventBridge Scheduler: a 15-minute job fetching the nearest monitor and forecast for four fixed Delhi places, caching them so most opens never reach OpenAQ, and a 30-minute job reading 7,268 monitors for the map. Retries are off, so a bad run cannot pile up.
+- Bedrock: Nova Micro through the `apac.amazon.nova-micro-v1:0` inference profile, behind a Guardrail. The model only puts an answer the rules decided into words. Code checks every number against the facts; if one is missing, or the model is slow or off, fixed text goes out.
 - Polly: reads answers aloud in English and Hindi.
 - Step Functions: AlertLoop (send, wait for a tap, remind; sends off) and FixCheck, "did it work?".
 - Secrets Manager: the OpenAQ and NASA FIRMS keys. SSM Parameter Store: the assistant's kill switch.
 - CloudWatch: an alarm for each silent failure.
 
-One failure: the map job hit OpenAQ's rate limit and timed out. It now waits as asked and stops in time.
+One failure: the first full run of the map job was rate-limited by OpenAQ and timed out. It now waits as long as OpenAQ asks (up to three times), spaces its requests and stops at a time budget. Later OpenAQ rejected my key with a 401; I put a new one in Secrets Manager and the job read 7,268 monitors.
 
 IoT Core, Firehose and Athena are built, unused. Idle cost: about $4.50 a month; an assistant question, $0.0008.
 

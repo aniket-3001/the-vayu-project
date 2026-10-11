@@ -1,14 +1,14 @@
-Host header, CloudFront to API Gateway. My first live call to the API through CloudFront came back 403. CloudFront was forwarding the viewer's Host header and API Gateway answered it with that 403. I found the cause only by testing the live address, and asked for an origin request policy that forwards just the viewer address. The CloudFront docs for API Gateway origins should say Host must not be forwarded, and the 403 could name the cause.
+Host header, CloudFront to API Gateway. My first live call to the API through CloudFront came back 403. CloudFront was forwarding the viewer's Host header and API Gateway answered it with that 403. I found the cause only by testing the live address, and asked for an origin request policy that forwards just the viewer address. The 403 gave no hint that the Host header was the cause. A line about it in the origin request policy docs, or in the 403 body, would have saved my first live debug.
 
-Guardrails. The prompt-attack filter blocked my own rewording instruction because it sat in the user turn. Nothing looked broken: the assistant fell back to fixed text, and I noticed only because the "Wording by AI" label never appeared on a live question. My code saw only `stopReason: guardrail_intervened` (`packages/watch/src/phrase.ts`). AWS could name the filter that fired in that same response. I moved the instruction to the system prompt.
+Guardrails. The prompt-attack filter blocked my own rewording instruction because it sat in the user turn. Nothing looked broken: the assistant fell back to fixed text, and I noticed only because the "Wording by AI" label never appeared on a live question. My code saw only `stopReason: guardrail_intervened` (`packages/watch/src/phrase.ts`). My call did not turn on the guardrail trace, so the response named no filter. A one-field default saying which filter fired would have shown the cause on the first call. I moved the instruction to the system prompt.
 
-Model ids. In ap-south-1 the model list shows Nova Micro as ACTIVE, but calling its bare id is refused and only the regional inference profile `apac.amazon.nova-micro-v1:0` works. The IAM policy then needs the profile ARN plus a foundation-model ARN with a wildcard region (`infra/lib/Assistant.ts`). The model list should say which models need a profile and show its id.
+Model ids. In ap-south-1 calling Nova Micro by its bare model id is refused, and only the regional inference profile `apac.amazon.nova-micro-v1:0` works. The IAM policy then needs the profile ARN plus a foundation-model ARN with a wildcard region (`infra/lib/Assistant.ts`). The model list should say which models need a profile and show its id.
 
 CloudFormation. My first deploy failed, and the rollback failed too: an API stage setting named a route that did not exist yet. It passed synth and every test; only `cdk deploy` failed. A synth-time warning for a stage that names a route not yet created would have saved the failed deploy.
 
 A schedule that never runs raises no error. I asked for a CloudWatch alarm on too few invocations, with missing data counted as bad (`infra/lib/Operations.ts`). EventBridge Scheduler could offer that alarm ready made.
 
-`states:SendTaskSuccess` and `polly:SynthesizeSpeech` take no resource, so I could only scope them to `*`. Scoping by state machine or by voice would let me narrow them.
+I could only grant `states:SendTaskSuccess` and `polly:SynthesizeSpeech` on `*`. Scoping the task-token action to the state machine that issued the token would let me narrow it.
 
 ---
 
