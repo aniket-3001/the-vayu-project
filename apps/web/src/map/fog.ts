@@ -1,45 +1,37 @@
-import { gradientColour, mercatorY, sampleField, type Window } from './field';
+import { gradientColour, sampleField, type Window } from './field';
 import type { Monitor } from './monitors';
 
 /**
- * The air as a translucent fog in the AQI scale's colours (made more vivid than the scale's pastels), blended smoothly
- * from one level to the next, with a fine grain through it like dust hanging in the air. The wind lines show over it. The
- * grain stirs very slightly, a pixel or so every moment, so where two kinds of air meet they seem to mix.
+ * The air as a smooth, deep colour wash along the AQI scale, one level blending into the next with no break or grain,
+ * the way a weather map's colour layer does: the colours mix into one another and there is depth where the air is
+ * worst. It is translucent, so the streets and the wind show through it.
  */
 export interface Fog {
   readonly width: number;
   readonly height: number;
   /** The colour at each pixel, three bytes, smooth from level to level. */
   readonly rgb: Uint8Array;
-  /** How strong the fog is at each pixel, 0 where we know nothing, up to 215 where we are sure. */
+  /** How strong the wash is at each pixel, 0 where we know nothing. */
   readonly alpha: Uint8Array;
-  /** The grain is fixed to the ground: where this window starts, in grain cells. */
-  readonly offsetX: number;
-  readonly offsetY: number;
 }
 
 /** The picture is worked out on a coarse grid this many pixels across, and stretched up smoothly. */
 const COARSE = 6;
-/** The strongest the fog is, out of 255: strong enough for the colours to read, with the map still showing through. */
-const STRONGEST = 240;
-/** How much more vivid than the scale's own pastels the fog is drawn: the colours are not washed out. */
-const VIVID = 1.45;
+/** The strongest the wash is, out of 255: deep, with the map still showing through. */
+const STRONGEST = 235;
+/** How much more vivid than the scale's own pastels the wash is drawn, and how much darker. */
+const VIVID = 1.7;
+const DEPTH = 0.82;
 
-/** A colour pushed away from its own grey by `k`, so it is more vivid and the same lightness. */
+/** A colour pushed away from its own grey by `k`, so it is more vivid, and darkened a little. */
 const vivid = (
   [r, g, b]: readonly [number, number, number],
   k: number,
 ): readonly [number, number, number] => {
   const grey = 0.299 * r + 0.587 * g + 0.114 * b;
-  const push = (c: number): number => Math.max(0, Math.min(255, Math.round(grey + (c - grey) * k)));
+  const push = (c: number): number =>
+    Math.max(0, Math.min(255, Math.round((grey + (c - grey) * k) * DEPTH)));
   return [push(r), push(g), push(b)];
-};
-
-/** A repeatable number between 0 and 1 for a grain cell. */
-const cell = (x: number, y: number): number => {
-  let h = (Math.imul(x, 374761393) + Math.imul(y, 668265263)) | 0;
-  h = Math.imul(h ^ (h >>> 13), 1274126177);
-  return ((h ^ (h >>> 16)) >>> 0) / 4294967295;
 };
 
 /**
@@ -87,60 +79,21 @@ export function buildFog(
       rgb[at * 3] = r;
       rgb[at * 3 + 1] = g;
       rgb[at * 3 + 2] = b;
-      alpha[at] = Math.round(Math.min(1, sure) * STRONGEST);
+      // A little more than linear in how sure we are, so the edge falls away softly and the middle holds its depth.
+      alpha[at] = Math.round(Math.min(1, sure ** 0.85) * STRONGEST);
     }
   }
-  const degPerPx = (window.east - window.west) / width;
-  const yPerPx = (mercatorY(window.south) - mercatorY(window.north)) / height;
-  return {
-    width,
-    height,
-    rgb,
-    alpha,
-    offsetX: Math.round(window.west / degPerPx),
-    offsetY: Math.round(mercatorY(window.north) / yPerPx),
-  };
+  return { width, height, rgb, alpha };
 }
 
-/** How long the grain holds one place before it is stirred a pixel, in milliseconds. */
-export const STIR_MS = 900;
-
-/** Which stir a moment falls in, so a caller can skip drawing the same one again. */
-export const stirOf = (ms: number): number => Math.floor(ms / STIR_MS);
-
-/** The small nudge, -1, 0 or 1 pixel, the grain has at a stir. */
-const nudge = (step: number, axis: number): number =>
-  Math.floor(cell(step * 7 + axis * 31, axis * 977 + 13) * 3) - 1;
-
-/**
- * Draws the fog at a moment into RGBA pixels (`out` is `width * height * 4`). Each pixel's strength is roughened with
- * grain: mostly 60 to 100 percent, with the odd brighter speck and the odd hole. The grain is a fixed pattern on the
- * ground, moved a pixel at most from one stir to the next, so it shimmers a little and does not drift.
- */
-export function paintFog(fog: Fog, out: Uint8ClampedArray, ms: number): void {
-  const { width, height, rgb, alpha, offsetX, offsetY } = fog;
-  const step = stirOf(ms);
-  const ox = offsetX + nudge(step, 0);
-  const oy = offsetY + nudge(step, 1);
-  for (let y = 0; y < height; y++) {
-    for (let x = 0; x < width; x++) {
-      const at = y * width + x;
-      const base = alpha[at] ?? 0;
-      const o = at * 4;
-      if (base === 0) {
-        out[o + 3] = 0;
-        continue;
-      }
-      const n = cell(x + ox, y + oy);
-      const n2 = cell(y + oy + 7919, x + ox + 104729);
-      let grain = 0.6 + 0.4 * n;
-      if (n2 > 0.97) grain = 1.35;
-      else if (n2 < 0.04) grain = 0.12;
-      const shade = (n - 0.5) * 22;
-      out[o] = (rgb[at * 3] ?? 0) + shade;
-      out[o + 1] = (rgb[at * 3 + 1] ?? 0) + shade;
-      out[o + 2] = (rgb[at * 3 + 2] ?? 0) + shade;
-      out[o + 3] = base * grain;
-    }
+/** Draws the wash into RGBA pixels (`out` is `width * height * 4`). */
+export function paintFog(fog: Fog, out: Uint8ClampedArray): void {
+  const { width, height, rgb, alpha } = fog;
+  for (let at = 0; at < width * height; at++) {
+    const o = at * 4;
+    out[o] = rgb[at * 3] ?? 0;
+    out[o + 1] = rgb[at * 3 + 1] ?? 0;
+    out[o + 2] = rgb[at * 3 + 2] ?? 0;
+    out[o + 3] = alpha[at] ?? 0;
   }
 }

@@ -13,7 +13,7 @@ import { useEffect, useRef } from 'react';
 import { LEVELS } from '../design/levels';
 import type { Monitor } from './monitors';
 import { cigarettesPerDay, describeCigarettes } from '../units/smoke';
-import { buildFog, paintFog, stirOf, type Fog } from './fog';
+import { buildFog, paintFog, type Fog } from './fog';
 import { FIELD_TILES, mercatorY, visibleWindow, type Window } from './field';
 import { firesGeoJson, type Fire } from './fires';
 import { monitorsGeoJson } from './monitors';
@@ -78,14 +78,12 @@ function fogSize(window: Window, pxPerDeg: number): { width: number; height: num
   return { width: Math.max(24, Math.round(width)), height: Math.max(24, Math.round(height)) };
 }
 
-/** A tile of the fog: a picture whose grain is stirred now and then, laid on the map where its window is. */
+/** A tile of the colour wash: a picture laid on the map where its window is. */
 interface FogTile {
   readonly canvas: HTMLCanvasElement;
   readonly ctx: CanvasRenderingContext2D | null;
   image: ImageData | undefined;
   fog: Fog | undefined;
-  /** The stir last drawn, so the same one is not drawn twice. */
-  stir: number;
 }
 
 /**
@@ -258,8 +256,8 @@ export function MapView({
     if (import.meta.env.DEV) Object.assign(window, { __vayuMap: m });
     m.addControl(new NavigationControl({ showCompass: false }), 'top-right');
 
-    // The air is a fog with a grain in it, built for what is on screen (finer as you come in) when the map has
-    // stopped moving, and the grain is stirred a pixel every moment or so.
+    // The air is a smooth colour wash, built for what is on screen (finer as you come in) when the map has stopped
+    // moving.
     const fogTiles: FogTile[] = FIELD_TILES.map(() => {
       const canvas = document.createElement('canvas');
       canvas.width = 2;
@@ -270,17 +268,11 @@ export function MapView({
       } catch {
         ctx = null;
       }
-      return { canvas, ctx, image: undefined, fog: undefined, stir: -1 };
+      return { canvas, ctx, image: undefined, fog: undefined };
     });
-    const reduced =
-      typeof window.matchMedia === 'function' &&
-      window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    const frame = (tile: FogTile, source: CanvasPlacer, ms: number, force = false): void => {
+    const frame = (tile: FogTile, source: CanvasPlacer): void => {
       if (tile.fog === undefined || tile.image === undefined || tile.ctx === null) return;
-      const stir = stirOf(ms);
-      if (!force && stir === tile.stir) return;
-      tile.stir = stir;
-      paintFog(tile.fog, tile.image.data, ms);
+      paintFog(tile.fog, tile.image.data);
       tile.ctx.putImageData(tile.image, 0, 0);
       // The source refreshes its texture only while it plays, so play for one frame.
       source.play();
@@ -326,7 +318,7 @@ export function MapView({
           [window.east, window.south],
           [window.west, window.south],
         ]);
-        frame(fogTile, source, performance.now(), true);
+        frame(fogTile, source);
       });
     };
     redrawField.current = draw;
@@ -335,22 +327,6 @@ export function MapView({
       if (fieldTimer !== undefined) clearTimeout(fieldTimer);
       fieldTimer = setTimeout(draw, 140);
     });
-    // The stirring: checked a few times a second, drawn about once a second, only while the page is shown and
-    // motion is welcome.
-    const jostle =
-      reduced || typeof window === 'undefined'
-        ? undefined
-        : window.setInterval(() => {
-            if (document.hidden || !ready.current) return;
-            const now = performance.now();
-            FIELD_TILES.forEach((_, i) => {
-              const fogTile = fogTiles[i];
-              const source = m.getSource(FIELD_IDS[i] ?? '') as unknown as CanvasPlacer | undefined;
-              if (fogTile?.fog === undefined || source === undefined) return;
-              frame(fogTile, source, now);
-            });
-          }, 300);
-
     const addLayers = (): void => {
       ready.current = true;
       if (m.getSource('field-0') !== undefined) return;
@@ -383,11 +359,11 @@ export function MapView({
               0,
               0.95,
               7,
-              0.88,
+              0.9,
               11,
-              0.4,
+              0.45,
               14,
-              0.15,
+              0.16,
             ] as never,
             'raster-fade-duration': 0,
             'raster-resampling': 'linear',
@@ -593,7 +569,6 @@ export function MapView({
     onReady(m);
     return () => {
       if (fieldTimer !== undefined) clearTimeout(fieldTimer);
-      if (jostle !== undefined) window.clearInterval(jostle);
       redrawField.current = undefined;
       m.remove();
       map.current = undefined;
