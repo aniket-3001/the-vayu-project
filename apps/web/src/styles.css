@@ -6515,3 +6515,27 @@ table.hourly .row-label {
 .unit-connect .primary {
   margin-top: 4px;
 }
+
+/* The preset: one tap to see the app with a profile already there */
+
+.preset-line {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+  margin: 10px 0 0;
+}
+.preset-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 40px;
+  padding: 0 16px;
+  border: 1px solid var(--ink);
+  border-radius: 999px;
+  background: var(--ink);
+  color: #fff;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}

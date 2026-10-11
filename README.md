@@ -10,7 +10,7 @@ AWS Air track submission, 8 to 11 October 2026.
 
 ## It is all real data
 
-Every number in the live app comes from a real source (OpenAQ monitors, Open-Meteo weather, forecast and wind, MET Norway wind as a second source, NASA FIRMS fires) through our own API on AWS. There is no demo mode and no made-up number in the deployed bundle; `make prove` fails if one gets in.
+Every number in the live app comes from a real source (OpenAQ monitors, Open-Meteo weather, forecast and wind, MET Norway wind as a second source, NASA FIRMS fires) through our own API on AWS. There is no demo mode and no made-up number in the deployed bundle; `make prove` fails if one gets in. **Use preset** on My Air (shown only when you have no places) loads a family with Home, School, Office and Park so you can see a filled profile at once: it sets places and people, and every reading at them is still the real, live one.
 
 **The recorded days is real too.** Open `/#/week` and the same app plays seven real days from last winter, one at a time, as if each were today at 8 am: 6 Oct 2025 (rain), 7 Oct (the clean day after), 21 Oct (after Diwali), 31 Oct (stubble fires), 12 Nov (smog), 22 Dec (GRAP Stage IV by our estimate) and 30 Mar 2026 (wind). The air comes from four Delhi monitors in OpenAQ's public archive, the weather from Open-Meteo's archive, the fires from NASA FIRMS. It is there so you can see every feature without waiting for a bad day, and the page says it is recorded. Cleaning is two rules, written in the file and counted (see [`docs/AS-BUILT.md`](docs/AS-BUILT.md)).
 
@@ -18,7 +18,7 @@ The only made-up days in the repository are in the separate prototype build (`np
 
 ## Try it in two minutes
 
-1. Open the live address. Add a place (search, or "Detect my location"): its card shows the AQI, the weather, the nearest monitor's name, distance and age, and the next three days.
+1. Open the live address. Press **Use preset** for a filled profile, or add a place (search, or "Detect my location"): its card shows the AQI, the weather, the nearest monitor's name, distance and age, and the next three days.
 2. Open the card: **Insights for this place** (a school's morning assembly, a walk in a park, alerts that apply there).
 3. Open the **Map** (every monitor, wind, fires), **Exposure** (the air a person breathed, hour by hour) and **AIR Lens** (the air as particles in front of the camera).
 4. Press the round **Ask** button and ask "When can I walk today?" in English or हिन्दी. Fixed rules decide the answer; the model only rewords it.
