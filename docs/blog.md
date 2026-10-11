@@ -1,22 +1,22 @@
 # The morning after Diwali: one clear answer for Delhi's air, built on AWS
 
-Delhi has plenty of air-quality numbers. A city figure cannot see one street or one room, and none says what to do. The Vayu Project gives one answer for one place, with the monitor's name, its distance and the age of the reading beside it. It is free, has no sign-up, and opens now: https://d3lmq1mze2gup3.cloudfront.net.
+Picture a parent in South Delhi at 8 am on 21 October 2025, the morning after Diwali. The phone shows one city-wide Air Quality Index (AQI) figure. The child's bag is by the door. The question is small: do we walk to school, or not?
 
-Picture a parent in South Delhi at 8 am on 21 October 2025, the morning after Diwali. The phone shows one city-wide Air Quality Index (AQI) figure. The child's bag is by the door. The question is small: do we walk to school, or not? The monitor 3.8 km from Home can answer it.
-
-The parent is a picture I use to keep the app honest, and the morning is real. The nearest monitor with a fresh reading that day, Lodhi Road, 3.8 km from the spot I had set as "Home" (near R K Puram), read an AQI of 500, the top of the scale, with PM2.5 (fine particles) at 980 µg/m³. The app added what to do: stay in where you can, and if you must go out, 4 to 5 pm is the cleanest daylight hour, at AQI 134.
+The parent is a picture I use to keep the app honest, and the morning is real. The nearest monitor with a fresh reading that day, Lodhi Road, 3.8 km from the spot I had set as "Home" (near R K Puram), read 500, the top of the US AQI scale the card uses, with PM2.5 (fine particles) at 980 µg/m³. On India's scale the last 24 hours also averaged 500. The app added what to do: stay in where you can, and if you must go out, 4 to 5 pm is the cleanest daylight hour, at AQI 134.
 
 ![Home on the recorded morning after Diwali: AQI 500, the monitor's name and distance, and advice for this place](images/02b-place-insights-desktop.png)
 _The recorded morning after Diwali, 21 Oct 2025, 8 am. The card names the monitor (Lodhi Road, 3.8 km away) and says "as recorded". The alert row, "GRAP Stage IV likely today", is my estimate from the last 24 hours' average AQI of 500 (GRAP is Delhi's Graded Response Action Plan, the official pollution stages), and the card adds that official orders come first._
+
+Delhi has plenty of air-quality numbers. A city figure cannot see one street or one room, and none says what to do. The Vayu Project gives one answer for one place, with the monitor's name, its distance and the age of the reading beside it. It is free, has no sign-up, and opens now: https://d3lmq1mze2gup3.cloudfront.net.
 
 ## What it is
 
 You add the places you care about: Home, a school, an office, a park. A usual dashboard shows the city's number. Each card here shows the air from the monitor nearest that place, with its name, distance and age, the weather, and what to do about it.
 
-Beyond My Air, Recorded days replays seven real days. The map shows monitors, wind and satellite fires. AIR Lens draws the air as particles in front of your camera. The assistant answers questions. Exposure adds up what a person breathed, hour by hour. "Nearest" means the nearest monitor with a fresh reading, so on the day I took the live screenshot, Home in Dwarka showed a monitor in Vasant Kunj, 12 km away, and said so.
+Around My Air are a map of monitors, wind and satellite fires, AIR Lens (the air drawn as particles in front of your camera), an assistant, and Exposure, which adds up what a person breathed, hour by hour. "Nearest" means the nearest monitor with a fresh reading, and the card says how far it is.
 
 ![Six screens of the app](images/collage-features.jpg)
-_The six screens. Top row: My Air on live data with the preset's places set (each card names the nearest monitor, its distance and the age of its reading); the recorded days on 21 Oct 2025, where the alert is GRAP Stage IV, the app's estimate from the last 24 hours; the map on 31 Oct 2025 with NASA satellite fire detections and wind. Bottom row: AIR Lens; the assistant; Exposure. All but My Air on live data are from the recorded days._
+_The six screens. Top row: My Air on live data with the preset's places; the recorded days on 21 Oct 2025, where the alert is GRAP Stage IV, the app's estimate from the last 24 hours; the map on 31 Oct 2025 with NASA satellite fire detections and wind. Bottom row: AIR Lens; the assistant; Exposure. All but My Air on live data are from the recorded days._
 
 A small measuring unit, an ESP32-S3 board with a Sensirion SPS30 laser particle sensor, adds the air in one room over Bluetooth. I built the whole thing alone, with an AI coding assistant (Claude Code). I chose what it should do and what it must never claim. The assistant wrote most of the code, and I read every change and sent it back when it was wrong. I wired, flashed and tested the unit and built the cleaner myself. The stack runs in my own AWS account.
 
@@ -24,17 +24,13 @@ A small measuring unit, an ESP32-S3 board with a Sensirion SPS30 laser particle 
 
 The app has an assistant you can ask, in English or Hindi, "When can I go for a walk?" Fixed rules decide the answer from the readings. Amazon Bedrock (Amazon Nova Micro, behind a guardrail) may reword it, or answer a question no rule covers from the facts it is given, and then every number in the wording is compared with the facts. If one is missing from them, the rules' own plain wording goes out instead. When the model is off, slow, or at its daily limit, the rules answer alone and say so. A Hindi answer never reaches the model: it is wording a person wrote, with the facts slotted in. The model has no tools and cannot act.
 
-[`docs/safety.md`](safety.md) lists each rule, where the code enforces it, and the test that fails if it breaks. A monitor reading older than six hours is dropped, and with none left the answer is labelled an Estimate from a regional model, with no advice.
-
-## What it does not claim
-
-A GRAP stage in the app is my estimate from the last 24 hours, and the official order comes first. The app says a school is "likely" closed and points to the school's notice. It gives no medical advice. The unit is a low-cost sensor I have not compared with a monitor, so I do not call it accurate. The cleaner's airflow is measured and its CADR is not.
+[`docs/safety.md`](safety.md) lists each rule, where the code enforces it, and the test that fails if it breaks. A monitor reading older than six hours is dropped, and with none left the answer is labelled an Estimate from a regional model, with no advice. A GRAP stage is my estimate from the last 24 hours, and the official order comes first. The app says a school is "likely" closed and points to the school's notice, and it gives no medical advice.
 
 ## It is all real data
 
-The deployed app has no made-up data. A prototype build with invented days lives in the repo and is never uploaded, and `make prove` checks the bundle for it. The nearest thing to a demo is a Use preset button that loads a sample family's places, and the air at them is still read live. The live app reads real monitors (OpenAQ), weather, forecast and wind (Open-Meteo, with MET Norway as a second source for wind) and satellite fires (NASA FIRMS), through my own API on AWS. To show every feature without waiting for a bad day, the app also replays seven recorded days (https://d3lmq1mze2gup3.cloudfront.net/#/week): rain in early October, the morning after Diwali, stubble fires, November and December smog, a January downpour and a windy March day, each played as if it were today at 8 am. Every screen says "recorded". The air comes from four Delhi monitors in OpenAQ's public archive, and the weather and fires are archives too.
+The deployed app has no made-up data. A prototype build with invented days lives in the repo and is never uploaded, and `make prove` checks the bundle for it. A Use preset button loads a sample family's places, and the air at them is still read live. The live app reads real monitors (OpenAQ), weather, forecast and wind (Open-Meteo, with MET Norway as a second wind source) and satellite fires (NASA FIRMS), through my own API on AWS. So that you can see every feature without waiting for a bad day, the app also replays seven recorded days (https://d3lmq1mze2gup3.cloudfront.net/#/week): rain in early October, the morning after Diwali, stubble fires, November and December smog, a January downpour and a windy March day, each played as if it were today at 8 am. Every screen says "recorded". The air comes from four Delhi monitors in OpenAQ's public archive, and the weather and fires are archives too.
 
-The archive had mess in it, so I cleaned it with two written rules. The first drops a PM2.5 of 999 or more (the feed's "out of range"), a PM10 of 2,000 or more, and a PM10 below the same hour's PM2.5, which real air cannot give. The second drops a monitor's hour when it reads over three times the median of at least two others and is itself high (PM2.5 over 200). The file counts what the second rule removed: 86 lone spikes across the seven days. I changed nothing else. In the recorded days the map's wind is one recorded wind for central Delhi, drawn the same everywhere, and the map says so.
+The archive had mess in it, so I cleaned it with two written rules. The first drops a PM2.5 of 999 or more (the feed's "out of range"), a PM10 of 2,000 or more, and a PM10 below the same hour's PM2.5, which real air cannot give. The second drops a monitor's hour when it reads over three times the median of at least two others and is itself high (PM2.5 over 200, PM10 over 500). The file counts what the second rule removed: 86 lone spikes across the seven days. I changed nothing else. In the recorded days the map's wind is one recorded wind for central Delhi, drawn the same everywhere, and the map says so.
 
 ## The unit, and where it stops
 
@@ -43,7 +39,7 @@ The ESP32-S3 reads the SPS30 over a serial wire and sends an 18-byte packet ever
 ![The measuring unit: an ESP32-S3 board wired to the SPS30 particle sensor on a breadboard](images/build/measuring-unit.jpg)
 _The measuring unit on my desk: the ESP32-S3 board in front, with a USB cable plugged in, wired by jumper wires to the SPS30 particle sensor on a breadboard._
 
-I have not compared the unit with a monitor for days, so I do not know how well it agrees. Bluetooth works in Chrome on a Mac; Android Chrome is untried and iPhone Safari cannot do it. Telegram alerts are built and tested against fakes, but live sends are off. [`docs/claims.md`](claims.md) lists what I say and what I refuse to say.
+I have not compared the unit with a monitor, so I do not call it accurate. Bluetooth works in Chrome on a Mac; Android Chrome is untried and iPhone Safari cannot do it. Telegram alerts are built and tested against fakes, but live sends are off. [`docs/claims.md`](claims.md) lists what I say and what I refuse to say.
 
 ## I built a cleaner too
 
@@ -57,7 +53,7 @@ A handheld vane anemometer at the outlet read about 191 cubic feet per minute, a
 [![The anemometer at the cleaner's outlet reading 191 CFM](images/build/purifier-6-airflow-191cfm.jpg)](images/build/airflow-proof.mp4)
 _A 5-second video (click the picture to play it): a handheld vane anemometer at the cleaner's outlet, reading about 191 CFM at 29.4 °C and 63.1 % RH. Airflow, not CADR._
 
-That is airflow, not CADR. CADR (clean air delivery rate) also depends on how many particles each pass removes, and it is measured by watching a room's particles fall with the cleaner off and then on. I have not run that test, and I have not measured the filter's efficiency, the noise or the power. The cleaner is a prototype that does not switch itself on by what the unit reads.
+CADR (clean air delivery rate), the number purifiers are rated by, also depends on how many particles each pass removes, and it is measured by watching a room's particles fall with the cleaner off and then on. I have not run that test, and I have not measured the filter's efficiency, the noise or the power. The cleaner is a prototype that does not switch itself on by what the unit reads.
 
 ## Why each AWS service is there
 
@@ -80,7 +76,7 @@ Visitors' browsers still call Open-Meteo to search for a place by name (it sends
 
 ### My own screenshot said AQI 500 beside "GRAP Stage II"
 
-Writing this post, I looked hard at my own screenshot of the morning after Diwali: AQI 500, and "GRAP Stage II likely". Those two do not go together. The estimate averaged the last 24 hours the monitor _had_, so gaps pulled in older, cleaner hours, and it stretched one hour's PM10 to PM2.5 ratio over the whole day. Now it uses the last 24 hours only (16 must be there), takes PM10 as at most twice the PM2.5, and treats a missing PM10 as a floor. I checked it against the monitors' own PM10 on 24 station-days, and no day lands in the wrong stage. The same audit turned up a rain alert that promised clean air when the forecast showed none, and an assistant sheet on a phone that left the answer 236 pixels of room.
+Writing this post, I looked hard at my own screenshot of the morning after Diwali: AQI 500, and "GRAP Stage II likely". Those two do not go together. The estimate averaged the last 24 hours the monitor _had_, so gaps pulled in older, cleaner hours, and it stretched one hour's PM10 to PM2.5 ratio, however large, over the whole day. Now it uses the last 24 hours only (16 must be there), caps that ratio at 2, and treats a missing PM10 as a floor. I checked it against the monitors' own PM10 on 24 station-days, and no day lands in the wrong stage. The same audit turned up a rain alert that promised clean air when the forecast showed none, and an assistant sheet on a phone that left the answer 236 pixels of room.
 
 ### The model never answered
 

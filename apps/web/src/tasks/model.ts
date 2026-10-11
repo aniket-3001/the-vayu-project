@@ -38,7 +38,7 @@ export function grapStage(cpcbAqi: number | null): 0 | 1 | 2 | 3 | 4 {
 
 const HOUR_MS = 3_600_000;
 
-/** The most PM10 can be taken to exceed PM2.5, in Delhi's smog: one hour's ratio is never stretched over a whole day. */
+/** The most PM10 can be taken to exceed PM2.5 in Delhi's smog. One hour's ratio is applied to the day, so it is capped. */
 const MAX_PM10_RATIO = 2;
 
 /**
