@@ -52,16 +52,14 @@ is). It does not work in Safari on an iPhone. The person picks the unit from the
 
 ## What may be said, and what may not
 
-| Say                                                                                                                        | Do not say, until it is shown                                                                                                                          |
-| -------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| "A measuring unit built from a laser particle sensor and an ESP32 that costs about ₹4,000" (confirm the bill of materials) | "Scientific-grade", "reference-grade", "highly accurate": low-cost laser sensors are not reference instruments                                         |
-| "The sensor's datasheet gives a lifetime of more than ten years of continuous running" (check the figure in the datasheet) | "Rated for ten years in the open": the sensor is not an outdoor-rated product; a weatherproof enclosure, a shield and cleaning are not built or tested |
-| "Its reading is shown next to the nearest official-network monitor's, so you can see how they compare"                     | "It agrees with the official monitors": that is a result, and needs a few days of the two side by side                                                 |
-| "For the price of one monitoring station (your figure: ₹2,00,00,000) you could put up about 5,000 of these"                | "These do the same job as a station": a station measures more things, to a reference standard, and is maintained                                       |
+| Say                                                                                        | Do not say, until it is shown                                                                                                                                                           |
+| ------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| "A measuring unit built from a laser particle sensor and an ESP32-S3, read over Bluetooth" | "Scientific-grade", "reference-grade", "highly accurate": low-cost laser sensors are not reference instruments                                                                          |
+| "Its reading is shown next to the nearest monitor's, so you can see how they compare"      | "It agrees with the official monitors": that is a result, and needs a few days of the two side by side                                                                                  |
+| "A particle sensor of this kind is rated by its maker for continuous running"              | "Rated for ten years in the open": the sensor is not an outdoor-rated product; a weatherproof enclosure, a shield and cleaning are not built or tested                                  |
+| "The unit's firmware and wiring are in this repository"                                    | "The unit costs ₹4,000" or "a station costs ₹2,00,00,000", or "5,000 of these for the price of a station": there is no bill of materials or source for either figure in this repository |
 
-The arithmetic: ₹2,00,00,000 ÷ ₹4,000 = 5,000 units. Be clear it is the cost of the _boxes_; running 5,000 of them also
-needs power, connectivity, calibration against a reference and replacement, which is why the claim to make is
-**"hyperlocal coverage that a station cannot give"** and not "a station replaced".
+Hyperlocal coverage is the point to make: a station cannot be in every street. It is not that the unit replaces a station, which measures more things, to a reference standard, and is maintained.
 
 ## A test that makes the claim honest
 

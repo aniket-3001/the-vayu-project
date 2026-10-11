@@ -100,15 +100,28 @@ const INTENTS: readonly {
   readonly say: (c: AssistantContext) => string;
   readonly sayHindi: (c: AssistantContext) => string;
 }[] = [
+  // A specific question (a mask, the windows) goes before the general ones: "should my kid wear a mask?" is about masks.
+  {
+    name: 'mask',
+    test: /mask|maask|n95|ffp2|respirator|मास्क|एन95|एन 95|मुखौटा|नकाब/iu,
+    say: mask,
+    sayHindi: maskHindi,
+  },
+  {
+    name: 'windows',
+    test: /window|purifier|ventilat|air the room|open the|खिड़की|खिड़कियाँ|खिड़कियां|खिडकी|प्यूरीफ़ायर|प्यूरीफायर|हवादार|khidki|khidkiyan|khidkiyaan/iu,
+    say: windows,
+    sayHindi: windowsHindi,
+  },
   {
     name: 'school',
-    test: /school|class|child|kid|assembly|\bpe\b|emergenc|principal|स्कूल|विद्यालय|बच्च|कक्षा|असेंबली|प्रार्थना|पीटी|skool|bachch|bacch/iu,
+    test: /school|\bclass(?:es|room)?\b|child|\bkids?\b|assembly|\bpe\b|emergenc|principal|स्कूल|विद्यालय|बच्च|कक्षा|असेंबली|प्रार्थना|पीटी|skool|bachch|bacch|\bbach(?:a|e|on)\b/iu,
     say: school,
     sayHindi: schoolHindi,
   },
   {
     name: 'alerts',
-    test: /grap|alert|warning|stage|ban|ग्रैप|ग्राप|जी आर ए पी|चेतावनी|अलर्ट|सूचना|चरण|प्रतिबंध|chetavani/iu,
+    test: /grap|alert|warning|stage|\bban\b|ग्रैप|ग्राप|जी आर ए पी|चेतावनी|अलर्ट|सूचना|चरण|प्रतिबंध|chetavani/iu,
     say: alerts,
     sayHindi: alertsHindi,
   },
@@ -125,20 +138,8 @@ const INTENTS: readonly {
     sayHindi: smokeHindi,
   },
   {
-    name: 'mask',
-    test: /mask|n95|ffp2|respirator|मास्क|एन95|एन 95|मुखौटा|नकाब/iu,
-    say: mask,
-    sayHindi: maskHindi,
-  },
-  {
-    name: 'windows',
-    test: /window|purifier|ventilat|air the room|open the|खिड़की|खिड़कियाँ|खिड़कियां|खिडकी|प्यूरीफ़ायर|प्यूरीफायर|हवादार|khidki/iu,
-    say: windows,
-    sayHindi: windowsHindi,
-  },
-  {
     name: 'walk',
-    test: /walk|jog|run|exercis|outdoor|outside|play|park|cycl|go out|when can|best time|morning|evening|टहल|सैर|दौड़|व्यायाम|कसरत|बाहर|खेल|पार्क|साइकिल|कब जा|सबसे अच्छा समय|सुबह|शाम|tahal|tehal|sair/iu,
+    test: /walk|jog|\brun(?:ning)?\b|exercis|outdoor|outside|\bplay|\bpark|cycl|go out|when can|best time|morning|evening|bahar|\bjaa?na\b|\bjaun\b|\bjaen\b|ghum|\bkhel|nikal|टहल|सैर|दौड़|व्यायाम|कसरत|बाहर|खेल|पार्क|साइकिल|कब जा|सबसे अच्छा समय|सुबह|शाम|tahal|tehal|sair/iu,
     say: walk,
     sayHindi: walkHindi,
   },

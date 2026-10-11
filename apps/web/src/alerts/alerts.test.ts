@@ -7,7 +7,9 @@ describe('alerts for the next three days', () => {
     const alerts = alertsFor(sampleDay('hazardous'), undefined);
     const grap = alerts.find((a) => a.kind === 'grap');
     expect(grap?.title).toBe('GRAP Stage IV likely today');
-    expect(grap?.reason).toMatch(/our estimate, and only the official order counts/u);
+    expect(grap?.reason).toMatch(
+      /our estimate from the monitor nearest this place.*only the official order counts/u,
+    );
     expect(alerts.some((a) => (a.kind as string) === 'walk')).toBe(false);
     expect(alerts.every((a) => a.day === 0 || a.kind !== 'grap')).toBe(true);
   });

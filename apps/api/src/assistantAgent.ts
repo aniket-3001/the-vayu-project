@@ -85,8 +85,24 @@ const CALLS_AIR_GOOD =
 const contradictsLevel = (text: string, level: string): boolean =>
   level.toLowerCase() !== 'good' && CALLS_AIR_GOOD.test(text);
 
-function usable(text: string, names: Names, level: string): boolean {
+/** Numbers written as words, which the digit check cannot see. */
+const SPELLED_NUMBER =
+  /\b(?:twice|thrice|double|triple|half|hundreds?|thousands?|(?:ten|eleven|twelve|(?:thir|four|fif|six|seven|eigh|nine)teen|twenty|thirty|forty|fifty|sixty|seventy|eighty|ninety)(?:-\w+)?)\b/giu;
+/** Words that reassure. A rule writes them or nobody does: a model may not add one. */
+const REASSURING =
+  /\b(?:safe|safely|fine to|no risk|harmless|nothing to worry|no need to worry|nothing to be worried)\b/giu;
+
+/** Words in `text` of a kind `reference` does not contain: a number spelled out, or a word of reassurance. */
+function newWords(text: string, reference: string): boolean {
+  const known = reference.toLowerCase();
+  return [...text.matchAll(SPELLED_NUMBER), ...text.matchAll(REASSURING)].some(
+    (found) => !known.includes(found[0].toLowerCase()),
+  );
+}
+
+function usable(text: string, names: Names, level: string, reference: string): boolean {
   if (contradictsLevel(text, level)) return false;
+  if (newWords(text, reference)) return false;
   if (text.length === 0 || text.length > ASSISTANT_LIMITS.maxAnswerChars) return false;
   if (FORBIDDEN.some((pattern) => pattern.test(text))) return false;
   // Every placeholder we sent must come back, and none we did not send may appear.
@@ -174,7 +190,7 @@ export async function answer(input: AnswerInput): Promise<AssistantReply> {
     const text = unmask(phrased.text, names);
     if (
       phrased.source === 'model' &&
-      usable(phrased.text, names, context.level) &&
+      usable(phrased.text, names, context.level, rule.text) &&
       keepsSafety(rule.text, phrased.text)
     )
       return {
@@ -226,7 +242,16 @@ export async function answer(input: AnswerInput): Promise<AssistantReply> {
     ),
   );
   const numbersOk = numbersIn(generated).every((n) => allowed.has(n));
-  if (generated !== '' && numbersOk && usable(generated, names, context.level)) {
+  if (
+    generated !== '' &&
+    numbersOk &&
+    usable(
+      generated,
+      names,
+      context.level,
+      `${JSON.stringify(allowedFacts(context, ''))} ${question} ${rule.text}`,
+    )
+  ) {
     const grap = /grap/iu.test(generated) && !/unofficial|estimate/iu.test(generated);
     return {
       text: `${unmask(generated, names)}${grap ? unofficialNote : ''}`,

@@ -1,7 +1,7 @@
 import { fileURLToPath } from 'node:url';
 import { CfnOutput, Duration, RemovalPolicy, Stack, type StackProps } from 'aws-cdk-lib';
 import type { CfnStage } from 'aws-cdk-lib/aws-apigatewayv2';
-import { HttpApi, HttpMethod, HttpStage, CorsHttpMethod } from 'aws-cdk-lib/aws-apigatewayv2';
+import { HttpApi, HttpMethod, HttpStage } from 'aws-cdk-lib/aws-apigatewayv2';
 import { HttpLambdaIntegration } from 'aws-cdk-lib/aws-apigatewayv2-integrations';
 import { CfnBudget } from 'aws-cdk-lib/aws-budgets';
 import { AttributeType, BillingMode, Table } from 'aws-cdk-lib/aws-dynamodb';
@@ -195,13 +195,8 @@ export class VayuStack extends Stack {
 
     const api = new HttpApi(this, 'Api', {
       createDefaultStage: false,
-      corsPreflight: {
-        allowOrigins: ['*'],
-        // POST so the app can start a "did it work?" run; its body is JSON.
-        allowMethods: [CorsHttpMethod.GET, CorsHttpMethod.POST],
-        allowHeaders: ['content-type'],
-        maxAge: Duration.days(1),
-      },
+      // No CORS: the app is served from the same address as the API (CloudFront), so no other site needs to read it
+      // from a browser. A page on another origin is refused by the browser, not by us.
     });
     // The routes that cost something or take a person's words get their own, tighter, throttle below.
     const limitedRoutes = [];

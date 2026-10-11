@@ -2,7 +2,7 @@
 
 Picture a parent in South Delhi at 8 am on 21 October 2025, the morning after Diwali. The phone shows one city-wide Air Quality Index (AQI) figure. The child's bag is by the door. The question is small: do we walk to school, or not?
 
-The parent is made up; the morning is real. The nearest monitor with a fresh reading that day, Lodhi Road, 3.8 km from the spot I had set as "Home" (near R K Puram), read 500, the top of the US AQI scale the card uses, with PM2.5 (fine particles) at 980 µg/m³. On India's scale the last 24 hours also averaged 500. The app added what to do: stay in where you can, and if you must go out, 4 to 5 pm is the cleanest daylight hour, at AQI 134.
+The parent is made up; the morning is real. The nearest monitor with a fresh reading that day, Lodhi Road, 3.8 km from the spot I had set as "Home" (near R K Puram), read 500, the top of the US AQI scale the card uses, with PM2.5 (fine particles) at 980 µg/m³. On India's scale the last 24 hours also averaged 500. The app added what to do: stay in where you can, and if you must go out, 4 to 5 pm is the cleanest daylight hour, at AQI 134 (on a recorded day that is known in hindsight; live, it is a forecast).
 
 ![Home on the recorded morning after Diwali: AQI 500, the monitor's name and distance, and advice for this place](images/02b-place-insights-desktop.png)
 _The recorded morning after Diwali, 21 Oct 2025, 8 am. The card names the monitor (Lodhi Road, 3.8 km away) and says "as recorded". The alert row, "GRAP Stage IV likely today", is my estimate from the last 24 hours' average AQI of 500 (GRAP is Delhi's Graded Response Action Plan, the official pollution stages), and the card adds that official orders come first._

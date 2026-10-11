@@ -17,7 +17,7 @@ const BREAKPOINTS = [
 
 /**
  * The US AQI for a PM2.5 concentration in µg/m³. This is the scale IQAir shows; it is a different
- * scale from India's CPCB bands, which stay the primary answer in the app. The EPA truncates the
+ * scale from India's CPCB bands. The AQI on a card is this one; the CPCB scale is used for the GRAP stage, which the alert says. The EPA truncates the
  * concentration to one decimal before looking it up.
  */
 export function usAqi(pm25: number): UsAqi | undefined {

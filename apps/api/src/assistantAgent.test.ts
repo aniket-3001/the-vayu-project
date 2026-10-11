@@ -212,6 +212,20 @@ describe('a word that contradicts the level', () => {
   });
 });
 
+describe('words the digit check cannot see', () => {
+  const q = 'Should my dad, who has asthma, be worried about the air?';
+  it('refuses a number written out, or a word of reassurance, that the rules did not write', async () => {
+    for (const bad of [
+      'The air is AQI 158, which is unhealthy. It is about half as bad as last week.',
+      'The air is AQI 158, which is unhealthy, but it is safe for a short walk.',
+      'The air is AQI 158, which is unhealthy. There is no need to worry.',
+    ]) {
+      const reply = await ask(q, { grounded: () => Promise.resolve(bad) });
+      expect(reply.source).toBe('rules');
+    }
+  });
+});
+
 describe('a question no rule covers', () => {
   const q = 'Should my dad, who has asthma, be worried about the air?';
   it('is answered by the rules’ summary when the model is off', async () => {

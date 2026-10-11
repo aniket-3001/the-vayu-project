@@ -4,7 +4,7 @@
 
 It is 8 am, the morning after Diwali, in Delhi. The city app says "bad". A parent still has to decide: do we walk to school?
 
-The Vayu Project answers for _one place_. Home, near R K Puram: **AQI 500**, from the Lodhi Road monitor **3.8 km** away, as recorded (the recording uses four Delhi monitors; the live app chooses from about 7,000). **GRAP Stage IV is likely** (our estimate, never the official order). Stay in; if you must go out, 4 to 5 pm is the cleanest hour.
+The Vayu Project answers for _one place_. Home, near R K Puram: **US AQI 500** (the top of that scale), from the Lodhi Road monitor **3.8 km** away, as recorded (the recording uses four Delhi monitors; the live app chooses from about 7,000). **GRAP Stage IV is likely** (our estimate, never the official order). Stay in; if you must go out, 4 to 5 pm is the cleanest hour (known only in hindsight, because this is a recorded day).
 
 Live: **https://d3lmq1mze2gup3.cloudfront.net** (a phone or a laptop; no sign-in) · See it on seven real past days: **https://d3lmq1mze2gup3.cloudfront.net/#/week** · Blog: [`docs/blog.md`](docs/blog.md) · Video: _to be added_
 
@@ -62,19 +62,19 @@ The only made-up days in the repository are in the separate prototype build (`np
 
 Each service is in `infra/` as CDK (TypeScript); `cdk deploy` makes the stack and `make deploy-site` uploads the app. Every Lambda runs on Graviton (arm64).
 
-| Service                                | Role                                                                                                            | Where                                              |
-| -------------------------------------- | --------------------------------------------------------------------------------------------------------------- | -------------------------------------------------- |
-| CloudFront, S3                         | Serve the app over HTTPS from a private bucket; pass `/v1/*` to the API; security headers; one address for both | `infra/lib/Site.ts`                                |
-| API Gateway (HTTP API), Lambda         | Every `/v1` route; every request and answer is checked against a contract; throttled                            | `infra/lib/VayuStack.ts`, `apps/api`               |
-| DynamoDB                               | Cache of the harvest and the map's monitors, daily quotas, requests and fire reports (with expiry)              | `infra/lib/VayuStack.ts`                           |
-| EventBridge Scheduler, Lambda          | The harvest (every 15 min) and the map's monitor job (every 30 min), so visitors never call a provider          | `infra/lib/Harvest.ts`, `infra/lib/Stations.ts`    |
-| Amazon Bedrock (Nova Micro), Guardrail | Only rewords an answer the rules already decided; the guardrail checks the question and the answer              | `infra/lib/Assistant.ts`, `packages/watch`         |
-| Amazon Polly                           | Reads answers aloud (Kajal, English and Hindi)                                                                  | `infra/lib/Assistant.ts`                           |
-| Step Functions                         | The alert loop (send, wait for a tap, remind, escalate) and "did it work?"; every task has a time limit         | `infra/lib/AlertLoop.ts`, `infra/lib/FixCheck.ts`  |
-| Secrets Manager, SSM                   | The provider keys; the assistant's kill switch                                                                  | `infra/lib/VayuStack.ts`, `infra/lib/Assistant.ts` |
-| CloudWatch, X-Ray                      | One alarm for each thing that can quietly stop, a dashboard, traces                                             | `infra/lib/Operations.ts`                          |
-| IoT Core, Firehose, S3, Athena         | Built and tested for device messaging; **not used** by the Bluetooth unit (it talks to the phone)               | `infra/lib/Ingest.ts`, `infra/lib/Analytics.ts`    |
-| AWS CDK                                | The whole stack, with assertion tests that the caps and permissions exist                                       | `infra/`                                           |
+| Service                                | Role                                                                                                                                                                                                            | Where                                              |
+| -------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------- |
+| CloudFront, S3                         | Serve the app over HTTPS from a private bucket; pass `/v1/*` to the API; security headers; one address for both                                                                                                 | `infra/lib/Site.ts`                                |
+| API Gateway (HTTP API), Lambda         | Every `/v1` route; every request and answer is checked against a contract; throttled                                                                                                                            | `infra/lib/VayuStack.ts`, `apps/api`               |
+| DynamoDB                               | Cache of the harvest and the map's monitors, daily quotas, requests and fire reports (with expiry)                                                                                                              | `infra/lib/VayuStack.ts`                           |
+| EventBridge Scheduler, Lambda          | The harvest (every 15 min) and the map's monitor job (every 30 min), so visitors never call a provider                                                                                                          | `infra/lib/Harvest.ts`, `infra/lib/Stations.ts`    |
+| Amazon Bedrock (Nova Micro), Guardrail | Rewords an answer the rules decided, or answers a question no rule covers from the facts given; the guardrail checks the question and the answer. Reached through the `apac.` cross-region inference profile    | `infra/lib/Assistant.ts`, `packages/watch`         |
+| Amazon Polly                           | Reads answers aloud (Kajal, English and Hindi)                                                                                                                                                                  | `infra/lib/Assistant.ts`                           |
+| Step Functions                         | The alert loop and "did it work?", each with a time limit. **Built and tested, not live:** Telegram sends are off, no screen links a chat, and "did it work?" needs a room that reports to AWS, which none does | `infra/lib/AlertLoop.ts`, `infra/lib/FixCheck.ts`  |
+| Secrets Manager, SSM                   | The provider keys; the assistant's kill switch                                                                                                                                                                  | `infra/lib/VayuStack.ts`, `infra/lib/Assistant.ts` |
+| CloudWatch, X-Ray                      | One alarm for each thing that can quietly stop, a dashboard, traces                                                                                                                                             | `infra/lib/Operations.ts`                          |
+| IoT Core, Firehose, S3, Athena         | Built and tested for device messaging; **not used** by the Bluetooth unit (it talks to the phone)                                                                                                               | `infra/lib/Ingest.ts`, `infra/lib/Analytics.ts`    |
+| AWS CDK                                | The whole stack, with assertion tests that the caps and permissions exist                                                                                                                                       | `infra/`                                           |
 
 AWS open source: AWS CDK for the stack, and Powertools for AWS Lambda (Logger and Tracer) in the API. We did not use Strands or Cedar.
 
@@ -91,7 +91,7 @@ The headline rule: **code decides and AI only words things.** The rules decide t
 | Accuracy of the unit                                  | **Not measured.** It has not been compared with a monitor over days. It is a low-cost sensor and is labelled that way                                                                                                                                                                                                                   |
 | Telegram alerts                                       | Built and tested against fakes; live scheduled sends are off; no in-app screen to link a chat                                                                                                                                                                                                                                           |
 | The air cleaner prototype                             | **Built** (a centrifugal fan, a pleated filter and a foam pre-filter in a box; [`docs/PURIFIER.md`](docs/PURIFIER.md)). Its airflow at the outlet was measured at about **191 cfm** with a vane anemometer. That is airflow, **not CADR**: the smoke-decay test has not been run. It does not switch itself on or off by the room's air |
-| Phone Bluetooth                                       | Chrome on a computer is tested; Android Chrome is not; iPhone Safari cannot                                                                                                                                                                                                                                                             |
+| Phone Bluetooth                                       | Tested in Chrome on a Mac only; Android Chrome is not; iPhone Safari cannot                                                                                                                                                                                                                                                             |
 
 Details: [`docs/AS-BUILT.md`](docs/AS-BUILT.md). What was checked on the live address, and what was not: [`docs/LIVE-CHECKLIST.md`](docs/LIVE-CHECKLIST.md).
 
@@ -170,27 +170,26 @@ The stack deploys with `cd infra && npx cdk deploy`. It needs three secrets made
 
 ## Documents
 
-|                                   |                                                                                 |
-| --------------------------------- | ------------------------------------------------------------------------------- |
-| `docs/AS-BUILT.md`                | What is live, what is not                                                       |
-| `docs/architecture.md`            | The parts, the data, and the Well-Architected pillars                           |
-| `docs/architecture-animated.html` | An animated diagram of the same, for the video (open it in a browser)           |
-| `docs/safety.md`                  | Every rule, how it is enforced, the test that proves it                         |
-| `docs/AGENT-BOUNDARIES.md`        | What the app's assistant may and may not do                                     |
-| `docs/claims.md`                  | Every public claim, and what supports it                                        |
-| `docs/cost.md`                    | What it costs, per unit and at each limit                                       |
-| `docs/PURIFIER.md`                | The cleaner prototype: the build, the airflow measured, what that is not        |
-| `docs/COMPARISON.md`              | The Dyson HushJet figures and what can honestly be said beside ours             |
-| `docs/UNIT.md`                    | The measuring unit: parts, wiring, protocol, what may be said                   |
-| `docs/LIVE-CHECKLIST.md`          | What was checked on the live address, and what was found                        |
-| `docs/SUBMISSION.md`              | The words for the form, the video script, the AI services used, feedback on AWS |
-| `docs/blog.md`                    | The write-up                                                                    |
-| `docs/VIDEO.md`                   | The video: what to open, show and say                                           |
-| `submission/`                     | Every answer to the submission form, in one folder                              |
-| `docs/learning-log.md`            | What broke and how it was fixed                                                 |
-| `docs/IMPLEMENTATION-PLAN.md`     | The plan the deployed app was first built to (historical)                       |
-| `CONTRIBUTIONS.md`                | What I built and delivered                                                      |
-| `DESIGN.md`                       | The visual design brief                                                         |
+|                                   |                                                                          |
+| --------------------------------- | ------------------------------------------------------------------------ |
+| `docs/AS-BUILT.md`                | What is live, what is not                                                |
+| `docs/architecture.md`            | The parts, the data, and the Well-Architected pillars                    |
+| `docs/architecture-animated.html` | An animated diagram of the same, for the video (open it in a browser)    |
+| `docs/safety.md`                  | Every rule, how it is enforced, the test that proves it                  |
+| `docs/AGENT-BOUNDARIES.md`        | What the app's assistant may and may not do                              |
+| `docs/claims.md`                  | Every public claim, and what supports it                                 |
+| `docs/cost.md`                    | What it costs, per unit and at each limit                                |
+| `docs/PURIFIER.md`                | The cleaner prototype: the build, the airflow measured, what that is not |
+| `docs/COMPARISON.md`              | The Dyson HushJet figures and what can honestly be said beside ours      |
+| `docs/UNIT.md`                    | The measuring unit: parts, wiring, protocol, what may be said            |
+| `docs/LIVE-CHECKLIST.md`          | What was checked on the live address, and what was found                 |
+| `docs/blog.md`                    | The write-up                                                             |
+| `docs/VIDEO.md`                   | The video: what to open, show and say                                    |
+| `submission/`                     | Every answer to the submission form, in one folder                       |
+| `docs/learning-log.md`            | What broke and how it was fixed                                          |
+| `docs/IMPLEMENTATION-PLAN.md`     | The plan the deployed app was first built to (historical)                |
+| `CONTRIBUTIONS.md`                | What I built and delivered                                               |
+| `DESIGN.md`                       | The visual design brief                                                  |
 
 ## AI in the app
 

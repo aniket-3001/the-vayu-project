@@ -1,4 +1,5 @@
 import { createContext, useCallback, useContext, useMemo, useState } from 'react';
+import { aqiText } from '../design/levels';
 import { CigaretteIcon } from './CigaretteIcon';
 import { cigaretteFigure, cigarettesPerDay, describeCigarettesShort, SMOKE_CAVEAT } from './smoke';
 
@@ -140,7 +141,7 @@ export function AirFigures({
   return (
     <span className={`pc-aqi${smoke ? ` pair ${layout}` : ''}`}>
       <span className="fig">
-        <strong className="tnum">{aqi}</strong>
+        <strong className="tnum">{aqiText(aqi)}</strong>
         <span>AQI</span>
       </span>
       <SmokeFigure pm25={pm25} />

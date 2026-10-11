@@ -767,13 +767,12 @@ describe('the public site', () => {
       expect(watchWrites).toHaveLength(1);
     });
 
-    it('accepts POST with a JSON body from the app, as well as GET', () => {
-      template.hasResourceProperties('AWS::ApiGatewayV2::Api', {
-        CorsConfiguration: Match.objectLike({
-          AllowMethods: Match.arrayWith(['GET', 'POST']),
-          AllowHeaders: ['content-type'],
-        }),
-      });
+    it('allows no other origin to read the API from a browser: the app is on the same address', () => {
+      const apis = Object.values(template.findResources('AWS::ApiGatewayV2::Api'));
+      for (const api of apis)
+        expect(
+          (api.Properties as { CorsConfiguration?: unknown }).CorsConfiguration,
+        ).toBeUndefined();
     });
   });
 

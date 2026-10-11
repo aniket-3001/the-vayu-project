@@ -61,7 +61,7 @@ export function RequestForm({
         <h3>Thank you, {draft.name.trim()}.</h3>
         <p>
           {done === 'sent'
-            ? 'We have your request and will get back to you on the contact you gave.'
+            ? 'Saved. No one is notified automatically: the request waits until the author reads it, so a reply may take days. If it is urgent, say so in the note.'
             : 'Your request is saved in this prototype. Nothing has been sent yet, because the request line to our team is not switched on.'}
         </p>
         <button type="button" className="primary" onClick={onBack}>
@@ -102,7 +102,7 @@ export function RequestForm({
       </button>
       <h3>We would like Vayu at our place</h3>
       <p className="muted small">
-        A short form. We use it only to get back to you about a demo or monitors.
+        A short form. We keep it for 180 days and use it only to get back to you about a demo or monitors. Nothing is sent to anyone automatically.
       </p>
 
       <fieldset className="field">
