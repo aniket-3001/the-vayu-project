@@ -1,28 +1,31 @@
 # The Vayu Project
 
-**One clear answer for the air at the places you care about.** The Vayu Project is a free web app that turns public air-quality data into a daily decision for a Delhi family, school or society: is it a good time for a walk, is school safe, do we need a mask, are the windows better shut. A small measuring unit (an ESP32 and a laser particle sensor) adds the air in your own room, and a prototype cleaner (a fan, a filter and a foam pre-filter in a box) is the thing it will watch.
+**One clear answer for the air at the places you care about.**
 
-> A parent in Delhi sees "AQI 162" for the city. Their child's school is kilometres from the nearest monitor, and the morning assembly is in the open. The app says which monitor the number came from, how far away it is and how old the reading is, what GRAP stage the last day points to (our estimate, never the order), and whether assembly should be inside.
+It is 8 am, the morning after Diwali, in Delhi. The city app says "bad". A parent still has to decide: do we walk to school?
 
-Live: **https://d3lmq1mze2gup3.cloudfront.net** (a phone or a laptop; no sign-in) · The recorded days: **https://d3lmq1mze2gup3.cloudfront.net/#/week** · Video: _to be added_ · Blog: [`docs/blog.md`](docs/blog.md) · Run it on your machine: `make local`
+The Vayu Project answers for _one place_. Home, near R K Puram: **AQI 500**, from the Lodhi Road monitor **3.8 km** away, as recorded. **GRAP Stage IV is likely** (our estimate, never the official order). Stay in; if you must go out, 4 to 5 pm is the cleanest hour.
 
-AWS Air track submission, 8 to 11 October 2026.
+Live: **https://d3lmq1mze2gup3.cloudfront.net** (a phone or a laptop; no sign-in) · See it on seven real past days: **https://d3lmq1mze2gup3.cloudfront.net/#/week** · Blog: [`docs/blog.md`](docs/blog.md) · Video: _to be added_
 
-## It is all real data
+![The Vayu Project: My Air on live data, the recorded days, the map with satellite fires, AIR Lens, the assistant and Exposure](docs/images/collage-features.jpg)
 
-Every number in the live app comes from a real source (OpenAQ monitors, Open-Meteo weather, forecast and wind, MET Norway wind as a second source, NASA FIRMS fires) through our own API on AWS. There is no demo mode and no made-up number in the deployed bundle; `make prove` fails if one gets in. **See the recorded days** on My Air (shown only when you have no places) opens the recorded days in a new tab, so you can see every feature on seven real past days without waiting for a bad one.
+## Why it is different
 
-**The recorded days is real too.** Open `/#/week` and the same app plays seven real days from last winter, one at a time, as if each were today at 8 am: 7 Oct 2025 (rain, and the cleanest of the seven), 21 Oct (the day after Diwali, GRAP Stage IV by our estimate), 31 Oct (stubble fires), 9 Nov (smog, Stage III), 22 Dec (smog, Stage II), 23 Jan 2026 (heavy rain clears the smog overnight) and 30 Mar (wind). The air comes from four Delhi monitors in OpenAQ's public archive, the weather from Open-Meteo's archive, the fires from NASA FIRMS. It is there so you can see every feature without waiting for a bad day, and the page says it is recorded. Cleaning is two rules, written in the file and counted (see [`docs/AS-BUILT.md`](docs/AS-BUILT.md)).
+- **One answer for one place.** A card for Home, a school, a park: which monitor the number came from, how far away it is, how old the reading is, and what to do (walk, mask, windows, whether assembly should be inside).
+- **It says when not to trust itself.** A reading older than six hours gives no advice. A regional-model number is labelled an Estimate. A GRAP stage is shown as our estimate.
+- **Code decides, AI only words.** Fixed rules decide the advice. The model may reword it, and every number in its wording is checked against the facts, or the plain text goes out.
+- **It reaches into your room.** A small measuring unit (an ESP32-S3 and a laser particle sensor, over Bluetooth) puts your room's air beside the air outside.
 
-The only made-up days in the repository are in the separate prototype build (`npm run build:demo`: device frames, scenarios, a simulated Bluetooth unit), which is never uploaded and is labelled "Sample data" wherever it shows a number.
+AWS Air track submission, 8 to 11 October 2026. Built alone.
 
 ## Try it in two minutes
 
-1. Open the live address. Add a place (search, or "Detect my location"): its card shows the AQI, the weather, the nearest monitor's name, distance and age, and today and the next two days.
+1. Open the live address. Add a place (search, or "Detect my location"): its card shows the AQI, the weather, the nearest monitor's name, distance and age, and today and the next two days. With no places yet, **See the recorded days** opens the seven real past days in a new tab.
 2. Open the card: **Insights for this place** (a school's morning assembly, a walk in a park, alerts that apply there).
 3. Open the **Map** (every monitor, wind, fires), **Exposure** (the air a person breathed, hour by hour) and **AIR Lens** (the air as particles in front of the camera).
-4. Press the round **Ask** button and ask "When can I walk today?" in English or हिन्दी. Fixed rules decide the answer; the model only rewords it.
-5. Open `/#/week` and step through the seven recorded days.
+4. Press the round **Ask** button and ask "When can I walk today?" in English or हिन्दी.
+5. Step through the seven recorded days at `/#/week`: 7 Oct 2025 (rain, and the cleanest of the seven), 21 Oct (the day after Diwali, GRAP Stage IV by our estimate), 31 Oct (stubble fires), 9 Nov (smog, Stage III), 22 Dec (smog, Stage II), 23 Jan 2026 (heavy rain clears the smog overnight) and 30 Mar (wind).
 6. With a measuring unit: **Add device** at the top right of My Air, then Connect over Bluetooth (Chrome on a computer or Android; not iPhone Safari). See [`docs/UNIT.md`](docs/UNIT.md).
 
 ## What it does
@@ -38,6 +41,22 @@ The only made-up days in the repository are in the separate prototype build (`np
 | **The recorded days** | The whole app on seven real past days, labelled recorded.                                                                                                                                                                           |
 
 Every number says whether it is **Live** (a named monitor, how far, how old), an **Estimate** (a regional model) or **Measured** (your own unit). Monitor readings older than six hours are not used, and nothing is advised from them.
+
+## I built the hardware too
+
+A measuring unit for a room, and a cleaner for it to watch. Both are mine, wired, flashed and built by hand.
+
+![The cleaner in five steps: the box, the fan inside it, the pleated filter, the foam pre-filter, assembled](docs/images/collage-build.jpg)
+
+The unit reads a Sensirion SPS30 laser sensor through an ESP32-S3 and sends the room's air to the app over Bluetooth. The cleaner is a box, a Hicool centrifugal fan, a pleated filter and a foam pre-filter: ₹5,000 of parts. A vane anemometer at its outlet read about **191 cfm**. That is airflow, **not CADR**: the smoke-decay test has not been run, and the unit has not been compared with a monitor. [`docs/PURIFIER.md`](docs/PURIFIER.md) and [`docs/UNIT.md`](docs/UNIT.md) say exactly what was and was not measured.
+
+## It is all real data
+
+Every number in the live app comes from a real source (OpenAQ monitors, Open-Meteo weather, forecast and wind, MET Norway wind as a second source, NASA FIRMS fires) through our own API on AWS. There is no demo mode and no made-up number in the deployed bundle; `make prove` fails if one gets in. **See the recorded days** on My Air (shown only when you have no places) opens the recorded days in a new tab, so you can see every feature on seven real past days without waiting for a bad one.
+
+**The recorded days is real too.** Open `/#/week` and the same app plays seven real days from last winter, one at a time, as if each were today at 8 am: 7 Oct 2025 (rain, and the cleanest of the seven), 21 Oct (the day after Diwali, GRAP Stage IV by our estimate), 31 Oct (stubble fires), 9 Nov (smog, Stage III), 22 Dec (smog, Stage II), 23 Jan 2026 (heavy rain clears the smog overnight) and 30 Mar (wind). The air comes from four Delhi monitors in OpenAQ's public archive, the weather from Open-Meteo's archive, the fires from NASA FIRMS. It is there so you can see every feature without waiting for a bad day, and the page says it is recorded. Cleaning is two rules, written in the file and counted (see [`docs/AS-BUILT.md`](docs/AS-BUILT.md)).
+
+The only made-up days in the repository are in the separate prototype build (`npm run build:demo`: device frames, scenarios, a simulated Bluetooth unit), which is never uploaded and is labelled "Sample data" wherever it shows a number.
 
 ## Where AWS fits
 
@@ -146,9 +165,11 @@ The stack deploys with `cd infra && npx cdk deploy`. It needs three secrets made
 | `docs/LIVE-CHECKLIST.md`          | What was checked on the live address, and what was found                        |
 | `docs/SUBMISSION.md`              | The words for the form, the video script, the AI services used, feedback on AWS |
 | `docs/blog.md`                    | The write-up                                                                    |
+| `docs/VIDEO.md`                   | The video: what to open, show and say                                           |
+| `submission/`                     | Every answer to the submission form, in one folder                              |
 | `docs/learning-log.md`            | What broke and how it was fixed                                                 |
 | `docs/IMPLEMENTATION-PLAN.md`     | The plan the deployed app was first built to (historical)                       |
-| `CONTRIBUTIONS.md`                | Who did what, and how AI was used                                               |
+| `CONTRIBUTIONS.md`                | What I built and delivered                                                      |
 | `DESIGN.md`                       | The visual design brief                                                         |
 
 ## AI in the app
