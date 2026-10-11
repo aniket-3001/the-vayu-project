@@ -104,6 +104,7 @@ Short version; the full list is in [`docs/AS-BUILT.md`](docs/AS-BUILT.md).
 - **The recorded days are hindsight.** The hours after each day's 8 am are what was recorded next, not a forecast made at the time, and they use only four Delhi monitors.
 - **Exposure is an estimate.** It assumes indoor air is 60% of outdoor when there is no monitor in the room, and 85% in a park with trees. The advice thresholds are our words from the US AQI bands, not a medical rule. The cigarette figure is Berkeley Earth's rule of thumb.
 - **Nothing is claimed about users or health outcomes.** There has been no pilot.
+- **A caller can dodge the per-caller limit** by calling API Gateway's own address with a forged header; the whole-day caps and the throttle still bound the cost.
 - **Hindi answers never use the model.** They are fixed wording matched by keyword.
 
 ## Data and credits
