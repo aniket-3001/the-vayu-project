@@ -371,6 +371,28 @@ export function MapView({
           layout: { visibility: on.gradient ? 'visible' : 'none' },
         });
       });
+      // Country outlines over the colour, so where one country ends and the next begins can be seen through it, and
+      // the base map's labels lifted above the colour so the names stay sharp.
+      const baseSources = m.getStyle().sources;
+      const vector = Object.entries(baseSources).find(([, source]) => source.type === 'vector');
+      if (vector !== undefined && m.getLayer('country-borders') === undefined) {
+        m.addLayer({
+          id: 'country-borders',
+          type: 'line',
+          source: vector[0],
+          'source-layer': 'boundary',
+          filter: ['all', ['==', ['get', 'admin_level'], 2], ['!=', ['get', 'maritime'], 1]],
+          layout: { 'line-join': 'round', 'line-cap': 'round' },
+          paint: {
+            'line-color': '#27364f',
+            'line-opacity': ['interpolate', ['linear'], ['zoom'], 0, 0.55, 5, 0.75, 10, 0.85],
+            'line-width': ['interpolate', ['linear'], ['zoom'], 0, 0.6, 4, 1.1, 8, 1.8, 12, 2.4],
+          },
+        });
+      }
+      for (const layer of m.getStyle().layers) {
+        if (layer.type === 'symbol') m.moveLayer(layer.id);
+      }
       m.addSource('monitors', {
         type: 'geojson',
         data: monitorsGeoJson(latest.current.monitors),

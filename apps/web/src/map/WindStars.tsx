@@ -125,7 +125,8 @@ export function WindStars({
       const envelope = Math.sin(Math.PI * Math.min(1, s.age / s.life));
       if (envelope <= 0.02 || s.trail.length < 2) return;
       const speed = speedOf(field(s.lat, s.lng));
-      const strength = Math.min(1, 0.7 + speed / 14) * envelope;
+      // A little see-through, so the colour shows through the streak.
+      const strength = Math.min(0.78, 0.5 + speed / 20) * envelope;
       const n = s.trail.length;
       // Built from squares, the way a pixel streak is: a square at the head, smaller ones behind it, each fainter than
       // the last, so it still reads as a shooting star with a tail. Cold: white at the head, going to icy blue.
@@ -155,6 +156,7 @@ export function WindStars({
           frame = window.requestAnimationFrame(tick);
           return;
         }
+        follow();
         ctx.lineCap = 'round';
         const zoomScale = Math.min(1, 2 ** ((map.getZoom() - 3.2) * 0.5) + 0.25);
         for (let i = 0; i < stars.length; i++) {
@@ -177,14 +179,67 @@ export function WindStars({
       frame = window.requestAnimationFrame(tick);
     };
 
-    resize();
-    rebuild();
-    // When the view moves, the tails no longer line up with where the stars are, so start them again.
-    const restart = (): void => {
+    // Following the map: three fixed places on the screen, and the ground they were over a frame ago. When the map is
+    // dragged, rotated or zoomed, where that ground is now says how the picture was moved, and the stars' tails are
+    // moved the same way, so the wind carries on across the move instead of starting again.
+    const anchors: readonly (readonly [number, number])[] = [
+      [0.3, 0.4],
+      [0.7, 0.4],
+      [0.5, 0.75],
+    ];
+    let ground: { lng: number; lat: number }[] | undefined;
+    const follow = (): void => {
+      const w = el.clientWidth;
+      const h = el.clientHeight;
+      const fixed = anchors.map(([fx, fy]) => ({ x: fx * w, y: fy * h }));
+      if (ground !== undefined) {
+        const now = ground.map((g) => map.project([g.lng, g.lat]));
+        const [p0, p1, p2] = fixed;
+        const [q0, q1, q2] = now;
+        if (p0 && p1 && p2 && q0 && q1 && q2) {
+          const moved = now.some((q, i) => {
+            const p = fixed[i];
+            return p === undefined || Math.hypot(q.x - p.x, q.y - p.y) > 0.05;
+          });
+          // The affine map that takes the three old places to where they are now.
+          const det = (p1.x - p0.x) * (p2.y - p0.y) - (p2.x - p0.x) * (p1.y - p0.y);
+          if (moved && Math.abs(det) > 1e-6 && now.every((q) => Number.isFinite(q.x + q.y))) {
+            const dx1 = q1.x - q0.x;
+            const dx2 = q2.x - q0.x;
+            const dy1 = q1.y - q0.y;
+            const dy2 = q2.y - q0.y;
+            const a = (dx1 * (p2.y - p0.y) - dx2 * (p1.y - p0.y)) / det;
+            const b = (dx2 * (p1.x - p0.x) - dx1 * (p2.x - p0.x)) / det;
+            const d = (dy1 * (p2.y - p0.y) - dy2 * (p1.y - p0.y)) / det;
+            const e = (dy2 * (p1.x - p0.x) - dy1 * (p2.x - p0.x)) / det;
+            const c = q0.x - a * p0.x - b * p0.y;
+            const f = q0.y - d * p0.x - e * p0.y;
+            for (const s of stars) {
+              for (const t of s.trail) {
+                const x = t.x;
+                t.x = a * x + b * t.y + c;
+                t.y = d * x + e * t.y + f;
+              }
+            }
+          }
+        }
+      }
+      try {
+        const next = fixed.map((p) => map.unproject([p.x, p.y]));
+        ground = next.every((g) => Number.isFinite(g.lat + g.lng)) ? next : undefined;
+      } catch {
+        ground = undefined;
+      }
+    };
+    // A resize changes the screen itself, so the places to follow are chosen again and the tails start afresh.
+    const onResize = (): void => {
+      resize();
+      ground = undefined;
       for (const s of stars) s.trail = [];
     };
-    map.on('resize', resize);
-    map.on('move', restart);
+    resize();
+    rebuild();
+    map.on('resize', onResize);
 
     if (reduced) {
       // One still picture: stars part-way through their lives, with tails drawn straight from the wind.
@@ -200,8 +255,7 @@ export function WindStars({
     return () => {
       stopped = true;
       window.cancelAnimationFrame(frame);
-      map.off('resize', resize);
-      map.off('move', restart);
+      map.off('resize', onResize);
       ctx.clearRect(0, 0, el.clientWidth, el.clientHeight);
     };
   }, [map, enabled, field]);

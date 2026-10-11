@@ -1,10 +1,9 @@
-import { gradientColour, sampleField, type Window } from './field';
+import { bandedColour, sampleField, type Window } from './field';
 import type { Monitor } from './monitors';
 
 /**
- * The air as a smooth, deep colour wash along the AQI scale, one level blending into the next with no break or grain,
- * the way a weather map's colour layer does: the colours mix into one another and there is depth where the air is
- * worst. It is translucent, so the streets and the wind show through it.
+ * The air as a smooth, deep colour wash along the AQI scale, each level holding its own colour so one kind of air is plainly a
+ * different colour from its neighbour, and mixing only along the edge between them, with depth where the air is worst. It is translucent, so the streets and the wind show through it.
  */
 export interface Fog {
   readonly width: number;
@@ -74,7 +73,7 @@ export function buildFog(
         weighted += w * c * (aqi[i] ?? 0);
       }
       if (sure < 0.02) continue;
-      const [r, g, b] = vivid(gradientColour(weighted / sure), VIVID);
+      const [r, g, b] = vivid(bandedColour(weighted / sure), VIVID);
       const at = y * width + x;
       rgb[at * 3] = r;
       rgb[at * 3 + 1] = g;

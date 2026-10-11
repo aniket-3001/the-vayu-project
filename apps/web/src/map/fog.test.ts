@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { gradientColour } from './field';
+import { bandedColour, gradientColour } from './field';
 import { buildFog, paintFog } from './fog';
 import type { Window } from './field';
 import type { Monitor } from './monitors';
@@ -18,6 +18,19 @@ const asia: Window = { west: 60, east: 100, south: 5, north: 40 };
 const monitors = [at(20, 80, 60), at(28, 77, 220), at(24, 90, 120)];
 const W = 300;
 const H = 340;
+
+describe('banded colours', () => {
+  it('hold each level’s colour across most of its band and blend only between', () => {
+    // The middle of a band and a little to either side is the same colour.
+    expect(bandedColour(70)).toEqual(bandedColour(80));
+    // Near the boundary of two levels the colour is between them.
+    const left = bandedColour(88);
+    const right = bandedColour(114);
+    expect(left).not.toEqual(right);
+    // A plain gradient would still be changing where a banded one is flat.
+    expect(gradientColour(70)).not.toEqual(gradientColour(80));
+  });
+});
 
 describe('the colour wash', () => {
   it('is over what we know and nothing far from every monitor', () => {

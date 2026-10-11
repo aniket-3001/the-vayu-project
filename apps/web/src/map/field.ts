@@ -123,6 +123,37 @@ export function gradientColour(aqi: number): [number, number, number] {
   return last.rgb;
 }
 
+/**
+ * Like `gradientColour`, but each level holds its own colour across most of its band and gives way to the next over a
+ * narrow stretch, so one kind of air reads plainly as a different colour from its neighbour and the two mix only along
+ * the edge between them.
+ */
+export function bandedColour(aqi: number): [number, number, number] {
+  const stops = LEVELS.map((level, i) => {
+    const next = LEVELS[i + 1]?.from ?? 501;
+    return { at: (level.from + next - 1) / 2, rgb: hexToRgb(level.solid) };
+  });
+  const first = stops[0];
+  const last = stops[stops.length - 1];
+  if (first === undefined || last === undefined) return [0, 0, 0];
+  if (aqi <= first.at) return first.rgb;
+  if (aqi >= last.at) return last.rgb;
+  for (let i = 0; i < stops.length - 1; i++) {
+    const a = stops[i];
+    const b = stops[i + 1];
+    if (a !== undefined && b !== undefined && aqi >= a.at && aqi <= b.at) {
+      const t = (aqi - a.at) / (b.at - a.at);
+      // Hold the colour for the first third, blend over the middle third, hold the next for the last third.
+      const u = Math.min(1, Math.max(0, (t - 0.33) / 0.34));
+      const eased = u * u * (3 - 2 * u);
+      return [0, 1, 2].map((k) =>
+        Math.round((a.rgb[k] ?? 0) + ((b.rgb[k] ?? 0) - (a.rgb[k] ?? 0)) * eased),
+      ) as [number, number, number];
+    }
+  }
+  return last.rgb;
+}
+
 /** Web-mercator y for a latitude, 0 to 1 from the top, so a picture of the field lines up on the map. */
 export const mercatorY = (lat: number): number => {
   const s = Math.sin((lat * Math.PI) / 180);
