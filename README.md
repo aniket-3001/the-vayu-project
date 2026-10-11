@@ -17,7 +17,7 @@ Live: **https://d3lmq1mze2gup3.cloudfront.net** (a phone or a laptop; no sign-in
 - **Code decides, AI only words.** Fixed rules decide the advice. The model may reword it, and every number in its wording is checked against the facts, or the plain text goes out.
 - **It reaches into your room.** A small measuring unit (an ESP32-S3 and a laser particle sensor, over Bluetooth) puts your room's air beside the air outside.
 
-AWS Air track submission, 8 to 11 October 2026. Built alone.
+AWS Air track submission, 8 to 11 October 2026. Built solo, with Claude as a coding assistant (see [`CONTRIBUTIONS.md`](CONTRIBUTIONS.md)).
 
 ## Try it in two minutes
 
@@ -194,7 +194,7 @@ The stack deploys with `cd infra && npx cdk deploy`. It needs three secrets made
 
 ## AI in the app
 
-At run time, Amazon Bedrock (Nova Micro, behind a guardrail) rewords the assistant's answers, or answers from the facts it is given, and cannot act ([`docs/AGENT-BOUNDARIES.md`](docs/AGENT-BOUNDARIES.md)). I am the only author ([`CONTRIBUTIONS.md`](CONTRIBUTIONS.md)).
+At run time, Amazon Bedrock (Nova Micro, behind a guardrail) rewords the assistant's answers, or answers from the facts it is given, and cannot act ([`docs/AGENT-BOUNDARIES.md`](docs/AGENT-BOUNDARIES.md)). At build time I used Claude (through Claude Code) as a coding assistant; I directed and reviewed every change ([`CONTRIBUTIONS.md`](CONTRIBUTIONS.md)).
 
 ## Licence
 

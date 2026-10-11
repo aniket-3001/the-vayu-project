@@ -16,7 +16,7 @@ Around My Air are a map of monitors, wind and satellite fires, AIR Lens (the air
 
 A small measuring unit, an ESP32-S3 board with a Sensirion SPS30 laser particle sensor, adds the air in one room over Bluetooth. It sits on my desk, wired by jumper wires on a breadboard, with a USB cable for power.
 
-I built the whole thing alone. I chose what it should do and what it must never claim, and I read, ran and tested every change. I wired, flashed and tested the unit and built the cleaner myself. The stack runs in my own AWS account.
+I built it solo, with Claude as a coding assistant for much of the typing. I chose what it should do and what it must never claim, and I read, ran and tested every change. I wired, flashed and tested the unit and built the cleaner myself. The stack runs in my own AWS account.
 
 ## The one rule: code decides, AI only words
 

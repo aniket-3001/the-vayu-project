@@ -1,6 +1,10 @@
 # Contributions
 
-I built the Vayu Project alone. This page says what I did and what I delivered.
+I built the Vayu Project solo, with Claude (Anthropic's AI coding assistant, through Claude Code) helping with the typing. I chose the problem and the rules, directed the work, read and ran every change, built the hardware, and deployed and checked it on AWS. This page says what I did and what the AI did.
+
+## AI assistance
+
+Claude wrote much of the code and documentation from my instructions. Many commits carry its co-author line. It had no access to my AWS account: I ran every deploy and put the keys in Secrets Manager myself. I decided what the app may say, and no change was accepted until `make prove` passed. It was wrong in ways I caught (see "Faults I caught"). The app itself uses Amazon Bedrock (Nova Micro) and Amazon Polly at run time, described in `docs/AGENT-BOUNDARIES.md`.
 
 ## What I did
 

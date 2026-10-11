@@ -20,7 +20,7 @@ _The six screens. Top row: My Air on live data with four places set; the recorde
 
 A small measuring unit, an ESP32-S3 board with a Sensirion SPS30 laser particle sensor, adds the air in one room over Bluetooth.
 
-I built the whole thing alone. I chose what it should do and what it must never claim, and I read, ran and tested every change. I wired, flashed and tested the unit and built the cleaner myself. The stack runs in my own AWS account.
+I built it solo, with Claude as a coding assistant for much of the typing. I chose what it should do and what it must never claim, and I read, ran and tested every change. I wired, flashed and tested the unit and built the cleaner myself. The stack runs in my own AWS account.
 
 ## The one rule: code decides, AI only words
 
