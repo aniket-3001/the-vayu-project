@@ -7,6 +7,7 @@ import { useHousehold } from '../exposure/useExposure';
 import { readDemo } from '../demo/state';
 import { airStore, useToday } from '../air/store';
 import { API_URL } from '../config';
+import { writeUrl } from './writeUrl';
 import { weekActive } from '../week/active';
 import { useLivePin } from '../places/liveLocation';
 import { usePins } from '../places/usePins';
@@ -260,7 +261,7 @@ export function AssistantFab({
         fire.current = undefined;
         void submitFireReport(
           { lat: where.lat, lng: where.lng, ...(note === undefined ? {} : { note }) },
-          { baseUrl: airStore().kind === 'live' ? API_URL : undefined },
+          { baseUrl: writeUrl(airStore().kind === 'live', weekActive(), API_URL) },
         ).then(
           (how) => {
             say(sentWords(how, lang), {

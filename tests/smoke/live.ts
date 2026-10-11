@@ -295,6 +295,41 @@ async function main(): Promise<void> {
     badRoom.status === 400 ? checkError(badRoom.body) : [`expected 400, got ${badRoom.status}`],
   );
 
+  // Accounts: the app is told which sign-in service to use (or that there is none), and a person's own data refuses
+  // anyone without a valid token: no token, and a made-up one. Neither check signs anyone in.
+  const authConfig = await getJson('/v1/auth-config');
+  const cfg = authConfig.body as {
+    enabled?: boolean;
+    userPoolId?: string;
+    clientId?: string;
+  } | null;
+  report(
+    'sign-in config',
+    authConfig.status !== 200
+      ? [`status ${authConfig.status}`]
+      : cfg?.enabled === false ||
+          (cfg?.enabled === true && cfg.userPoolId !== undefined && cfg.clientId !== undefined)
+        ? []
+        : ['neither {"enabled": false} nor the pool and client ids'],
+    cfg?.enabled === true ? 'on' : 'off',
+  );
+  if (cfg?.enabled === true) {
+    const noToken = await fetch(`${BASE}/v1/me`);
+    report(
+      'saved account refuses a caller with no token',
+      noToken.status === 401 ? [] : [`expected 401, got ${noToken.status}`],
+    );
+    const madeUp = await fetch(`${BASE}/v1/me`, {
+      method: 'PUT',
+      headers: { authorization: 'Bearer not.a.real.token', 'content-type': 'application/json' },
+      body: JSON.stringify({ profile: { 'vayu.pins.v1': '[]' } }),
+    });
+    report(
+      'saved account refuses a made-up token',
+      madeUp.status === 401 ? [] : [`expected 401, got ${madeUp.status}`],
+    );
+  }
+
   out(failures === 0 ? '\nAll checks passed.' : `\n${failures} problem(s).`);
   process.exitCode = failures === 0 ? 0 : 1;
 }

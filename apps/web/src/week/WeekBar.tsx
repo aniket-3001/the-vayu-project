@@ -1,3 +1,4 @@
+import { RECORDING_NOTICE } from './protect';
 import { ChevronLeft, ChevronRight, Info, Pause, Play, X } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { levelForAqi } from '../design/levels';
@@ -154,8 +155,8 @@ export function WeekBar({
             The hours after the moment are what was recorded next, so they are hindsight, not a
             forecast made at the time: the rain and best-hour alerts on a recorded day look better
             than a real forecast would. GRAP stages are our own unofficial estimate, never the
-            order. The two places and the person are two sample places, Home and a Park; anything
-            you add lives only on this page.
+            order. The two places and the person are two sample places, Home and a Park.{' '}
+            {RECORDING_NOTICE}
           </p>
         </div>
       )}

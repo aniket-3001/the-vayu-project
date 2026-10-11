@@ -1,3 +1,4 @@
+import { useAccount } from '../../account/AccountContext';
 import {
   DndContext,
   KeyboardSensor,
@@ -90,6 +91,7 @@ export function PlacesPanel({
   /** What follows the places on the page: today's alerts and tips, kept below so the places come first. */
   readonly children?: React.ReactNode;
 }): React.JSX.Element {
+  const account = useAccount();
   const { pins, add, remove, move } = usePins();
   const live = useLiveLocation();
   const livePin = useLivePin();
@@ -401,8 +403,10 @@ export function PlacesPanel({
               : 'Each reading is the nearest monitor within 25 km, with how far and how old. Where there is none, it is a regional estimate.'}{' '}
           </>
         )}
-        Places are saved on this device only (up to {MAX_PINS}). Drag a card to put it where you
-        want it.
+        {account.enabled
+          ? `Places are saved to your account (up to ${String(MAX_PINS)}).`
+          : `Places are saved on this device only (up to ${String(MAX_PINS)}).`}{' '}
+        Drag a card to put it where you want it.
       </p>
     </div>
   );

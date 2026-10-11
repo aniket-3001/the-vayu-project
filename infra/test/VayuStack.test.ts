@@ -283,12 +283,26 @@ describe('the public site', () => {
         AllowedMethods: string[];
       }[];
     };
-    expect(config.CacheBehaviors).toHaveLength(1);
-    expect(config.CacheBehaviors[0]).toMatchObject({
-      PathPattern: '/v1/*',
-      ViewerProtocolPolicy: 'https-only',
-    });
-    expect(config.CacheBehaviors[0]?.AllowedMethods).toContain('POST');
+    // Two behaviors: /v1/me, a person's own data (never cached, token passed through), and the rest of /v1.
+    expect(config.CacheBehaviors).toHaveLength(2);
+    const rest = config.CacheBehaviors.find((b) => b.PathPattern === '/v1/*');
+    expect(rest).toMatchObject({ ViewerProtocolPolicy: 'https-only' });
+    expect(rest?.AllowedMethods).toContain('POST');
+  });
+
+  it("never caches a signed-in person's own data, and passes their token to the API", () => {
+    const config = distribution().DistributionConfig as {
+      CacheBehaviors: { PathPattern: string; AllowedMethods: string[]; CachePolicyId: unknown }[];
+    };
+    const me = config.CacheBehaviors.find((b) => b.PathPattern === '/v1/me');
+    expect(me).toBeDefined();
+    expect(me?.AllowedMethods).toEqual(expect.arrayContaining(['GET', 'PUT', 'DELETE']));
+    // The managed "CachingDisabled" policy.
+    expect(me?.CachePolicyId).toBe('4135ea2d-6df8-44a3-9df3-4b5a84be39ad');
+  });
+
+  it('lets the page talk to the sign-in service, and no other new host', () => {
+    expect(CONTENT_SECURITY_POLICY).toContain('https://cognito-idp.ap-south-1.amazonaws.com');
   });
 
   it('keeps an API answer for at most fifteen minutes, and by default not at all, so the API says how long', () => {
@@ -914,5 +928,57 @@ describe('the assistant (rule I15 and the AI boundaries)', () => {
       'POST /v1/fire-reports',
     ])
       template.hasResourceProperties('AWS::ApiGatewayV2::Route', { RouteKey: key });
+  });
+});
+
+describe('accounts', () => {
+  const template = synth();
+
+  it('makes a user pool that signs people in by email, verifies it, and lets them reset a password by email', () => {
+    template.hasResourceProperties('AWS::Cognito::UserPool', {
+      UsernameAttributes: ['email'],
+      AutoVerifiedAttributes: ['email'],
+      AccountRecoverySetting: {
+        RecoveryMechanisms: [{ Name: 'verified_email', Priority: 1 }],
+      },
+      Policies: { PasswordPolicy: Match.objectLike({ MinimumLength: 8, RequireNumbers: true }) },
+    });
+  });
+
+  it('has an app client with no secret, no hosted page and an answer that does not say who has an account', () => {
+    template.hasResourceProperties('AWS::Cognito::UserPoolClient', {
+      GenerateSecret: false,
+      ExplicitAuthFlows: Match.arrayWith(['ALLOW_USER_PASSWORD_AUTH', 'ALLOW_REFRESH_TOKEN_AUTH']),
+      PreventUserExistenceErrors: 'ENABLED',
+    });
+    const clients = Object.values(template.findResources('AWS::Cognito::UserPoolClient'));
+    for (const client of clients)
+      expect(
+        (client.Properties as { AllowedOAuthFlows?: unknown }).AllowedOAuthFlows,
+      ).toBeUndefined();
+  });
+
+  it('has API Gateway check the token on /v1/me, and only there', () => {
+    template.hasResourceProperties('AWS::ApiGatewayV2::Authorizer', { AuthorizerType: 'JWT' });
+    const routes = Object.values(template.findResources('AWS::ApiGatewayV2::Route')) as {
+      Properties: { RouteKey: string; AuthorizationType?: string };
+    }[];
+    const guarded = routes.filter((r) => r.Properties.AuthorizationType === 'JWT');
+    expect(guarded.map((r) => r.Properties.RouteKey).sort()).toEqual([
+      'DELETE /v1/me',
+      'GET /v1/me',
+      'PUT /v1/me',
+    ]);
+  });
+
+  it('gives the API function the two public ids and no secret for it', () => {
+    const fns = Object.values(template.findResources('AWS::Lambda::Function')) as {
+      Properties: { Environment?: { Variables?: Record<string, unknown> } };
+    }[];
+    const api = fns.find((f) => f.Properties.Environment?.Variables?.USER_POOL_ID !== undefined);
+    expect(api).toBeDefined();
+    expect(Object.keys(api?.Properties.Environment?.Variables ?? {})).toContain(
+      'USER_POOL_CLIENT_ID',
+    );
   });
 });

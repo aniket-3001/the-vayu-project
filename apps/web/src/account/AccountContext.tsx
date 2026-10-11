@@ -1,0 +1,192 @@
+import { createContext, useContext, useEffect, useMemo, useRef, useState } from 'react';
+import { API_URL } from '../config';
+import { AuthError, cognito, type AuthConfig, type CognitoClient, type Fetch } from './cognito';
+import { Welcome } from './Welcome';
+import { clearSession, freshIdToken, loadSession, saveSession, type Session } from './session';
+import { accountSync, clearProfile, httpSyncApi, type SyncStatus } from './sync';
+
+export interface AccountState {
+  /** Whether this deployment has accounts at all. Where it does not, the app needs no sign-in. */
+  readonly enabled: boolean;
+  readonly email?: string;
+  readonly status: SyncStatus;
+  readonly signOut: () => Promise<void>;
+  /** Deletes what the account saved, then the account itself. */
+  readonly deleteAccount: () => Promise<void>;
+}
+
+const OFF: AccountState = {
+  enabled: false,
+  status: { state: 'idle' },
+  signOut: () => Promise.resolve(),
+  deleteAccount: () => Promise.resolve(),
+};
+
+const Context = createContext<AccountState>(OFF);
+export const useAccount = (): AccountState => useContext(Context);
+
+/** How often a change on this device is sent to the account. */
+const SAVE_EVERY_MS = 5_000;
+
+/**
+ * The door to the live app. It asks the API whether accounts are set up. Where they are not, the app opens as it
+ * always did. Where they are, a person who is not signed in sees the welcome screen (sign in, create an account, or
+ * try the recorded days without either), and a person who is gets their saved places and keeps them saved.
+ */
+export function AccountGate({
+  children,
+  fetchImpl = fetch,
+  storage = window.localStorage,
+  apiUrl = API_URL,
+  reload = () => {
+    window.location.reload();
+  },
+  onTry,
+}: {
+  readonly children: React.ReactNode;
+  readonly fetchImpl?: Fetch;
+  readonly storage?: Storage;
+  readonly apiUrl?: string;
+  readonly reload?: () => void;
+  readonly onTry?: () => void;
+}): React.JSX.Element {
+  const [config, setConfig] = useState<AuthConfig | 'off' | undefined>(undefined);
+  const [session, setSession] = useState<Session | undefined>(() => loadSession(storage));
+  const [ready, setReady] = useState(false);
+  const [status, setStatus] = useState<SyncStatus>({ state: 'idle' });
+
+  useEffect(() => {
+    let current = true;
+    fetchImpl(`${apiUrl.replace(/\/$/u, '')}/v1/auth-config`)
+      .then((res) => res.json() as Promise<Partial<AuthConfig> & { enabled?: boolean }>)
+      .then((body) => {
+        if (!current) return;
+        if (body.enabled === true && body.userPoolId && body.clientId && body.region)
+          setConfig({ userPoolId: body.userPoolId, clientId: body.clientId, region: body.region });
+        else setConfig('off');
+      })
+      .catch(() => {
+        if (current) setConfig('off');
+      });
+    return () => {
+      current = false;
+    };
+  }, [apiUrl, fetchImpl]);
+
+  const client: CognitoClient | undefined = useMemo(
+    () => (typeof config === 'object' ? cognito(config, fetchImpl) : undefined),
+    [config, fetchImpl],
+  );
+  const sync = useMemo(
+    () =>
+      client === undefined
+        ? undefined
+        : accountSync({
+            storage,
+            api: httpSyncApi(apiUrl, () => freshIdToken(client, storage), fetchImpl),
+            onStatus: setStatus,
+          }),
+    [client, storage, apiUrl, fetchImpl],
+  );
+  const syncRef = useRef(sync);
+  syncRef.current = sync;
+  // Held in a ref so a new function on each render cannot restart the effects that use it.
+  const reloadRef = useRef(reload);
+  reloadRef.current = reload;
+
+  // Signed in: meet the account once, then keep it up to date and look for changes from another device.
+  useEffect(() => {
+    if (sync === undefined || session === undefined) return undefined;
+    let current = true;
+    sync.start().then(
+      (result) => {
+        if (!current) return;
+        if (result === 'reload') reloadRef.current();
+        else setReady(true);
+      },
+      (error: unknown) => {
+        if (!current) return;
+        if (error instanceof AuthError && error.code === 'signed_out') {
+          setSession(undefined);
+          return;
+        }
+        // The account could not be reached: the app still works from this device, and says so on the account page.
+        setStatus({ state: 'error' });
+        setReady(true);
+      },
+    );
+    const timer = window.setInterval(() => {
+      void sync.flush();
+    }, SAVE_EVERY_MS);
+    const onVisible = (): void => {
+      if (document.visibilityState === 'hidden') void sync.flush();
+      else
+        void sync.pull().then(
+          (result) => {
+            if (result === 'reload') reloadRef.current();
+          },
+          () => undefined,
+        );
+    };
+    document.addEventListener('visibilitychange', onVisible);
+    return () => {
+      current = false;
+      window.clearInterval(timer);
+      document.removeEventListener('visibilitychange', onVisible);
+    };
+  }, [sync, session]);
+
+  const value = useMemo<AccountState>(() => {
+    if (client === undefined || session === undefined) return OFF;
+    const finish = (): void => {
+      clearProfile(storage);
+      clearSession(storage);
+      reloadRef.current();
+    };
+    return {
+      enabled: true,
+      email: session.email,
+      status,
+      signOut: async () => {
+        await syncRef.current?.flush();
+        const tokens = loadSession(storage)?.tokens;
+        if (tokens !== undefined) await client.signOut(tokens.accessToken).catch(() => undefined);
+        finish();
+      },
+      deleteAccount: async () => {
+        const api = httpSyncApi(apiUrl, () => freshIdToken(client, storage), fetchImpl);
+        await api.remove();
+        await freshIdToken(client, storage);
+        const tokens = loadSession(storage)?.tokens;
+        if (tokens === undefined) throw new AuthError('signed_out', 'Sign in to use your account.');
+        await client.deleteUser(tokens.accessToken);
+        finish();
+      },
+    };
+  }, [client, session, status, storage, apiUrl, fetchImpl]);
+
+  if (config === undefined) return <p className="gate-note">Loading…</p>;
+  if (config === 'off' || client === undefined) return <>{children}</>;
+  if (session === undefined)
+    return (
+      <Welcome
+        client={client}
+        onSignedIn={(next) => {
+          saveSession(storage, next);
+          setReady(false);
+          setSession(next);
+        }}
+        holdsData={Object.keys(localDataKeys(storage)).length > 0}
+        {...(onTry === undefined ? {} : { onTry })}
+      />
+    );
+  if (!ready) return <p className="gate-note">Getting your places…</p>;
+  return <Context.Provider value={value}>{children}</Context.Provider>;
+}
+
+const localDataKeys = (storage: Storage): Record<string, true> => {
+  const out: Record<string, true> = {};
+  for (const key of ['vayu.pins.v1', 'vayu.people.v1'])
+    if (storage.getItem(key) !== null) out[key] = true;
+  return out;
+};

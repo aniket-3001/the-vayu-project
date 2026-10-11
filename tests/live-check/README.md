@@ -13,6 +13,8 @@ CHROME_ARGS="--autoplay-policy=no-user-gesture-required" node tests/live-check/s
 LIVE_URL=https://... node tests/live-check/screens.mjs 390 844   # another address
 ```
 
+The deployed site opens on a welcome screen, so the scripts put a made-up sign-in in the browser to get past it. It is not a real session: the account service refuses it, nobody is signed in, and nothing is saved to any account. They never create an account or type a password.
+
 Screenshots go to `tests/live-check/out/` (not kept in git). The scripts do not submit the request form and do not sign in anywhere. They use the assistant, so they use a little of its daily allowance.
 
 They are checks I run by hand, not part of `make prove`: they need a browser and the live site.

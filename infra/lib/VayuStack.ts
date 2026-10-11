@@ -13,6 +13,7 @@ import { BlockPublicAccess, Bucket, BucketEncryption } from 'aws-cdk-lib/aws-s3'
 import { Secret } from 'aws-cdk-lib/aws-secretsmanager';
 import type { Construct } from 'constructs';
 import { AlertLoop } from './AlertLoop';
+import { Accounts } from './Accounts';
 import { Assistant } from './Assistant';
 import { Analytics } from './Analytics';
 import { FixCheck } from './FixCheck';
@@ -212,6 +213,9 @@ export class VayuStack extends Stack {
         }),
       );
     }
+    // Accounts: sign-in through Cognito; API Gateway checks the token on /v1/me.
+    const accounts = new Accounts(this, 'Accounts', { api, apiFunction });
+    limitedRoutes.push(...accounts.routes);
     api.addRoutes({
       path: '/v1/{proxy+}',
       methods: [HttpMethod.GET, HttpMethod.POST],
@@ -233,6 +237,9 @@ export class VayuStack extends Stack {
       'POST /v1/speech': { ThrottlingRateLimit: 3, ThrottlingBurstLimit: 6 },
       'POST /v1/requests': { ThrottlingRateLimit: 1, ThrottlingBurstLimit: 3 },
       'POST /v1/fire-reports': { ThrottlingRateLimit: 1, ThrottlingBurstLimit: 3 },
+      'GET /v1/me': { ThrottlingRateLimit: 3, ThrottlingBurstLimit: 6 },
+      'PUT /v1/me': { ThrottlingRateLimit: 2, ThrottlingBurstLimit: 4 },
+      'DELETE /v1/me': { ThrottlingRateLimit: 1, ThrottlingBurstLimit: 2 },
     };
 
     // Seeing that it works, and hearing when it does not.

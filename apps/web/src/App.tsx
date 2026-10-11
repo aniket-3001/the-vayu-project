@@ -1,5 +1,6 @@
 import { ChevronLeft } from 'lucide-react';
 import { HashRouter, Link, Route, Routes, useLocation, useParams } from 'react-router-dom';
+import { AccountScreen } from './account/AccountScreen';
 import { DemoPill } from './demo/DemoPill';
 import { DemoPlaceRoute } from './demo/DemoPlaceRoute';
 import { ExposureScreen } from './exposure/ExposureScreen';
@@ -82,6 +83,7 @@ function Frame(): React.JSX.Element {
           path="/place/:id"
           element={import.meta.env.VITE_DEMO === '1' ? <DemoPlaceRoute /> : <PlaceRoute />}
         />
+        <Route path="/account" element={<AccountScreen />} />
         <Route path="/exposure" element={<ExposureScreen />} />
         <Route path="/map" element={<MapScreen />} />
         <Route path="/lens" element={<LensScreen />} />

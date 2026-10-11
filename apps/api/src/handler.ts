@@ -34,6 +34,7 @@ import { ssmSwitch } from './killSwitch';
 import { s3ReplayRepo } from './replayStore';
 import { clientAddress } from './clientAddress';
 import { dynamoQuota } from './quota';
+import { dynamoAccountStore } from './accountStore';
 import { dynamoFireReportSave } from './fireReportsStore';
 import { dynamoRequestsSave } from './requestsStore';
 import { dynamoCacheReader, dynamoRoomStore } from './roomStores';
@@ -167,6 +168,16 @@ function buildRoute(): Promise<ReturnType<typeof createRouter>> {
         clock: liveClock(),
         salt: requestSalt,
       },
+      account: { store: dynamoAccountStore(mustEnv('WATCH_TABLE'), docClient), clock: liveClock() },
+      ...(process.env.USER_POOL_ID && process.env.USER_POOL_CLIENT_ID
+        ? {
+            authConfig: {
+              userPoolId: process.env.USER_POOL_ID,
+              clientId: process.env.USER_POOL_CLIENT_ID,
+              region: process.env.AWS_REGION ?? 'ap-south-1',
+            },
+          }
+        : {}),
       clock: liveClock(),
       mode: 'live',
       linkStore: dynamoLinkStore({ tableName: mustEnv('WATCH_TABLE'), docClient }),
@@ -182,15 +193,26 @@ function buildRoute(): Promise<ReturnType<typeof createRouter>> {
   return routePromise;
 }
 
+/** The signed-in person's id, from the claims API Gateway verified. Never from the request's own headers or body. */
+function userIdOf(event: APIGatewayProxyEventV2): string | undefined {
+  const sub = (
+    event.requestContext as { authorizer?: { jwt?: { claims?: Record<string, unknown> } } }
+  ).authorizer?.jwt?.claims?.sub;
+  return typeof sub === 'string' && sub !== '' ? sub : undefined;
+}
+
 /** The thin AWS adapter around the router. */
 export async function handler(event: APIGatewayProxyEventV2): Promise<APIGatewayProxyResultV2> {
   const route = await buildRoute();
+  const userId = userIdOf(event);
   const request: ApiRequest = {
     method: event.requestContext.http.method,
     path: event.rawPath,
     query: event.queryStringParameters ?? {},
     headers: event.headers,
     sourceIp: clientAddress(event.headers, event.requestContext.http.sourceIp),
+    // Set only by API Gateway's JWT authorizer, on the routes that have one.
+    ...(userId === undefined ? {} : { userId }),
     ...(event.body === undefined ? {} : { body: event.body }),
   };
   const response = await route(request);

@@ -6559,3 +6559,110 @@ table.hourly .row-label {
     min-height: 36px;
   }
 }
+
+/* Accounts: the welcome screen for someone not signed in, the account button on My Air, and the account page */
+
+.gate-note {
+  margin: 0;
+  padding: 80px var(--gutter);
+  color: var(--muted);
+  text-align: center;
+}
+.welcome {
+  display: grid;
+  align-content: start;
+  gap: 14px;
+  width: min(100%, 440px);
+  margin: 0 auto;
+  padding: 56px var(--gutter) 40px;
+}
+.welcome h1 {
+  margin: 0;
+  font-size: 32px;
+  line-height: 1.15;
+}
+.welcome h2 {
+  margin: 0;
+  font-size: 20px;
+}
+.welcome-lead {
+  margin: 0 0 6px;
+  color: var(--muted);
+  font-size: 17px;
+}
+.welcome-actions,
+.welcome-form {
+  display: grid;
+  gap: 12px;
+}
+.welcome .primary,
+.welcome .plain {
+  min-height: 48px;
+}
+.welcome-guest {
+  display: grid;
+  gap: 8px;
+  margin-top: 14px;
+  padding-top: 18px;
+  border-top: 1px solid var(--line);
+}
+.welcome-guest .guest {
+  border-color: #bcd3ee;
+  background: #e8f1fb;
+  color: #1f4f8f;
+}
+.gate-note-inline {
+  margin: 0;
+  color: var(--muted);
+  font-size: 14px;
+}
+.my-air-title .account-link {
+  display: inline-grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  margin-left: auto;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--card);
+  color: var(--text);
+}
+.account-card {
+  display: grid;
+  gap: 12px;
+  padding: 18px;
+}
+.account-card p {
+  margin: 0;
+}
+.account-actions {
+  display: grid;
+  gap: 10px;
+}
+.account-sure {
+  display: grid;
+  gap: 10px;
+}
+.plain.danger {
+  border-color: #e6b3b3;
+  color: #9b2c2c;
+}
+
+/* The recorded days: said plainly on the page that the recording is shared and cannot be changed */
+.recording-notice {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+  margin: 10px 0 0;
+  padding: 10px 12px;
+  border: 1px solid #bcd3ee;
+  border-radius: 12px;
+  background: #e8f1fb;
+  color: #1f4f8f;
+  font-size: 14px;
+  line-height: 1.4;
+}
+.recording-notice svg {
+  flex: none;
+  margin-top: 2px;
+}

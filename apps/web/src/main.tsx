@@ -1,6 +1,7 @@
 import '@fontsource-variable/hanken-grotesk';
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
+import { AccountGate } from './account/AccountContext';
 import { App } from './App';
 import { AirStore, setAirStoreFactory } from './air/store';
 import { liveAirSource } from './air/liveSource';
@@ -31,7 +32,9 @@ if (import.meta.env.VITE_DEMO === '1') {
   liveLocation().resume();
   createRoot(root).render(
     <StrictMode>
-      <App />
+      <AccountGate>
+        <App />
+      </AccountGate>
     </StrictMode>,
   );
 }

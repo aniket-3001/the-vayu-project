@@ -1,3 +1,4 @@
+import { isOriginalPlace } from '../../week/protect';
 import { Footprints, School, Sun, X } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import type { Pin } from '../../data/pins';
@@ -52,7 +53,7 @@ export function PlaceCard({
 }): React.JSX.Element {
   const state = useToday(pin);
   const removeButton =
-    onRemove === undefined ? null : (
+    onRemove === undefined || isOriginalPlace(pin) ? null : (
       <button
         type="button"
         className="pc-icon-button"

@@ -1,3 +1,4 @@
+import { isOriginalSpot } from '../../week/protect';
 import { Trash2, TreePine, X } from 'lucide-react';
 import { useEffect } from 'react';
 import type { PlaceMatch } from '../../data/geocode';
@@ -116,6 +117,7 @@ export function PersonPanel({
                 onClear(kind);
               }}
               onAddPin={onAddPin}
+              locked={isOriginalSpot(person.id, spots[kind]?.pin)}
               {...(search !== undefined ? { search } : {})}
             />
           ))}

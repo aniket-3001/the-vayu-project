@@ -1,3 +1,4 @@
+import { writeUrl } from './writeUrl';
 import { ArrowLeft, Check } from 'lucide-react';
 import { useState } from 'react';
 import { airStore } from '../air/store';
@@ -19,7 +20,7 @@ import {
 
 /** The deployed app sends to our API; the prototype, the tests and the recorded days keep it on the device. */
 const requestUrl = (): string | undefined =>
-  airStore().kind === 'live' && !weekActive() ? API_URL : undefined;
+  writeUrl(airStore().kind === 'live', weekActive(), API_URL);
 
 const ORG_LABELS: Readonly<Record<Exclude<Who, 'person'>, string>> = {
   school: 'School name',

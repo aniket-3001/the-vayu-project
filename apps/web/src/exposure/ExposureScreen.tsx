@@ -1,3 +1,5 @@
+import { RecordingNotice } from '../week/RecordingNotice';
+import { isOriginalPerson } from '../week/protect';
 import { CalendarDays, Info, LocateFixed, Pencil, Plus } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
@@ -192,6 +194,7 @@ export function ExposureScreen({
   return (
     <div className="page places">
       <header className="place">
+        <RecordingNotice />
         <div className="title-row">
           <h1>{titleFor(view)}</h1>
           <button
@@ -504,7 +507,7 @@ export function ExposureScreen({
             showSample: live.showSample,
             clear: live.clearLog,
           }}
-          canRemove={household.people.length > 1}
+          canRemove={household.people.length > 1 && !isOriginalPerson(person.id)}
           outings={outings}
           onLog={() => {
             setLogging(true);

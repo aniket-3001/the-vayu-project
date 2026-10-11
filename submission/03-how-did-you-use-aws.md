@@ -1,4 +1,4 @@
-**What it does:** the Vayu Project turns public air data into a daily decision for a Delhi family. It runs as one CDK stack in Mumbai (ap-south-1). Browsers call my API, not the air providers; only place search, map tiles and a wind fallback go direct.
+**What it does:** the Vayu Project turns public air data into a daily decision for a Delhi family. It runs as one CDK stack in Mumbai (ap-south-1). Browsers call my API, not the air providers; only place search, map tiles, a wind fallback and the sign-in to Cognito go direct.
 
 **AWS open source**
 
@@ -12,6 +12,7 @@
 - **DynamoDB:** cache, daily quotas and alert records. On-demand, so nothing to size; TTL expires counters. The 500-a-day assistant cap is one conditional write.
 - **EventBridge Scheduler:** a 15-minute job keeps four reference Delhi places warm in DynamoDB; your own places are fetched by the API when you ask, and cached by CloudFront. A 30-minute job reads 7,268 monitors for the map. Retries are off, so a bad run cannot pile up.
 - **Bedrock:** Nova Micro through the `apac.amazon.nova-micro-v1:0` inference profile, behind a Guardrail. The model rewords an answer the rules decided, or answers from the facts given. Code rejects an answer with a number that is not among the facts. If the model is slow, capped or off, the rules' own text goes out.
+- **Amazon Cognito and an API Gateway JWT authorizer:** optional accounts. Email and password, with codes sent by email to confirm and to reset. API Gateway checks the token on `/v1/me`, where one saved copy of a person's places, family and settings lives in the existing DynamoDB table, keyed by the user id in the verified token and nothing else.
 - **Step Functions:** one flow sends an alert, waits for a tap and reminds (built and tested; live Telegram sends are off); another checks a room again after advice to see if it helped. Neither runs live yet.
 - **Polly** reads answers aloud in English and Hindi. **Secrets Manager** holds the keys and tokens. An **SSM parameter** switches the assistant off without a deploy. **CloudWatch** alarms (a harvest that stops, API 5xx, a failed send) publish to an **SNS** topic, which has no email subscriber yet; **X-Ray** holds the traces.
 

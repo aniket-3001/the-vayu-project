@@ -23,6 +23,7 @@ import {
   type AckRecord,
   type LinkStore,
 } from '@vayu/watch';
+import { handleAccount, type AccountDeps } from './accountRoute';
 import { handleFixChecks, type FixChecksDeps } from './fixChecksRoute';
 import { handleReplay } from './replayRoute';
 import type { CacheReader } from './roomStores';
@@ -67,6 +68,11 @@ function recentFires(
 }
 
 export interface RouterDeps {
+  /** Saved places and settings for a signed-in person. Absent where no accounts are wired: /v1/me is then not found. */
+  readonly account?: AccountDeps | undefined;
+  /** The sign-in service's public ids, for the app to start from. Absent: accounts are off and the app needs no sign-in. */
+  readonly authConfig?:
+    { readonly userPoolId: string; readonly clientId: string; readonly region: string } | undefined;
   /** The assistant behind Bedrock. Absent where nothing is wired: /v1/assistant is then not found. */
   readonly assistant?: AssistantDeps | undefined;
   /** Asking for a demo or monitors. Absent where nothing is wired: /v1/requests is then not found. */
@@ -154,6 +160,18 @@ export function createRouter(deps: RouterDeps) {
   return async function route(request: ApiRequest): Promise<ApiResponse> {
     if (request.path === '/v1/watch/telegram/webhook') {
       return handleTelegramWebhook(request, deps);
+    }
+    if (request.path === '/v1/me') {
+      return deps.account === undefined
+        ? failure(404, 'not_found', `No route for ${request.path}`)
+        : handleAccount(request, deps.account);
+    }
+    if (request.path === '/v1/auth-config') {
+      // Public, and the same for everyone: which sign-in service the app should use, or that there is none.
+      return okCached(
+        deps.authConfig === undefined ? { enabled: false } : { enabled: true, ...deps.authConfig },
+        300,
+      );
     }
     if (request.path === '/v1/assistant') {
       return deps.assistant === undefined

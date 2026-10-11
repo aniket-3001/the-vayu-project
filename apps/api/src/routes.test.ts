@@ -255,3 +255,55 @@ describe('the Telegram webhook route', () => {
     expect(calls).toEqual(['https://api.telegram.org/botTOKEN/sendMessage']);
   });
 });
+
+describe('accounts on the router', () => {
+  const memoryStore = (): NonNullable<RouterDeps['account']>['store'] => {
+    const items = new Map<string, { profile: Record<string, string>; updatedAt: string }>();
+    return {
+      read: (id) => Promise.resolve(items.get(id)),
+      write: (id, saved) => {
+        items.set(id, { profile: { ...saved.profile }, updatedAt: saved.updatedAt });
+        return Promise.resolve();
+      },
+      remove: (id) => {
+        items.delete(id);
+        return Promise.resolve();
+      },
+    };
+  };
+
+  it('says there is no sign-in where none is set up, and gives the ids where there is', async () => {
+    const none = await route({ method: 'GET', path: '/v1/auth-config', query: {}, headers: {} });
+    expect(none.body).toEqual({ enabled: false });
+    const on = createRouter({
+      ...baseDeps,
+      authConfig: { userPoolId: 'ap-south-1_abc', clientId: 'client', region: 'ap-south-1' },
+    });
+    const res = await on({ method: 'GET', path: '/v1/auth-config', query: {}, headers: {} });
+    expect(res.body).toEqual({
+      enabled: true,
+      userPoolId: 'ap-south-1_abc',
+      clientId: 'client',
+      region: 'ap-south-1',
+    });
+    expect(res.headers).toEqual({ 'cache-control': 'public, max-age=300' });
+  });
+
+  it('has no /v1/me where accounts are not wired, and refuses a caller with no sign-in where they are', async () => {
+    const missing = await route({ method: 'GET', path: '/v1/me', query: {}, headers: {} });
+    expect(missing.statusCode).toBe(404);
+    const wired = createRouter({
+      ...baseDeps,
+      account: { store: memoryStore(), clock: fixedClock('2026-10-12T10:00:00.000Z') },
+    });
+    const refused = await wired({ method: 'GET', path: '/v1/me', query: {}, headers: {} });
+    expect(refused.statusCode).toBe(401);
+    const signedIn = await wired({
+      method: 'GET',
+      path: '/v1/me',
+      query: {},
+      headers: { authorization: 'Bearer forged', 'x-user-id': 'someone' },
+    });
+    expect(signedIn.statusCode).toBe(401);
+  });
+});

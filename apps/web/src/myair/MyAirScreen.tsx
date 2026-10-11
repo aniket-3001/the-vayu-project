@@ -1,6 +1,7 @@
-import { ExternalLink, Plus } from 'lucide-react';
+import { ExternalLink, Plus, UserRound } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
+import { useAccount } from '../account/AccountContext';
 import { useTodays } from '../air/store';
 import { usePins } from '../places/usePins';
 import { tasksFor, type Task } from '../tasks/model';
@@ -12,6 +13,7 @@ import { useFires } from '../alerts/useFires';
 import { TipsCard } from '../tasks/ui/TipsCard';
 import { AddDeviceSheet } from '../devices/ui/AddDeviceSheet';
 import { PlacesPanel } from '../places/ui/PlacesPanel';
+import { RecordingNotice } from '../week/RecordingNotice';
 import type { PlaceMatch } from '../data/geocode';
 
 interface Props {
@@ -34,6 +36,7 @@ export function MyAirScreen({ search, locate, address }: Props): React.JSX.Eleme
     params.get('add') === 'device' || params.get('tab') === 'devices',
   );
   const { pins } = usePins();
+  const account = useAccount();
   // The tips and alerts are for the day as it is set: home, school, work. A phone on the move is not a place the
   // day can be arranged around, so where it is does not decide them.
   const [householdVersion, setHouseholdVersion] = useState(0);
@@ -115,6 +118,11 @@ export function MyAirScreen({ search, locate, address }: Props): React.JSX.Eleme
       <header className="place">
         <div className="my-air-title">
           <h1>My Air</h1>
+          {account.enabled && (
+            <Link to="/account" className="account-link" aria-label="Account" title={account.email}>
+              <UserRound size={20} strokeWidth={2} aria-hidden="true" />
+            </Link>
+          )}
           <button
             type="button"
             className="add-device-button"
@@ -125,6 +133,7 @@ export function MyAirScreen({ search, locate, address }: Props): React.JSX.Eleme
             <Plus size={18} strokeWidth={2.25} aria-hidden="true" /> Add device
           </button>
         </div>
+        <RecordingNotice />
         {pins.length === 0 && (
           <p className="demo-line">
             <a href="#/week" target="_blank" rel="noopener" className="demo-button">

@@ -91,6 +91,7 @@ export function SpotSection({
   onClear,
   onAddPin,
   search,
+  locked = false,
 }: {
   readonly kind: SpotKind;
   readonly spot: Spot | undefined;
@@ -101,6 +102,8 @@ export function SpotSection({
   readonly onClear: () => void;
   readonly onAddPin: (place: PlaceMatch) => void;
   readonly search?: (query: string) => Promise<readonly PlaceMatch[]>;
+  /** Part of the recording: it can be looked at but not removed. */
+  readonly locked?: boolean;
 }): React.JSX.Element {
   const [picking, setPicking] = useState(false);
   const label = SPOT_LABELS[kind];
@@ -154,14 +157,16 @@ export function SpotSection({
             {spot.pin.detail === undefined ? '' : `, ${spot.pin.detail}`}
           </p>
         </div>
-        <button
-          type="button"
-          className="icon-button"
-          aria-label={`Remove ${label}`}
-          onClick={onClear}
-        >
-          <Trash2 size={18} strokeWidth={1.75} aria-hidden="true" />
-        </button>
+        {!locked && (
+          <button
+            type="button"
+            className="icon-button"
+            aria-label={`Remove ${label}`}
+            onClick={onClear}
+          >
+            <Trash2 size={18} strokeWidth={1.75} aria-hidden="true" />
+          </button>
+        )}
       </div>
       {kind !== 'home' && (
         <>

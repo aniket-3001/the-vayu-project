@@ -6,7 +6,7 @@ The parent is made up; the morning is real. The nearest monitor with a fresh rea
 
 The card names the monitor (Lodhi Road, 3.8 km away) and says "as recorded". The alert, "Air here is in the GRAP Stage IV band today", is my estimate from the last 24 hours at this monitor, an average AQI of 500 on India's scale. GRAP is Delhi's Graded Response Action Plan, the official pollution stages, and the card adds that official orders come first.
 
-Delhi has plenty of air-quality numbers. A city figure cannot see one street or one room, and none says what to do. The Vayu Project gives one answer for one place, with the monitor's name, its distance and the age of the reading beside it. It is free, has no sign-up, and opens now: https://d3lmq1mze2gup3.cloudfront.net.
+Delhi has plenty of air-quality numbers. A city figure cannot see one street or one room, and none says what to do. The Vayu Project gives one answer for one place, with the monitor's name, its distance and the age of the reading beside it. It is free, opens now, and needs no account to look around (**Try without login** plays seven real days): https://d3lmq1mze2gup3.cloudfront.net.
 
 ## What it is
 
@@ -56,6 +56,7 @@ Everything is one CDK app, in Mumbai (`ap-south-1`) except one call: Nova Micro 
 | EventBridge Scheduler               | A 15-minute job keeps four reference places warm and a 30-minute job fills the map's monitors; for other places the API fetches on request and CloudFront caches it |
 | Bedrock with a guardrail, and Polly | Bedrock rewords an answer the rules decided and never decides; Polly reads it aloud                                                                                 |
 | Step Functions                      | The alert loop waits for a tap, reminds, escalates; built and tested, live sends switched off                                                                       |
+| Cognito and an API Gateway authorizer | Optional accounts: email and password, a saved copy of your places per person, checked by token |
 | Secrets Manager and SSM             | No key in code; one command switches the assistant off                                                                                                              |
 | CloudWatch and X-Ray                | An alarm for each thing that can stop, and traces                                                                                                                   |
 

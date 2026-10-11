@@ -51,7 +51,7 @@ export const CONTENT_SECURITY_POLICY = [
   "style-src 'self' 'unsafe-inline'",
   "img-src 'self' data: blob: https://tiles.openfreemap.org",
   "font-src 'self' data: https://tiles.openfreemap.org",
-  "connect-src 'self' data: blob: https://tiles.openfreemap.org https://api.open-meteo.com https://air-quality-api.open-meteo.com https://geocoding-api.open-meteo.com https://photon.komoot.io",
+  "connect-src 'self' data: blob: https://tiles.openfreemap.org https://api.open-meteo.com https://air-quality-api.open-meteo.com https://geocoding-api.open-meteo.com https://photon.komoot.io https://cognito-idp.ap-south-1.amazonaws.com",
   "worker-src 'self' blob:",
   "media-src 'self' blob:",
   "object-src 'none'",
@@ -148,6 +148,16 @@ export class Site extends Construct {
         functionAssociations: [{ function: appIndex, eventType: FunctionEventType.VIEWER_REQUEST }],
       },
       additionalBehaviors: {
+        // A signed-in person's own data: never cached, and the viewer's Authorization header goes through to the API,
+        // which API Gateway checks before anything runs. (The Host header still does not go, as for the rest.)
+        '/v1/me': {
+          origin: new HttpOrigin(Fn.parseDomainName(props.api.apiEndpoint)),
+          viewerProtocolPolicy: ViewerProtocolPolicy.HTTPS_ONLY,
+          allowedMethods: AllowedMethods.ALLOW_ALL,
+          cachePolicy: CachePolicy.CACHING_DISABLED,
+          originRequestPolicy: OriginRequestPolicy.ALL_VIEWER_EXCEPT_HOST_HEADER,
+          responseHeadersPolicy: securityHeaders,
+        },
         '/v1/*': {
           origin: new HttpOrigin(Fn.parseDomainName(props.api.apiEndpoint)),
           viewerProtocolPolicy: ViewerProtocolPolicy.HTTPS_ONLY,

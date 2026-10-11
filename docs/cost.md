@@ -36,15 +36,16 @@ All figures are list prices in US dollars, before any free tier. The always-free
 
 ## What it costs with nobody using it
 
-| Line                         | A month        | How                                                                                                                                       |
-| ---------------------------- | -------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
-| Secrets (5)                  | $2.00          | The OpenAQ key, the FIRMS map key, the Telegram bot token, the webhook secret, the request salt.                                          |
-| Alarms (8)                   | $0.80          | One for each thing that can quietly stop.                                                                                                 |
-| Harvest (96 runs a day)      | $0.19          | 2,880 runs, measured average 15.6 seconds, 256 MB.                                                                                        |
-| Map monitors (48 runs a day) | $0.54          | 1,440 runs, up to about 90 seconds, 256 MB.                                                                                               |
-| Scheduler                    | $0             | 4,320 invocations, inside the free 14 million.                                                                                            |
-| Tables, bucket, logs         | under $1       | A few thousand small writes, a few MB of files, and logs. The log volume is not measured; $0.67 is the price of a whole gigabyte a month. |
-| **Total**                    | **about $4.5** | And the free tier takes the two Lambda lines to zero.                                                                                     |
+| Line                         | A month        | How                                                                                                                                                                                        |
+| ---------------------------- | -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Accounts (Cognito)           | $0             | Within Cognito's free tier of 10,000 monthly users at the price list when this was written; a flood of sign-ups beyond that would cost per user. Sign-ups are throttled by Cognito itself. |
+| Secrets (5)                  | $2.00          | The OpenAQ key, the FIRMS map key, the Telegram bot token, the webhook secret, the request salt.                                                                                           |
+| Alarms (8)                   | $0.80          | One for each thing that can quietly stop.                                                                                                                                                  |
+| Harvest (96 runs a day)      | $0.19          | 2,880 runs, measured average 15.6 seconds, 256 MB.                                                                                                                                         |
+| Map monitors (48 runs a day) | $0.54          | 1,440 runs, up to about 90 seconds, 256 MB.                                                                                                                                                |
+| Scheduler                    | $0             | 4,320 invocations, inside the free 14 million.                                                                                                                                             |
+| Tables, bucket, logs         | under $1       | A few thousand small writes, a few MB of files, and logs. The log volume is not measured; $0.67 is the price of a whole gigabyte a month.                                                  |
+| **Total**                    | **about $4.5** | And the free tier takes the two Lambda lines to zero.                                                                                                                                      |
 
 ## What the limits allow
 

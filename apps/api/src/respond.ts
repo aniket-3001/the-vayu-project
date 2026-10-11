@@ -6,6 +6,8 @@ export interface ApiRequest {
   readonly body?: string;
   /** The caller's address, as API Gateway saw it. Only ever hashed, for a daily limit. */
   readonly sourceIp?: string;
+  /** Who is signed in, when API Gateway's JWT authorizer checked a token for this route. Never taken from the request. */
+  readonly userId?: string;
 }
 
 export interface ApiResponse {
