@@ -1,12 +1,12 @@
 A Delhi parent opens an air app before school and sees one city number. The nearest monitor may be kilometres from the school. The numbers exist; what is missing is an answer for one place, with the monitor's name, its distance and the reading's age.
 
-The Vayu Project is a free web app that turns those numbers into that decision for a family, school or society in Delhi. No sign-in, no install: add a place (search, or Detect my location) and its card shows today and the next three days: walk, mask, windows. Every number says it is Live (a named monitor, how far, how old), an Estimate (worked out by a regional air model, not read from a monitor) or Measured (my own unit). No advice from a reading over six hours old.
+The Vayu Project is a free web app that turns those numbers into that decision for a family, school or society in Delhi. No sign-in, no install: add a place (search, or Detect my location) and its card shows today and the next two days: walk, mask, windows. Every number says it is Live (a named monitor, how far, how old), an Estimate (worked out by a regional air model, not read from a monitor) or Measured (my own unit). No advice from a reading over six hours old.
 
 A city average cannot see your room, so I built a small unit (ESP32-S3, Sensirion SPS30 laser sensor) that shows your room's air beside the outside air over Bluetooth.
 
-Live, real data only: https://d3lmq1mze2gup3.cloudfront.net. The recorded days (/#/week) replays seven real days. Fixed rules decide every answer; the AI only puts it into words, and every number it uses is checked against the facts. One command, `make prove`, runs 1,255 tests plus lint, types and the CDK build, and passes. Code: https://github.com/hrsh-kr/vayu-air
+Live, real data only: https://d3lmq1mze2gup3.cloudfront.net. The recorded days (/#/week) replay seven real days. On 21 Oct 2025, the day after Diwali, Home read AQI 500 from the Lodhi Road monitor 3.8 km away, and the app said: stay in, keep windows shut, GRAP Stage IV likely (our estimate). Fixed rules decide the advice. The AI only words it, or answers from the same facts, and a number not in those facts is thrown out. One command, `make prove`, runs 1,255 tests plus lint, types and the CDK build, and passes.
 
-Not measured: the unit's accuracy, or my prototype cleaner's CADR (its airflow, about 191 cfm, is not CADR). Bluetooth is tested on Chrome on a Mac only.
+Not measured yet: the unit's accuracy against a monitor. Bluetooth is tested only in Chrome on a Mac.
 
 ---
 

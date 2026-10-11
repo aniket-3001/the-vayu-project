@@ -18,7 +18,7 @@ The only made-up days in the repository are in the separate prototype build (`np
 
 ## Try it in two minutes
 
-1. Open the live address. Press **Use preset** for a filled profile, or add a place (search, or "Detect my location"): its card shows the AQI, the weather, the nearest monitor's name, distance and age, and the next three days.
+1. Open the live address. Press **Use preset** for a filled profile, or add a place (search, or "Detect my location"): its card shows the AQI, the weather, the nearest monitor's name, distance and age, and today and the next two days.
 2. Open the card: **Insights for this place** (a school's morning assembly, a walk in a park, alerts that apply there).
 3. Open the **Map** (every monitor, wind, fires), **Exposure** (the air a person breathed, hour by hour) and **AIR Lens** (the air as particles in front of the camera).
 4. Press the round **Ask** button and ask "When can I walk today?" in English or हिन्दी. Fixed rules decide the answer; the model only rewords it.
@@ -61,7 +61,7 @@ AWS open source: AWS CDK for the stack, and Powertools for AWS Lambda (Logger an
 
 ## The rules it holds
 
-The headline rule: **code decides and AI only words things.** If the model's answer holds a number that is not in the facts, the plain wording is sent instead; a Hindi answer never touches the model. [`docs/safety.md`](docs/safety.md) lists every rule, where the code enforces it and the test that fails if it breaks. [`docs/AGENT-BOUNDARIES.md`](docs/AGENT-BOUNDARIES.md) says what the assistant may and may not do. [`docs/claims.md`](docs/claims.md) is every public claim with what supports it.
+The headline rule: **code decides and AI only words things.** The rules decide the advice. The model may reword it, or answer a question no rule covers from the facts it is given, and never supplies a number of its own: if its answer holds a number that is not in the facts, the plain wording is sent instead. A Hindi answer never touches the model. [`docs/safety.md`](docs/safety.md) lists every rule, where the code enforces it and the test that fails if it breaks. [`docs/AGENT-BOUNDARIES.md`](docs/AGENT-BOUNDARIES.md) says what the assistant may and may not do. [`docs/claims.md`](docs/claims.md) is every public claim with what supports it.
 
 ## What is built, and what is not
 

@@ -2,27 +2,27 @@
 
 Delhi has plenty of air-quality numbers. A city figure cannot see one street or one room, and none says what to do. The Vayu Project gives one answer for one place, with the monitor's name, its distance and the age of the reading beside it. It is free, has no sign-up, and opens now: https://d3lmq1mze2gup3.cloudfront.net.
 
-Picture a parent in South Delhi at 8 am on 21 October 2025, the morning after Diwali. The phone shows one city-wide Air Quality Index (AQI) figure. The child's bag is by the door. The question is small: do we walk to school, or not? A city figure cannot answer it. The monitor 3.8 km from Home can.
+Picture a parent in South Delhi at 8 am on 21 October 2025, the morning after Diwali. The phone shows one city-wide Air Quality Index (AQI) figure. The child's bag is by the door. The question is small: do we walk to school, or not? The monitor 3.8 km from Home can answer it.
 
-The parent is a picture I use to keep the app honest. The morning is real. The nearest monitor with a fresh reading that day, Lodhi Road, 3.8 km from the spot I had set as "Home" (near R K Puram), read an AQI of 500, the top of the scale, with PM2.5 (fine particles) at 980 µg/m³. The app added what to do: stay in where you can, and if you must go out, 4 to 5 pm is the cleanest daylight hour, at AQI 134.
+The parent is a picture I use to keep the app honest, and the morning is real. The nearest monitor with a fresh reading that day, Lodhi Road, 3.8 km from the spot I had set as "Home" (near R K Puram), read an AQI of 500, the top of the scale, with PM2.5 (fine particles) at 980 µg/m³. The app added what to do: stay in where you can, and if you must go out, 4 to 5 pm is the cleanest daylight hour, at AQI 134.
 
 ![Home on the recorded morning after Diwali: AQI 500, the monitor's name and distance, and advice for this place](images/02b-place-insights-desktop.png)
-_The recorded morning after Diwali, 21 Oct 2025, 8 am. The card names the monitor (Lodhi Road, 3.8 km away) and says "as recorded". The alert row, "GRAP Stage IV likely today", is our estimate from the last 24 hours' average AQI of 500 (GRAP is Delhi's Graded Response Action Plan, the official pollution stages), and the footer says "Our estimate, not an order. Official orders come first."_
+_The recorded morning after Diwali, 21 Oct 2025, 8 am. The card names the monitor (Lodhi Road, 3.8 km away) and says "as recorded". The alert row, "GRAP Stage IV likely today", is my estimate from the last 24 hours' average AQI of 500 (GRAP is Delhi's Graded Response Action Plan, the official pollution stages), and the card adds that official orders come first._
 
 ## What it is
 
 You add the places you care about: Home, a school, an office, a park. A usual dashboard shows the city's number. Each card here shows the air from the monitor nearest that place, with its name, distance and age, the weather, and what to do about it.
 
-Beyond My Air, the recorded days plays seven real days. The map shows monitors, wind and satellite fires. AIR Lens draws the air as particles in front of your camera. The assistant answers questions. Exposure adds up what a person breathed, hour by hour. "Nearest" means the nearest monitor with a fresh reading, so on the day I took the live screenshot, Home in Dwarka showed a monitor in Vasant Kunj, 12 km away, and said so.
+Beyond My Air, Recorded days replays seven real days. The map shows monitors, wind and satellite fires. AIR Lens draws the air as particles in front of your camera. The assistant answers questions. Exposure adds up what a person breathed, hour by hour. "Nearest" means the nearest monitor with a fresh reading, so on the day I took the live screenshot, Home in Dwarka showed a monitor in Vasant Kunj, 12 km away, and said so.
 
 ![Six screens of the app](images/collage-features.jpg)
-_The six screens. Top row: My Air on live data with four places set (each card names the nearest monitor, its distance and the age of its reading); the recorded days on 21 Oct 2025, where the alert is GRAP Stage IV, "by our estimate"; the map on 31 Oct 2025 with NASA satellite fire detections and wind. Bottom row: AIR Lens; the assistant; Exposure. All but My Air on live data are from the recorded days._
+_The six screens. Top row: My Air on live data with the preset's places set (each card names the nearest monitor, its distance and the age of its reading); the recorded days on 21 Oct 2025, where the alert is GRAP Stage IV, the app's estimate from the last 24 hours; the map on 31 Oct 2025 with NASA satellite fire detections and wind. Bottom row: AIR Lens; the assistant; Exposure. All but My Air on live data are from the recorded days._
 
 A small measuring unit, an ESP32-S3 board with a Sensirion SPS30 laser particle sensor, adds the air in one room over Bluetooth. I built the whole thing alone, with an AI coding assistant (Claude Code). I chose what it should do and what it must never claim. The assistant wrote most of the code, and I read every change and sent it back when it was wrong. I wired, flashed and tested the unit and built the cleaner myself. The stack runs in my own AWS account.
 
 ## The one rule: code decides, AI only words
 
-The app has an assistant you can ask, in English or Hindi, "When can I go for a walk?" Fixed rules decide the answer from the readings. Amazon Bedrock (Amazon Nova Micro, behind a guardrail) may reword it, and then every number in the wording is compared with the numbers the rules produced. If one is missing from the facts, the rules' own plain wording goes out instead. When the model is off, slow, or at its daily limit, the rules answer alone and say so. A Hindi answer never reaches the model: it is wording a person wrote, with the facts slotted in. The model has no tools and cannot act.
+The app has an assistant you can ask, in English or Hindi, "When can I go for a walk?" Fixed rules decide the answer from the readings. Amazon Bedrock (Amazon Nova Micro, behind a guardrail) may reword it, or answer a question no rule covers from the facts it is given, and then every number in the wording is compared with the facts. If one is missing from them, the rules' own plain wording goes out instead. When the model is off, slow, or at its daily limit, the rules answer alone and say so. A Hindi answer never reaches the model: it is wording a person wrote, with the facts slotted in. The model has no tools and cannot act.
 
 [`docs/safety.md`](safety.md) lists each rule, where the code enforces it, and the test that fails if it breaks. A monitor reading older than six hours is dropped, and with none left the answer is labelled an Estimate from a regional model, with no advice.
 
@@ -32,9 +32,9 @@ A GRAP stage in the app is my estimate from the last 24 hours, and the official 
 
 ## It is all real data
 
-There is no demo mode: the nearest thing is a Use preset button that loads a sample family's places, and the air at them is still read live. The live app reads real monitors (OpenAQ), weather, forecast and wind (Open-Meteo, with MET Norway as a second source for wind) and satellite fires (NASA FIRMS), through my own API on AWS. To show every feature without waiting for a bad day, the app also plays a recorded days (https://d3lmq1mze2gup3.cloudfront.net/#/week): seven real days, from a rainy day in October to the smog of December, a heavy rain in January and a windy day in March, each played as if it were today at 8 am. Every screen says "recorded". The air comes from four Delhi monitors in OpenAQ's public archive, and the weather and fires are archives too.
+The deployed app has no made-up data. A prototype build with invented days lives in the repo and is never uploaded, and `make prove` checks the bundle for it. The nearest thing to a demo is a Use preset button that loads a sample family's places, and the air at them is still read live. The live app reads real monitors (OpenAQ), weather, forecast and wind (Open-Meteo, with MET Norway as a second source for wind) and satellite fires (NASA FIRMS), through my own API on AWS. To show every feature without waiting for a bad day, the app also replays seven recorded days (https://d3lmq1mze2gup3.cloudfront.net/#/week): rain in early October, the morning after Diwali, stubble fires, November and December smog, a January downpour and a windy March day, each played as if it were today at 8 am. Every screen says "recorded". The air comes from four Delhi monitors in OpenAQ's public archive, and the weather and fires are archives too.
 
-The archive had mess in it, so I cleaned it with two written rules. The first drops any value of 999 or more (the feed's "out of range"), or a PM10 below the same hour's PM2.5, which cannot happen. The second drops an hour when one monitor reads over three times the median of the others. The file counts what the second rule removed: 86 lone spikes across the seven days. I changed nothing else. In the recorded days the map's wind is one recorded wind for central Delhi, drawn the same everywhere, and the map says so.
+The archive had mess in it, so I cleaned it with two written rules. The first drops a PM2.5 of 999 or more (the feed's "out of range"), a PM10 of 2,000 or more, and a PM10 below the same hour's PM2.5, which real air cannot give. The second drops a monitor's hour when it reads over three times the median of at least two others and is itself high (PM2.5 over 200). The file counts what the second rule removed: 86 lone spikes across the seven days. I changed nothing else. In the recorded days the map's wind is one recorded wind for central Delhi, drawn the same everywhere, and the map says so.
 
 ## The unit, and where it stops
 
@@ -78,6 +78,10 @@ Visitors' browsers still call Open-Meteo to search for a place by name (it sends
 
 ## What fought back
 
+### My own screenshot said AQI 500 beside "GRAP Stage II"
+
+Writing this post, I looked hard at my own screenshot of the morning after Diwali: AQI 500, and "GRAP Stage II likely". Those two do not go together. The estimate averaged the last 24 hours the monitor _had_, so gaps pulled in older, cleaner hours, and it stretched one hour's PM10 to PM2.5 ratio over the whole day. Now it uses the last 24 hours only (16 must be there), takes PM10 as at most twice the PM2.5, and treats a missing PM10 as a floor. I checked it against the monitors' own PM10 on 24 station-days, and no day lands in the wrong stage. The same audit turned up a rain alert that promised clean air when the forecast showed none, and an assistant sheet on a phone that left the answer 236 pixels of room.
+
 ### The model never answered
 
 My first live question came back with no "Wording by AI" label. The guardrail's prompt-attack filter was blocking my own rewording instruction because it sat in the user turn. I moved it to the system prompt, and the model answers.
@@ -92,7 +96,7 @@ The map's wind stopped, then came back patchy. Open-Meteo counts each point of a
 
 ### The unit went quiet the moment the app connected
 
-The serial log showed good readings, then "No more data in frame" as soon as Bluetooth connected. The sensor had stopped measuring, most likely from a power dip. The firmware now restarts the sensor on connect, and after three failed reads in a row. Earlier, the first firmware had assumed I2C wiring on an ESP32 DevKit, and my board is wired over serial.
+The serial log showed good readings, then "No more data in frame" as soon as Bluetooth connected. The sensor had stopped measuring, most likely from a power dip. The firmware now restarts the sensor on connect, and after three failed reads in a row.
 
 Other fixes are in [`docs/learning-log.md`](learning-log.md).
 
@@ -102,7 +106,7 @@ Other fixes are in [`docs/learning-log.md`](learning-log.md).
 - The stack costs about $4.50 a month idle, at list prices. An assistant question costs about $0.0008 (almost all of it the guardrail), and a visit at most $0.00014.
 - Caps: 40 assistant questions per caller and 500 a day, 12,000 spoken characters per caller and 60,000 a day, 25 API requests a second. One parameter switches the assistant off.
 
-One cost is not capped: a flood against CloudFront itself. The two $50 budgets in my account were made by hand, the stack's own budget alert has no address set, and budgets here do not stop anything. [`docs/cost.md`](cost.md) has the arithmetic.
+One cost is not capped: a flood against CloudFront itself. The stack makes its own budget only when given an email address, and I deployed without one; the two $50 budgets in my account were made by hand, and budgets only send email, they stop nothing. [`docs/cost.md`](cost.md) has the arithmetic.
 
 ## What is next
 
