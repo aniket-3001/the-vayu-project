@@ -57,7 +57,7 @@ Each service is in `infra/` as CDK (TypeScript); one `cdk deploy` makes the stac
 | IoT Core, Firehose, S3, Athena         | Built and tested for device messaging; **not used** by the Bluetooth unit (it talks to the phone)               | `infra/lib/Ingest.ts`, `infra/lib/Analytics.ts`    |
 | AWS CDK                                | The whole stack, with assertion tests that the caps and permissions exist                                       | `infra/`                                           |
 
-AWS open source: CDK. We did not use Strands, Cedar or Powertools.
+AWS open source: AWS CDK for the stack, and Powertools for AWS Lambda (Logger and Tracer) in the API. We did not use Strands or Cedar.
 
 ## The rules it holds
 
