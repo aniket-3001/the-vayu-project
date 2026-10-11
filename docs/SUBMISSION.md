@@ -13,8 +13,13 @@ in front of the camera. Alerts for the next three days follow the GRAP stages, s
 the Insights for a place say what that means for a school's assembly or a walk in a park.
 
 Every number says whether it is **Live** (a named monitor, how far, how old) or an **Estimate** (a regional model).
-Nothing is advised from a reading older than six hours. The app's own monitor and purifier are **not built**: the
-Devices screen says "To be implemented" and nothing is counted from a device.
+Nothing is advised from a reading older than six hours. A small measuring unit (ESP32-S3 and an SPS30 laser particle sensor)
+connects over Bluetooth and becomes a "Your room" card: the room's live air against the air outside, with the hours it
+measured counted in Exposure. The air purifier is **not built**; a sample cleaner card says "To be implemented".
+
+**It is all real data.** The live app reads real monitors, weather and satellite fires. The recorded week (`/#/week`) is seven
+real days from the public archives played through the same app, labelled recorded. The only made-up days are in a separate
+prototype build that is never uploaded.
 
 Live: https://d3lmq1mze2gup3.cloudfront.net
 
@@ -32,7 +37,7 @@ everything is CDK in TypeScript. See `docs/architecture.md`, `docs/cost.md` and 
 | --------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | 0:00–0:30 | A hazy Delhi morning; a parent checking the air; the app's My Air                                                                                                                                                                                                                                                                                                     | The problem: the numbers exist but nobody can act on them; one monitor is kilometres from your child's school. The solution: Vayu Air, one clear answer for each place you care about, and a ₹4,000 unit that measures the room itself.                                  |
 | 0:30–1:30 | Phone, the deployed app: add Home, School and Work; the live location card; set who each place is for; read a card's fields                                                                                                                                                                                                                                           | How to set it up the first time, and what each field means: the AQI and its level, the 3-day strip, where the number came from (a named monitor, how far, how old), the GRAP pill, the assembly line.                                                                    |
-| 1:30–2:10 | The unit on a desk; Devices tab; Connect over Bluetooth; the live reading; room against outside; Exposure counting the hour                                                                                                                                                                                                                                           | The unit (ESP32 and a laser particle sensor, about ₹4,000) streams to the phone. The reading is set beside the nearest monitor's, and the hours spent there count in Exposure as measured. For the price of one monitoring station, thousands of these: hyperlocal data. |
+| 1:30–2:10 | The unit on a desk; Add device; Connect over Bluetooth; the Your room card and its page: the live reading, room against outside as two lines, the purifier test; Exposure counting the hour                                                                                                                                                                           | The unit (ESP32 and a laser particle sensor, about ₹4,000) streams to the phone. The reading is set beside the nearest monitor's, and the hours spent there count in Exposure as measured. For the price of one monitoring station, thousands of these: hyperlocal data. |
 | 2:10–3:10 | The **recorded week** (open `/#/week` on the deployed site): seven real days, one chip each. 6 Oct 2025 rain (the air clears); 7 Oct the clean day after; 21 Oct after Diwali; 31 Oct stubble fires (the alert, the fire map); 12 Nov smog; 22 Dec GRAP Stage IV by our estimate (school likely closed); 30 Mar wind. Show tips, alerts, the map and Exposure on each | These are real days from the OpenAQ archive, NASA's fire detections and the weather record, played through the same app. The stage is our own unofficial estimate, never the order.                                                                                      |
 | 3:10–4:00 | An **animated architecture diagram**: phone to CloudFront to API Gateway to Lambda, the scheduled jobs, DynamoDB, Bedrock with its guardrail, Polly, the kill switch and caps                                                                                                                                                                                         | How the data flows, and how permissions and guardrails hold: the model only words answers the rules decided, every number is checked, daily caps and a kill switch, secrets in Secrets Manager.                                                                          |
 
@@ -42,16 +47,17 @@ pauses, arrow keys step, `#step=3` holds on a scene).
 
 ## What each person did **(confirm)**
 
-- Software: the app, the API and the AWS stack were written with an AI coding assistant (Claude Code), directed and
-  reviewed by the team. Every change goes through `make prove` (lint, types, tests, `cdk synth`, bundle check).
-- Device design and the claims about it: documented in `DEVICE.md`; not built, so nothing is measured or claimed.
-- Names and roles for the form: **(confirm)**
+See `CONTRIBUTIONS.md`: each person writes their own part, and says how AI was used. In short, the app, the API and the
+AWS stack were written with an AI coding assistant (Claude Code), directed and reviewed by the team, and every change goes
+through `make prove` (lint, types, tests, `cdk synth`, bundle check). The measuring unit's design, wiring and assembly
+were done by the team. **(confirm names and roles for the form)**
 
 ## AI tools used
 
-- Claude Code: writing and testing the code and the documents.
+- Claude Code: writing and testing the code, the firmware and the documents, from the team's direction.
 - Amazon Bedrock, Nova Micro, with a guardrail: rewording the assistant's answers at run time. It has no tools and
   cannot act. See `docs/AGENT-BOUNDARIES.md`.
+- Amazon Polly: reads answers aloud in English and Hindi. Hindi answers are fixed wording and never go through the model.
 
 ## Feedback on AWS **(confirm and edit)**
 
@@ -64,10 +70,17 @@ Things we hit, in the order we hit them:
 - Scheduled jobs that call a provider need their own time budget inside the function's time limit, and a schedule that
   never runs needs its own alarm; neither is a default.
 - Lambda egress addresses differ from a laptop's, which is why the wind and air model are asked from the API once for
-  everyone rather than from each browser.
+  everyone rather than from each browser. Open-Meteo counts each point of a many-point request as a call against the
+  address's daily allowance, so a map's wind grid used it up quickly.
+- Bedrock needs the regional inference profile id (`apac.amazon.nova-micro-v1:0`), not the bare model id, in ap-south-1.
 
 ## Honest limits
 
-- No hardware has been built or measured. Rules I13 and I16 apply to it and are untested on a device.
+- The measuring unit reads a real sensor and reaches the app, but its accuracy has **not** been compared with a monitor, so
+  it is a low-cost sensor shown beside the nearest monitor, never "scientific-grade". See `docs/claims.md`.
+- The air purifier is not built. Rules I13 and I16 apply to it and are untested on a device.
 - Telegram alerts are built and tested against fakes; live scheduled sends are off and there is no in-app screen to link a chat.
+- Bluetooth: Chrome on a computer is tested; Android Chrome is not; iPhone Safari cannot.
+- The ₹2,00,00,000 (a station) and ₹4,000 (the unit) figures have no source in the repository yet: do not say them without one.
+- The recorded week's GRAP Stage IV days are our estimate for those days, not a record of the official order.
 - OpenAQ rejected our key (401) late on 10 October and a new one was put in on 11 October; the stations job then read 7,268 monitors. If it is rejected again, the map's colour comes from the regional air model and says so.

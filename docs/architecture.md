@@ -61,7 +61,16 @@ Dotted lines are calls that do not go through our API. Solid arrows are ours. An
 | Map tiles                           | OpenFreeMap                                                                                                           | The map                                                               |
 | Place names                         | Open-Meteo geocoding                                                                                                  | Search (the browser sends only the name typed)                        |
 
-The app labels each number as **Live** (a named monitor, its distance and its age) or **Estimate** (the regional model). Data older than six hours from a monitor is dropped, and nothing is advised from it.
+The app labels each number as **Live** (a named monitor, its distance and its age), **Estimate** (the regional model) or **Measured** (the person's own unit). Data older than six hours from a monitor is dropped, and nothing is advised from it.
+
+## Two paths that do not go through AWS
+
+- **The measuring unit.** An ESP32-S3 with an SPS30 sends a packet every two seconds over Bluetooth Low Energy straight to the
+  page (Web Bluetooth). The page keeps hourly means on the device; nothing is sent to our API. The IoT, Firehose and Athena
+  parts in `infra/` are built for sending device readings to AWS and are not used by this unit. See `UNIT.md`.
+- **The recorded week (`/#/week`).** The page loads a 235 KB file of seven real days made by `scripts/record-week.mjs` from the
+  OpenAQ and Open-Meteo archives and NASA FIRMS, and plays the app on it. It asks our API for no air, wind or fires; it still
+  uses the real assistant and voice. See `AS-BUILT.md`.
 
 ## Well-Architected, honestly
 
@@ -76,14 +85,15 @@ The app labels each number as **Live** (a named monitor, its distance and its ag
 
 ## Where things are in the code
 
-| Path                 | What                                                                                                                                     |
-| -------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
-| `apps/web`           | The app (React, MapLibre). `src/air` is where real data enters; `src/demo` is the separate demo build and is not in the deployed bundle. |
-| `apps/api`           | The API Lambda, the stations Lambda and the routes.                                                                                      |
-| `packages/contracts` | The shape of every request and answer (zod).                                                                                             |
-| `packages/core`      | The rules: air bands, timeline, windows, verdicts, the assistant's fixed answers. No network, no clock.                                  |
-| `packages/data`      | Clients for OpenAQ, Open-Meteo and FIRMS, and the cache.                                                                                 |
-| `packages/watch`     | The alert loop, Telegram, Bedrock wording, the number check.                                                                             |
-| `infra`              | The CDK stack and its tests.                                                                                                             |
-| `tests/smoke`        | The live check.                                                                                                                          |
-| `scripts`            | Build, deploy and check scripts.                                                                                                         |
+| Path                 | What                                                                                                                                                                                                                |
+| -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `apps/web`           | The app (React, MapLibre). `src/air` is where real data enters; `src/week` is the recorded week; `src/devices` is the measuring unit; `src/demo` is the separate prototype build and is not in the deployed bundle. |
+| `apps/api`           | The API Lambda, the stations Lambda and the routes.                                                                                                                                                                 |
+| `packages/contracts` | The shape of every request and answer (zod).                                                                                                                                                                        |
+| `packages/core`      | The rules: air bands, timeline, windows, verdicts, the assistant's fixed answers. No network, no clock.                                                                                                             |
+| `packages/data`      | Clients for OpenAQ, Open-Meteo and FIRMS, and the cache.                                                                                                                                                            |
+| `packages/watch`     | The alert loop, Telegram, Bedrock wording, the number check.                                                                                                                                                        |
+| `infra`              | The CDK stack and its tests.                                                                                                                                                                                        |
+| `firmware/vayu-unit` | The ESP32-S3 sketch for the measuring unit.                                                                                                                                                                         |
+| `tests/smoke`        | The live check.                                                                                                                                                                                                     |
+| `scripts`            | Build, deploy and check scripts.                                                                                                                                                                                    |

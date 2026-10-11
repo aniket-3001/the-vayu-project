@@ -1,5 +1,7 @@
 # Making Vayu Air a real, deployed app
 
+> **Historical.** This is the plan the deployed app was first built to, on 10 October. The app has grown since (the measuring unit, the room card, the recorded week, Hindi). For what is true now, read `docs/AS-BUILT.md`.
+
 The front end is built on sample data. The AWS backend from the earlier repo (`vayu-labs`) is deployed and live. This plan joins them, deploys the result to a public CloudFront address, and holds the rules from the playbook and build spec while doing it.
 
 **Done means:** one public HTTPS address that works on a phone and a laptop, reads real air data through our own API on AWS, labels every number with its source and age, has no demo controls, shows a "To be implemented" banner wherever something is not real yet, and ships with the evidence documents (safety, cost, architecture, AI boundaries) and a `make prove` that fails closed.
