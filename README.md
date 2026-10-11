@@ -100,6 +100,7 @@ Details: [`docs/AS-BUILT.md`](docs/AS-BUILT.md). What was checked on the live ad
 Short version; the full list is in [`docs/AS-BUILT.md`](docs/AS-BUILT.md).
 
 - **Two scales.** The AQI on a card is the US EPA scale applied to PM2.5, and the colour scale says so. A GRAP stage is worked out on India's CPCB scale, and the alert says "on India's scale". They are different numbers, so a card can read Moderate while the 24-hour CPCB average is already in a GRAP band. US AQI stops at 500, so "AQI 500" means "at least 500".
+- **GRAP is per monitor.** The official stage is one decision for all of Delhi-NCR; the app works it out from the monitor nearest each place, so two places a few kilometres apart can show different stages. The alert says so.
 - **GRAP is our estimate.** It is checked against the monitors' own PM10 on 24 station-days, not against the CAQM orders. Official orders come first.
 - **The recorded days are hindsight.** The hours after each day's 8 am are what was recorded next, not a forecast made at the time, and they use only four Delhi monitors.
 - **Exposure is an estimate.** It assumes indoor air is 60% of outdoor when there is no monitor in the room, and 85% in a park with trees. The advice thresholds are our words from the US AQI bands, not a medical rule. The cigarette figure is Berkeley Earth's rule of thumb.
