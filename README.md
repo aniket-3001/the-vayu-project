@@ -11,14 +11,14 @@ AWS Air track submission. **Live: https://d3lmq1mze2gup3.cloudfront.net** (works
 | **My Air**    | Pin places (home, school, office, a park, or any place in north India). Each shows the air now, the weather, and the nearest monitor's name, distance and age. Alerts for the next three days, and small tasks for today. |
 | **Exposure**  | A 24-hour dial of the air a person breathed: at home, at work or school, and outdoors. Add the people in a family, with school or work hours. Log outdoor time.                                                           |
 | **Map**       | The air across the world: every monitor, wind, fires, and the colour between.                                                                                                                                             |
-| **AIR Lens**   | Point a phone camera and see the air as particles, with a scene for each place.                                                                                                                                           |
+| **AIR Lens**  | Point a phone camera and see the air as particles, with a scene for each place.                                                                                                                                           |
 | **Assistant** | Ask a question or tell it something ("Asha walked in the park for 40 minutes").                                                                                                                                           |
 
 Every number says whether it is **Live** (a named monitor, how far, how old) or an **Estimate** (a regional model). Monitor readings older than six hours are not used, and nothing is advised from them.
 
 ## What is real, and what is not
 
-The app reads real data (OpenAQ monitors, Open-Meteo weather and forecast, NASA FIRMS fires) through its own API on AWS. It has no demo mode.
+The app reads real data (OpenAQ monitors, Open-Meteo weather, forecast and wind, MET Norway wind as a second source, NASA FIRMS fires) through its own API on AWS. Where no monitor has reported, the map is coloured by the regional air model and says so. It has no demo mode.
 
 The air monitor and purifier this project is about are **not built**. The Devices screen says "To be implemented", shows no measurements, and counts nothing from a device. `docs/AS-BUILT.md` lists what is live, what is built but switched off, and what is not built.
 

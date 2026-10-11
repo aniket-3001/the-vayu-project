@@ -265,6 +265,24 @@ export const WindGrid = record({
 });
 export type WindGrid = z.infer<typeof WindGrid>;
 
+/** The regional air model's PM2.5 (µg/m³) at one point of the map's grid. A model estimate, not a measurement. */
+export const AirGridPoint = record({
+  lat: z.number(),
+  lng: z.number(),
+  pm25: z.number().min(0),
+});
+export type AirGridPoint = z.infer<typeof AirGridPoint>;
+
+/** `/v1/airgrid`: the air model's PM2.5 across the globe now, for colouring the map where no monitor reports. */
+export const AirGrid = record({
+  schemaVersion: z.literal(1),
+  asOf: z.string(),
+  mode: z.literal('model'),
+  source: z.string(),
+  points: list(AirGridPoint),
+});
+export type AirGrid = z.infer<typeof AirGrid>;
+
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/u;
 const MOBILE = /^(?:\+?91[\s-]?)?[6-9]\d{9}$/u;
 

@@ -11,6 +11,7 @@ import {
   type ReplayRepo,
   type StationRepo,
   type WindGridRepo,
+  type AirGridRepo,
   type WeatherForecastRepo,
   type WeatherRepo,
 } from '@vayu/data';
@@ -33,6 +34,7 @@ import { handleFireReports, type FireReportsDeps } from './fireReportsRoute';
 import { handleRequests, type RequestsDeps } from './requestsRoute';
 import { handleSpeech, type SpeechDeps } from './speechRoute';
 import { handleStations } from './stationsRoute';
+import { handleAirGrid } from './airGridRoute';
 import { handleWind } from './windRoute';
 import { handleToday } from './todayRoute';
 import { failure, ok, okCached, type ApiRequest, type ApiResponse } from './respond';
@@ -80,6 +82,8 @@ export interface RouterDeps {
   readonly historyRepo?: ModelHistoryRepo | undefined;
   /** The wind across the map. Absent where nothing is wired: /v1/wind is then not found. */
   readonly windRepo?: WindGridRepo | undefined;
+  /** The air model across the map, for where no monitor reports. Absent: /v1/airgrid is then not found. */
+  readonly airGridRepo?: AirGridRepo | undefined;
   readonly stationRepo: StationRepo;
   readonly forecastRepo: ForecastRepo;
   readonly fireRepo: FireRepo;
@@ -224,6 +228,10 @@ export function createRouter(deps: RouterDeps) {
         return deps.windRepo === undefined
           ? failure(404, 'not_found', `No route for ${request.path}`)
           : handleWind(request, { wind: deps.windRepo, clock: deps.clock });
+      case '/v1/airgrid':
+        return deps.airGridRepo === undefined
+          ? failure(404, 'not_found', `No route for ${request.path}`)
+          : handleAirGrid(request, { air: deps.airGridRepo, clock: deps.clock });
       case '/v1/history':
         return handleHistory(request, {
           ...deps,

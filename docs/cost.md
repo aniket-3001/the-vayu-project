@@ -68,6 +68,7 @@ These are the most each limit lets the app spend, which is the point of having t
 
 - **A flood against CloudFront itself is not capped.** AWS Budgets here send an email at $50 a month; they do not stop anything. The two budgets in the account (`vayu-hackathon-monthly` and `My Zero-Spend Budget`, both $50) were made by hand and are not part of the stack.
 - A flood at the API's limit for a whole month would cost about $260 before anyone acted. A rate limit per address (AWS WAF costs about $5 a month plus $0.60 a million requests) would cap it; it is not set up.
+- The wind and the air model are each asked of Open-Meteo about once in half an hour for everyone (about eight requests of a hundred points a time), kept in the API and by CloudFront, so a visitor's browser asks neither. MET Norway (no key, 20 requests a second at most) is asked, a point at a time (about 200), only when Open-Meteo is out of allowance.
 - The free OpenAQ and Open-Meteo services have their own rate limits (OpenAQ: 60 a minute). The app is built so that visitors never call OpenAQ directly: a scheduled job and the shared cache do. A flood can still use up the key's allowance, which is what happened once in testing. The result is gaps on the map, not a bill.
 
 ## How to check these figures

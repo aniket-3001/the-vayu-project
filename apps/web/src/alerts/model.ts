@@ -33,6 +33,9 @@ export interface Alert {
 }
 
 /** Fires in the last 24 hours at which stubble burning counts as heavy. */
+/** The chance of rain, in percent, that a day must be above for rain to be worth an alert. */
+export const RAIN_CHANCE_PCT = 60;
+
 /** Wind, in km/h, from which a day counts as windy enough to thin the air. */
 export const WINDY_KMH = 22;
 
@@ -182,13 +185,8 @@ export function alertsFor(data: TodayData, fires: number | undefined): readonly 
   // Good news too: rain on its way washes particles out of the air, so the air is likely to be cleaner after it.
   const rainDay = data.daily.slice(0, 3).findIndex((day) => {
     const sky = day.sky;
-    return (
-      sky !== undefined &&
-      (sky.rainChancePct >= 60 ||
-        sky.condition === 'rain' ||
-        sky.condition === 'thunderstorm' ||
-        sky.condition === 'drizzle')
-    );
+    // Only a real chance counts: a sky that is called rainy at 10% is not worth an alert.
+    return sky !== undefined && sky.rainChancePct > RAIN_CHANCE_PCT;
   });
   const rainy = rainDay < 0 ? undefined : data.daily[rainDay];
   if (rainy?.sky !== undefined) {
@@ -219,7 +217,7 @@ export function alertsFor(data: TodayData, fires: number | undefined): readonly 
     return (
       sky !== undefined &&
       sky.windKmh >= WINDY_KMH &&
-      sky.rainChancePct < 60 &&
+      sky.rainChancePct <= RAIN_CHANCE_PCT &&
       (day.aqi === undefined || day.aqi <= data.aqi)
     );
   });

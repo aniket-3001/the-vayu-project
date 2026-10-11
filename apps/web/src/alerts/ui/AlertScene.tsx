@@ -89,7 +89,8 @@ function sceneVars(solid: string, soft: string, rgb: Rgb, ink: string): CSSPrope
     '--scene-solid': solid,
     '--scene-soft': soft,
     '--scene-ink': ink,
-    '--edge': solid,
+    // The outline is a dark shade of the colour itself.
+    '--edge': `color-mix(in srgb, ${solid} 45%, #1f2a3d)`,
     '--glow': triple,
   } as CSSProperties;
 }

@@ -5689,3 +5689,31 @@ table.hourly .row-label {
   background: rgb(255 255 255 / 0.85);
   color: #334155;
 }
+
+/* Every alert is outlined in a dark shade of its own colour */
+.alert-row {
+  border: 1.5px solid var(--edge, rgb(31 42 61 / 0.5));
+}
+.alert-row.scene-air {
+  border-color: var(--edge);
+}
+.alert-row.scene-rain {
+  --edge: #3f78a6;
+  --glow: 63 120 166;
+  border-color: var(--edge);
+  box-shadow: 0 0 10px 2px rgb(255 255 255 / 0.8);
+}
+.alert-row.scene-wind {
+  --edge: #3f8782;
+  --glow: 63 135 130;
+  border-color: var(--edge);
+  box-shadow: 0 0 8px 1px rgb(255 255 255 / 0.7);
+}
+.alert-row.scene-stubble {
+  --edge: #a63b08;
+  --glow: 232 89 12;
+  border-color: var(--edge);
+}
+.alert-row.blink {
+  border: 2.5px dotted var(--edge);
+}

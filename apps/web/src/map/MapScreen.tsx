@@ -35,10 +35,12 @@ export function MapScreen(): React.JSX.Element {
       stations.status === 'ready' ? monitorsFromStations(stations.data, Date.parse(nowIso())) : [],
     [stations],
   );
-  // The colour between monitors is worked out from the real monitors; the prototype has a made-up grid instead.
+  // The colour between monitors is worked out from the real monitors; the prototype has a made-up grid instead. Where
+  // no monitor has reported, the regional air model colours the map instead, and the map says so.
+  const byModel = !sample && monitors.length === 0 && data.modelAir.length > 0;
   const air = useMemo(
-    () => (sample ? data.air : binMonitors(monitors, 1)),
-    [sample, data.air, monitors],
+    () => (sample ? data.air : byModel ? data.modelAir : binMonitors(monitors, 1)),
+    [sample, byModel, data.air, data.modelAir, monitors],
   );
   // A link can open the map somewhere: #/map?lat=28.6&lng=77.2&z=12.
   const [params] = useSearchParams();
@@ -115,6 +117,7 @@ export function MapScreen(): React.JSX.Element {
             <div className="legend-head">
               <p className="legend-pills">
                 {sample && data.fires === undefined && <Pill>Sample data</Pill>}
+                {byModel && <Pill>Model estimate</Pill>}
                 {((!sample && monitors.length > 0) ||
                   data.windLive ||
                   data.fires !== undefined) && <Pill>Live</Pill>}
@@ -134,7 +137,9 @@ export function MapScreen(): React.JSX.Element {
                       {stations.status === 'loading'
                         ? 'Getting the monitors…'
                         : monitors.length === 0
-                          ? 'No monitor has reported in the last six hours, so none are shown.'
+                          ? byModel
+                            ? 'No monitor has reported in the last six hours, so none are shown. The colour is the regional air model (CAMS via Open-Meteo): an estimate, not a measurement.'
+                            : 'No monitor has reported in the last six hours, so none are shown.'
                           : `${String(monitors.length)} monitors worldwide with a PM2.5 reading in the last six hours (OpenAQ). Each is a dot; zoom in for its number.`}
                     </span>
                   )}

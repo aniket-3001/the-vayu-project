@@ -109,4 +109,21 @@ describe('when the day arrives', () => {
     } as typeof day;
     expect(alertsFor(dry, undefined).some((a) => a.kind === 'rain')).toBe(false);
   });
+
+  it('says rain only when the chance is more than 60%, however the sky is named', () => {
+    const day = sampleDay('hazardous');
+    const withRain = (pct: number): typeof day => ({
+      ...day,
+      daily: day.daily.map((d) => ({
+        ...d,
+        sky:
+          d.sky === undefined
+            ? d.sky
+            : { ...d.sky, rainChancePct: pct, condition: 'rain' as const, windKmh: 3 },
+      })),
+    });
+    for (const pct of [10, 12, 40, 60])
+      expect(alertsFor(withRain(pct), undefined).some((a) => a.kind === 'rain')).toBe(false);
+    expect(alertsFor(withRain(61), undefined).some((a) => a.kind === 'rain')).toBe(true);
+  });
 });

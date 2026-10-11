@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   GRID,
   fetchFireCount,
+  fetchAirModel,
   fetchWindFromApi,
   fetchWindFromMetNo,
   metNoPoints,
@@ -181,5 +182,32 @@ describe('remembering for half an hour', () => {
     await expect(
       fetchWindFromMetNo(() => Promise.resolve(new Response('', { status: 429 }))),
     ).rejects.toThrow(/too little/u);
+  });
+
+  it('takes the air model from our own API, and throws when it has none rather than guess', async () => {
+    const urls: string[] = [];
+    const air = await fetchAirModel('https://api.example', (input) => {
+      urls.push(requestUrl(input));
+      return Promise.resolve(
+        new Response(
+          JSON.stringify({
+            mode: 'model',
+            points: [
+              { lat: 28, lng: 77, pm25: 61 },
+              { lat: 1, lng: 'x', pm25: 3 },
+            ],
+          }),
+          { status: 200 },
+        ),
+      );
+    });
+    expect(urls).toEqual(['https://api.example/v1/airgrid']);
+    expect(air).toEqual([{ lat: 28, lng: 77, pm25: 61 }]);
+    await expect(
+      fetchAirModel('', () => Promise.resolve(new Response('{}', { status: 502 }))),
+    ).rejects.toThrow(/502/u);
+    await expect(
+      fetchAirModel('', () => Promise.resolve(new Response('{"points":[]}', { status: 200 }))),
+    ).rejects.toThrow(/No air model/u);
   });
 });

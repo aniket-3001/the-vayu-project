@@ -15,7 +15,8 @@ flowchart LR
   API --> DDB[(DynamoDB: Cache, Watch, Rooms)]
   API -->|"reword, only"| BR[Bedrock: Nova Micro + Guardrail]
   API --> SSM[SSM kill switch]
-  API --> OM[Open-Meteo: weather, gases, forecast]
+  API --> OM[Open-Meteo: weather, gases, forecast, wind, air model]
+  API -.->|"wind, only if Open-Meteo is out of allowance"| MN[MET Norway]
   API --> OAQ[OpenAQ: monitors]
   SCH1[Scheduler, every 15 min] --> H[Harvest Lambda] --> DDB
   SCH2[Scheduler, every 30 min] --> ST[Stations Lambda] --> DDB
@@ -23,7 +24,7 @@ flowchart LR
   H --> OM
   ST --> OAQ
   API -.-> FIRMS[NASA FIRMS: fires]
-  V -.->|"search, wind, air grid, map tiles"| EXT[Open-Meteo, OpenFreeMap]
+  V -.->|"search, map tiles; wind only if our API has none"| EXT[Open-Meteo, MET Norway, OpenFreeMap]
 ```
 
 Dotted lines are calls that do not go through our API. Solid arrows are ours.
@@ -49,14 +50,16 @@ Dotted lines are calls that do not go through our API. Solid arrows are ours.
 
 ## The data, and what is not ours
 
-| Data                        | From                         | Used for                                             |
-| --------------------------- | ---------------------------- | ---------------------------------------------------- |
-| PM2.5 at monitors           | OpenAQ (through our API)     | The reading for a place; the map's monitors          |
-| Air-quality forecast, gases | Open-Meteo (CAMS)            | The next days; the Estimate where no monitor is near |
-| Weather                     | Open-Meteo                   | Temperature, wind, rain, humidity, UV                |
-| Fires                       | NASA FIRMS (through our API) | Stubble-burning alerts and the fire count            |
-| Map tiles                   | OpenFreeMap                  | The map                                              |
-| Place names                 | Open-Meteo geocoding         | Search (the browser sends only the name typed)       |
+| Data                                | From                                                                                                                   | Used for                                                              |
+| ----------------------------------- | ---------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------- |
+| PM2.5 at monitors                   | OpenAQ (through our API)                                                                                               | The reading for a place; the map's monitors                           |
+| Air-quality forecast, gases         | Open-Meteo (CAMS)                                                                                                      | The next days; the Estimate where no monitor is near                  |
+| Weather                             | Open-Meteo                                                                                                             | Temperature, wind, rain, humidity, UV                                 |
+| Wind across the map                 | Open-Meteo (ICON, GFS) through our API (`/v1/wind`, kept half an hour); MET Norway when Open-Meteo is out of allowance | The wind streaks on the map; always real, never made up               |
+| Air colour where no monitor reports | Open-Meteo CAMS through our API (`/v1/airgrid`, kept half an hour)                                                     | The map's colour, labelled a model estimate, never drawn as a monitor |
+| Fires                               | NASA FIRMS (through our API)                                                                                           | Stubble-burning alerts and the fire count                             |
+| Map tiles                           | OpenFreeMap                                                                                                            | The map                                                               |
+| Place names                         | Open-Meteo geocoding                                                                                                   | Search (the browser sends only the name typed)                        |
 
 The app labels each number as **Live** (a named monitor, its distance and its age) or **Estimate** (the regional model). Data older than six hours from a monitor is dropped, and nothing is advised from it.
 

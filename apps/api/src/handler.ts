@@ -16,6 +16,7 @@ import {
   openMeteoHistoryRepo,
   openMeteoWeatherForecastRepo,
   metNoWindGridRepo,
+  openMeteoAirGridRepo,
   openMeteoWindGridRepo,
   windGridWithFallback,
   openMeteoWeatherRepo,
@@ -116,6 +117,7 @@ function buildRoute(): Promise<ReturnType<typeof createRouter>> {
       weatherRepo: cachedWeatherRepo(openMeteoWeatherRepo(), 15 * 60_000),
       weatherForecastRepo: openMeteoWeatherForecastRepo(),
       // Open-Meteo first; MET Norway when it has run out of allowance.
+      airGridRepo: openMeteoAirGridRepo(),
       windRepo: windGridWithFallback(openMeteoWindGridRepo(), metNoWindGridRepo()),
       gasRepo: openMeteoGasRepo(),
       historyRepo: openMeteoHistoryRepo(),

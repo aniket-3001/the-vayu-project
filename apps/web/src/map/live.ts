@@ -108,6 +108,37 @@ export async function fetchWindGrid(
   return winds;
 }
 
+/** The regional air model's PM2.5 at a point of the map's grid. An estimate, never a measurement. */
+export interface AirModelPoint {
+  readonly lat: number;
+  readonly lng: number;
+  readonly pm25: number;
+}
+
+/**
+ * The air model's PM2.5 across the globe from our own API (`/v1/airgrid`), for colouring the map where no monitor has
+ * a recent reading. Throws when the API has none, so the map is left plain rather than coloured by a guess.
+ */
+export async function fetchAirModel(
+  baseUrl: string,
+  fetchImpl: typeof fetch = fetch,
+): Promise<readonly AirModelPoint[]> {
+  const res = await fetchImpl(`${baseUrl.replace(/\/$/, '')}/v1/airgrid`);
+  if (!res.ok) throw new Error(`The API answered ${String(res.status)} for the air model`);
+  const body = (await res.json()) as { mode?: unknown; points?: unknown };
+  const points = Array.isArray(body.points) ? (body.points as readonly unknown[]) : [];
+  const air = points.filter(
+    (p): p is AirModelPoint =>
+      typeof p === 'object' &&
+      p !== null &&
+      typeof (p as AirModelPoint).lat === 'number' &&
+      typeof (p as AirModelPoint).lng === 'number' &&
+      typeof (p as AirModelPoint).pm25 === 'number',
+  );
+  if (air.length === 0) throw new Error('No air model came back');
+  return air;
+}
+
 /** The grid MET Norway is asked for, a point at a time: a coarser one, about two hundred requests. */
 export function metNoPoints(): readonly { readonly lat: number; readonly lng: number }[] {
   const points: { lat: number; lng: number }[] = [];
