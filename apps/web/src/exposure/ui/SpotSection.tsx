@@ -201,7 +201,7 @@ export function SpotSection({
       ) : (
         <p className="small muted">
           No unit here, so indoor air is assumed at {String(Math.round(INDOOR_SHARE * 100))}% of
-          outside. <Link to="/?tab=devices">Add a monitor</Link>
+          outside. <Link to="/?add=device">Add a monitor</Link>
         </p>
       )}
     </section>

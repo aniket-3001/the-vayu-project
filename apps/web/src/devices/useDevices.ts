@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import {
   addDevice,
   addMeasuredDevice,
@@ -11,6 +11,9 @@ import {
 } from './devices';
 import type { SpotKind } from '../exposure/spots';
 import { forgetMeasured } from './measured';
+
+/** Dispatched on the window when the devices change, so every screen that shows them reads them again. */
+export const DEVICES_CHANGED = 'vayu:devices';
 
 /** The monitors the person added, kept in this browser. */
 export function useDevices(storage: Storage = window.localStorage): {
@@ -25,13 +28,22 @@ export function useDevices(storage: Storage = window.localStorage): {
   ) => void;
 } {
   const [devices, setDevices] = useState<readonly Device[]>(() => loadDevices(storage));
+  useEffect(() => {
+    const again = (): void => {
+      setDevices(loadDevices(storage));
+    };
+    window.addEventListener(DEVICES_CHANGED, again);
+    return () => {
+      window.removeEventListener(DEVICES_CHANGED, again);
+    };
+  }, [storage]);
   const change = useCallback(
     (next: (current: readonly Device[]) => readonly Device[]) => {
-      setDevices((current) => {
-        const updated = next(current);
-        saveDevices(storage, updated);
-        return updated;
-      });
+      // From what is stored, so two screens cannot overwrite each other's change.
+      const updated = next(loadDevices(storage));
+      saveDevices(storage, updated);
+      setDevices(updated);
+      window.dispatchEvent(new Event(DEVICES_CHANGED));
     },
     [storage],
   );

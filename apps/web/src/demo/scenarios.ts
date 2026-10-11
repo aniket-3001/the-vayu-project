@@ -81,7 +81,7 @@ export const SCENARIOS: readonly Scenario[] = [
     id: 'monitor',
     label: 'My monitor',
     caption: 'The monitor at home: air now, the cleaner switching itself on, the day.',
-    route: '/?tab=devices',
+    route: '/?add=device',
     seconds: 6,
     state: { day: 'unhealthy' },
     saved: { [DEVICES_STORAGE_KEY]: HOME_MONITOR },

@@ -1,4 +1,4 @@
-import { Cpu, MapPin } from 'lucide-react';
+import { Plus } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useTodays } from '../air/store';
@@ -10,8 +10,8 @@ import { AlertsList } from '../alerts/ui/AlertsList';
 import { alertsFor, type Alert } from '../alerts/model';
 import { useFires } from '../alerts/useFires';
 import { TipsCard } from '../tasks/ui/TipsCard';
-import { DevicesPanel } from '../devices/ui/DevicesPanel';
-import { YourRoomCard } from '../devices/ui/YourRoomCard';
+import { AddDeviceSheet } from '../devices/ui/AddDeviceSheet';
+import { SampleDevices } from '../devices/ui/SampleDevices';
 import { PlacesPanel } from '../places/ui/PlacesPanel';
 import type { PlaceMatch } from '../data/geocode';
 
@@ -21,15 +21,13 @@ interface Props {
   readonly address?: React.ComponentProps<typeof PlacesPanel>['address'];
 }
 
-const TABS = [
-  { id: 'places', label: 'Places', Icon: MapPin },
-  { id: 'devices', label: 'Devices', Icon: Cpu },
-] as const;
-
-/** The home tab: your places and your devices. */
+/** The home tab: your places, with your measuring unit's room first, and a button to add a device. */
 export function MyAirScreen({ search, locate, address }: Props): React.JSX.Element {
   const [params, setParams] = useSearchParams();
-  const tab = params.get('tab') === 'devices' ? 'devices' : 'places';
+  // `?add=device` (and the old `?tab=devices`) opens the add-device sheet, for links from other screens.
+  const [adding, setAdding] = useState(
+    params.get('add') === 'device' || params.get('tab') === 'devices',
+  );
   const { pins } = usePins();
   // The tips and alerts are for the day as it is set: home, school, work. A phone on the move is not a place the
   // day can be arranged around, so where it is does not decide them.
@@ -107,32 +105,20 @@ export function MyAirScreen({ search, locate, address }: Props): React.JSX.Eleme
   return (
     <div className="page places">
       <header className="place">
-        <h1>My Air</h1>
-        <div className="tabs" role="tablist" aria-label="My Air">
-          {TABS.map(({ id, label, Icon }) => (
-            <button
-              key={id}
-              type="button"
-              role="tab"
-              id={`tab-${id}`}
-              aria-selected={tab === id}
-              aria-controls={`panel-${id}`}
-              onClick={() => {
-                setParams(id === 'places' ? {} : { tab: id }, { replace: true });
-              }}
-            >
-              <Icon size={18} strokeWidth={2} aria-hidden="true" />
-              {label}
-            </button>
-          ))}
+        <div className="my-air-title">
+          <h1>My Air</h1>
+          <button
+            type="button"
+            className="add-device-button"
+            onClick={() => {
+              setAdding(true);
+            }}
+          >
+            <Plus size={18} strokeWidth={2.25} aria-hidden="true" /> Add device
+          </button>
         </div>
       </header>
-      {tab === 'places' && (
-        <div className="places-main room-wrap">
-          <YourRoomCard />
-        </div>
-      )}
-      {tab === 'places' && home !== undefined && reading !== undefined && (
+      {home !== undefined && reading !== undefined && (
         <div className="places-main tasks-wrap">
           {(tips.length > 0 || alerts.length > 0) && (
             <TipsCard
@@ -143,21 +129,22 @@ export function MyAirScreen({ search, locate, address }: Props): React.JSX.Eleme
           )}
         </div>
       )}
-      <main
-        className="places-main"
-        role="tabpanel"
-        id={`panel-${tab}`}
-        aria-labelledby={`tab-${tab}`}
-      >
-        {tab === 'places' ? (
-          <PlacesPanel
-            {...(search !== undefined ? { search } : {})}
-            {...(locate !== undefined ? { locate } : {})}
-            {...(address !== undefined ? { address } : {})}
-          />
-        ) : (
-          <DevicesPanel />
-        )}
+      {adding && (
+        <AddDeviceSheet
+          onClose={() => {
+            setAdding(false);
+            if (params.has('add') || params.has('tab')) setParams({}, { replace: true });
+          }}
+        />
+      )}
+      <main className="places-main">
+        <PlacesPanel
+          {...(search !== undefined ? { search } : {})}
+          {...(locate !== undefined ? { locate } : {})}
+          {...(address !== undefined ? { address } : {})}
+        >
+          <SampleDevices />
+        </PlacesPanel>
       </main>
     </div>
   );

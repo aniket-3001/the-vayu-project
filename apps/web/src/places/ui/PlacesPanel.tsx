@@ -37,6 +37,7 @@ import {
 } from '../roles';
 import { usePins } from '../usePins';
 import { weekActive } from '../../week/active';
+import { RoomCard } from '../../devices/ui/RoomCard';
 import { AddPlaceSheet, type FoundPlace } from './AddPlaceSheet';
 import { PlaceCard, markDragEnd } from './PlaceCard';
 import { SETUP_KINDS, SetupField, type SetupKind } from './SetupField';
@@ -343,6 +344,7 @@ export function PlacesPanel({
       {/* The dragging library puts its own helper elements beside the list, so it wraps the list, not fills it. */}
       <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
         <ul className="place-grid" aria-label="Your places">
+          <RoomCard />
           {pins.length < MAX_PINS && (
             <li className="add-place add-first">
               <button

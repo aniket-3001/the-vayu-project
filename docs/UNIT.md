@@ -33,10 +33,14 @@ is). It does not work in Safari on an iPhone. The person picks the unit from the
 
 ## What the app does with a reading
 
-- Shows a **Your room** card at the top of **My Air** while the unit is connected (it stays connected as you move between
-  tabs): the live AQI in the level's colour, PM2.5, PM1 and PM10, a live chart of the last minutes on a white card over the
-  standard six AQI bands, and the room set beside the air outside.
-- Shows it on the **Devices** tab too, with the same live chart.
+- Adds the unit from the **Add device** button at the top right of **My Air** (Where is it, then Connect over Bluetooth).
+  The unit then becomes the **first card** on My Air, "Your room": the AQI in the level's colour, with the live line of the
+  last minutes where a place card has its forecast. The connection stays up as you move between tabs.
+- Opens the card to the **room page**: the live line of the room against the air outside (a second, dashed line, so the
+  gap is what the room's own air is doing), how much lower or higher the room is, how much of the time it was cleaner
+  than outside, the fine share of PM10, a test that marks a purifier switched on or a window opened and says how far
+  and how fast the room's PM2.5 moved since, plain advice (air it, keep windows shut), and the room's day by hour from
+  the hours it measured. No weather or wind here.
 - Sets it against the air outside at the place the unit is in (the nearest monitor's reading, with its name, distance
   and age) and says how much lower or higher the room is.
 - Uses it **in place of** the outside reading at the address for the hours spent there. With no address set for that

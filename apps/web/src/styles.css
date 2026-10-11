@@ -6065,3 +6065,150 @@ table.hourly .row-label {
     transition: none;
   }
 }
+
+.chart-live.compact {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
+.chart-live.compact .chart svg {
+  border-radius: 10px;
+}
+.chart-outside {
+  stroke: #2f6db5;
+  stroke-width: 2.5;
+  stroke-dasharray: 7 5;
+  stroke-linecap: round;
+}
+.chart-mark {
+  stroke: var(--ink);
+  stroke-width: 1.5;
+  stroke-dasharray: 2 4;
+}
+.chart-mark-label {
+  font-weight: 700;
+}
+
+/* The room page and its card on My Air */
+
+.pc-live {
+  margin: 0 0 6px;
+  padding: 4px;
+  border-radius: 12px;
+  background: #fff;
+}
+.room-pc .pc-source {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+.room-hero .primary {
+  justify-self: start;
+}
+.room-key {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 12px;
+  margin: 0;
+}
+.k-room,
+.k-outside {
+  display: inline-block;
+  width: 22px;
+  height: 0;
+  margin-right: 4px;
+  vertical-align: middle;
+  border-top: 3px solid var(--ink);
+}
+.k-outside {
+  border-top: 3px dashed #2f6db5;
+}
+.room-stats {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px 12px;
+  margin: 0;
+}
+.room-stats dt {
+  font-size: 12px;
+  color: var(--muted);
+}
+.room-stats dd {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 700;
+}
+.room-test {
+  margin: 8px 0 0;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: #f2f6fb;
+}
+.room-hours {
+  display: grid;
+  grid-template-columns: repeat(24, minmax(0, 1fr));
+  gap: 2px;
+}
+.room-hour {
+  height: 34px;
+  border-radius: 4px;
+}
+.room-hour.none {
+  background: repeating-linear-gradient(135deg, #e8eef5 0 4px, #f4f7fb 4px 8px);
+}
+.room-axis {
+  display: flex;
+  justify-content: space-between;
+  margin: 0;
+}
+.room-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  margin: 0;
+}
+.room-legend-item i {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  margin-right: 4px;
+  border-radius: 50%;
+}
+
+/* My Air: the title with the add-device button at the top right */
+
+.my-air-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.add-device-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 40px;
+  padding: 0 14px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--card);
+  color: var(--ink);
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+.sample-devices {
+  display: grid;
+  gap: 12px;
+  margin-top: 14px;
+}
+
+/* Inside a card, the live chart is not a card of its own */
+.card > .chart-live {
+  margin: 0;
+  padding: 0;
+  border: 0;
+}

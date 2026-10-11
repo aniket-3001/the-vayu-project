@@ -4,6 +4,7 @@ import { DemoPill } from './demo/DemoPill';
 import { DemoPlaceRoute } from './demo/DemoPlaceRoute';
 import { ExposureScreen } from './exposure/ExposureScreen';
 import { LensScreen } from './lens/LensScreen';
+import { RoomScreen } from './devices/ui/RoomScreen';
 import { MapScreen } from './map/MapScreen';
 import { MyAirScreen } from './myair/MyAirScreen';
 import { TabBar } from './nav/TabBar';
@@ -84,6 +85,7 @@ function Frame(): React.JSX.Element {
         <Route path="/exposure" element={<ExposureScreen />} />
         <Route path="/map" element={<MapScreen />} />
         <Route path="/lens" element={<LensScreen />} />
+        <Route path="/room" element={<RoomScreen />} />
         <Route path="*" element={<MyAirScreen />} />
       </Routes>
       {import.meta.env.VITE_DEMO === '1' && <DemoPill />}
