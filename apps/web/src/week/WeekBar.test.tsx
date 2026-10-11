@@ -42,7 +42,7 @@ describe('the week bar', () => {
     expect(onSelect).toHaveBeenLastCalledWith(4);
     fireEvent.click(screen.getByRole('button', { name: 'Play the week' }));
     expect(onPlay).toHaveBeenCalledWith(true);
-    fireEvent.click(screen.getByRole('button', { name: 'Leave the recorded week' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Leave the recorded days' }));
     expect(onLeave).toHaveBeenCalled();
   });
 

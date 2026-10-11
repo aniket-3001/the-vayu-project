@@ -1,6 +1,6 @@
 # Making the Vayu Project a real, deployed app
 
-> **Historical.** This is the plan the deployed app was first built to, on 10 October. The app has grown since (the measuring unit, the room card, the recorded week, Hindi). For what is true now, read `docs/AS-BUILT.md`.
+> **Historical.** This is the plan the deployed app was first built to, on 10 October. The app has grown since (the measuring unit, the room card, the recorded days, Hindi). For what is true now, read `docs/AS-BUILT.md`.
 
 The front end is built on sample data. The AWS backend from the earlier repo (`vayu-labs`) is deployed and live. This plan joins them, deploys the result to a public CloudFront address, and holds the rules from the playbook and build spec while doing it.
 

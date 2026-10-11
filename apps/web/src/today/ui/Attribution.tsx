@@ -16,7 +16,7 @@ const age = (minutes: number): string => {
  */
 export function Attribution({ data }: { readonly data: TodayData }): React.JSX.Element {
   const p = data.provenance;
-  // On a day of the recorded week the reading is real but not current, and the hours after it were recorded, not modelled.
+  // On a day of the recorded days the reading is real but not current, and the hours after it were recorded, not modelled.
   const recorded = weekActive();
   return (
     <section className="attribution" aria-label="Where this comes from">

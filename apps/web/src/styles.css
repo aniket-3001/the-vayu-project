@@ -5757,7 +5757,7 @@ table.hourly .row-label {
   padding: 0 4px;
 }
 
-/* The recorded week: a strip above the app with the day, its chips, play and the way out */
+/* The recorded days: a strip above the app with the day, its chips, play and the way out */
 
 .week-bar {
   position: sticky;

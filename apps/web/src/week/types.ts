@@ -1,5 +1,5 @@
 /**
- * The recorded week, as `scripts/record-week.mjs` writes it. Every series is hourly from India midnight of
+ * The recorded days, as `scripts/record-week.mjs` writes it. Every series is hourly from India midnight of
  * `seriesFrom`, `hours` long, with null where nothing was measured.
  */
 export interface RecordedStation {

@@ -25,7 +25,7 @@ export function momentWords(day: RecordedDay): string {
 }
 
 /**
- * The strip above the app while the recorded week plays: which day it is, a chip for each day coloured by how the air
+ * The strip above the app while the recorded days plays: which day it is, a chip for each day coloured by how the air
  * was, play and stop, and the way out. What the recording is made of is one tap away.
  */
 export function WeekBar({
@@ -52,7 +52,7 @@ export function WeekBar({
   if (day === undefined) return <></>;
   const count = recorded.days.length;
   return (
-    <header className="week-bar" aria-label="Recorded week">
+    <header className="week-bar" aria-label="Recorded days">
       <div className="week-row">
         <button
           type="button"
@@ -131,7 +131,7 @@ export function WeekBar({
         <button
           type="button"
           className="week-step"
-          aria-label="Leave the recorded week"
+          aria-label="Leave the recorded days"
           onClick={onLeave}
         >
           <X size={18} aria-hidden="true" />
@@ -152,8 +152,8 @@ export function WeekBar({
           </ul>
           <p>
             The hours after the moment are what was recorded next, shown as a forecast would be.
-            GRAP stages are our own unofficial estimate, never the order. The places and people are
-            a sample household; anything you add lives only on this page.
+            GRAP stages are our own unofficial estimate, never the order. The two places and the
+            person are two sample places, Home and a Park; anything you add lives only on this page.
           </p>
         </div>
       )}

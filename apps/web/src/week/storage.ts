@@ -3,7 +3,7 @@ import { pinId, type Pin } from '../data/pins';
 import { saveHousehold, type Household } from '../exposure/people';
 import { sampleSpotsFor, saveSpots } from '../exposure/spots';
 
-/** A storage that lives only as long as the page: what the recorded week keeps, so the person's own data is untouched. */
+/** A storage that lives only as long as the page: what the recorded days keeps, so the person's own data is untouched. */
 export class MemoryStorage implements Storage {
   private readonly items = new Map<string, string>();
   get length(): number {
@@ -26,20 +26,22 @@ export class MemoryStorage implements Storage {
   }
 }
 
-/** The four places a household starts with in the recording: home, school, work and a park. */
-export const WEEK_PINS: readonly Pin[] = DEMO_PLACES.map((place) => ({
+/**
+ * The two places the recording starts with: home, and a park to walk in. No school and no office, so what each day
+ * shows is about the air itself: the GRAP stage, the fires, the rain, the wind, the best hour for a walk, the windows.
+ */
+export const WEEK_PINS: readonly Pin[] = DEMO_PLACES.filter(
+  (place) => place.name === 'Home' || place.name === 'Park',
+).map((place) => ({
   id: pinId(place.lat, place.lng),
   name: place.name,
   lat: place.lat,
   lng: place.lng,
 }));
 
-/** The household of the recording: the phone's owner, who works, and a child at school. */
+/** The household of the recording: one person, who is mostly at home. */
 export const WEEK_HOUSEHOLD: Household = {
-  people: [
-    { id: 'me', name: 'Me', age: 30, day: 'work' },
-    { id: 'asha', name: 'Asha', age: 9, day: 'school' },
-  ],
+  people: [{ id: 'me', name: 'Me', age: 30, day: 'none' }],
   current: 'me',
 };
 
@@ -52,7 +54,6 @@ export function installMemoryStorage(): Storage {
   const storage = new MemoryStorage();
   Object.defineProperty(window, 'localStorage', { value: storage, configurable: true });
   saveHousehold(storage, WEEK_HOUSEHOLD);
-  saveSpots(storage, 'me', sampleSpotsFor('adult'));
-  saveSpots(storage, 'asha', sampleSpotsFor('child'));
+  saveSpots(storage, 'me', sampleSpotsFor('senior'));
   return storage;
 }

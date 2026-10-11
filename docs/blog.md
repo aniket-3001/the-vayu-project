@@ -13,10 +13,10 @@ _The recorded morning after Diwali, 21 Oct 2025, 8 am. The card names the monito
 
 You add the places you care about: Home, a school, an office, a park. A usual dashboard shows the city's number. Each card here shows the air from the monitor nearest that place, with its name, distance and age, the weather, and what to do about it.
 
-Beyond My Air, the recorded week plays seven real days. The map shows monitors, wind and satellite fires. AIR Lens draws the air as particles in front of your camera. The assistant answers questions. Exposure adds up what a person breathed, hour by hour. "Nearest" means the nearest monitor with a fresh reading, so on the day I took the screenshot, Home in Dwarka showed a monitor in Vasant Kunj.
+Beyond My Air, the recorded days plays seven real days. The map shows monitors, wind and satellite fires. AIR Lens draws the air as particles in front of your camera. The assistant answers questions. Exposure adds up what a person breathed, hour by hour. "Nearest" means the nearest monitor with a fresh reading, so on the day I took the screenshot, Home in Dwarka showed a monitor in Vasant Kunj.
 
 ![Six screens of the app](images/collage-features.jpg)
-_The six screens. Top row: My Air on live data with four places set (each card names the nearest monitor, its distance and the age of its reading); the recorded week on 22 Dec 2025, where the alerts include GRAP Stage IV, "by our estimate"; the map on 31 Oct 2025 with NASA satellite fire detections and wind. Bottom row: AIR Lens; the assistant; Exposure. All but My Air on live data are from the recorded week._
+_The six screens. Top row: My Air on live data with four places set (each card names the nearest monitor, its distance and the age of its reading); the recorded days on 22 Dec 2025, where the alerts include GRAP Stage IV, "by our estimate"; the map on 31 Oct 2025 with NASA satellite fire detections and wind. Bottom row: AIR Lens; the assistant; Exposure. All but My Air on live data are from the recorded days._
 
 A small measuring unit, an ESP32-S3 board with a Sensirion SPS30 laser particle sensor, adds the air in one room over Bluetooth. I built the whole thing alone, with an AI coding assistant (Claude Code). I chose what it should do and what it must never claim. The assistant wrote most of the code, and I read every change and sent it back when it was wrong. I wired, flashed and tested the unit and built the cleaner myself. The stack runs in my own AWS account.
 
@@ -32,9 +32,9 @@ A GRAP stage in the app is my estimate from the last 24 hours, and the official 
 
 ## It is all real data
 
-There is no demo mode. The live app reads real monitors (OpenAQ), weather, forecast and wind (Open-Meteo, with MET Norway as a second source for wind) and satellite fires (NASA FIRMS), through my own API on AWS. To show every feature without waiting for a bad day, the app also plays a recorded week (https://d3lmq1mze2gup3.cloudfront.net/#/week): seven real days, from a rainy day in October to the smog of December and a windy day in March, each played as if it were today at 8 am. Every screen says "recorded". The air comes from four Delhi monitors in OpenAQ's public archive, and the weather and fires are archives too.
+There is no demo mode. The live app reads real monitors (OpenAQ), weather, forecast and wind (Open-Meteo, with MET Norway as a second source for wind) and satellite fires (NASA FIRMS), through my own API on AWS. To show every feature without waiting for a bad day, the app also plays a recorded days (https://d3lmq1mze2gup3.cloudfront.net/#/week): seven real days, from a rainy day in October to the smog of December and a windy day in March, each played as if it were today at 8 am. Every screen says "recorded". The air comes from four Delhi monitors in OpenAQ's public archive, and the weather and fires are archives too.
 
-The archive had mess in it, so I cleaned it with two written rules. The first drops any value of 999 or more (the feed's "out of range"), or a PM10 below the same hour's PM2.5, which cannot happen. The second drops an hour when one monitor reads over three times the median of the others. The file counts what the second rule removed: 81 lone spikes across the seven days. I changed nothing else. In the recorded week the map's wind is one recorded wind for central Delhi, drawn the same everywhere, and the map says so.
+The archive had mess in it, so I cleaned it with two written rules. The first drops any value of 999 or more (the feed's "out of range"), or a PM10 below the same hour's PM2.5, which cannot happen. The second drops an hour when one monitor reads over three times the median of the others. The file counts what the second rule removed: 81 lone spikes across the seven days. I changed nothing else. In the recorded days the map's wind is one recorded wind for central Delhi, drawn the same everywhere, and the map says so.
 
 ## The unit, and where it stops
 

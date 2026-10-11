@@ -79,7 +79,7 @@ function WeekApp({ recorded }: { readonly recorded: Recorded }): React.JSX.Eleme
 }
 
 /**
- * The recorded week: the app, unchanged, run on seven real days from the archive instead of on the air of this minute.
+ * The recorded days: the app, unchanged, run on seven real days from the archive instead of on the air of this minute.
  * Opened by `#/week`. It is read-only and private: its places and people live in memory, and nothing it does is sent.
  */
 export async function startWeek(root: HTMLElement): Promise<void> {

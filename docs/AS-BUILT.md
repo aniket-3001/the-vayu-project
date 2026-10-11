@@ -1,7 +1,7 @@
 # As built
 
 What is running, what is built and tested but not switched on, and what is not built.
-Checked against the deployed stack and the live address on 11 October 2026. Everything the live app and the recorded week show is real data; the only made-up days are in the separate prototype build, which is never uploaded.
+Checked against the deployed stack and the live address on 11 October 2026. Everything the live app and the recorded days show is real data; the only made-up days are in the separate prototype build, which is never uploaded.
 
 ## Live, and seen working at https://d3lmq1mze2gup3.cloudfront.net
 
@@ -61,7 +61,7 @@ Checked against the deployed stack and the live address on 11 October 2026. Ever
 | Fires on the map                | A flame for each FIRMS detection, at every zoom, over the monitor dots. The same fires feed the alerts.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
 | Place cards                     | A card in the colour of its air with nothing to open: label, address under it, the AQI (with the cigarettes joined to it as a second tile when that is on), the face, then today and the next two days and the source in the lower half. Narrow cards stack the two tiles and wide ones put them side by side. The Lens card is the same card with one line under the weather: the cleanest daylight hour and its AQI.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
 
-## The recorded week (live)
+## The recorded days (live)
 
 Open `/#/week` and the same app runs on seven real days instead of on the air of this minute: 6 Oct, 7 Oct, 21 Oct,
 31 Oct, 12 Nov and 22 Dec 2025, and 30 Mar 2026. Each day is "now" at 8 am India time, with the days before it as
@@ -74,7 +74,7 @@ others (at least two others reporting, and itself over 200 for PM2.5) is dropped
 all seven days, counted in the file). A monitor with no reading in the six hours before the moment, or none within 40
 km, gives no air: the app says so.
 
-- Stage IV appears, by the app's own estimate, at Home on 22 Dec and at some of the places on 21 Oct and 12 Nov (it needs the monitor's PM10 and the 24-hour history). It is our unofficial estimate, as everywhere in the app; the official order for those dates is not claimed.
+- It starts with two places, Home and a Park, and one person who is mostly at home: no school and no office, so each day is about the air itself (the GRAP stage, fires, rain, wind, the best hour for a walk, the windows). Stage IV appears, by the app's own estimate, on 22 Dec (it needs the monitor's PM10 and the 24-hour history). It is our unofficial estimate, as everywhere in the app; the official order for those dates is not claimed.
 - Nothing leaves the page: places, people and anything added live in memory (the person's own saved data is not read or
   written); fire reports and requests are kept on the device; the fires, wind and clock come from the recording. The
   assistant and the voice are the real AWS ones, answering about the recorded day.
@@ -133,4 +133,4 @@ The forecast hours come from the CAMS model, which does include weather in what 
 
 ## What the browser asks of other sites
 
-The wind and the air-model colour are asked of the weather models once for everyone by our API (`/v1/wind`, kept three hours; `/v1/airgrid`, kept six), with MET Norway as the second source for wind, so a visitor's browser never spends Open-Meteo's per-address allowance. The browser still asks Open-Meteo to search for a place by name (it sends only the name typed) and OpenFreeMap for map tiles. In the recorded week the page asks for no air, wind or fires at all: they come from the recording.
+The wind and the air-model colour are asked of the weather models once for everyone by our API (`/v1/wind`, kept three hours; `/v1/airgrid`, kept six), with MET Norway as the second source for wind, so a visitor's browser never spends Open-Meteo's per-address allowance. The browser still asks Open-Meteo to search for a place by name (it sends only the name typed) and OpenFreeMap for map tiles. In the recorded days the page asks for no air, wind or fires at all: they come from the recording.

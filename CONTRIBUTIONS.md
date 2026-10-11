@@ -9,7 +9,7 @@ I built this alone, and I used an AI coding assistant for most of the typing. Th
   says: a GRAP stage is our estimate, a reading older than six hours is not used, nothing is called "scientific-grade".
 - **Directed and reviewed every change.** The assistant wrote code; I read what it built, ran it, looked at it on screen at a
   phone's width, and sent it back when it was wrong or confusing. I kept the design light and plain, asked for components to be
-  reused so screens stay consistent, and refused demo shortcuts: there is no demo mode in the live app, and the recorded week
+  reused so screens stay consistent, and refused demo shortcuts: there is no demo mode in the live app, and the recorded days
   uses only real archived data.
 - **Ran it on AWS, in my own account.** The stack lives in my account. I put the provider keys (OpenAQ, NASA FIRMS) into
   Secrets Manager myself, from the clipboard, never typed into a chat. Each deploy and site upload was done when I asked for

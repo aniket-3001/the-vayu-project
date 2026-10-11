@@ -1,4 +1,4 @@
-// Records the real days of the "recorded week" demo: what four Delhi monitors measured (OpenAQ's public archive),
+// Records the real days of the "recorded days" demo: what four Delhi monitors measured (OpenAQ's public archive),
 // the weather (Open-Meteo's archive), the regional model's gases (Open-Meteo), and the satellite fire detections (NASA
 // FIRMS). Nothing is made up and nothing is smoothed: a missing hour stays missing.
 //

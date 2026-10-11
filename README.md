@@ -4,7 +4,7 @@
 
 > A parent in Delhi sees "AQI 162" for the city. Their child's school is kilometres from the nearest monitor, and the morning assembly is in the open. The app says which monitor the number came from, how far away it is and how old the reading is, what GRAP stage the last day points to (our estimate, never the order), and whether assembly should be inside.
 
-Live: **https://d3lmq1mze2gup3.cloudfront.net** (a phone or a laptop; no sign-in) · The recorded week: **https://d3lmq1mze2gup3.cloudfront.net/#/week** · Video: _to be added_ · Blog: [`docs/blog.md`](docs/blog.md) · Run it on your machine: `make local`
+Live: **https://d3lmq1mze2gup3.cloudfront.net** (a phone or a laptop; no sign-in) · The recorded days: **https://d3lmq1mze2gup3.cloudfront.net/#/week** · Video: _to be added_ · Blog: [`docs/blog.md`](docs/blog.md) · Run it on your machine: `make local`
 
 AWS Air track submission, 8 to 11 October 2026.
 
@@ -12,7 +12,7 @@ AWS Air track submission, 8 to 11 October 2026.
 
 Every number in the live app comes from a real source (OpenAQ monitors, Open-Meteo weather, forecast and wind, MET Norway wind as a second source, NASA FIRMS fires) through our own API on AWS. There is no demo mode and no made-up number in the deployed bundle; `make prove` fails if one gets in.
 
-**The recorded week is real too.** Open `/#/week` and the same app plays seven real days from last winter, one at a time, as if each were today at 8 am: 6 Oct 2025 (rain), 7 Oct (the clean day after), 21 Oct (after Diwali), 31 Oct (stubble fires), 12 Nov (smog), 22 Dec (GRAP Stage IV by our estimate) and 30 Mar 2026 (wind). The air comes from four Delhi monitors in OpenAQ's public archive, the weather from Open-Meteo's archive, the fires from NASA FIRMS. It is there so you can see every feature without waiting for a bad day, and the page says it is recorded. Cleaning is two rules, written in the file and counted (see [`docs/AS-BUILT.md`](docs/AS-BUILT.md)).
+**The recorded days is real too.** Open `/#/week` and the same app plays seven real days from last winter, one at a time, as if each were today at 8 am: 6 Oct 2025 (rain), 7 Oct (the clean day after), 21 Oct (after Diwali), 31 Oct (stubble fires), 12 Nov (smog), 22 Dec (GRAP Stage IV by our estimate) and 30 Mar 2026 (wind). The air comes from four Delhi monitors in OpenAQ's public archive, the weather from Open-Meteo's archive, the fires from NASA FIRMS. It is there so you can see every feature without waiting for a bad day, and the page says it is recorded. Cleaning is two rules, written in the file and counted (see [`docs/AS-BUILT.md`](docs/AS-BUILT.md)).
 
 The only made-up days in the repository are in the separate prototype build (`npm run build:demo`: device frames, scenarios, a simulated Bluetooth unit), which is never uploaded and is labelled "Sample data" wherever it shows a number.
 
@@ -35,7 +35,7 @@ The only made-up days in the repository are in the separate prototype build (`np
 | **Map**               | The air across the world: every monitor, wind, fires, and the colour between.                                                                                                                                                       |
 | **AIR Lens**          | Point a phone camera and see the air as particles, with a scene for each place; an eye button makes the card see-through.                                                                                                           |
 | **Assistant**         | Ask a question or tell it something ("Asha walked in the park for 40 minutes"), in English or Hindi, read aloud in either.                                                                                                          |
-| **The recorded week** | The whole app on seven real past days, labelled recorded.                                                                                                                                                                           |
+| **The recorded days** | The whole app on seven real past days, labelled recorded.                                                                                                                                                                           |
 
 Every number says whether it is **Live** (a named monitor, how far, how old), an **Estimate** (a regional model) or **Measured** (your own unit). Monitor readings older than six hours are not used, and nothing is advised from them.
 
@@ -67,7 +67,7 @@ The headline rule: **code decides and AI only words things.** If the model's ans
 
 | Part                                                  | State                                                                                                                                                                                                                                                                                                                                   |
 | ----------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| The web app, the API, the stack, the recorded week    | Live, seen working                                                                                                                                                                                                                                                                                                                      |
+| The web app, the API, the stack, the recorded days    | Live, seen working                                                                                                                                                                                                                                                                                                                      |
 | The measuring unit (ESP32-S3 + SPS30, over Bluetooth) | Built and running: the board reads the sensor, and the live site connects, shows readings, and counts measured hours in Exposure                                                                                                                                                                                                        |
 | Accuracy of the unit                                  | **Not measured.** It has not been compared with a monitor over days. It is a low-cost sensor and is labelled that way                                                                                                                                                                                                                   |
 | Telegram alerts                                       | Built and tested against fakes; live scheduled sends are off; no in-app screen to link a chat                                                                                                                                                                                                                                           |
@@ -110,7 +110,7 @@ make local     # in another: the app on your machine, reading it
 | `make deploy-site`                | Build the app for the live address and upload it.                           |
 | `make smoke LIVE_URL=https://…`   | Check the data, the rules and the headers on a live address.                |
 | `npm run build:demo -w @vayu/web` | The separate prototype build (made-up days, device frames). Never uploaded. |
-| `node scripts/record-week.mjs`    | Remake the recorded week from the public archives (needs a NASA FIRMS key). |
+| `node scripts/record-week.mjs`    | Remake the recorded days from the public archives (needs a NASA FIRMS key). |
 
 The stack deploys with `cd infra && npx cdk deploy`. It needs three secrets made by hand first: `vayu/openaq-api-key`, `vayu/firms-map-key` and `vayu/telegram-bot-token`.
 
@@ -118,7 +118,7 @@ The stack deploys with `cd infra && npx cdk deploy`. It needs three secrets made
 
 | Path                 | What                                                                                                                                 |
 | -------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
-| `apps/web`           | The app (React, MapLibre). `src/air` is where real data enters; `src/week` is the recorded week; `src/devices` is the measuring unit |
+| `apps/web`           | The app (React, MapLibre). `src/air` is where real data enters; `src/week` is the recorded days; `src/devices` is the measuring unit |
 | `apps/api`           | The API Lambda, the stations Lambda and the routes                                                                                   |
 | `packages/contracts` | The shape of every request and answer (zod)                                                                                          |
 | `packages/core`      | The rules: air bands, timeline, windows, verdicts, the assistant's fixed answers (English and Hindi)                                 |

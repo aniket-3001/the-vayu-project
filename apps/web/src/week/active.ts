@@ -19,5 +19,5 @@ export function setWeekScene(next: WeekScene | undefined): void {
 /** The recorded day on screen, or undefined when the app is running on the real, current air. */
 export const weekScene = (): WeekScene | undefined => scene;
 
-/** Whether the app is playing the recorded week. Nothing then leaves the device: no report, no request is sent. */
+/** Whether the app is playing the recorded days. Nothing then leaves the device: no report, no request is sent. */
 export const weekActive = (): boolean => scene !== undefined;

@@ -68,7 +68,7 @@ The app labels each number as **Live** (a named monitor, its distance and its ag
 - **The measuring unit.** An ESP32-S3 with an SPS30 sends a packet every two seconds over Bluetooth Low Energy straight to the
   page (Web Bluetooth). The page keeps hourly means on the device; nothing is sent to our API. The IoT, Firehose and Athena
   parts in `infra/` are built for sending device readings to AWS and are not used by this unit. See `UNIT.md`.
-- **The recorded week (`/#/week`).** The page loads a 235 KB file of seven real days made by `scripts/record-week.mjs` from the
+- **The recorded days (`/#/week`).** The page loads a 235 KB file of seven real days made by `scripts/record-week.mjs` from the
   OpenAQ and Open-Meteo archives and NASA FIRMS, and plays the app on it. It asks our API for no air, wind or fires; it still
   uses the real assistant and voice. See `AS-BUILT.md`.
 
@@ -87,7 +87,7 @@ The app labels each number as **Live** (a named monitor, its distance and its ag
 
 | Path                 | What                                                                                                                                                                                                                |
 | -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `apps/web`           | The app (React, MapLibre). `src/air` is where real data enters; `src/week` is the recorded week; `src/devices` is the measuring unit; `src/demo` is the separate prototype build and is not in the deployed bundle. |
+| `apps/web`           | The app (React, MapLibre). `src/air` is where real data enters; `src/week` is the recorded days; `src/devices` is the measuring unit; `src/demo` is the separate prototype build and is not in the deployed bundle. |
 | `apps/api`           | The API Lambda, the stations Lambda and the routes.                                                                                                                                                                 |
 | `packages/contracts` | The shape of every request and answer (zod).                                                                                                                                                                        |
 | `packages/core`      | The rules: air bands, timeline, windows, verdicts, the assistant's fixed answers. No network, no clock.                                                                                                             |

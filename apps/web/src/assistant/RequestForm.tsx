@@ -17,7 +17,7 @@ import {
   type Who,
 } from './requests';
 
-/** The deployed app sends to our API; the prototype, the tests and the recorded week keep it on the device. */
+/** The deployed app sends to our API; the prototype, the tests and the recorded days keep it on the device. */
 const requestUrl = (): string | undefined =>
   airStore().kind === 'live' && !weekActive() ? API_URL : undefined;
 

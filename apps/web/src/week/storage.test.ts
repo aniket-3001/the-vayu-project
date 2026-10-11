@@ -16,14 +16,14 @@ describe('the recording’s own storage', () => {
     expect(s.length).toBe(0);
   });
 
-  it('replaces the browser’s storage and starts a household of two, leaving the person’s own data alone', () => {
+  it('replaces the browser’s storage and starts one person with two places, leaving the person’s own data alone', () => {
     window.localStorage.setItem(PINS_STORAGE_KEY, '[{"id":"x","name":"Mine","lat":1,"lng":2}]');
     const kept = window.localStorage;
     const memory = installMemoryStorage();
     expect(window.localStorage).toBe(memory);
     expect(window.localStorage.getItem(PINS_STORAGE_KEY)).toBeNull();
-    expect(loadHousehold(window.localStorage).people.map((p) => p.name)).toEqual(['Me', 'Asha']);
+    expect(loadHousehold(window.localStorage).people.map((p) => p.name)).toEqual(['Me']);
     expect(kept.getItem(PINS_STORAGE_KEY)).toContain('Mine');
-    expect(WEEK_PINS.map((p) => p.name)).toEqual(['Home', 'School', 'Office', 'Park']);
+    expect(WEEK_PINS.map((p) => p.name)).toEqual(['Home', 'Park']);
   });
 });
