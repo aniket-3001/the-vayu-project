@@ -40,13 +40,20 @@ HardwareSerial SensorSerial(1);
 SensirionUartSps30 sensor;
 BLECharacteristic* reading = nullptr;
 volatile bool connected = false;
+// Set when the app connects: the radio draws a burst of current, which can briefly reset the sensor, so it is started
+// again to be sure it is measuring.
+volatile bool restartSensor = false;
 bool sensorRunning = false;
+uint8_t failedReads = 0;
 uint32_t startedAt = 0;
 uint32_t lastSent = 0;
 uint32_t lastTry = 0;
 
 class Callbacks : public BLEServerCallbacks {
-  void onConnect(BLEServer*) override { connected = true; }
+  void onConnect(BLEServer*) override {
+    connected = true;
+    restartSensor = true;
+  }
   void onDisconnect(BLEServer*) override {
     connected = false;
     // Be findable again at once, so the app can reconnect.
@@ -123,10 +130,18 @@ void setup() {
 
 void loop() {
   uint32_t now = millis();
-  // If the sensor was not there at power-on, try again every ten seconds (a loose wire put right).
-  if (!sensorRunning && now - lastTry > 10000) {
+  // Start the sensor again when the app connects, and, if it is not measuring (it was not there at power-on, or it reset
+  // and now answers with nothing), every few seconds until it is. Nothing needs pressing on the board.
+  if (restartSensor) {
+    restartSensor = false;
+    delay(500);
+    sensorRunning = startSensor();
+    failedReads = 0;
+    lastTry = millis();
+  } else if (!sensorRunning && now - lastTry > 3000) {
     lastTry = now;
     sensorRunning = startSensor();
+    failedReads = 0;
   }
   if (now - lastSent < SEND_EVERY_MS) return;
   lastSent = now;
@@ -144,8 +159,15 @@ void loop() {
       putU16(packet + 4, tenths(pm25));
       putU16(packet + 6, tenths(pm4));
       putU16(packet + 8, tenths(pm10));
+      failedReads = 0;
     } else {
       say("SPS30 read", error);
+      // Three failures in a row: the sensor has stopped measuring. Start it again.
+      if (++failedReads >= 3) {
+        Serial.println("SPS30 stopped answering with readings: starting it again");
+        sensorRunning = false;
+        lastTry = 0;
+      }
     }
   }
   if (now - startedAt < WARMUP_MS) flags |= 0b0100;
