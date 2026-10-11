@@ -10,4 +10,4 @@ For any "what did you learn" box, and for the last 20 seconds of the video.
 
 **Hardware has its own bugs.** My sensor read fine until Bluetooth connected, then stopped measuring, most likely from a power dip. The firmware now restarts it on connect and after three failed reads.
 
-**Say what you did not measure.** I measured the cleaner's airflow, 191 cfm, and not its CADR; I have not compared the unit with a monitor. That is why `docs/claims.md` lists what I do not claim, and why.
+**Say what you did not measure.** I measured the cleaner's airflow, 191 cfm, and not its CADR; I have not compared the unit with a monitor. So I keep a written list of what I do not claim, and why.
