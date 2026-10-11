@@ -25,18 +25,26 @@ function Spark({
   readonly points: readonly { readonly pm25: number }[];
 }): React.JSX.Element | null {
   if (points.length < 3) return null;
-  const top = Math.max(...points.map((p) => p.pm25), 10) * 1.1;
+  // The line spans what was seen lately, so a small movement can be seen; never less than 5 µg/m³ of range.
+  const values = points.map((p) => p.pm25);
+  const lo = Math.min(...values);
+  const hi = Math.max(Math.max(...values), lo + 5);
   const w = 160;
   const h = 34;
   const path = points
     .map((p, i) => {
       const x = (i / (points.length - 1)) * w;
-      const y = h - (p.pm25 / top) * h;
+      const y = h - ((p.pm25 - lo) / (hi - lo)) * (h - 4) - 2;
       return `${i === 0 ? 'M' : 'L'}${x.toFixed(1)} ${y.toFixed(1)}`;
     })
     .join(' ');
   return (
-    <svg className="unit-spark" viewBox={`0 0 ${String(w)} ${String(h)}`} aria-hidden="true">
+    <svg
+      className="unit-spark"
+      viewBox={`0 0 ${String(w)} ${String(h)}`}
+      preserveAspectRatio="none"
+      aria-hidden="true"
+    >
       <path d={path} />
     </svg>
   );
@@ -175,6 +183,15 @@ export function MeasuredCard({
         </p>
       )}
 
+      {out === undefined && (
+        <p className="small unit-compare">
+          {pin === undefined
+            ? 'Add a place on the Places tab to see this reading beside the air outside.'
+            : outside?.status === 'error'
+              ? 'The air outside could not be loaded just now.'
+              : 'Getting the air outside…'}
+        </p>
+      )}
       {out !== undefined && (
         <p className="unit-compare">
           <strong>Outside</strong> at {pin?.name ?? 'your place'}: AQI {out.aqi} ·{' '}

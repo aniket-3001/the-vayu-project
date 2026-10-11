@@ -5877,3 +5877,52 @@ table.hourly .row-label {
 .week-about-card ul {
   padding-left: 18px;
 }
+
+/* The measuring unit: the live line, how the room compares with outside, and the connect panel */
+
+.unit-connect {
+  margin: 0 0 16px;
+}
+.unit-connect h2 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 4px;
+  font-size: 18px;
+}
+.unit-problem {
+  margin: 8px 0 0;
+  color: #9a3b2e;
+}
+.unit-spark {
+  display: block;
+  width: 100%;
+  max-width: 320px;
+  height: 36px;
+  margin: 12px 0 4px;
+  overflow: visible;
+}
+.unit-spark path {
+  fill: none;
+  stroke: var(--ink);
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  vector-effect: non-scaling-stroke;
+}
+.unit-age,
+.unit-wait {
+  margin: 4px 0 0;
+  color: var(--muted);
+}
+.unit-wait {
+  margin: 12px 0;
+}
+.unit-compare {
+  margin: 12px 0 0;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: rgb(255 255 255 / 0.65);
+  font-size: 14px;
+  line-height: 1.4;
+}
