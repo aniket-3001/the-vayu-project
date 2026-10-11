@@ -91,17 +91,18 @@ describe('POST /v1/speech', () => {
     expect(voice).not.toHaveBeenCalled();
   });
 
-  it('counts characters: one caller may have 3,000 a day, and everyone 40,000', async () => {
+  it('counts characters: one caller may have 12,000 a day, and everyone 60,000', async () => {
     const { post } = setup();
     const text = (n: number): string => `${String(n).padStart(3, '0')}${'a'.repeat(297)}`;
-    // Ten distinct 300-character answers fill one caller's day.
-    for (let i = 0; i < 10; i++) expect((await post({ text: text(i) })).statusCode).toBe(200);
+    // Forty distinct 300-character answers fill one caller's day.
+    const fits = SPEECH_LIMITS.perCallerPerDay / 300;
+    for (let i = 0; i < fits; i++) expect((await post({ text: text(i) })).statusCode).toBe(200);
     expect(await post({ text: text(99) })).toMatchObject({
       statusCode: 429,
       body: { error: { code: 'too_many_requests' } },
     });
     // Another caller still gets in.
-    expect((await post({ text: text(100) }, '5.6.7.8')).statusCode).toBe(200);
+    expect((await post({ text: text(1000) }, '5.6.7.8')).statusCode).toBe(200);
 
     const crowd = setup();
     let spoken = 0;

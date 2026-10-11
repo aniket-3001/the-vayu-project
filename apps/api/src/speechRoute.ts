@@ -27,13 +27,13 @@ export interface SpeechDeps {
 
 /**
  * What the voice may spend. Polly's neural voice is $0.000016 a character, so these limits are the most it can cost:
- * 40,000 characters a day is $0.64, which is about $19 a month if it were used to the limit every day.
+ * 60,000 characters a day is $0.96, which is about $29 a month if it were used to the limit every day.
  */
 export const SPEECH_LIMITS = {
   maxCharacters: 400,
-  /** Characters one caller may have spoken in a day (about fifteen answers), and the whole service. */
-  perCallerPerDay: 3_000,
-  perDay: 40_000,
+  /** Characters one caller may have spoken in a day (about fifty answers), and the whole service. */
+  perCallerPerDay: 12_000,
+  perDay: 60_000,
   /** How long to keep a spoken answer for the same words again. */
   keepSeconds: 86_400,
 } as const;

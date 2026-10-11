@@ -81,13 +81,13 @@ A property test found a second gap the same day: a masked name's placeholder num
 
 Answers are read aloud in a woman's voice: Amazon Polly's Kajal, through `POST /v1/speech`. It is text to speech and nothing else: it cannot decide, change or fetch anything.
 
-| Limit            | Value                                                                                                                                                                    |
-| ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Length           | 400 characters a time; a longer answer is cut at the end of a sentence                                                                                                   |
-| Characters a day | 3,000 for one caller (about 15 answers) and 40,000 for the whole service, counted in DynamoDB; the same words spoken again are served from the store and are not counted |
-| Request rate     | 3 a second (burst 6)                                                                                                                                                     |
-| Switch           | the assistant's kill switch: off, and nothing is spoken                                                                                                                  |
-| When it cannot   | off, over a limit, down or slow: the browser's own voice reads the answer instead                                                                                        |
+| Limit            | Value                                                                                                                                                                     |
+| ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Length           | 400 characters a time; a longer answer is cut at the end of a sentence                                                                                                    |
+| Characters a day | 12,000 for one caller (about 50 answers) and 60,000 for the whole service, counted in DynamoDB; the same words spoken again are served from the store and are not counted |
+| Request rate     | 3 a second (burst 6)                                                                                                                                                      |
+| Switch           | the assistant's kill switch: off, and nothing is spoken                                                                                                                   |
+| When it cannot   | off, over a limit, down or slow: the browser's own voice reads the answer instead                                                                                         |
 
 The route reads any text of up to 400 characters it is sent, within these limits. It does not check that the text is one of our answers, so its cost is bounded by the limits and not by what it is asked to say. Tests: `speechRoute.test.ts` (the contract, the kill switch, the character limits, repeats are free, a failed voice) and `speech.test.ts` (Polly first, the browser's voice as the fallback).
 

@@ -14,8 +14,12 @@ export function spokenPart(text: string, limit = MAX_SPOKEN): string {
 }
 
 export interface Voice {
-  /** Reads the words aloud; resolves when it has finished or could not. Starting again stops what was playing. */
-  speak(text: string, lang?: Lang): Promise<void>;
+  /**
+   * Reads the words aloud; resolves when it has finished or could not. Starting again stops what was playing. It says
+   * `false` when nothing could be heard (the service refused and the browser has no voice for the language), so the
+   * screen can say so instead of staying quietly silent.
+   */
+  speak(text: string, lang?: Lang): Promise<boolean | undefined>;
   stop(): void;
   /** Called from a tap, before the answer arrives, so a phone lets the answer be spoken. */
   unlock?(): void;
@@ -27,27 +31,33 @@ export const canSpeak = (): boolean => typeof window !== 'undefined' && 'speechS
 export function browserVoice(): Voice {
   return {
     speak(text, lang = 'en') {
-      if (!canSpeak()) return Promise.resolve();
+      if (!canSpeak()) return Promise.resolve(false);
+      const voices = window.speechSynthesis.getVoices();
+      const tag = lang === 'hi' ? /hi[-_]IN/u : /en[-_]IN/u;
+      // Prefer a woman's voice for the language, in India, when the browser has one; Hindi falls to any Hindi voice.
+      const preferred =
+        voices.find(
+          (v) => tag.test(v.lang) && /female|heera|veena|neerja|kajal|swara|lekha/iu.test(v.name),
+        ) ?? voices.find((v) => tag.test(v.lang));
+      // A browser with voices but none for Hindi would read Devanagari as nothing: say so instead.
+      if (lang === 'hi' && voices.length > 0 && preferred === undefined)
+        return Promise.resolve(false);
       window.speechSynthesis.cancel();
       return new Promise((resolve) => {
         const utterance = new SpeechSynthesisUtterance(spokenPart(text));
         utterance.lang = SPEECH_TAG[lang];
         utterance.rate = 0.98;
-        // Prefer a woman's voice for the language, in India, when the browser has one; Hindi falls to any Hindi voice.
-        const voices = window.speechSynthesis.getVoices();
-        const tag = lang === 'hi' ? /hi[-_]IN/u : /en[-_]IN/u;
-        const preferred =
-          voices.find(
-            (v) => tag.test(v.lang) && /female|heera|veena|neerja|kajal|swara|lekha/iu.test(v.name),
-          ) ?? (lang === 'hi' ? voices.find((v) => tag.test(v.lang)) : undefined);
         if (preferred !== undefined) utterance.voice = preferred;
         utterance.onend = () => {
-          resolve();
+          resolve(true);
         };
         utterance.onerror = () => {
-          resolve();
+          resolve(false);
         };
-        window.speechSynthesis.speak(utterance);
+        // Chrome drops a voice started in the same breath as a cancel; a moment's gap lets it through.
+        window.setTimeout(() => {
+          window.speechSynthesis.speak(utterance);
+        }, 60);
       });
     },
     stop() {
@@ -144,7 +154,7 @@ export function pollyVoice(
       stop();
       const mine = turn;
       const words = spokenPart(text);
-      if (words === '') return;
+      if (words === '') return true;
       let base64: string | undefined;
       try {
         const res = await fetchImpl(`${baseUrl.replace(/\/$/u, '')}/v1/speech`, {
@@ -157,11 +167,8 @@ export function pollyVoice(
         base64 = undefined;
       }
       // Something else was started, or it was stopped, while this was on its way.
-      if (mine !== turn) return;
-      if (base64 === undefined) {
-        await fallback.speak(words, lang);
-        return;
-      }
+      if (mine !== turn) return true;
+      if (base64 === undefined) return fallback.speak(words, lang);
       const el = audio();
       const state = { played: false };
       try {
@@ -179,9 +186,11 @@ export function pollyVoice(
             state.played = true;
           }, reject);
         });
+        return true;
       } catch {
         // The browser would not play it. Read it with the browser's own voice instead of staying silent.
-        if (!state.played && mine === turn) await fallback.speak(words, lang);
+        if (!state.played && mine === turn) return fallback.speak(words, lang);
+        return state.played;
       }
     },
   };

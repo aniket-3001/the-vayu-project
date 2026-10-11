@@ -88,6 +88,8 @@ export function AssistantFab({
   // The language answers are given in and listened for: chosen here, and kept on this device.
   const [lang, setLangState] = useState<Lang>(loadLang);
   const t = WORDS[lang];
+  // Said under the chat when an answer could not be read aloud, so a silence is never a mystery.
+  const [voiceNote, setVoiceNote] = useState(false);
   const voice = useMemo(() => given ?? configuredVoice(), [given]);
   const hearing = useRef<Listening | undefined>(undefined);
   const [view, setView] = useState<'chat' | 'request'>('chat');
@@ -197,6 +199,18 @@ export function AssistantFab({
   const logging = useRef<LogDraft | undefined>(undefined);
   const fire = useRef<FireDraft | undefined>(undefined);
 
+  /** Reads words aloud, and notes it if nothing could be heard. */
+  const speakNow = (words: string): void => {
+    void voice.speak(words, lang).then(
+      (heard) => {
+        setVoiceNote(heard === false);
+      },
+      () => {
+        setVoiceNote(true);
+      },
+    );
+  };
+
   const ask = (question: string): void => {
     const text = question.trim();
     if (text === '' || busy) return;
@@ -215,7 +229,7 @@ export function AssistantFab({
         ...m,
         { id: next.current++, from: 'vayu', text: words, basis: t.outdoorBasis, ...extra },
       ]);
-      if (spoken) void voice.speak(words, lang);
+      if (spoken) speakNow(words);
     };
     // A question in the middle of finding the fire's place is a new question, not an answer to it.
     if (
@@ -377,7 +391,7 @@ export function AssistantFab({
         ...m,
         { id: next.current++, from: 'vayu', text: words, basis: t.noReadingBasis },
       ]);
-      if (spoken) void voice.speak(words, lang);
+      if (spoken) speakNow(words);
       return;
     }
     respond(text, roleContext ?? context);
@@ -398,7 +412,7 @@ export function AssistantFab({
           },
         ]);
         setBusy(false);
-        if (spoken) void voice.speak(answer.text, lang);
+        if (spoken) speakNow(answer.text);
       },
       () => {
         setMessages((m) => [
@@ -605,7 +619,7 @@ export function AssistantFab({
                             }
                             onClick={() => {
                               voice.unlock?.();
-                              void voice.speak(m.text, lang);
+                              speakNow(m.text);
                             }}
                           >
                             <Volume2 size={14} aria-hidden="true" /> {t.listen}
@@ -647,6 +661,11 @@ export function AssistantFab({
                     </div>
                   ))}
                   {busy && <p className="bubble vayu muted">{t.checking}</p>}
+                  {voiceNote && (
+                    <p className="small muted voice-note" role="status">
+                      {t.voiceOff}
+                    </p>
+                  )}
                   <div ref={end} />
                 </div>
                 <section

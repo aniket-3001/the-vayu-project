@@ -1,6 +1,5 @@
 import {
   AirVent,
-  AppWindow,
   Check,
   Flame,
   Footprints,
@@ -15,7 +14,7 @@ import {
 import { motion, useReducedMotion } from 'motion/react';
 import { useEffect, useRef, useState } from 'react';
 import { AqiScale } from '../../components/AqiScale';
-import { MaskIcon } from '../../today/ui/icons';
+import { MaskIcon, WindowPane } from '../../today/ui/icons';
 import { POINTS, type Task, type TaskKind } from '../model';
 import { useTasks } from '../useTasks';
 
@@ -25,7 +24,7 @@ const ICONS: Readonly<Record<Exclude<TaskKind, 'mask'>, LucideIcon>> = {
   child: UserRound,
   walk: Footprints,
   'stay-in': House,
-  windows: AppWindow,
+  windows: WindowPane,
   purifier: AirVent,
   grap: TriangleAlert,
 };

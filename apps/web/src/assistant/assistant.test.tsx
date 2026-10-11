@@ -236,9 +236,9 @@ describe('the assistant button', () => {
     const v = {
       said: [] as string[],
       stopped: 0,
-      speak: (text: string): Promise<void> => {
+      speak: (text: string): Promise<boolean> => {
         v.said.push(text);
-        return Promise.resolve();
+        return Promise.resolve(true);
       },
       stop: (): void => {
         v.stopped += 1;
@@ -392,7 +392,7 @@ describe('a place pinned while the assistant is already open', () => {
     const { PINS_CHANGED } = await import('../places/usePins');
     render(
       <MemoryRouter>
-        <AssistantFab voice={{ speak: () => Promise.resolve(), stop: () => undefined }} />
+        <AssistantFab voice={{ speak: () => Promise.resolve(true), stop: () => undefined }} />
       </MemoryRouter>,
     );
     await userEvent.click(screen.getByRole('button', { name: 'Vayu assistant' }));
@@ -426,7 +426,7 @@ describe('a place pinned while the assistant is already open', () => {
           voice={{
             speak: (text) => {
               said.push(text);
-              return Promise.resolve();
+              return Promise.resolve(true);
             },
             stop: () => undefined,
           }}
@@ -455,7 +455,7 @@ describe('the best hour in the context', () => {
       <MemoryRouter>
         <AssistantFab
           source={localAssistant}
-          voice={{ speak: () => Promise.resolve(), stop: () => undefined }}
+          voice={{ speak: () => Promise.resolve(true), stop: () => undefined }}
         />
       </MemoryRouter>,
     );
@@ -637,13 +637,28 @@ describe('the best hour in the context', () => {
     });
   });
 
+  describe('when the voice cannot be heard', () => {
+    it('says so under the chat, rather than staying quietly silent', async () => {
+      const mute: Voice = { speak: () => Promise.resolve(false), stop: () => undefined };
+      render(
+        <MemoryRouter>
+          <AssistantFab voice={mute} />
+        </MemoryRouter>,
+      );
+      await userEvent.click(screen.getByRole('button', { name: 'Vayu assistant' }));
+      await userEvent.click(screen.getByRole('button', { name: 'Do I need a mask?' }));
+      expect(await screen.findByText(/well-fitted N95 or FFP2/u)).toBeInTheDocument();
+      expect(await screen.findByText(/was not read aloud/u)).toBeInTheDocument();
+    });
+  });
+
   describe('in Hindi', () => {
     const hindiVoice = (): Voice & { said: { text: string; lang: string | undefined }[] } => {
       const v = {
         said: [] as { text: string; lang: string | undefined }[],
-        speak: (text: string, lang?: string): Promise<void> => {
+        speak: (text: string, lang?: string): Promise<boolean> => {
           v.said.push({ text, lang });
-          return Promise.resolve();
+          return Promise.resolve(true);
         },
         stop: (): void => undefined,
       };

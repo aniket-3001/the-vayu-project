@@ -1,6 +1,6 @@
 import {
+  createLucideIcon,
   AirVent,
-  AppWindow,
   ArrowUp,
   Cloud,
   CloudDrizzle,
@@ -9,7 +9,6 @@ import {
   CloudMoon,
   CloudRain,
   CloudSun,
-  DoorClosed,
   Dumbbell,
   Footprints,
   Haze,
@@ -126,11 +125,22 @@ export function MaskIcon({ size = 24 }: { readonly size?: number }): React.JSX.E
   );
 }
 
+/**
+ * A window of a house, which is what "keep the windows shut" means: a frame with four panes and a sill. Lucide's
+ * "app window" is a program window, which is not it.
+ */
+export const WindowPane: LucideIcon = createLucideIcon('WindowPane', [
+  ['rect', { x: '4', y: '3', width: '16', height: '16', rx: '1.5', key: 'frame' }],
+  ['path', { d: 'M12 3v16', key: 'mullion' }],
+  ['path', { d: 'M4 11h16', key: 'transom' }],
+  ['path', { d: 'M2.5 21.5h19', key: 'sill' }],
+]);
+
 const ADVICE_ICONS: Readonly<Record<Exclude<AdviceIcon, 'mask'>, LucideIcon>> = {
   walk: Footprints,
-  'open-windows': AppWindow,
+  'open-windows': WindowPane,
   exercise: Dumbbell,
-  windows: DoorClosed,
+  windows: WindowPane,
   purifier: AirVent,
   indoors: House,
 };

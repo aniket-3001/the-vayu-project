@@ -67,7 +67,7 @@ const quiet = (): Voice & { said: string[] } => {
     said,
     speak: (text) => {
       said.push(text);
-      return Promise.resolve();
+      return Promise.resolve(true);
     },
     stop: () => undefined,
   };
@@ -104,7 +104,7 @@ describe('the Polly voice', () => {
     const fallback: Voice = {
       speak: (text, lang) => {
         heard.push({ text, lang });
-        return Promise.resolve();
+        return Promise.resolve(true);
       },
       stop: () => undefined,
     };
@@ -115,6 +115,20 @@ describe('the Polly voice', () => {
     const [, init] = (fetchImpl.mock.calls[0] ?? []) as unknown as [string, RequestInit];
     expect(JSON.parse(init.body as string)).toEqual({ text: 'मास्क पहनें।', lang: 'hi' });
     expect(heard).toEqual([{ text: 'मास्क पहनें।', lang: 'hi' }]);
+  });
+
+  it('says whether anything could be heard: false when the service refused and the fallback has no voice', async () => {
+    const refused = vi.fn(() => Promise.resolve(answer('', false)));
+    const mute: Voice = { speak: () => Promise.resolve(false), stop: () => undefined };
+    const voice = pollyVoice('https://x.test', refused, mute, player().make);
+    expect(await voice.speak('खिड़कियाँ बंद रखें।', 'hi')).toBe(false);
+    const heard = pollyVoice(
+      'https://x.test',
+      () => Promise.resolve(answer()),
+      mute,
+      player().make,
+    );
+    expect(await heard.speak('Keep the windows shut.')).toBe(true);
   });
 
   it('starts one audio element from a tap with a moment of silence, so a phone lets the answer play later', async () => {

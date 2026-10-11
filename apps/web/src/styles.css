@@ -5751,3 +5751,8 @@ table.hourly .row-label {
   justify-content: flex-start;
   margin: -4px 0 2px;
 }
+
+.voice-note {
+  margin: 0;
+  padding: 0 4px;
+}

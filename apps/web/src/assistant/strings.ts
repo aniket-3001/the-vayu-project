@@ -52,6 +52,7 @@ export interface Words {
   readonly notSent: string;
   readonly leftOut: string;
   readonly didNotGoThrough: string;
+  readonly voiceOff: string;
   readonly languageEnglish: string;
   readonly languageHindi: string;
 }
@@ -120,6 +121,8 @@ export const WORDS: Readonly<Record<Lang, Words>> = {
     notSent: 'Okay, I did not send a report.',
     leftOut: 'Okay, I left it out.',
     didNotGoThrough: 'That did not go through.',
+    voiceOff:
+      'The voice is not available right now (it may have reached its limit for today), so this answer was not read aloud.',
     languageEnglish: 'English',
     languageHindi: 'हिन्दी',
   },
@@ -185,6 +188,8 @@ export const WORDS: Readonly<Record<Lang, Words>> = {
     notSent: 'ठीक है, मैंने रिपोर्ट नहीं भेजी।',
     leftOut: 'ठीक है, मैंने इसे छोड़ दिया।',
     didNotGoThrough: 'यह नहीं हो पाया।',
+    voiceOff:
+      'अभी आवाज़ उपलब्ध नहीं है (आज की सीमा पूरी हो गई हो सकती है), इसलिए यह जवाब बोलकर नहीं सुनाया गया।',
     languageEnglish: 'English',
     languageHindi: 'हिन्दी',
   },
