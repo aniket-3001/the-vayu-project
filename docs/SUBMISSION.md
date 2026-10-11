@@ -36,8 +36,9 @@ everything is CDK in TypeScript. See `docs/architecture.md`, `docs/cost.md` and 
 | 2:10–3:10 | The **recorded week** (open `/#/week` on the deployed site): seven real days, one chip each. 6 Oct 2025 rain (the air clears); 7 Oct the clean day after; 21 Oct after Diwali; 31 Oct stubble fires (the alert, the fire map); 12 Nov smog; 22 Dec GRAP Stage IV by our estimate (school likely closed); 30 Mar wind. Show tips, alerts, the map and Exposure on each | These are real days from the OpenAQ archive, NASA's fire detections and the weather record, played through the same app. The stage is our own unofficial estimate, never the order. |
 | 3:10–4:00 | An **animated architecture diagram**: phone to CloudFront to API Gateway to Lambda, the scheduled jobs, DynamoDB, Bedrock with its guardrail, Polly, the kill switch and caps                                                                          | How the data flows, and how permissions and guardrails hold: the model only words answers the rules decided, every number is checked, daily caps and a kill switch, secrets in Secrets Manager.                                                                          |
 
-The recorded week is built (`apps/web/src/week`, data made by `scripts/record-week.mjs`, see `docs/AS-BUILT.md`). What
-is not built yet for this script is the animated architecture diagram.
+The recorded week is built (`apps/web/src/week`, data made by `scripts/record-week.mjs`, see `docs/AS-BUILT.md`), and so
+is the animated architecture diagram: open `docs/architecture-animated.html` in a browser (five scenes; Space plays or
+pauses, arrow keys step, `#step=3` holds on a scene).
 
 ## What each person did **(confirm)**
 

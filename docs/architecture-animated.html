@@ -1,0 +1,453 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>How Vayu Air works on AWS</title>
+    <!--
+      The animated architecture diagram for the video. One file, no libraries: open it in a browser.
+      It plays five short scenes in a loop. Controls: Space plays or pauses, the arrow keys step, and
+      #step=3 in the address holds on a scene (1 to 5). Everything drawn here is in docs/architecture.md
+      and infra/lib; if the stack changes, change the scenes below.
+    -->
+    <style>
+      :root {
+        --page: #f4f7fb;
+        --card: #ffffff;
+        --text: #3d4a5c;
+        --muted: #5f6e82;
+        --line: #dfe6ef;
+        --ink: #334155;
+        --blue: #4a90d9;
+        --green: #4caf7d;
+        --amber: #f0a64a;
+        --rose: #e57a7a;
+        --violet: #8f7ad9;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        background: var(--page);
+        color: var(--text);
+        font-family:
+          'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+      }
+      header {
+        padding: 18px 28px 0;
+      }
+      h1 {
+        margin: 0;
+        font-size: 26px;
+        letter-spacing: -0.01em;
+        color: var(--ink);
+      }
+      header p {
+        margin: 4px 0 0;
+        color: var(--muted);
+        font-size: 15px;
+      }
+      main {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        padding: 8px 16px 0;
+        min-height: 0;
+      }
+      svg {
+        width: 100%;
+        max-width: 1280px;
+        /* Always leave room for the caption and controls under it, whatever the window. */
+        height: calc(100vh - 330px);
+        min-height: 260px;
+        flex: 0 1 auto;
+      }
+      .node rect {
+        fill: var(--card);
+        stroke: var(--line);
+        stroke-width: 2;
+        rx: 16;
+        transition:
+          stroke 0.4s,
+          fill 0.4s;
+      }
+      .node {
+        opacity: 0.4;
+        transition: opacity 0.4s;
+      }
+      .node.on {
+        opacity: 1;
+      }
+      .node.on rect {
+        stroke: var(--c, var(--blue));
+        stroke-width: 3;
+        fill: color-mix(in srgb, var(--c, var(--blue)) 9%, white);
+      }
+      .node .name {
+        font-size: 18px;
+        font-weight: 700;
+        fill: var(--ink);
+      }
+      .node .sub {
+        font-size: 13.5px;
+        fill: var(--muted);
+      }
+      .edge {
+        fill: none;
+        stroke: var(--line);
+        stroke-width: 3;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+        transition: stroke 0.4s;
+      }
+      .edge.on {
+        stroke: color-mix(in srgb, var(--blue) 45%, white);
+      }
+      .edge.dash {
+        stroke-dasharray: 2 9;
+      }
+      .req {
+        fill: var(--blue);
+      }
+      .res {
+        fill: var(--green);
+      }
+      .badge {
+        opacity: 0;
+        transition: opacity 0.5s;
+      }
+      .badge.on {
+        opacity: 1;
+      }
+      .badge rect {
+        fill: #fff7e8;
+        stroke: var(--amber);
+        stroke-width: 2;
+        rx: 12;
+      }
+      .badge text {
+        font-size: 14px;
+        font-weight: 600;
+        fill: var(--ink);
+      }
+      footer {
+        padding: 6px 28px 20px;
+        max-width: 1280px;
+        width: 100%;
+        margin: 0 auto;
+      }
+      .caption {
+        background: var(--card);
+        border: 1px solid var(--line);
+        border-radius: 16px;
+        padding: 14px 20px;
+        min-height: 118px;
+      }
+      .caption h2 {
+        margin: 0 0 4px;
+        font-size: 20px;
+        color: var(--ink);
+      }
+      .caption p {
+        margin: 0;
+        font-size: 17px;
+        line-height: 1.45;
+      }
+      .controls {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-top: 12px;
+      }
+      .controls button {
+        font: inherit;
+        font-size: 15px;
+        min-height: 40px;
+        padding: 0 16px;
+        border-radius: 999px;
+        border: 1px solid var(--line);
+        background: var(--card);
+        color: var(--text);
+        cursor: pointer;
+      }
+      .dots {
+        display: flex;
+        gap: 8px;
+        margin-left: auto;
+      }
+      .dots button {
+        width: 14px;
+        height: 14px;
+        min-height: 0;
+        padding: 0;
+        border-radius: 50%;
+        background: var(--line);
+        border: 0;
+      }
+      .dots button[aria-current='true'] {
+        background: var(--blue);
+      }
+      @media (max-width: 640px) {
+        h1 {
+          font-size: 21px;
+        }
+        .caption p {
+          font-size: 15px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <h1>How Vayu Air works on AWS</h1>
+      <p>One web app and one API on one address, in <strong>ap-south-1</strong>, all serverless.</p>
+    </header>
+    <main>
+      <svg id="art" viewBox="0 0 1280 700" role="img" aria-label="Architecture diagram"></svg>
+    </main>
+    <footer>
+      <div class="caption" aria-live="polite">
+        <h2 id="title"></h2>
+        <p id="text"></p>
+      </div>
+      <div class="controls">
+        <button id="prev" type="button">Back</button>
+        <button id="play" type="button">Pause</button>
+        <button id="next" type="button">Next</button>
+        <div class="dots" id="dots"></div>
+      </div>
+    </footer>
+    <script>
+      const NS = 'http://www.w3.org/2000/svg';
+      const W = 190;
+      const H = 86;
+
+      // Where each part sits (top-left), what it is called and a few honest words about it.
+      const NODES = {
+        phone: { x: 40, y: 330, name: 'Phone', sub: 'The app, on the device', c: '--blue' },
+        cf: { x: 290, y: 330, name: 'CloudFront', sub: 'One address, HTTPS, cache', c: '--blue' },
+        s3: { x: 290, y: 140, name: 'S3', sub: 'The app, private bucket', c: '--blue' },
+        gw: { x: 540, y: 330, name: 'API Gateway', sub: 'Throttles every route', c: '--blue' },
+        api: { x: 790, y: 330, name: 'API Lambda', sub: 'Checks every request', c: '--blue' },
+        ddb: { x: 1040, y: 330, name: 'DynamoDB', sub: 'Cache, quotas, expiring', c: '--blue' },
+        ssm: { x: 540, y: 110, name: 'SSM switch', sub: 'Kill switch, one command', c: '--rose' },
+        bedrock: { x: 790, y: 110, name: 'Bedrock', sub: 'Nova Micro + guardrail', c: '--violet' },
+        polly: { x: 1040, y: 110, name: 'Polly', sub: 'Reads answers aloud', c: '--violet' },
+        sched: { x: 290, y: 560, name: 'EventBridge', sub: 'Every 15 and 30 min', c: '--green' },
+        jobs: { x: 790, y: 560, name: 'Harvest + Stations', sub: 'Two small Lambdas', c: '--green' },
+        src: { x: 1040, y: 560, name: 'Data sources', sub: 'OpenAQ, Open-Meteo, NASA', c: '--amber' },
+        sec: { x: 540, y: 560, name: 'Secrets Manager', sub: 'Keys, never in code', c: '--rose' },
+      };
+
+      // Straight or bent lines between parts, as points.
+      const EDGES = {
+        phoneCf: [[230, 373], [290, 373]],
+        cfS3: [[385, 330], [385, 226]],
+        cfGw: [[480, 373], [540, 373]],
+        gwApi: [[730, 373], [790, 373]],
+        apiDdb: [[980, 373], [1040, 373]],
+        apiSsm: [[835, 330], [835, 270], [635, 270], [635, 196]],
+        apiBedrock: [[885, 330], [885, 196]],
+        apiPolly: [[935, 330], [935, 270], [1135, 270], [1135, 196]],
+        schedJobs: [[385, 646], [385, 672], [885, 672], [885, 646]],
+        jobsSrc: [[980, 603], [1040, 603]],
+        jobsDdb: [[935, 560], [935, 480], [1135, 480], [1135, 416]],
+        secJobs: [[730, 603], [790, 603]],
+      };
+
+      const BADGES = [
+        { id: 'throttle', x: 290, y: 436, text: 'Throttled: 25 a second; assistant 3, form 1' },
+        { id: 'contract', x: 680, y: 436, text: 'Every request and answer checked' },
+        { id: 'caps', x: 985, y: 436, text: 'Daily caps on every metered thing' },
+        { id: 'iam', x: 985, y: 492, text: 'Least-privilege roles' },
+        { id: 'secrets', x: 540, y: 492, text: 'Secrets in Secrets Manager' },
+        { id: 'guard', x: 540, y: 20, text: 'Guardrail: no medical advice, no attacks' },
+        { id: 'numbers', x: 920, y: 20, text: 'Every number in its words is checked' },
+      ];
+
+      // The scenes: which parts light, which lines carry a request out and an answer back.
+      const SCENES = [
+        {
+          title: '1. The app opens',
+          text: 'The page and the API share one address. CloudFront serves the app from a private S3 bucket, and adds the security headers. There is no login: what a person saves stays on their phone.',
+          nodes: ['phone', 'cf', 's3'],
+          flows: [['phoneCf', 0], ['cfS3', 0.5]],
+          badges: [],
+        },
+        {
+          title: '2. A person asks for the air at a place',
+          text: 'CloudFront keeps an answer for up to 15 minutes, so most repeats never reach the API. Otherwise API Gateway throttles, the Lambda checks the request against a contract, reads the cache, and answers with where the number came from and how old it is.',
+          nodes: ['phone', 'cf', 'gw', 'api', 'ddb'],
+          flows: [['phoneCf', 0], ['cfGw', 0.3], ['gwApi', 0.6], ['apiDdb', 0.9]],
+          badges: ['throttle', 'contract'],
+        },
+        {
+          title: '3. Kept fresh without a visitor',
+          text: 'Two scheduled jobs, every 15 and 30 minutes, read the monitors and the forecast from OpenAQ and Open-Meteo and store them in DynamoDB; the API reads NASA’s fire detections the same way. A visitor is usually served from this and the CloudFront cache, so the providers are never called by the crowd. Schedules do not retry, and each has an alarm for the day it silently stops.',
+          nodes: ['sched', 'jobs', 'src', 'ddb', 'sec'],
+          flows: [['schedJobs', 0], ['secJobs', 0], ['jobsSrc', 0.4], ['jobsDdb', 1]],
+          badges: ['secrets'],
+        },
+        {
+          title: '4. A person asks the assistant',
+          text: 'Fixed rules decide the answer first. The Lambda checks the kill switch; then Nova Micro, behind a guardrail, may only reword it. Every number in its words is checked against the rules’ numbers, or the rules’ own words are used. Polly reads it aloud in English or Hindi. Hindi answers never go through the model at all.',
+          nodes: ['phone', 'cf', 'gw', 'api', 'ssm', 'bedrock', 'polly'],
+          flows: [['phoneCf', 0], ['cfGw', 0.3], ['gwApi', 0.6], ['apiSsm', 1], ['apiBedrock', 1.3], ['apiPolly', 1.8]],
+          badges: ['guard', 'numbers'],
+        },
+        {
+          title: '5. What keeps it safe and cheap',
+          text: 'Throttles on every route, daily caps per person and in total (forty assistant questions a person and 500 a day; 12,000 spoken characters a person and 60,000 a day), a kill switch that works in one command with no deploy, roles that may call one model and one guardrail and nothing more, and secrets that are never in code. Idle, the stack costs about $4.50 a month.',
+          nodes: ['gw', 'api', 'ssm', 'bedrock', 'sec', 'ddb'],
+          flows: [],
+          badges: ['throttle', 'caps', 'iam', 'secrets', 'contract'],
+        },
+      ];
+
+      const svg = document.getElementById('art');
+      const el = (name, attrs = {}, parent = svg) => {
+        const node = document.createElementNS(NS, name);
+        for (const [k, v] of Object.entries(attrs)) node.setAttribute(k, String(v));
+        parent.appendChild(node);
+        return node;
+      };
+      const pathOf = (points) => points.map(([x, y], i) => `${i === 0 ? 'M' : 'L'}${x} ${y}`).join(' ');
+
+      // Lines first, so parts sit on top.
+      const edgeEls = {};
+      for (const [id, pts] of Object.entries(EDGES)) {
+        edgeEls[id] = el('path', { d: pathOf(pts), class: 'edge' });
+      }
+      const nodeEls = {};
+      for (const [id, n] of Object.entries(NODES)) {
+        const g = el('g', { class: 'node', transform: `translate(${n.x} ${n.y})` });
+        g.style.setProperty('--c', `var(${n.c})`);
+        el('rect', { width: W, height: H }, g);
+        const name = el('text', { x: W / 2, y: 36, 'text-anchor': 'middle', class: 'name' }, g);
+        name.textContent = n.name;
+        const sub = el('text', { x: W / 2, y: 60, 'text-anchor': 'middle', class: 'sub' }, g);
+        sub.textContent = n.sub;
+        nodeEls[id] = g;
+      }
+      const badgeEls = {};
+      for (const b of BADGES) {
+        const g = el('g', { class: 'badge', transform: `translate(${b.x} ${b.y})` });
+        const text = el('text', { x: 14, y: 24 }, g);
+        text.textContent = b.text;
+        const width = Math.ceil(b.text.length * 7.7 + 28);
+        el('rect', { width, height: 38 }, g);
+        g.insertBefore(g.lastChild, text);
+        badgeEls[b.id] = g;
+      }
+      const packets = el('g');
+
+      const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      let index = 0;
+      let playing = !reduce;
+      let timer = 0;
+      const SCENE_MS = 12000;
+
+      function show(i) {
+        index = (i + SCENES.length) % SCENES.length;
+        const s = SCENES[index];
+        document.getElementById('title').textContent = s.title;
+        document.getElementById('text').textContent = s.text;
+        for (const [id, g] of Object.entries(nodeEls)) g.classList.toggle('on', s.nodes.includes(id));
+        for (const [id, b] of Object.entries(badgeEls)) b.classList.toggle('on', s.badges.includes(id));
+        const flowing = new Set(s.flows.map(([id]) => id));
+        for (const [id, p] of Object.entries(edgeEls)) p.classList.toggle('on', flowing.has(id));
+        packets.replaceChildren();
+        if (!reduce) {
+          // A request goes out along the line in blue, and the answer comes back in green.
+          for (const [id, delay] of s.flows) {
+            const d = pathOf(EDGES[id]);
+            for (const [cls, back, extra] of [
+              ['req', false, 0],
+              ['res', true, 1.1],
+            ]) {
+              const dot = el('circle', { r: 7, class: cls, visibility: 'hidden' }, packets);
+              // Hidden until its turn, so nothing waits at the corner of the picture.
+              el(
+                'set',
+                {
+                  attributeName: 'visibility',
+                  to: 'visible',
+                  begin: `${delay + extra}s`,
+                },
+                dot,
+              );
+              const anim = el(
+                'animateMotion',
+                {
+                  dur: '2.2s',
+                  begin: `${delay + extra}s`,
+                  repeatCount: 'indefinite',
+                  path: d,
+                  ...(back ? { keyPoints: '1;0', keyTimes: '0;1', calcMode: 'linear' } : {}),
+                },
+                dot,
+              );
+              anim.setAttribute('fill', 'freeze');
+            }
+          }
+        }
+        document.querySelectorAll('#dots button').forEach((b, k) => {
+          b.setAttribute('aria-current', String(k === index));
+        });
+        window.clearTimeout(timer);
+        if (playing) timer = window.setTimeout(() => show(index + 1), SCENE_MS);
+      }
+
+      function setPlaying(on) {
+        playing = on;
+        document.getElementById('play').textContent = on ? 'Pause' : 'Play';
+        show(index);
+      }
+
+      const dots = document.getElementById('dots');
+      SCENES.forEach((s, k) => {
+        const b = document.createElement('button');
+        b.type = 'button';
+        b.setAttribute('aria-label', s.title);
+        b.addEventListener('click', () => {
+          setPlaying(false);
+          show(k);
+        });
+        dots.appendChild(b);
+      });
+      document.getElementById('prev').addEventListener('click', () => {
+        setPlaying(false);
+        show(index - 1);
+      });
+      document.getElementById('next').addEventListener('click', () => {
+        setPlaying(false);
+        show(index + 1);
+      });
+      document.getElementById('play').addEventListener('click', () => {
+        setPlaying(!playing);
+      });
+      window.addEventListener('keydown', (e) => {
+        if (e.key === ' ') {
+          e.preventDefault();
+          setPlaying(!playing);
+        } else if (e.key === 'ArrowRight') {
+          setPlaying(false);
+          show(index + 1);
+        } else if (e.key === 'ArrowLeft') {
+          setPlaying(false);
+          show(index - 1);
+        }
+      });
+
+      const held = /step=(\d)/.exec(window.location.hash);
+      if (held) playing = false;
+      document.getElementById('play').textContent = playing ? 'Pause' : 'Play';
+      show(held ? Number(held[1]) - 1 : 0);
+    </script>
+  </body>
+</html>

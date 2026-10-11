@@ -27,7 +27,7 @@ flowchart LR
   V -.->|"search, map tiles; wind only if our API has none"| EXT[Open-Meteo, MET Norway, OpenFreeMap]
 ```
 
-Dotted lines are calls that do not go through our API. Solid arrows are ours.
+Dotted lines are calls that do not go through our API. Solid arrows are ours. An animated version for the video is `architecture-animated.html` (open it in a browser).
 
 ## What each part does
 
