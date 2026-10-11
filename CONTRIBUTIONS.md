@@ -14,6 +14,9 @@ I built this alone, and I used an AI coding assistant for most of the typing. Th
 - **Ran it on AWS, in my own account.** The stack lives in my account. I put the provider keys (OpenAQ, NASA FIRMS) into
   Secrets Manager myself, from the clipboard, never typed into a chat. Each deploy and site upload was done when I asked for
   it, followed by the smoke check on the live address, and I renewed the OpenAQ key when it was rejected on the last night.
+- **Built the cleaner prototype.** I built it step by step (a box, a centrifugal fan, a pleated filter, a foam pre-filter) and
+  measured its outlet airflow with a handheld anemometer: about 191 cfm. That is airflow, not CADR, which I have not
+  measured (`docs/PURIFIER.md`).
 - **Built the measuring unit.** I sourced the parts, wired the Sensirion SPS30 to an ESP32-S3 over UART, and powered and
   tested it on my desk (the firmware was flashed from my machine with the Arduino tools): the serial monitor showed the sensor's readings, I connected the live site to it over
   Bluetooth from Chrome on my Mac, and when it showed "no reading" after the app connected, I reported it and tested the fix on

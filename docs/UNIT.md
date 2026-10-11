@@ -1,7 +1,7 @@
 # The Vayu measuring unit
 
 A small box that measures the air in a room and sends it to the app over Bluetooth. It is the one piece of hardware in
-the demo. The purifier build is separate and is shown only as a build with a measured CADR.
+the demo. The cleaner prototype is separate (`PURIFIER.md`): its airflow was measured, its CADR was not.
 
 **Status (11 Oct):** the firmware `firmware/vayu-unit/vayu-unit.ino` compiles and runs on an ESP32-S3 (QFN56, with
 Wi-Fi and Bluetooth 5 LE) wired to an SPS30 over UART; the serial monitor shows the sensor's serial number and PM1, PM2.5,
@@ -70,12 +70,9 @@ each hour's measured mean and the nearest monitor's hourly reading; the comparis
 mean difference, and the correlation) for the video. If the unit reads high or low by a steady amount, the fix is a
 simple offset in the app, shown to the person, never hidden.
 
-## The purifier, in one slide
+## The cleaner
 
-The build is the one in `DEVICE.md`'s earlier design or a simpler fan-and-filter box. What to show:
-the build cost (your figure, under ₹5,000), the **CADR you measured** with the smoke-decay method and the anemometer
-(`DEVICE.md` section 5 has the method), and the noise at the speed you measured it. Say "built from a video tutorial"
-if that is what it is; the point is the measurement.
+The cleaner prototype is described in `PURIFIER.md`: what was built, the one airflow measurement (about 191 cfm at the outlet), and why that is not CADR. The measuring unit is the instrument for the CADR test that has not been run yet.
 
 ## Build steps
 
@@ -83,5 +80,5 @@ if that is what it is; the point is the measurement.
 2. Install the "Sensirion UART SPS30" library, open `firmware/vayu-unit/vayu-unit.ino`, pick the board "ESP32S3 Dev Module" with USB CDC On Boot enabled, upload. Close the serial monitor first, or the port is busy.
 3. Open the serial monitor at 115200. You should see `Advertising as Vayu-XXXX`, then a line of readings every two
    seconds. PM2.5 of 0.0 for a few seconds is normal while the fan settles.
-4. On the phone, open the live site in Chrome, go to **My Air → Devices**, choose where the unit is, press **Connect
+4. On the phone, open the live site in Chrome, press **Add device** at the top right of My Air, choose where the unit is, press **Connect
    over Bluetooth**, and pick `Vayu-XXXX`.

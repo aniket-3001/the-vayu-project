@@ -6,7 +6,7 @@ A city average cannot see your room, so I built a small unit (ESP32-S3, Sensirio
 
 Live, real data only: https://d3lmq1mze2gup3.cloudfront.net. The recorded week (/#/week) replays seven real days. Fixed rules decide every answer; the AI only puts it into words, and every number it uses is checked against the facts. One command, `make prove`, runs 1,243 tests plus lint, types and the CDK build, and passes. Code: https://github.com/hrsh-kr/vayu-air
 
-Not built: the air purifier. Not measured: the unit's accuracy. Bluetooth is tested on Chrome on a Mac only.
+Not measured: the unit's accuracy, or my prototype cleaner's CADR (its airflow, about 191 cfm, is not CADR). Bluetooth is tested on Chrome on a Mac only.
 
 ---
 

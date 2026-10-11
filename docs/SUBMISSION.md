@@ -15,7 +15,7 @@ the Insights for a place say what that means for a school's assembly or a walk i
 Every number says whether it is **Live** (a named monitor, how far, how old) or an **Estimate** (a regional model).
 Nothing is advised from a reading older than six hours. A small measuring unit (ESP32-S3 and an SPS30 laser particle sensor)
 connects over Bluetooth and becomes a "Your room" card: the room's live air against the air outside, with the hours it
-measured counted in Exposure. The air purifier is **not built**; a sample cleaner card says "To be implemented".
+measured counted in Exposure. A prototype air cleaner (a fan, a filter and a foam pre-filter in a box) is built and its outlet airflow measured at about 191 cfm; its CADR is not measured, it does not switch by itself, and the app's cleaner card is a sample that says "To be implemented".
 
 **It is all real data.** The live app reads real monitors, weather and satellite fires. The recorded week (`/#/week`) is seven
 real days from the public archives played through the same app, labelled recorded. The only made-up days are in a separate
@@ -77,7 +77,7 @@ Things we hit, in the order we hit them:
 
 - The measuring unit reads a real sensor and reaches the app, but its accuracy has **not** been compared with a monitor, so
   it is a low-cost sensor shown beside the nearest monitor, never "scientific-grade". See `docs/claims.md`.
-- The air purifier is not built. Rules I13 and I16 apply to it and are untested on a device.
+- The cleaner's 191 cfm is airflow at the outlet, not CADR: the smoke-decay test has not been run, and it does not switch by itself. Rules I13 and I16 are untested on a device.
 - Telegram alerts are built and tested against fakes; live scheduled sends are off and there is no in-app screen to link a chat.
 - Bluetooth: Chrome on a computer is tested; Android Chrome is not; iPhone Safari cannot.
 - The ₹2,00,00,000 (a station) and ₹4,000 (the unit) figures have no source in the repository yet: do not say them without one.

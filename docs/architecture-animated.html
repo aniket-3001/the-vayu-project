@@ -32,7 +32,12 @@
         background: var(--page);
         color: var(--text);
         font-family:
-          'Hanken Grotesk', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+          'Hanken Grotesk',
+          system-ui,
+          -apple-system,
+          'Segoe UI',
+          Roboto,
+          sans-serif;
         min-height: 100vh;
         display: flex;
         flex-direction: column;
@@ -239,25 +244,81 @@
         bedrock: { x: 790, y: 110, name: 'Bedrock', sub: 'Nova Micro + guardrail', c: '--violet' },
         polly: { x: 1040, y: 110, name: 'Polly', sub: 'Reads answers aloud', c: '--violet' },
         sched: { x: 290, y: 560, name: 'EventBridge', sub: 'Every 15 and 30 min', c: '--green' },
-        jobs: { x: 790, y: 560, name: 'Harvest + Stations', sub: 'Two small Lambdas', c: '--green' },
-        src: { x: 1040, y: 560, name: 'Data sources', sub: 'OpenAQ, Open-Meteo, NASA', c: '--amber' },
+        jobs: {
+          x: 790,
+          y: 560,
+          name: 'Harvest + Stations',
+          sub: 'Two small Lambdas',
+          c: '--green',
+        },
+        src: {
+          x: 1040,
+          y: 560,
+          name: 'Data sources',
+          sub: 'OpenAQ, Open-Meteo, NASA',
+          c: '--amber',
+        },
         sec: { x: 540, y: 560, name: 'Secrets Manager', sub: 'Keys, never in code', c: '--rose' },
       };
 
       // Straight or bent lines between parts, as points.
       const EDGES = {
-        phoneCf: [[230, 373], [290, 373]],
-        cfS3: [[385, 330], [385, 226]],
-        cfGw: [[480, 373], [540, 373]],
-        gwApi: [[730, 373], [790, 373]],
-        apiDdb: [[980, 373], [1040, 373]],
-        apiSsm: [[835, 330], [835, 270], [635, 270], [635, 196]],
-        apiBedrock: [[885, 330], [885, 196]],
-        apiPolly: [[935, 330], [935, 270], [1135, 270], [1135, 196]],
-        schedJobs: [[385, 646], [385, 672], [885, 672], [885, 646]],
-        jobsSrc: [[980, 603], [1040, 603]],
-        jobsDdb: [[935, 560], [935, 480], [1135, 480], [1135, 416]],
-        secJobs: [[730, 603], [790, 603]],
+        phoneCf: [
+          [230, 373],
+          [290, 373],
+        ],
+        cfS3: [
+          [385, 330],
+          [385, 226],
+        ],
+        cfGw: [
+          [480, 373],
+          [540, 373],
+        ],
+        gwApi: [
+          [730, 373],
+          [790, 373],
+        ],
+        apiDdb: [
+          [980, 373],
+          [1040, 373],
+        ],
+        apiSsm: [
+          [835, 330],
+          [835, 270],
+          [635, 270],
+          [635, 196],
+        ],
+        apiBedrock: [
+          [885, 330],
+          [885, 196],
+        ],
+        apiPolly: [
+          [935, 330],
+          [935, 270],
+          [1135, 270],
+          [1135, 196],
+        ],
+        schedJobs: [
+          [385, 646],
+          [385, 672],
+          [885, 672],
+          [885, 646],
+        ],
+        jobsSrc: [
+          [980, 603],
+          [1040, 603],
+        ],
+        jobsDdb: [
+          [935, 560],
+          [935, 480],
+          [1135, 480],
+          [1135, 416],
+        ],
+        secJobs: [
+          [730, 603],
+          [790, 603],
+        ],
       };
 
       const BADGES = [
@@ -276,28 +337,48 @@
           title: '1. The app opens',
           text: 'The page and the API share one address. CloudFront serves the app from a private S3 bucket, and adds the security headers. There is no login: what a person saves stays on their phone.',
           nodes: ['phone', 'cf', 's3'],
-          flows: [['phoneCf', 0], ['cfS3', 0.5]],
+          flows: [
+            ['phoneCf', 0],
+            ['cfS3', 0.5],
+          ],
           badges: [],
         },
         {
           title: '2. A person asks for the air at a place',
           text: 'CloudFront keeps an answer for up to 15 minutes, so most repeats never reach the API. Otherwise API Gateway throttles, the Lambda checks the request against a contract, reads the cache, and answers with where the number came from and how old it is.',
           nodes: ['phone', 'cf', 'gw', 'api', 'ddb'],
-          flows: [['phoneCf', 0], ['cfGw', 0.3], ['gwApi', 0.6], ['apiDdb', 0.9]],
+          flows: [
+            ['phoneCf', 0],
+            ['cfGw', 0.3],
+            ['gwApi', 0.6],
+            ['apiDdb', 0.9],
+          ],
           badges: ['throttle', 'contract'],
         },
         {
           title: '3. Kept fresh without a visitor',
           text: 'Two scheduled jobs, every 15 and 30 minutes, read the monitors and the forecast from OpenAQ and Open-Meteo and store them in DynamoDB; the API reads NASA’s fire detections the same way. A visitor is usually served from this and the CloudFront cache, so the providers are never called by the crowd. Schedules do not retry, and each has an alarm for the day it silently stops.',
           nodes: ['sched', 'jobs', 'src', 'ddb', 'sec'],
-          flows: [['schedJobs', 0], ['secJobs', 0], ['jobsSrc', 0.4], ['jobsDdb', 1]],
+          flows: [
+            ['schedJobs', 0],
+            ['secJobs', 0],
+            ['jobsSrc', 0.4],
+            ['jobsDdb', 1],
+          ],
           badges: ['secrets'],
         },
         {
           title: '4. A person asks the assistant',
           text: 'Fixed rules decide the answer first. The Lambda checks the kill switch; then Nova Micro, behind a guardrail, may only reword it. Every number in its words is checked against the rules’ numbers, or the rules’ own words are used. Polly reads it aloud in English or Hindi. Hindi answers never go through the model at all.',
           nodes: ['phone', 'cf', 'gw', 'api', 'ssm', 'bedrock', 'polly'],
-          flows: [['phoneCf', 0], ['cfGw', 0.3], ['gwApi', 0.6], ['apiSsm', 1], ['apiBedrock', 1.3], ['apiPolly', 1.8]],
+          flows: [
+            ['phoneCf', 0],
+            ['cfGw', 0.3],
+            ['gwApi', 0.6],
+            ['apiSsm', 1],
+            ['apiBedrock', 1.3],
+            ['apiPolly', 1.8],
+          ],
           badges: ['guard', 'numbers'],
         },
         {
@@ -316,7 +397,8 @@
         parent.appendChild(node);
         return node;
       };
-      const pathOf = (points) => points.map(([x, y], i) => `${i === 0 ? 'M' : 'L'}${x} ${y}`).join(' ');
+      const pathOf = (points) =>
+        points.map(([x, y], i) => `${i === 0 ? 'M' : 'L'}${x} ${y}`).join(' ');
 
       // Lines first, so parts sit on top.
       const edgeEls = {};
@@ -357,8 +439,10 @@
         const s = SCENES[index];
         document.getElementById('title').textContent = s.title;
         document.getElementById('text').textContent = s.text;
-        for (const [id, g] of Object.entries(nodeEls)) g.classList.toggle('on', s.nodes.includes(id));
-        for (const [id, b] of Object.entries(badgeEls)) b.classList.toggle('on', s.badges.includes(id));
+        for (const [id, g] of Object.entries(nodeEls))
+          g.classList.toggle('on', s.nodes.includes(id));
+        for (const [id, b] of Object.entries(badgeEls))
+          b.classList.toggle('on', s.badges.includes(id));
         const flowing = new Set(s.flows.map(([id]) => id));
         for (const [id, p] of Object.entries(edgeEls)) p.classList.toggle('on', flowing.has(id));
         packets.replaceChildren();
