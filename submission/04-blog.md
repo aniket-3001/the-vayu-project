@@ -78,7 +78,7 @@ Visitors' browsers still call Open-Meteo to search for a place by name (it sends
 
 ### My own screenshot said AQI 500 beside "GRAP Stage II"
 
-Writing this post, I looked hard at my own screenshot of the morning after Diwali: AQI 500, and "GRAP Stage II likely". Those two do not go together. The estimate averaged the last 24 hours the monitor _had_, so gaps pulled in older, cleaner hours, and it stretched one hour's PM10 to PM2.5 ratio, however large, over the whole day. Now it uses the last 24 hours only (16 must be there), caps that ratio at 2, and treats a missing PM10 as a floor. I checked it against the monitors' own PM10 on 24 station-days, and no day lands in the wrong stage. The same audit turned up a rain alert that promised clean air when the forecast showed none, and an assistant sheet on a phone that left the answer 236 pixels of room.
+Writing this post, I looked hard at my own screenshot of the morning after Diwali: AQI 500, and "GRAP Stage II likely". Those two do not go together. The estimate averaged the last 24 hours the monitor _had_, so gaps pulled in older, cleaner hours, and it stretched one hour's PM10 to PM2.5 ratio, however large, over the whole day. Now it uses the last 24 hours only (16 must be there), caps that ratio at 2, and treats a missing PM10 as a floor. I checked it against the monitors' own PM10 on 24 station-days, and no day lands in the wrong stage. The same audit turned up a rain alert that promised clean air when the forecast showed none, and an assistant sheet on a phone that left the answer 236 pixels of room. A second pass, a script driving the live site in a browser, found a model-worded answer that read "[Place] has good air quality" at AQI 61: the model had capitalised my masked-name placeholder, so it was not put back, and it had called a Moderate level good. Placeholders are now restored in any case, and an answer that calls the air good or clean when the level is not Good is refused.
 
 ### The model never answered
 
@@ -100,7 +100,7 @@ Other fixes are in [`docs/learning-log.md`](https://github.com/hrsh-kr/the-vayu-
 
 ## Numbers
 
-- 1,253 tests pass in one command, `make prove`, which also runs lint, types, `cdk synth`, and a check that the deployed bundle holds no prototype code.
+- 1,257 tests pass in one command, `make prove`, which also runs lint, types, `cdk synth`, and a check that the deployed bundle holds no prototype code.
 - The stack costs about $4.50 a month idle, at list prices. An assistant question costs about $0.0008 (almost all of it the guardrail), and a visit at most $0.00014.
 - Caps: 40 assistant questions per caller and 500 a day, 12,000 spoken characters per caller and 60,000 a day, 25 API requests a second. One parameter switches the assistant off.
 

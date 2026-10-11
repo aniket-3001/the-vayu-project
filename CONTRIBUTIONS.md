@@ -10,7 +10,7 @@ I built the Vayu Project alone. This page says what I did and what I delivered.
 - **Reviewed and ran every change.** I read each change, ran it, looked at it on screen at a phone's width, and sent it back
   when it was wrong or confusing. I kept the design light and plain, kept components shared so screens stay consistent, and
   refused demo shortcuts: there is no made-up data in the live app, and the recorded days use only real archived data. Every
-  change went through `make prove` (lint, types, 1,253 tests, `cdk synth`, a bundle check) before I accepted it.
+  change went through `make prove` (lint, types, 1,257 tests, `cdk synth`, a bundle check) before I accepted it.
 - **Ran it on AWS, in my own account.** The stack lives in my account. I put the provider keys (OpenAQ, NASA FIRMS) into
   Secrets Manager myself, from the clipboard, never typed into a chat. Each deploy and site upload was done when I asked for
   it, followed by the smoke check on the live address, and I replaced the OpenAQ key after it was rejected late on 10 October.
