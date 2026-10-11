@@ -1,15 +1,13 @@
 import { Bluetooth, X } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { SPOT_KINDS, SPOT_LABELS, type SpotKind } from '../../exposure/spots';
-import { ToBeImplemented } from '../../components/ToBeImplemented';
 import type { UnitTransport } from '../ble';
 import { defaultTransport } from '../transport';
 import { useDevices } from '../useDevices';
 import { useUnit } from '../useUnit';
 
 /**
- * Add a device, from the button on My Air: a real measuring unit over Bluetooth, which becomes the "Your room" card, or
- * (until the cleaner is built) a sample cleaner that only shows what its card will do.
+ * Add a device, from the button on My Air: a real measuring unit over Bluetooth, which becomes the "Your room" card.
  */
 export function AddDeviceSheet({
   onClose,
@@ -18,10 +16,9 @@ export function AddDeviceSheet({
   readonly onClose: () => void;
   readonly transport?: UnitTransport;
 }): React.JSX.Element {
-  const { addMeasured, add } = useDevices();
+  const { addMeasured } = useDevices();
   const unit = useUnit({ transport });
   const [where, setWhere] = useState<SpotKind>('home');
-  const [sample, setSample] = useState(false);
   // Once the unit is found and sending, there is nothing more to do here: the room card is on My Air.
   const was = useRef(unit.state.status);
   useEffect(() => {
@@ -95,47 +92,6 @@ export function AddDeviceSheet({
             <p className="small unit-problem" role="status">
               {unit.state.problem}
             </p>
-          )}
-        </section>
-
-        <section aria-label="Air cleaner">
-          <h3>Air cleaner</h3>
-          <ToBeImplemented>
-            The cleaner and its automatic switching are not built. A sample one shows what its card
-            will do, with made-up readings that never count in your Exposure.
-          </ToBeImplemented>
-          {sample ? (
-            <div className="form-actions">
-              <button
-                type="button"
-                className="primary"
-                onClick={() => {
-                  add({ name: '', where });
-                  onClose();
-                }}
-              >
-                Add a sample cleaner in your {SPOT_LABELS[where].toLowerCase()}
-              </button>
-              <button
-                type="button"
-                className="plain"
-                onClick={() => {
-                  setSample(false);
-                }}
-              >
-                Cancel
-              </button>
-            </div>
-          ) : (
-            <button
-              type="button"
-              className="dashed"
-              onClick={() => {
-                setSample(true);
-              }}
-            >
-              Add a sample cleaner
-            </button>
           )}
         </section>
       </div>

@@ -11,7 +11,6 @@ import { alertsFor, type Alert } from '../alerts/model';
 import { useFires } from '../alerts/useFires';
 import { TipsCard } from '../tasks/ui/TipsCard';
 import { AddDeviceSheet } from '../devices/ui/AddDeviceSheet';
-import { SampleDevices } from '../devices/ui/SampleDevices';
 import { PlacesPanel } from '../places/ui/PlacesPanel';
 import type { PlaceMatch } from '../data/geocode';
 
@@ -142,9 +141,7 @@ export function MyAirScreen({ search, locate, address }: Props): React.JSX.Eleme
           {...(search !== undefined ? { search } : {})}
           {...(locate !== undefined ? { locate } : {})}
           {...(address !== undefined ? { address } : {})}
-        >
-          <SampleDevices />
-        </PlacesPanel>
+        />
       </main>
     </div>
   );

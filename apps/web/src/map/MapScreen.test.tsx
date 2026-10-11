@@ -1,6 +1,5 @@
 // @vitest-environment jsdom
 import { act, cleanup, render, screen, within } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
 import { useEffect } from 'react';
 import { MemoryRouter } from 'react-router-dom';
 import { setLiveLocation, type LiveLocation, type LiveSnapshot } from '../places/liveLocation';
@@ -138,7 +137,7 @@ describe('the Map screen', () => {
     expect(document.querySelector('.legend-main .aqi-scale')).toBeInTheDocument();
   });
 
-  it('opens a report for a fire pressed on the map, and says plainly what happens to it', async () => {
+  it('opens a report for a fire pressed on the map, with its coordinates and the numbers to call', () => {
     render(
       <MemoryRouter>
         <MapScreen />
@@ -149,10 +148,12 @@ describe('the Map screen', () => {
       seen.reportFire?.({ id: 'fire-1', lat: 30.9, lng: 75.5, frp: 12, hoursAgo: 3 });
     });
     const dialog = screen.getByRole('dialog', { name: 'Report a fire' });
-    expect(dialog).toHaveTextContent('30.900°N, 75.500°E');
-    expect(dialog).toHaveTextContent('not sent to any agency');
-    await userEvent.click(within(dialog).getByRole('button', { name: 'Send the report' }));
-    expect(await within(dialog).findByRole('status')).toHaveTextContent(/saved/iu);
+    expect(dialog).toHaveTextContent('30.9000° N, 75.5000° E');
+    expect(within(dialog).getByRole('link', { name: /Call 112/u })).toHaveAttribute(
+      'href',
+      'tel:112',
+    );
+    expect(dialog).toHaveTextContent('does not contact anyone for you');
   });
 
   it('draws a legend from Good to Hazardous', () => {

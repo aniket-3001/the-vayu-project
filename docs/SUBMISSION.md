@@ -15,7 +15,7 @@ the Insights for a place say what that means for a school's assembly or a walk i
 Every number says whether it is **Live** (a named monitor, how far, how old) or an **Estimate** (a regional model).
 Nothing is advised from a reading older than six hours. A small measuring unit (ESP32-S3 and an SPS30 laser particle sensor)
 connects over Bluetooth and becomes a "Your room" card: the room's live air against the air outside, with the hours it
-measured counted in Exposure. A prototype air cleaner (a fan, a filter and a foam pre-filter in a box) is built and its outlet airflow measured at about 191 cfm; its CADR is not measured, it does not switch by itself, and the app's cleaner card is a sample that says "To be implemented".
+measured counted in Exposure. A prototype air cleaner (a fan, a filter and a foam pre-filter in a box) is built and its outlet airflow measured at about 191 cfm; its CADR is not measured, it does not switch by itself.
 
 **It is all real data.** The live app reads real monitors, weather and satellite fires. The recorded week (`/#/week`) is seven
 real days from the public archives played through the same app, labelled recorded. The only made-up days are in a separate

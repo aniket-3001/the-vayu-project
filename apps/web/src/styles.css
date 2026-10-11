@@ -6466,3 +6466,52 @@ table.hourly .row-label {
     min-height: 0;
   }
 }
+
+/* The fire report: where it is, and who to call */
+
+.fire-report .fire-where,
+.fire-report .fire-contact {
+  display: grid;
+  gap: 8px;
+}
+.fire-address {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  margin: 0;
+  font-weight: 700;
+}
+.fire-coordinates {
+  margin: 0;
+  font-size: 22px;
+  font-weight: 700;
+}
+.fire-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 4px;
+}
+.fire-contact h3 {
+  margin: 8px 0 0;
+  font-size: 16px;
+}
+.fire-call {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 48px;
+  padding: 0 16px;
+  border-radius: 999px;
+  background: #334155;
+  color: #fff;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.unit-connect .where-field {
+  margin-bottom: 20px;
+}
+.unit-connect .primary {
+  margin-top: 4px;
+}

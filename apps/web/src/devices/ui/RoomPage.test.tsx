@@ -170,11 +170,10 @@ describe('adding a device', () => {
     expect(window.localStorage.getItem(DEVICES_STORAGE_KEY)).toContain('"measured":true');
   });
 
-  it('says the cleaner is not built and adds only a labelled sample', () => {
+  it('offers only the measuring unit: no sample cleaner and no banner', () => {
     render(<AddDeviceSheet onClose={() => undefined} transport={unitTransport().transport} />);
-    expect(screen.getByRole('note', { name: 'To be implemented' })).toBeInTheDocument();
-    fireEvent.click(screen.getByRole('button', { name: 'Add a sample cleaner' }));
-    fireEvent.click(screen.getByRole('button', { name: /Add a sample cleaner in your home/u }));
-    expect(window.localStorage.getItem(DEVICES_STORAGE_KEY)).not.toContain('"measured"');
+    expect(screen.queryByText(/sample cleaner/iu)).toBeNull();
+    expect(screen.queryByRole('note', { name: 'To be implemented' })).toBeNull();
+    expect(screen.getByRole('button', { name: /Connect over Bluetooth/u })).toBeInTheDocument();
   });
 });

@@ -57,7 +57,7 @@ A handheld vane anemometer at the outlet read about 191 cubic feet per minute, a
 [![The anemometer at the cleaner's outlet reading 191 CFM](images/build/purifier-6-airflow-191cfm.jpg)](images/build/airflow-proof.mp4)
 _A 5-second video (click the picture to play it): a handheld vane anemometer at the cleaner's outlet, reading about 191 CFM at 29.4 °C and 63.1 % RH. Airflow, not CADR._
 
-That is airflow, not CADR. CADR (clean air delivery rate) also depends on how many particles each pass removes, and it is measured by watching a room's particles fall with the cleaner off and then on. I have not run that test, and I have not measured the filter's efficiency, the noise or the power. The cleaner is a prototype that does not switch itself on by what the unit reads, and the app's cleaner card is still a sample with a "To be implemented" banner.
+That is airflow, not CADR. CADR (clean air delivery rate) also depends on how many particles each pass removes, and it is measured by watching a room's particles fall with the cleaner off and then on. I have not run that test, and I have not measured the filter's efficiency, the noise or the power. The cleaner is a prototype that does not switch itself on by what the unit reads.
 
 ## Why each AWS service is there
 
