@@ -10,12 +10,12 @@ const answer = (url: string): unknown => {
 };
 
 describe('the air grid', () => {
-  it('covers south Asia every three degrees and the globe every nine, some six hundred points', () => {
+  it('covers south Asia every four degrees and the globe every twelve, a few hundred points', () => {
     const points = airGridPoints();
-    expect(points.length).toBeGreaterThan(450);
-    expect(points.length).toBeLessThan(900);
-    expect(points.some((p) => p.lat === 28 && p.lng === 77)).toBe(true);
-    expect(points.some((p) => p.lat <= -70)).toBe(true);
+    expect(points.length).toBeGreaterThan(250);
+    expect(points.length).toBeLessThan(600);
+    expect(points.some((p) => p.lat === 28 && p.lng === 78)).toBe(true);
+    expect(points.some((p) => p.lat <= -60)).toBe(true);
     expect(new Set(points.map((p) => `${String(p.lat)},${String(p.lng)}`)).size).toBe(
       points.length,
     );
@@ -37,7 +37,7 @@ describe('the air grid', () => {
     t = 5 * 60_000;
     await repo.grid();
     expect(calls).toBe(first);
-    t = 40 * 60_000;
+    t = 7 * 3_600_000;
     await repo.grid();
     expect(calls).toBe(first * 2);
   });

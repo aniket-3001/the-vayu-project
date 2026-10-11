@@ -50,16 +50,16 @@ Dotted lines are calls that do not go through our API. Solid arrows are ours.
 
 ## The data, and what is not ours
 
-| Data                                | From                                                                                                                   | Used for                                                              |
-| ----------------------------------- | ---------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------- |
-| PM2.5 at monitors                   | OpenAQ (through our API)                                                                                               | The reading for a place; the map's monitors                           |
-| Air-quality forecast, gases         | Open-Meteo (CAMS)                                                                                                      | The next days; the Estimate where no monitor is near                  |
-| Weather                             | Open-Meteo                                                                                                             | Temperature, wind, rain, humidity, UV                                 |
-| Wind across the map                 | Open-Meteo (ICON, GFS) through our API (`/v1/wind`, kept half an hour); MET Norway when Open-Meteo is out of allowance | The wind streaks on the map; always real, never made up               |
-| Air colour where no monitor reports | Open-Meteo CAMS through our API (`/v1/airgrid`, kept half an hour)                                                     | The map's colour, labelled a model estimate, never drawn as a monitor |
-| Fires                               | NASA FIRMS (through our API)                                                                                           | Stubble-burning alerts and the fire count                             |
-| Map tiles                           | OpenFreeMap                                                                                                            | The map                                                               |
-| Place names                         | Open-Meteo geocoding                                                                                                   | Search (the browser sends only the name typed)                        |
+| Data                                | From                                                                                                                  | Used for                                                              |
+| ----------------------------------- | --------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------- |
+| PM2.5 at monitors                   | OpenAQ (through our API)                                                                                              | The reading for a place; the map's monitors                           |
+| Air-quality forecast, gases         | Open-Meteo (CAMS)                                                                                                     | The next days; the Estimate where no monitor is near                  |
+| Weather                             | Open-Meteo                                                                                                            | Temperature, wind, rain, humidity, UV                                 |
+| Wind across the map                 | Open-Meteo (ICON, GFS) through our API (`/v1/wind`, kept three hours); MET Norway when Open-Meteo is out of allowance | The wind streaks on the map; always real, never made up               |
+| Air colour where no monitor reports | Open-Meteo CAMS through our API (`/v1/airgrid`, kept six hours)                                                       | The map's colour, labelled a model estimate, never drawn as a monitor |
+| Fires                               | NASA FIRMS (through our API)                                                                                          | Stubble-burning alerts and the fire count                             |
+| Map tiles                           | OpenFreeMap                                                                                                           | The map                                                               |
+| Place names                         | Open-Meteo geocoding                                                                                                  | Search (the browser sends only the name typed)                        |
 
 The app labels each number as **Live** (a named monitor, its distance and its age) or **Estimate** (the regional model). Data older than six hours from a monitor is dropped, and nothing is advised from it.
 

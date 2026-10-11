@@ -22,10 +22,10 @@ const requestUrl = (input: Parameters<typeof fetch>[0]): string =>
   typeof input === 'string' ? input : input instanceof URL ? input.href : input.url;
 
 describe('the wind grid', () => {
-  it('covers south Asia closely and the rest of the globe coarsely, a few hundred points in all', () => {
+  it('covers south Asia closely and the rest of the globe coarsely, a couple of hundred points in all', () => {
     const points = windGridPoints();
-    expect(points.length).toBeGreaterThan(300);
-    expect(points.length).toBeLessThan(800);
+    expect(points.length).toBeGreaterThan(200);
+    expect(points.length).toBeLessThan(400);
     expect(points.some((p) => p.lat === 28 && p.lng === 77)).toBe(true);
     expect(points.some((p) => p.lat < -60)).toBe(true);
     expect(points.some((p) => p.lng < -150)).toBe(true);
@@ -72,7 +72,7 @@ describe('the wind grid', () => {
     t = 10 * 60_000;
     await repo.grid();
     expect(calls).toBe(first);
-    t = 31 * 60_000;
+    t = 3 * 3_600_000 + 60_000;
     await repo.grid();
     expect(calls).toBe(first * 2);
   });

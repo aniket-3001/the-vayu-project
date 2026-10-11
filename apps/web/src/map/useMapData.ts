@@ -3,7 +3,6 @@ import {
   fetchAirModel,
   fetchWindFromApi,
   fetchWindFromMetNo,
-  fetchWindGrid,
   recall,
   remember,
   type WindPoint,
@@ -63,10 +62,10 @@ export function useMapData(fetchImpl: typeof fetch = fetch): MapData {
       if (current) setData((now) => ({ ...now, ...patch }));
     };
     if (missing.current.wind) {
-      // Our API first (the wind is asked of the weather models once for everyone); then Open-Meteo itself, and MET
-      // Norway, which has no daily allowance to run out of, if that is turned away. Never a made-up wind.
+      // Our API first (the wind is asked of the weather models once for everyone, and kept). If it has none, MET
+      // Norway, which has no daily allowance to spend; Open-Meteo is not asked from a visitor's browser, because
+      // each point is a call against its allowance for that address. Never a made-up wind.
       fetchWindFromApi(API_URL, fetchImpl)
-        .catch(() => fetchWindGrid(fetchImpl))
         .catch(() => fetchWindFromMetNo(fetchImpl))
         .then(
           (wind) => {

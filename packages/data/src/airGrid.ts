@@ -1,5 +1,6 @@
 import type { AirGridPoint } from '@vayu/contracts';
 import { z } from 'zod';
+import { keepGrid } from './keepGrid';
 
 const CLOSE: { south: number; north: number; west: number; east: number } = {
   south: 4,
@@ -8,19 +9,18 @@ const CLOSE: { south: number; north: number; west: number; east: number } = {
   east: 98,
 };
 const CHUNK = 90;
-/** Requests in flight at once: the whole grid inside the API's time limit, and gentle on the provider. */
-const PARALLEL = 3;
 
 /**
  * The points the map's air colour is asked for when no monitor reports: every three degrees over south Asia, where the
- * app is used, and every nine degrees over the rest of the globe (the colour reaches six degrees from a point).
+ * app is used (every four), and every twelve degrees over the rest of the globe, which the colour still joins up:
+ * it reaches six degrees from each point.
  */
 export function airGridPoints(): readonly { readonly lat: number; readonly lng: number }[] {
   const points: { lat: number; lng: number }[] = [];
-  for (let lat = CLOSE.south; lat <= CLOSE.north; lat += 3)
-    for (let lng = CLOSE.west; lng <= CLOSE.east; lng += 3) points.push({ lat, lng });
-  for (let lat = -72; lat <= 72; lat += 9) {
-    for (let lng = -180; lng < 180; lng += 9) {
+  for (let lat = CLOSE.south; lat <= CLOSE.north; lat += 4)
+    for (let lng = CLOSE.west; lng <= CLOSE.east; lng += 4) points.push({ lat, lng });
+  for (let lat = -72; lat <= 72; lat += 12) {
+    for (let lng = -180; lng < 180; lng += 12) {
       const inside =
         lat >= CLOSE.south - 1 &&
         lat <= CLOSE.north + 1 &&
@@ -51,47 +51,39 @@ export interface OpenMeteoAirGridOptions {
 /**
  * The regional air model's PM2.5 (Open-Meteo's CAMS feed, no key) across the globe, for colouring the map where no
  * monitor has a recent reading. It is a model, never a measurement, and is labelled so wherever it is shown. Asked in
- * hundred-point chunks a few at a time and kept half an hour. A point the model leaves out is left out.
+ * hundred-point chunks, one at a time, and kept six hours (the model moves slowly, and Open-Meteo counts each point
+ * as a call). A point the model leaves out is left out.
  */
 export function openMeteoAirGridRepo(options: OpenMeteoAirGridOptions = {}): AirGridRepo {
   const baseUrl = options.baseUrl ?? 'https://air-quality-api.open-meteo.com/v1/air-quality';
   const fetchImpl = options.fetchImpl ?? fetch;
-  const keepMs = options.keepMs ?? 30 * 60_000;
-  const now = options.now ?? Date.now;
-  let kept: { readonly at: number; readonly points: readonly AirGridPoint[] } | undefined;
+  const fetchAll = async (): Promise<readonly AirGridPoint[]> => {
+    const wanted = airGridPoints();
+    const out: AirGridPoint[] = [];
+    for (let i = 0; i < wanted.length; i += CHUNK) {
+      const part = wanted.slice(i, i + CHUNK);
+      const url =
+        `${baseUrl}?latitude=${part.map((p) => String(p.lat)).join(',')}` +
+        `&longitude=${part.map((p) => String(p.lng)).join(',')}&current=pm2_5`;
+      const res = await fetchImpl(url);
+      if (!res.ok) throw new Error(`Open-Meteo answered ${String(res.status)}`);
+      const body: unknown = await res.json();
+      const parsed = z.union([Row, z.array(Row)]).parse(body);
+      const rows = Array.isArray(parsed) ? parsed : [parsed];
+      rows.forEach((row, k) => {
+        const at = part[k];
+        const pm25 = row.current?.pm2_5;
+        if (at !== undefined && typeof pm25 === 'number' && pm25 >= 0)
+          out.push({ lat: at.lat, lng: at.lng, pm25 });
+      });
+    }
+    if (out.length === 0) throw new Error('No air came back');
+    return out;
+  };
   return {
-    async grid() {
-      if (kept !== undefined && now() - kept.at < keepMs) return kept.points;
-      const wanted = airGridPoints();
-      const chunks: (typeof wanted)[number][][] = [];
-      for (let i = 0; i < wanted.length; i += CHUNK) chunks.push(wanted.slice(i, i + CHUNK));
-      const out: AirGridPoint[] = [];
-      for (let g = 0; g < chunks.length; g += PARALLEL) {
-        const group = chunks.slice(g, g + PARALLEL);
-        const answers = await Promise.all(
-          group.map(async (part) => {
-            const url =
-              `${baseUrl}?latitude=${part.map((p) => String(p.lat)).join(',')}` +
-              `&longitude=${part.map((p) => String(p.lng)).join(',')}&current=pm2_5`;
-            const res = await fetchImpl(url);
-            if (!res.ok) throw new Error(`Open-Meteo answered ${String(res.status)}`);
-            const body: unknown = await res.json();
-            const rows = z.union([Row, z.array(Row)]).parse(body);
-            return { part, rows: Array.isArray(rows) ? rows : [rows] };
-          }),
-        );
-        for (const { part, rows } of answers) {
-          rows.forEach((row, i) => {
-            const at = part[i];
-            const pm25 = row.current?.pm2_5;
-            if (at !== undefined && typeof pm25 === 'number' && pm25 >= 0)
-              out.push({ lat: at.lat, lng: at.lng, pm25 });
-          });
-        }
-      }
-      if (out.length === 0) throw new Error('No air came back');
-      kept = { at: now(), points: out };
-      return out;
-    },
+    grid: keepGrid(fetchAll, {
+      keepMs: options.keepMs ?? 6 * 3_600_000,
+      ...(options.now === undefined ? {} : { now: options.now }),
+    }),
   };
 }

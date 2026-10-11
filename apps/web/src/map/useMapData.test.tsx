@@ -11,6 +11,12 @@ const answer = (url: string): Response => {
   const lats = new URL(url).searchParams.get('latitude')?.split(',') ?? [];
   if (url.includes('/v1/fires'))
     return new Response(JSON.stringify({ counts: { last24h: 127 } }), { status: 200 });
+  // The wind comes from our own API, which gives its grid already worked out.
+  if (url.includes('/v1/wind'))
+    return new Response(
+      JSON.stringify({ points: [{ lat: 28, lng: 77, speed: 3, fromDeg: 270 }] }),
+      { status: 200 },
+    );
   const current = { wind_speed_10m: 3, wind_direction_10m: 270 };
   return new Response(
     JSON.stringify(lats.map((lat) => ({ latitude: Number(lat), longitude: 0, current }))),
