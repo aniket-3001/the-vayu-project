@@ -4,13 +4,13 @@ A first build of the cleaner: a centrifugal fan that pulls room air through a pl
 
 ## What was built
 
-| Step | What                                                                                              | Photo                                                               |
-| ---- | ------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------- |
-| 1    | A box with an opening for the fan's outlet                                                        | ![The box](images/build/purifier-1-box.jpg)                         |
-| 2    | A backward-curved centrifugal fan (a Hicool BCF-250 in my parts list: 230 V, 190 W) set inside it | ![The fan](images/build/purifier-2-fan.jpg)                         |
-| 3    | A pleated panel filter (Smart Air) laid on the fan's inlet                                        | ![The filter on the fan](images/build/purifier-3-filter-on-fan.jpg) |
-| 4    | A foam sheet as a pre-filter, over the filter                                                     | ![The foam pre-filter](images/build/purifier-4-foam-prefilter.jpg)  |
-| 5    | The box assembled: foam on top, outlet on the side                                                | ![The assembled prototype](images/build/purifier-5-assembled.jpg)   |
+| Step | What                                                                                             | Photo                                                               |
+| ---- | ------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------- |
+| 1    | A box with an opening for the fan's outlet                                                       | ![The box](images/build/purifier-1-box.jpg)                         |
+| 2    | A Hicool BCF-250 backward-curved centrifugal fan (230 V, 190 W per its spec sheet) set inside it | ![The fan](images/build/purifier-2-fan.jpg)                         |
+| 3    | A pleated panel filter (Smart Air) laid on the fan's inlet                                       | ![The filter on the fan](images/build/purifier-3-filter-on-fan.jpg) |
+| 4    | A foam sheet as a pre-filter, over the filter                                                    | ![The foam pre-filter](images/build/purifier-4-foam-prefilter.jpg)  |
+| 5    | The box assembled: foam on top, outlet on the side                                               | ![The assembled prototype](images/build/purifier-5-assembled.jpg)   |
 
 The measuring unit (an ESP32-S3 and an SPS30 laser particle sensor) is separate from the cleaner. It watches the room's air; the cleaner does not yet switch on or off by what it reads.
 

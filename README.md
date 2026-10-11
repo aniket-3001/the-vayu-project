@@ -140,6 +140,8 @@ The stack deploys with `cd infra && npx cdk deploy`. It needs three secrets made
 | `docs/AGENT-BOUNDARIES.md`        | What the AI may and may not do                                               |
 | `docs/claims.md`                  | Every public claim, and what supports it                                     |
 | `docs/cost.md`                    | What it costs, per unit and at each limit                                    |
+| `docs/PURIFIER.md`                | The cleaner prototype: the build, the airflow measured, what that is not     |
+| `docs/COMPARISON.md`              | The Dyson HushJet figures and what can honestly be said beside ours          |
 | `docs/UNIT.md`                    | The measuring unit: parts, wiring, protocol, what may be said                |
 | `docs/LIVE-CHECKLIST.md`          | What was checked on the live address, and what was found                     |
 | `docs/SUBMISSION.md`              | The words for the form, the video script, the AI tools used, feedback on AWS |
