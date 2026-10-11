@@ -22,6 +22,7 @@ const card = () =>
     `(document.querySelector('a.pc-hit')?.closest('div')?.parentElement?.innerText||'').replace(/\\n+/g,' | ').slice(0,260)`,
   );
 const before = await card();
+const aqiBefore = (/\| (\d+) \| AQI/.exec(before) ?? [])[1] ?? 'no reading';
 await b.send('Network.emulateNetworkConditions', {
   offline: true,
   latency: 0,
@@ -39,7 +40,7 @@ const allText = await b.T(6000);
 const full = await b.T(3000);
 ok(
   'Offline: the last good readings stay on My Air and say how old they are',
-  /Nearby station/.test(allText) && /ago/.test(allText) && /59/.test(allText),
+  /Nearby station/.test(allText) && /ago/.test(allText) && allText.includes(aqiBefore),
   (allText.match(/Nearby station[^\n]*/) || [''])[0],
 );
 ok(

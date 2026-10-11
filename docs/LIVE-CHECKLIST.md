@@ -47,6 +47,20 @@ Headless Chrome is not a phone. A pass here means the page did the right thing i
 | Recorded days | `/#/week` opens; all seven days load with their tips and alerts; the place page says the hours after the moment are hindsight                                                                             | [x]  |
 | Console       | No errors in the browser console during the run                                                                                                                                                           | [x]  |
 
+## Accounts and the recorded days, 12 Oct
+
+| Screen            | What was checked                                                                                                                                                                                                | Seen |
+| ----------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---- |
+| Welcome           | A visitor who is not signed in sees Sign in, Create an account and Try without login                                                                                                                            | [x]  |
+| Try without login | Opens the recorded days (seven chips)                                                                                                                                                                           | [x]  |
+| Recorded days     | The page says in words that it is a shared recording, that additions stay in this tab and are gone on reload, and that the originals cannot be changed or deleted                                               | [x]  |
+| Recorded days     | The original places have no remove button; a place added on top has one, and removing it works                                                                                                                  | [x]  |
+| `/v1/me`          | Refuses a caller with no token and one with a made-up token (smoke test, through CloudFront)                                                                                                                    | [x]  |
+| Sign-in config    | `/v1/auth-config` answers with the user pool and client ids; the browser may call Cognito from this address (CORS answered 200); the pool has self sign-up, email verification and an 8-character password rule | [x]  |
+| Tests             | The sign-in calls, the sync, the welcome and account screens and the API route are covered by unit tests against fakes                                                                                          | [x]  |
+
+**Not checked, and only the owner can:** a real sign-up end to end. It needs an email address to receive the code, and the build does not create accounts on the live pool. Do it once: Create an account, enter the emailed code, add a place, press the account button on My Air, then sign in on a second browser and see the place there. Also: Sign out (the places leave the device, then come back on sign-in), Forgot your password, and Delete my account. If the Authorization header is not reaching the API through CloudFront, the symptom is "Could not save" on the Account page after signing in; the stack passes it on by design (`/v1/me` has its own behavior with caching off).
+
 ## By the owner, on real hardware (11 Oct)
 
 | Screen    | What was checked                                                                                                                                                                  | Seen |
@@ -80,3 +94,4 @@ These need a real phone, a real person or the unit, and were not done:
 9. The same run showed a logged walk reading "from 00:50": a 24-hour time. It now reads in am and pm.
 10. Questions a person actually types went to the wrong answer: "Should my kid wear a mask outside?" got the school answer, "windows open in this urban smog?" got the alerts answer (the "ban" in "urban"), and "aaj bahar jaana theek hai?" matched nothing. Whole-word matching, mask and windows ahead of school, and common Hindi in Latin letters are in, with each phrase as a test. Checked on the live assistant.
 11. The request form said "we will get back to you", but nothing reads the table. It now says no one is notified automatically.
+12. A visitor on the recorded days could, by reporting a fire through the assistant, have sent it to the live API. The recorded days now send nothing to it, and a test holds that.
