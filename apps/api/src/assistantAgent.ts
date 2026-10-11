@@ -116,6 +116,8 @@ const unofficialNote = ' This is our estimate, not an official order.';
 export interface AnswerInput {
   readonly question: string;
   readonly context: AssistantContext;
+  /** The language to answer in. Hindi answers are fixed Hindi wording from the rules: the model is not asked for them. */
+  readonly lang?: 'en' | 'hi';
   /** Rewords an answer the rules already decided. */
   readonly reword: Generate;
   /** Answers a question no rule covers, from the facts only. */
@@ -133,6 +135,12 @@ export interface AnswerInput {
  */
 export async function answer(input: AnswerInput): Promise<AssistantReply> {
   const { question, context } = input;
+  if (input.lang === 'hi') {
+    // The rules' Hindi wording is the whole answer. A model is not asked to put it in other words or to answer a
+    // question no rule covers: every word of a Hindi answer is one a person wrote and read through.
+    const hindi = answerFromRules(question, context, 'hi');
+    return { text: hindi.text, basis: context.basis, source: 'rules' };
+  }
   const rule = answerFromRules(question, context);
   const { masked: maskedRule, names } = maskNames(rule.text, context);
 

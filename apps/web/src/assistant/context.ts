@@ -1,4 +1,5 @@
 import type { Alert } from '../alerts/model';
+import { alertTitleHindi } from '../alerts/hindi';
 import type { Person } from '../exposure/people';
 import { bestHour, lensSeries } from '../lens/model';
 import { grapStageFor } from '../tasks/model';
@@ -57,6 +58,7 @@ export function buildContext(
         }),
     grapStage: grapStageFor(data),
     alerts: alerts.map((a) => a.title),
+    alertsHi: alerts.map(alertTitleHindi),
     ...(fires === undefined ? {} : { fires }),
     basis: basisFor(data),
     people: people.map((p) => ({ name: p.name, age: p.age, day: p.day })),

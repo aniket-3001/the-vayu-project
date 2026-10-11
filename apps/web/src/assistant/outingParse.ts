@@ -9,6 +9,7 @@ import {
 } from '../exposure/outings';
 import type { Person } from '../exposure/people';
 import { usAqi } from '@vayu/core';
+import { minutesInHindi, type Lang } from './lang';
 
 export type OutingIntent =
   /** Something a person did outdoors, ready to save. */
@@ -41,7 +42,7 @@ export function minutesIn(text: string): number | undefined {
   if (/\bquarter of an hour\b/u.test(t)) return 15;
   if (/\ba couple of hours\b/u.test(t)) return 120;
   if (/\b(an|one|1) hour\b/u.test(t)) return 60;
-  return undefined;
+  return minutesInHindi(t);
 }
 
 /** The time of day named, in minutes after midnight, if any. */
@@ -141,10 +142,24 @@ export function parseOuting(
   };
 }
 
+const ACTIVITY_HINDI: Readonly<Record<Activity, string>> = {
+  walk: 'टहलना या दौड़ना',
+  play: 'खेल',
+  cycle: 'साइकिल',
+  other: 'बाहर का समय',
+};
+
 /** What to say once an outing is added: what it was, and the air it counted. */
-export function addedText(person: Person, outing: Omit<Outing, 'id'>): string {
+export function addedText(person: Person, outing: Omit<Outing, 'id'>, lang: Lang = 'en'): string {
   const open = ambientByHour(outing.pin, outing.date)[Math.floor(outing.start / 60)];
   const aqi = open === undefined ? undefined : usAqi(open)?.value;
+  if (lang === 'hi') {
+    const whose = person.id === 'me' ? 'आपके' : `${person.name} के`;
+    const day = outing.date === today() ? 'आज' : formatDate(outing.date);
+    return `${whose} दिन में जोड़ दिया: ${ACTIVITY_HINDI[outing.activity]}, ${outing.pin.name} में, ${clockOf(outing.start)} से ${String(outing.minutes)} मिनट, ${day}। ${
+      aqi === undefined ? '' : `तब वहाँ की हवा एक्यूआई ${String(aqi)} थी। `
+    }इसे बाहर की हवा के रूप में गिना गया${outing.trees ? ', पेड़ों की वजह से थोड़ा कम (अनुमानित)' : ''}। आप ${whose} बाहर के समय में इसे देख या हटा सकते हैं।`;
+  }
   const what = ACTIVITY_LABELS[outing.activity].toLowerCase();
   const whose = person.id === 'me' ? 'your' : `${person.name}’s`;
   return `Added to ${whose} day: ${what} in ${outing.pin.name}, ${String(outing.minutes)} minutes from ${clockOf(outing.start)}, ${outing.date === today() ? 'today' : formatDate(outing.date)}. ${

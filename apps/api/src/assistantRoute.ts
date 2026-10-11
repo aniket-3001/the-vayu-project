@@ -76,6 +76,7 @@ export async function handleAssistant(
   const reply = await answer({
     question: parsed.data.question,
     context: parsed.data.context,
+    ...(parsed.data.lang === undefined ? {} : { lang: parsed.data.lang }),
     reword: deps.reword,
     grounded: deps.grounded,
   });

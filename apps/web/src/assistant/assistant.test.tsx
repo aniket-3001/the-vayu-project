@@ -636,4 +636,82 @@ describe('the best hour in the context', () => {
       expect(savedReports()).toHaveLength(0);
     });
   });
+
+  describe('in Hindi', () => {
+    const hindiVoice = (): Voice & { said: { text: string; lang: string | undefined }[] } => {
+      const v = {
+        said: [] as { text: string; lang: string | undefined }[],
+        speak: (text: string, lang?: string): Promise<void> => {
+          v.said.push({ text, lang });
+          return Promise.resolve();
+        },
+        stop: (): void => undefined,
+      };
+      return v;
+    };
+
+    it('has a language switch, English by default, that changes the whole chat to Hindi and is remembered', async () => {
+      const voice = hindiVoice();
+      render(
+        <MemoryRouter>
+          <AssistantFab voice={voice} />
+        </MemoryRouter>,
+      );
+      await userEvent.click(screen.getByRole('button', { name: 'Vayu assistant' }));
+      const language = screen.getByRole('group', { name: 'Language' });
+      expect(within(language).getByRole('button', { name: 'English' })).toHaveAttribute(
+        'aria-pressed',
+        'true',
+      );
+      await userEvent.click(within(language).getByRole('button', { name: 'हिन्दी' }));
+      const dialog = screen.getByRole('dialog', { name: 'वायु सहायक' });
+      expect(dialog).toHaveTextContent('सैर, स्कूल, मास्क');
+      expect(screen.getByRole('textbox', { name: 'आपका संदेश' })).toHaveAttribute(
+        'placeholder',
+        'पूछें, या कुछ बताएँ',
+      );
+      expect(screen.getByRole('button', { name: 'क्या मुझे मास्क चाहिए?' })).toBeInTheDocument();
+      expect(window.localStorage.getItem('vayu.assistant.lang.v1')).toBe('hi');
+    });
+
+    it('answers in Hindi, from the Hindi rules, and reads the answer in Hindi', async () => {
+      const voice = hindiVoice();
+      window.localStorage.setItem('vayu.assistant.lang.v1', 'hi');
+      render(
+        <MemoryRouter>
+          <AssistantFab voice={voice} />
+        </MemoryRouter>,
+      );
+      await userEvent.click(screen.getByRole('button', { name: 'वायु सहायक' }));
+      await userEvent.click(screen.getByRole('button', { name: 'क्या मुझे मास्क चाहिए?' }));
+      expect(await screen.findByText(/अच्छी तरह फिट N95 या FFP2 मास्क/u)).toBeInTheDocument();
+      await waitFor(() => {
+        expect(voice.said.length).toBeGreaterThan(0);
+      });
+      expect(voice.said[0]?.lang).toBe('hi');
+      expect(voice.said[0]?.text).toMatch(/मास्क/u);
+      // A question typed in Hindi, in English mode, is still understood.
+      await userEvent.type(
+        screen.getByRole('textbox', { name: 'आपका संदेश' }),
+        'क्या खिड़कियाँ खोलूँ?{Enter}',
+      );
+      expect(await screen.findByText(/खिड़कियाँ बंद रखें/u)).toBeInTheDocument();
+    });
+
+    it('takes what someone did outdoors in Hindi and adds it, answering in Hindi', async () => {
+      window.localStorage.setItem('vayu.assistant.lang.v1', 'hi');
+      render(
+        <MemoryRouter>
+          <AssistantFab voice={hindiVoice()} />
+        </MemoryRouter>,
+      );
+      await userEvent.click(screen.getByRole('button', { name: 'वायु सहायक' }));
+      await userEvent.type(
+        screen.getByRole('textbox', { name: 'आपका संदेश' }),
+        'मैं आज पार्क में 30 मिनट टहला{Enter}',
+      );
+      expect(await screen.findByText(/दिन में जोड़ दिया/u)).toBeInTheDocument();
+      expect(screen.getByRole('link', { name: 'एक्सपोज़र में देखें' })).toBeInTheDocument();
+    });
+  });
 });

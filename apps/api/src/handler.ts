@@ -26,6 +26,7 @@ import {
   dynamoLinkStore,
   dynamoTokenStore,
   pollyEnglishVoice,
+  pollyHindiVoice,
   resumeAlertLoop,
 } from '@vayu/watch';
 import { ASSISTANT_LIMITS, GROUNDED_SYSTEM_PROMPT } from './assistantAgent';
@@ -147,6 +148,7 @@ function buildRoute(): Promise<ReturnType<typeof createRouter>> {
       assistant: assistantDeps(requestSalt, docClient),
       speech: {
         voice: pollyEnglishVoice({ maxCharacters: SPEECH_LIMITS.maxCharacters }),
+        voiceHindi: pollyHindiVoice({ maxCharacters: SPEECH_LIMITS.maxCharacters }),
         enabled: ssmSwitch(mustEnv('ASSISTANT_SWITCH_PARAM')),
         quota: dynamoQuota(mustEnv('WATCH_TABLE'), docClient),
         store: dynamoSpeechStore(mustEnv('WATCH_TABLE'), docClient),

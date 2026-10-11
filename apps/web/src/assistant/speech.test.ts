@@ -98,6 +98,25 @@ describe('the Polly voice', () => {
     expect(fallback.said).toEqual([]);
   });
 
+  it('asks for Hindi audio when the answer is in Hindi, and passes the language to the browser voice if it falls back', async () => {
+    const fetchImpl = vi.fn(() => Promise.resolve(answer('', false)));
+    const heard: { text: string; lang: string | undefined }[] = [];
+    const fallback: Voice = {
+      speak: (text, lang) => {
+        heard.push({ text, lang });
+        return Promise.resolve();
+      },
+      stop: () => undefined,
+    };
+    await pollyVoice('https://x.test', fetchImpl, fallback, player().make).speak(
+      'मास्क पहनें।',
+      'hi',
+    );
+    const [, init] = (fetchImpl.mock.calls[0] ?? []) as unknown as [string, RequestInit];
+    expect(JSON.parse(init.body as string)).toEqual({ text: 'मास्क पहनें।', lang: 'hi' });
+    expect(heard).toEqual([{ text: 'मास्क पहनें।', lang: 'hi' }]);
+  });
+
   it('starts one audio element from a tap with a moment of silence, so a phone lets the answer play later', async () => {
     const audio = player();
     const voice = pollyVoice(
@@ -225,6 +244,18 @@ describe('listening', () => {
     latest()?.onresult?.(said('is it'));
     latest()?.onresult?.(said('is it safe'));
     expect(seen).toEqual(['is it', 'is it safe']);
+  });
+
+  it('listens for Hindi when asked to, and for English by default', () => {
+    listenLive({
+      lang: 'hi',
+      onTranscript: () => undefined,
+      onEnd: () => undefined,
+      now: () => clock,
+    });
+    expect(latest()).toMatchObject({ lang: 'hi-IN' });
+    listenLive({ onTranscript: () => undefined, onEnd: () => undefined, now: () => clock });
+    expect(latest()).toMatchObject({ lang: 'en-IN' });
   });
 
   it('stops by itself a few seconds after the person goes quiet, and gives what was said', () => {

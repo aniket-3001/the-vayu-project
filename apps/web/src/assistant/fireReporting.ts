@@ -14,6 +14,12 @@ export interface FireDraft {
  */
 export function isFireReport(text: string): boolean {
   const t = text.toLowerCase();
+  // In Hindi: a fire or burning stubble, and either asking to report it or saying it is seen or burning.
+  if (/(आग|पराली|धुआँ|धुआं|जल रह|जला)/u.test(t)) {
+    if (/(रिपोर्ट|शिकायत|सूचना दे|बताना|बताऊँ|बताऊं)/u.test(t)) return true;
+    if (/[?？]\s*$/u.test(t) || /^(क्या|कब|कहाँ|कहां|कितनी|कितने|कैसे)/u.test(t)) return false;
+    return /(देखा|देख रहा|देख रही|दिख|जल रही|जल रहा|जला रहे|जलाई|लगी है|लगी हुई)/u.test(t);
+  }
   if (!/\b(fire|fires|burning|burn|burnt|stubble|smoke|smoking)\b/u.test(t)) return false;
   if (/\b(report|reporting|flag|alert)\b/u.test(t)) return true;
   if (/\?\s*$/u.test(t)) return false;
@@ -30,7 +36,7 @@ export function isFireReport(text: string): boolean {
 export const isSendIt = (text: string): boolean =>
   /^(send( it)?|send the report|no|nope|nothing|nothing else|skip|that'?s all|that is all|go ahead|ok(ay)?|yes|done)\b/iu.test(
     text.trim(),
-  );
+  ) || /^(भेजें|भेज दो|भेज दें|भेज दीजिए|नहीं|कुछ नहीं|बस|ठीक है|हाँ|हां|जी)/u.test(text.trim());
 
 /** Where the person says the fire is: where they are, or one of their places. Undefined when they have not said. */
 export function placeFromText(
@@ -41,16 +47,20 @@ export function placeFromText(
   const byName = pins.find((p) => p.name.length > 1 && t.includes(p.name.toLowerCase()));
   if (byName !== undefined) return { lat: byName.lat, lng: byName.lng, label: byName.name };
   for (const [words, role] of [
-    [/\bhome|house|flat\b/u, 'home'],
-    [/\bschool|college|campus\b/u, 'school'],
-    [/\bwork|office\b/u, 'work'],
-    [/\bpark|garden|playground\b/u, 'outdoor'],
+    [/\bhome|house|flat\b|घर|मकान|फ्लैट/u, 'home'],
+    [/\bschool|college|campus\b|स्कूल|कॉलेज|विद्यालय/u, 'school'],
+    [/\bwork|office\b|दफ़्तर|दफ्तर|ऑफिस|ऑफ़िस/u, 'work'],
+    [/\bpark|garden|playground\b|पार्क|मैदान|बगीचा|गार्डन/u, 'outdoor'],
   ] as const) {
     if (!words.test(t)) continue;
     const pin = pinForRole(role, pins);
     if (pin !== undefined) return { lat: pin.lat, lng: pin.lng, label: pin.name };
   }
-  if (/\b(near me|here|where i am|around me|my location|outside my|next to me|close by)\b/u.test(t))
+  if (
+    /\b(near me|here|where i am|around me|my location|outside my|next to me|close by)\b|मेरे पास|यहाँ|यहां|मेरी जगह|मेरे आसपास|मेरे पास में/u.test(
+      t,
+    )
+  )
     return 'here';
   return undefined;
 }

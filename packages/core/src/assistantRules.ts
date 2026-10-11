@@ -1,5 +1,18 @@
 import type { AssistantContext } from '@vayu/contracts';
+import {
+  alertsHindi,
+  fallbackHindi,
+  firesHindi,
+  maskHindi,
+  schoolHindi,
+  smokeHindi,
+  walkHindi,
+  windowsHindi,
+} from './assistantRulesHi';
 import { walkAdviceFor } from './walkAdvice';
+
+/** The language an answer is given in. */
+export type AssistantLang = 'en' | 'hi';
 
 /** Words for a level, for sentences that begin with one. */
 const bad = (c: AssistantContext): boolean => c.aqi >= 151;
@@ -76,25 +89,58 @@ function fallback(c: AssistantContext): string {
 
 export type Intent = 'school' | 'alerts' | 'fires' | 'smoke' | 'mask' | 'windows' | 'walk';
 
+/**
+ * What each kind of question looks like, in English, in Hindi (Devanagari) and in the Hindi people type in Latin
+ * letters ("tehelna", "khidki"). The words are matched whichever language the answer will be in, so a question asked
+ * in one language can be answered in the other.
+ */
 const INTENTS: readonly {
   readonly name: Intent;
   readonly test: RegExp;
   readonly say: (c: AssistantContext) => string;
+  readonly sayHindi: (c: AssistantContext) => string;
 }[] = [
   {
     name: 'school',
-    test: /school|class|child|kid|assembly|\bpe\b|emergenc|principal/iu,
+    test: /school|class|child|kid|assembly|\bpe\b|emergenc|principal|स्कूल|विद्यालय|बच्च|कक्षा|असेंबली|प्रार्थना|पीटी|skool|bachch|bacch/iu,
     say: school,
+    sayHindi: schoolHindi,
   },
-  { name: 'alerts', test: /grap|alert|warning|stage|ban/iu, say: alerts },
-  { name: 'fires', test: /stubble|burn|fire|farm|authorit/iu, say: fires },
-  { name: 'smoke', test: /cigarette|smok/iu, say: smoke },
-  { name: 'mask', test: /mask|n95|ffp2|respirator/iu, say: mask },
-  { name: 'windows', test: /window|purifier|ventilat|air the room|open the/iu, say: windows },
+  {
+    name: 'alerts',
+    test: /grap|alert|warning|stage|ban|ग्रैप|ग्राप|जी आर ए पी|चेतावनी|अलर्ट|सूचना|चरण|प्रतिबंध|chetavani/iu,
+    say: alerts,
+    sayHindi: alertsHindi,
+  },
+  {
+    name: 'fires',
+    test: /stubble|burn|fire|farm|authorit|पराली|आग|जला|जलने|खेत|अधिकारी|प्रशासन|parali/iu,
+    say: fires,
+    sayHindi: firesHindi,
+  },
+  {
+    name: 'smoke',
+    test: /cigarette|smok|सिगरेट|धूम्रपान|sigret/iu,
+    say: smoke,
+    sayHindi: smokeHindi,
+  },
+  {
+    name: 'mask',
+    test: /mask|n95|ffp2|respirator|मास्क|एन95|एन 95|मुखौटा|नकाब/iu,
+    say: mask,
+    sayHindi: maskHindi,
+  },
+  {
+    name: 'windows',
+    test: /window|purifier|ventilat|air the room|open the|खिड़की|खिड़कियाँ|खिड़कियां|खिडकी|प्यूरीफ़ायर|प्यूरीफायर|हवादार|khidki/iu,
+    say: windows,
+    sayHindi: windowsHindi,
+  },
   {
     name: 'walk',
-    test: /walk|jog|run|exercis|outdoor|outside|play|park|cycl|go out|when can|best time|morning|evening/iu,
+    test: /walk|jog|run|exercis|outdoor|outside|play|park|cycl|go out|when can|best time|morning|evening|टहल|सैर|दौड़|व्यायाम|कसरत|बाहर|खेल|पार्क|साइकिल|कब जा|सबसे अच्छा समय|सुबह|शाम|tahal|tehal|sair/iu,
     say: walk,
+    sayHindi: walkHindi,
   },
 ];
 
@@ -109,7 +155,13 @@ export interface RuleAnswer {
  * advice comes from: the model may reword it but never change it (playbook rule R3), and with the model off
  * this is the whole answer.
  */
-export function answerFromRules(question: string, context: AssistantContext): RuleAnswer {
+export function answerFromRules(
+  question: string,
+  context: AssistantContext,
+  lang: AssistantLang = 'en',
+): RuleAnswer {
   const found = INTENTS.find((i) => i.test.test(question));
+  if (lang === 'hi')
+    return { text: (found?.sayHindi ?? fallbackHindi)(context), intent: found?.name };
   return { text: (found?.say ?? fallback)(context), intent: found?.name };
 }

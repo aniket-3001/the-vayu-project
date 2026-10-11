@@ -1,4 +1,5 @@
 import type { AssistantContext } from '@vayu/contracts';
+import type { Lang } from './lang';
 
 export type { AssistantContext };
 
@@ -12,5 +13,5 @@ export interface Answer {
 
 /** Whoever answers: the local rules when offline, Amazon Bedrock behind our API when online. The screen does not care which. */
 export interface AssistantSource {
-  ask(question: string, context: AssistantContext): Promise<Answer>;
+  ask(question: string, context: AssistantContext, lang?: Lang): Promise<Answer>;
 }

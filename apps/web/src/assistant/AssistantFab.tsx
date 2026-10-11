@@ -1,4 +1,4 @@
-import { Mic, SendHorizontal, Sparkles, Store, Volume2, VolumeX, X } from 'lucide-react';
+import { Languages, Mic, SendHorizontal, Sparkles, Store, Volume2, VolumeX, X } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { alertsFor } from '../alerts/model';
@@ -11,6 +11,8 @@ import { useLivePin } from '../places/liveLocation';
 import { usePins } from '../places/usePins';
 import { Pill } from '../today/ui/Chip';
 import { apiAssistant } from './api';
+import { basisHindi, loadLang, saveLang, type Lang } from './lang';
+import { WORDS } from './strings';
 import { buildContext } from './context';
 import { localAssistant } from './local';
 import { RequestForm } from './RequestForm';
@@ -45,16 +47,6 @@ interface Message {
   /** Somewhere to go from this message, such as the Exposure screen after something was logged. */
   readonly link?: { readonly to: string; readonly label: string };
 }
-
-const SUGGESTIONS = [
-  'When can I go for a walk?',
-  'Is school safe today?',
-  'Do I need a mask?',
-  'What alerts are coming?',
-] as const;
-
-const GREETING =
-  'Ask about a walk, school, masks, windows, alerts or stubble burning. Or tell me what someone did outdoors, like “Asha walked in the park for 40 minutes”, and I will add it to their day.';
 
 /** The deployed app asks our API; the prototype and the tests answer from the rules alone. */
 const configured = (): AssistantSource =>
@@ -93,6 +85,9 @@ export function AssistantFab({
   const [listening, setListening] = useState(false);
   const [transcript, setTranscript] = useState('');
   const [spoken, setSpoken] = useState(voiceWasOn);
+  // The language answers are given in and listened for: chosen here, and kept on this device.
+  const [lang, setLangState] = useState<Lang>(loadLang);
+  const t = WORDS[lang];
   const voice = useMemo(() => given ?? configuredVoice(), [given]);
   const hearing = useRef<Listening | undefined>(undefined);
   const [view, setView] = useState<'chat' | 'request'>('chat');
@@ -218,9 +213,9 @@ export function AssistantFab({
     const say = (words: string, extra: Partial<Message> = {}): void => {
       setMessages((m) => [
         ...m,
-        { id: next.current++, from: 'vayu', text: words, basis: 'Outdoor time', ...extra },
+        { id: next.current++, from: 'vayu', text: words, basis: t.outdoorBasis, ...extra },
       ]);
-      if (spoken) void voice.speak(words);
+      if (spoken) void voice.speak(words, lang);
     };
     // A question in the middle of finding the fire's place is a new question, not an answer to it.
     if (
@@ -233,18 +228,18 @@ export function AssistantFab({
     // Someone telling us about a fire is helped to report it: where, then anything to add, then it is sent.
     if (fire.current !== undefined || (logging.current === undefined && isFireReport(text))) {
       const held: FireDraft = fire.current ?? {};
-      const basis = 'Fire report';
-      if (/^(cancel|never mind|nevermind|forget it|stop)\b/iu.test(text)) {
+      const basis = t.fireBasis;
+      if (
+        /^(cancel|never mind|nevermind|forget it|stop)\b/iu.test(text) ||
+        /^(रद्द|छोड़ो|छोड़ दो|रहने दो|नहीं भेजना|रुको|कैंसिल)/u.test(text)
+      ) {
         fire.current = undefined;
-        say('Okay, I did not send a report.', { basis });
+        say(t.notSent, { basis });
         return;
       }
       const askNote = (where: NonNullable<FireDraft['where']>): void => {
         fire.current = { where, asked: 'note' };
-        say(
-          `Got it: the fire near ${where.label}. Anything to add? Say it in a line, or tap Send it.`,
-          { basis, chips: ['Send it'] },
-        );
+        say(t.fireNote(where.label), { basis, chips: [t.sendIt] });
       };
       const send = (where: NonNullable<FireDraft['where']>, note: string | undefined): void => {
         fire.current = undefined;
@@ -253,16 +248,16 @@ export function AssistantFab({
           { baseUrl: airStore().kind === 'live' ? API_URL : undefined },
         ).then(
           (how) => {
-            say(sentWords(how), {
+            say(sentWords(how, lang), {
               basis,
               link: {
                 to: `/map?lat=${String(where.lat)}&lng=${String(where.lng)}&z=10`,
-                label: 'See it on the map',
+                label: t.seeOnMap,
               },
             });
           },
           (error: unknown) => {
-            say(error instanceof Error ? error.message : 'That did not go through.', { basis });
+            say(error instanceof Error ? error.message : t.didNotGoThrough, { basis });
           },
         );
       };
@@ -273,22 +268,20 @@ export function AssistantFab({
       const found = placeFromText(text, allPins);
       if (found === undefined) {
         fire.current = {};
-        say('Where is the fire? Say near me, or name one of your places.', {
+        say(t.whereIsFire, {
           basis,
-          chips: ['Near me', ...allPins.map((p) => p.name).slice(0, 4)],
+          chips: [t.nearMe, ...allPins.map((p) => p.name).slice(0, 4)],
         });
         return;
       }
       if (found === 'here') {
         if (!('geolocation' in navigator)) {
           fire.current = {};
-          say('This browser cannot share where you are. Name one of your places instead.', {
-            basis,
-          });
+          say(t.cannotLocate, { basis });
           return;
         }
         fire.current = {};
-        say('Finding where you are…', { basis });
+        say(t.findingYou, { basis });
         navigator.geolocation.getCurrentPosition(
           (position) => {
             askNote({
@@ -298,9 +291,7 @@ export function AssistantFab({
             });
           },
           () => {
-            say('I could not get your location. Name one of your places instead, or say cancel.', {
-              basis,
-            });
+            say(t.couldNotLocate, { basis });
           },
           { timeout: 10_000 },
         );
@@ -312,9 +303,12 @@ export function AssistantFab({
     let draftNow: LogDraft | undefined;
     if (logging.current !== undefined) {
       const held = logging.current;
-      if (/^(cancel|never mind|nevermind|forget it|stop|no)\b/iu.test(text)) {
+      if (
+        /^(cancel|never mind|nevermind|forget it|stop|no)\b/iu.test(text) ||
+        /^(रद्द|छोड़ो|छोड़ दो|रहने दो|रुको|नहीं|कैंसिल)/u.test(text)
+      ) {
         logging.current = undefined;
-        say('Okay, I left it out.');
+        say(t.leftOut);
         return;
       }
       const read = readInto(held, text, allPins);
@@ -331,7 +325,7 @@ export function AssistantFab({
       draftNow = startDraft(text, people, allPins);
     }
     if (draftNow !== undefined) {
-      const step = nextStep(draftNow, people, allPins, clock);
+      const step = nextStep(draftNow, people, allPins, clock, lang);
       if (step.kind === 'ask') {
         logging.current = step.draft;
         say(step.text, { chips: step.chips });
@@ -343,11 +337,11 @@ export function AssistantFab({
           step.person.id,
           addOuting(mine, newOuting(step.outing, mine)),
         );
-        say(addedText(step.person, step.outing), {
-          basis: 'Added to Exposure',
+        say(addedText(step.person, step.outing, lang), {
+          basis: t.addedBasis,
           link: {
             to: `/exposure?person=${encodeURIComponent(step.person.id)}&hour=${String(Math.floor((step.outing.start + step.outing.minutes - 1) / 60))}`,
-            label: 'See it in Exposure',
+            label: t.seeInExposure,
           },
         });
       } else {
@@ -358,17 +352,14 @@ export function AssistantFab({
     }
     // A question about a place that has not been set is answered by asking for it first.
     const asked = text.toLowerCase();
-    const wanted: Role | undefined = /\b(school|college)\b/u.test(asked)
+    const wanted: Role | undefined = /\b(school|college)\b|स्कूल|विद्यालय|कॉलेज/u.test(asked)
       ? 'school'
-      : /\b(work|office)\b/u.test(asked) && !/\b(workout|works)\b/u.test(asked)
+      : /\b(work|office)\b|दफ़्तर|दफ्तर|ऑफिस|ऑफ़िस/u.test(asked) &&
+          !/\b(workout|works)\b/u.test(asked)
         ? 'work'
         : undefined;
     if (wanted !== undefined && pinForRole(wanted, allPins) === undefined) {
-      const words =
-        wanted === 'school'
-          ? 'Add a school on My Air first, so I can tell you about the air there. Use the Work or school field, and choose School.'
-          : 'Add a work place on My Air first, so I can tell you about the air there. Use the Work or school field, and choose Work.';
-      say(words, { basis: 'No place set' });
+      say(wanted === 'school' ? t.noSchool : t.noWork, { basis: t.noPlaceBasis });
       return;
     }
     const roleContext =
@@ -381,15 +372,12 @@ export function AssistantFab({
         setBusy(true);
         return;
       }
-      const words =
-        first === undefined
-          ? 'Add a place on My Air first, so there is some air to talk about.'
-          : 'We could not get the air just now, so I have nothing to go on. Please try again in a moment.';
+      const words = first === undefined ? t.addPlaceFirst : t.noAirNow;
       setMessages((m) => [
         ...m,
-        { id: next.current++, from: 'vayu', text: words, basis: 'No reading yet' },
+        { id: next.current++, from: 'vayu', text: words, basis: t.noReadingBasis },
       ]);
-      if (spoken) void voice.speak(words);
+      if (spoken) void voice.speak(words, lang);
       return;
     }
     respond(text, roleContext ?? context);
@@ -398,7 +386,7 @@ export function AssistantFab({
   /** Asks the source and shows its answer, which is also spoken unless it is muted. */
   const respond = (text: string, ctx: AssistantContext): void => {
     setBusy(true);
-    source.ask(text, ctx).then(
+    source.ask(text, ctx, lang).then(
       (answer) => {
         setMessages((m) => [
           ...m,
@@ -410,7 +398,7 @@ export function AssistantFab({
           },
         ]);
         setBusy(false);
-        if (spoken) void voice.speak(answer.text);
+        if (spoken) void voice.speak(answer.text, lang);
       },
       () => {
         setMessages((m) => [
@@ -418,7 +406,7 @@ export function AssistantFab({
           {
             id: next.current++,
             from: 'vayu',
-            text: 'No answer just now. Please try again in a moment.',
+            text: t.noAnswer,
           },
         ]);
         setBusy(false);
@@ -435,11 +423,10 @@ export function AssistantFab({
       if (state?.status === 'error') {
         waitingFor.current = undefined;
         setBusy(false);
-        const words =
-          'We could not get the air just now, so I have nothing to go on. Please try again in a moment.';
+        const words = t.noAirNow;
         setMessages((m) => [
           ...m,
-          { id: next.current++, from: 'vayu', text: words, basis: 'No reading yet' },
+          { id: next.current++, from: 'vayu', text: words, basis: t.noReadingBasis },
         ]);
       }
       return;
@@ -478,6 +465,7 @@ export function AssistantFab({
     setTranscript('');
     setListening(true);
     hearing.current = listenLive({
+      lang,
       onTranscript: setTranscript,
       onEnd: (heard) => {
         hearing.current = undefined;
@@ -487,6 +475,13 @@ export function AssistantFab({
       },
     });
     if (hearing.current === undefined) setListening(false);
+  };
+  const chooseLang = (next: Lang): void => {
+    if (next === lang) return;
+    voice.stop();
+    hearing.current?.cancel();
+    setLangState(next);
+    saveLang(next);
   };
   const setVoiceOn = (on: boolean): void => {
     setSpoken(on);
@@ -503,7 +498,7 @@ export function AssistantFab({
       <button
         type="button"
         className="assistant-fab"
-        aria-label="Vayu assistant"
+        aria-label={t.title}
         aria-haspopup="dialog"
         onClick={() => {
           setView('chat');
@@ -511,7 +506,7 @@ export function AssistantFab({
         }}
       >
         <Sparkles size={22} strokeWidth={1.75} aria-hidden="true" />
-        <span className="fab-label">Assistant</span>
+        <span className="fab-label">{lang === 'hi' ? 'सहायक' : 'Assistant'}</span>
       </button>
       {open && (
         <div
@@ -532,31 +527,44 @@ export function AssistantFab({
           >
             <div className="sheet-head">
               <div>
-                <h2 id="assistant-title">Vayu assistant</h2>
+                <h2 id="assistant-title">{t.title}</h2>
                 <p className="muted small">
                   {airStore().kind === 'sample' ? (
                     <>
-                      <Pill>Sample data</Pill> Answers use made-up air, from fixed rules.
+                      <Pill>{lang === 'hi' ? 'नमूना डेटा' : 'Sample data'}</Pill> {t.sampleNote}
                     </>
                   ) : (
                     <>
-                      <Pill>Live</Pill> Answers come from fixed rules over the real readings. AI
-                      only words them, and its words are checked.
+                      <Pill>{lang === 'hi' ? 'लाइव' : 'Live'}</Pill> {t.liveNote}
                     </>
                   )}
                 </p>
+                <div className="lang-row">
+                  <div className="lang-switch" role="group" aria-label={t.languageLabel}>
+                    <Languages size={16} aria-hidden="true" />
+                    {(['en', 'hi'] as const).map((code) => (
+                      <button
+                        key={code}
+                        type="button"
+                        aria-pressed={lang === code}
+                        lang={code}
+                        onClick={() => {
+                          chooseLang(code);
+                        }}
+                      >
+                        {code === 'en' ? t.languageEnglish : t.languageHindi}
+                      </button>
+                    ))}
+                  </div>
+                </div>
               </div>
               <div className="sheet-head-actions">
                 <button
                   type="button"
                   className="icon-button"
-                  aria-label="Read answers aloud"
+                  aria-label={t.readAloud}
                   aria-pressed={spoken}
-                  title={
-                    spoken
-                      ? 'Answers are read aloud. Tap to mute.'
-                      : 'Muted. Tap to read answers aloud.'
-                  }
+                  title={spoken ? t.readAloudOn : t.readAloudOff}
                   onClick={() => {
                     setVoiceOn(!spoken);
                   }}
@@ -570,7 +578,7 @@ export function AssistantFab({
                 <button
                   type="button"
                   className="icon-button"
-                  aria-label="Close"
+                  aria-label={t.close}
                   onClick={() => {
                     setOpen(false);
                   }}
@@ -582,28 +590,34 @@ export function AssistantFab({
             {view === 'chat' ? (
               <>
                 <div className="chat" aria-live="polite">
-                  <p className="bubble vayu">{GREETING}</p>
+                  <p className="bubble vayu">{t.greeting}</p>
                   {messages.map((m) => (
                     <div key={m.id} className={`bubble ${m.from}`}>
                       <p>{m.text}</p>
                       {m.from === 'vayu' && m.basis !== undefined && (
                         <p className="small muted bubble-foot">
-                          {m.basis}
+                          {lang === 'hi' ? basisHindi(m.basis) : m.basis}
                           <button
                             type="button"
                             className="link-button"
-                            aria-label="Listen to this answer"
+                            aria-label={
+                              lang === 'hi' ? 'इस जवाब को सुनें' : 'Listen to this answer'
+                            }
                             onClick={() => {
                               voice.unlock?.();
-                              void voice.speak(m.text);
+                              void voice.speak(m.text, lang);
                             }}
                           >
-                            <Volume2 size={14} aria-hidden="true" /> Listen
+                            <Volume2 size={14} aria-hidden="true" /> {t.listen}
                           </button>
                         </p>
                       )}
                       {m.chips !== undefined && m.chips.length > 0 && (
-                        <div className="chips bubble-chips" role="group" aria-label="Quick answers">
+                        <div
+                          className="chips bubble-chips"
+                          role="group"
+                          aria-label={t.quickAnswers}
+                        >
                           {m.chips.map((chip) => (
                             <button
                               key={chip}
@@ -632,16 +646,17 @@ export function AssistantFab({
                       )}
                     </div>
                   ))}
-                  {busy && <p className="bubble vayu muted">Checking the monitors nearby…</p>}
+                  {busy && <p className="bubble vayu muted">{t.checking}</p>}
                   <div ref={end} />
                 </div>
-                <section className="ask-cta" aria-label="Get Vayu at your place">
+                <section
+                  className="ask-cta"
+                  aria-label={lang === 'hi' ? 'अपनी जगह पर वायु पाएँ' : 'Get Vayu at your place'}
+                >
                   <Store size={22} strokeWidth={1.75} aria-hidden="true" />
                   <span>
-                    <strong>Want Vayu at your school, society or home?</strong>
-                    <span className="muted small">
-                      Ask for a demo, or for air monitors at your place.
-                    </span>
+                    <strong>{t.ctaTitle}</strong>
+                    <span className="muted small">{t.ctaNote}</span>
                   </span>
                   <button
                     type="button"
@@ -650,16 +665,16 @@ export function AssistantFab({
                       setView('request');
                     }}
                   >
-                    Request
+                    {t.request}
                   </button>
                 </section>
-                <div className="chips" role="group" aria-label="Suggested questions">
+                <div className="chips" role="group" aria-label={t.suggested}>
                   {[
-                    ...SUGGESTIONS,
+                    ...t.suggestions,
                     ...loadHousehold(window.localStorage)
                       .people.filter((p) => p.id !== 'me')
                       .slice(0, 1)
-                      .map((p) => `${p.name} walked in the park for 30 minutes`),
+                      .map((p) => t.walkedIn(p.name)),
                   ].map((q) => (
                     <button
                       key={q}
@@ -683,11 +698,9 @@ export function AssistantFab({
                       <i />
                     </span>
                     <span className="listen-words">
-                      <strong>{transcript === '' ? 'Listening…' : 'Transcribing…'}</strong>
+                      <strong>{transcript === '' ? t.listening : t.transcribing}</strong>
                       <span className={`listen-text${transcript === '' ? ' muted' : ''}`}>
-                        {transcript === ''
-                          ? 'Say it now. It stops by itself after a few quiet seconds.'
-                          : transcript}
+                        {transcript === '' ? t.sayItNow : transcript}
                         {transcript !== '' && <i className="caret" aria-hidden="true" />}
                       </span>
                     </span>
@@ -698,7 +711,7 @@ export function AssistantFab({
                         hearing.current?.cancel();
                       }}
                     >
-                      Cancel
+                      {t.cancel}
                     </button>
                   </div>
                 )}
@@ -710,13 +723,13 @@ export function AssistantFab({
                   }}
                 >
                   <label className="sr-only" htmlFor="ask-input">
-                    Your message
+                    {t.yourMessage}
                   </label>
                   <input
                     id="ask-input"
                     ref={input}
                     value={draft}
-                    placeholder="Ask, or tell me something"
+                    placeholder={t.placeholder}
                     autoComplete="off"
                     onChange={(event) => {
                       setDraft(event.target.value);
@@ -726,14 +739,19 @@ export function AssistantFab({
                     <button
                       type="button"
                       className={`icon-button mic${listening ? ' live' : ''}`}
-                      aria-label={listening ? 'Stop listening' : 'Speak to the assistant'}
+                      aria-label={listening ? t.stopListening : t.speak}
                       aria-pressed={listening}
                       onClick={byVoice}
                     >
                       <Mic size={20} aria-hidden="true" />
                     </button>
                   )}
-                  <button type="submit" className="primary send" aria-label="Send" disabled={busy}>
+                  <button
+                    type="submit"
+                    className="primary send"
+                    aria-label={t.send}
+                    disabled={busy}
+                  >
                     <SendHorizontal size={18} aria-hidden="true" />
                   </button>
                 </form>

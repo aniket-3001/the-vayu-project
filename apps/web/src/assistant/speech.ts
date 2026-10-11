@@ -1,4 +1,5 @@
 import { SpeechReply } from '@vayu/contracts';
+import { SPEECH_TAG, type Lang } from './lang';
 
 /** The most that is read aloud in one go: the voice service takes 400 characters at a time. */
 export const MAX_SPOKEN = 400;
@@ -14,7 +15,7 @@ export function spokenPart(text: string, limit = MAX_SPOKEN): string {
 
 export interface Voice {
   /** Reads the words aloud; resolves when it has finished or could not. Starting again stops what was playing. */
-  speak(text: string): Promise<void>;
+  speak(text: string, lang?: Lang): Promise<void>;
   stop(): void;
   /** Called from a tap, before the answer arrives, so a phone lets the answer be spoken. */
   unlock?(): void;
@@ -25,18 +26,20 @@ export const canSpeak = (): boolean => typeof window !== 'undefined' && 'speechS
 /** The browser's own voice: always there, and not as pleasant. The fallback. */
 export function browserVoice(): Voice {
   return {
-    speak(text) {
+    speak(text, lang = 'en') {
       if (!canSpeak()) return Promise.resolve();
       window.speechSynthesis.cancel();
       return new Promise((resolve) => {
         const utterance = new SpeechSynthesisUtterance(spokenPart(text));
-        utterance.lang = 'en-IN';
+        utterance.lang = SPEECH_TAG[lang];
         utterance.rate = 0.98;
-        // Prefer a woman's voice for English in India when the browser has one.
+        // Prefer a woman's voice for the language, in India, when the browser has one; Hindi falls to any Hindi voice.
         const voices = window.speechSynthesis.getVoices();
-        const preferred = voices.find(
-          (v) => /en[-_]IN/u.test(v.lang) && /female|heera|veena|neerja|kajal/iu.test(v.name),
-        );
+        const tag = lang === 'hi' ? /hi[-_]IN/u : /en[-_]IN/u;
+        const preferred =
+          voices.find(
+            (v) => tag.test(v.lang) && /female|heera|veena|neerja|kajal|swara|lekha/iu.test(v.name),
+          ) ?? (lang === 'hi' ? voices.find((v) => tag.test(v.lang)) : undefined);
         if (preferred !== undefined) utterance.voice = preferred;
         utterance.onend = () => {
           resolve();
@@ -137,7 +140,7 @@ export function pollyVoice(
         });
       fallback.unlock?.();
     },
-    async speak(text) {
+    async speak(text, lang = 'en') {
       stop();
       const mine = turn;
       const words = spokenPart(text);
@@ -147,7 +150,7 @@ export function pollyVoice(
         const res = await fetchImpl(`${baseUrl.replace(/\/$/u, '')}/v1/speech`, {
           method: 'POST',
           headers: { 'content-type': 'application/json' },
-          body: JSON.stringify({ text: words }),
+          body: JSON.stringify({ text: words, ...(lang === 'hi' ? { lang } : {}) }),
         });
         if (res.ok) base64 = SpeechReply.parse(await res.json()).audio;
       } catch {
@@ -156,7 +159,7 @@ export function pollyVoice(
       // Something else was started, or it was stopped, while this was on its way.
       if (mine !== turn) return;
       if (base64 === undefined) {
-        await fallback.speak(words);
+        await fallback.speak(words, lang);
         return;
       }
       const el = audio();
@@ -178,7 +181,7 @@ export function pollyVoice(
         });
       } catch {
         // The browser would not play it. Read it with the browser's own voice instead of staying silent.
-        if (!state.played && mine === turn) await fallback.speak(words);
+        if (!state.played && mine === turn) await fallback.speak(words, lang);
       }
     },
   };
@@ -232,6 +235,8 @@ export interface ListenOptions {
   /** The longest it may listen. */
   readonly maxMs?: number;
   readonly now?: () => number;
+  /** The language to listen for: English (India) by default, or Hindi. */
+  readonly lang?: Lang;
 }
 
 /**
@@ -247,7 +252,7 @@ export function listenLive(options: ListenOptions): Listening | undefined {
   const noSpeechMs = options.noSpeechMs ?? 6_000;
   const maxMs = options.maxMs ?? 30_000;
   const r = new Recogniser();
-  r.lang = 'en-IN';
+  r.lang = SPEECH_TAG[options.lang ?? 'en'];
   r.continuous = true;
   r.interimResults = true;
   const began = now();

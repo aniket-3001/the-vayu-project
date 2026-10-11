@@ -354,6 +354,8 @@ export const AssistantContext = z
     /** GRAP stage by our estimate, 0 for none. */
     grapStage: z.number().int().min(0).max(4),
     alerts: z.array(z.string().max(80)).max(8),
+    /** The same alerts in Hindi, in the same order, for answers in Hindi. */
+    alertsHi: z.array(z.string().max(160)).max(8).optional(),
     fires: z.number().int().min(0).max(100_000).optional(),
     people: z
       .array(
@@ -372,8 +374,16 @@ export const AssistantContext = z
   .strict();
 export type AssistantContext = z.infer<typeof AssistantContext>;
 
+/** The language an answer is given in: English, or Hindi (Devanagari). */
+export const AssistantLanguage = z.enum(['en', 'hi']);
+
 export const AssistantRequest = z
-  .object({ question: z.string().trim().min(1).max(300), context: AssistantContext })
+  .object({
+    question: z.string().trim().min(1).max(300),
+    context: AssistantContext,
+    /** Defaults to English. Hindi answers come from fixed Hindi wording; the model is not asked for them. */
+    lang: AssistantLanguage.optional(),
+  })
   .strict();
 export type AssistantRequest = z.infer<typeof AssistantRequest>;
 
@@ -391,7 +401,13 @@ export type AssistantReply = z.infer<typeof AssistantReply>;
  * `POST /v1/speech`: an answer to be read aloud. The text is at most 400 characters; the voice is a woman's, Amazon
  * Polly's Kajal. The audio comes back as MP3, in base64.
  */
-export const SpeechRequest = z.object({ text: z.string().trim().min(1).max(400) }).strict();
+export const SpeechRequest = z
+  .object({
+    text: z.string().trim().min(1).max(400),
+    /** The language to speak in: Kajal speaks both. Defaults to Indian English. */
+    lang: AssistantLanguage.optional(),
+  })
+  .strict();
 export type SpeechRequest = z.infer<typeof SpeechRequest>;
 export const SpeechReply = z.object({
   audio: z.string().min(1),

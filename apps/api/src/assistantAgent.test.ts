@@ -247,4 +247,27 @@ describe('the standing instructions', () => {
     expect(ASSISTANT_LIMITS.perDay).toBeLessThanOrEqual(2000);
     expect(ASSISTANT_LIMITS.perCallerPerDay).toBeLessThanOrEqual(50);
   });
+
+  it('answers in Hindi from the rules’ Hindi wording alone, and never asks the model', async () => {
+    const model = vi.fn(() => Promise.resolve('model words'));
+    for (const q of ['When can I go for a walk?', 'Do I need a mask?', 'tell me a joke']) {
+      const reply = await answer({
+        question: q,
+        context,
+        lang: 'hi',
+        reword: model,
+        grounded: model,
+      });
+      expect(reply.source).toBe('rules');
+      expect(reply.text).toBe(answerFromRules(q, context, 'hi').text);
+      expect(/[\u0900-\u097F]/u.test(reply.text)).toBe(true);
+      expect(reply.basis).toBe(context.basis);
+    }
+    expect(model).not.toHaveBeenCalled();
+  });
+
+  it('keeps answering in English when no language is given', async () => {
+    const reply = await ask('Do I need a mask?');
+    expect(/[\u0900-\u097F]/u.test(reply.text)).toBe(false);
+  });
 });

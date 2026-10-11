@@ -1,4 +1,5 @@
 import { AssistantReply } from '@vayu/contracts';
+import type { Lang } from './lang';
 import { localAssistant } from './local';
 import type { Answer, AssistantContext, AssistantSource } from './types';
 
@@ -18,30 +19,31 @@ export function apiAssistant(baseUrl: string, fetchImpl: typeof fetch = fetch): 
   const without = async (
     question: string,
     context: AssistantContext,
+    lang: Lang,
     why: string,
   ): Promise<Answer> => {
-    const answer = await localAssistant.ask(question, context);
+    const answer = await localAssistant.ask(question, context, lang);
     return { ...answer, basis: `${answer.basis}. Answered by the app’s own rules: ${why}.` };
   };
   return {
-    async ask(question: string, context: AssistantContext): Promise<Answer> {
+    async ask(question: string, context: AssistantContext, lang: Lang = 'en'): Promise<Answer> {
       let res: Response;
       try {
         res = await fetchImpl(`${baseUrl.replace(/\/$/u, '')}/v1/assistant`, {
           method: 'POST',
           headers: { 'content-type': 'application/json' },
-          body: JSON.stringify({ question, context }),
+          body: JSON.stringify({ question, context, ...(lang === 'hi' ? { lang } : {}) }),
         });
       } catch {
-        return without(question, context, 'the assistant could not be reached');
+        return without(question, context, lang, 'the assistant could not be reached');
       }
       if (!res.ok)
-        return without(question, context, WHY[res.status] ?? 'the assistant had a problem');
+        return without(question, context, lang, WHY[res.status] ?? 'the assistant had a problem');
       try {
         const reply = AssistantReply.parse(await res.json());
         return { text: reply.text, basis: reply.basis };
       } catch {
-        return without(question, context, 'the assistant sent something we could not read');
+        return without(question, context, lang, 'the assistant sent something we could not read');
       }
     },
   };

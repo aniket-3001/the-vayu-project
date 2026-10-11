@@ -7,6 +7,7 @@ const setup = (
   enabled = true,
 ): {
   voice: ReturnType<typeof vi.fn>;
+  voiceHindi: ReturnType<typeof vi.fn>;
   quota: ReturnType<typeof memoryQuota>;
   kept: Map<string, string>;
   post: (body: unknown, ip?: string, method?: string) => ReturnType<typeof handleSpeech>;
@@ -21,8 +22,12 @@ const setup = (
       return Promise.resolve();
     },
   };
+  const voiceHindi = vi.fn((text: string) =>
+    Promise.resolve(new TextEncoder().encode(`hindi-mp3:${text}`)),
+  );
   const deps = {
     voice,
+    voiceHindi,
     enabled: () => Promise.resolve(enabled),
     quota,
     store,
@@ -41,7 +46,7 @@ const setup = (
       },
       deps,
     );
-  return { voice, quota, kept, post };
+  return { voice, voiceHindi, quota, kept, post };
 };
 
 describe('POST /v1/speech', () => {
@@ -124,5 +129,41 @@ describe('POST /v1/speech', () => {
   it('only takes a POST', async () => {
     const { post } = setup();
     expect(await post({ text: 'hello' }, '1.2.3.4', 'GET')).toMatchObject({ statusCode: 405 });
+  });
+
+  it('speaks Hindi in the Hindi voice, and keeps it apart from the same text in English', async () => {
+    const { post, voice, voiceHindi } = setup();
+    const hi = await post({ text: 'खिड़कियाँ बंद रखें।', lang: 'hi' });
+    expect(hi.statusCode).toBe(200);
+    const audio = (hi.body as { audio: string }).audio;
+    expect(Buffer.from(audio, 'base64').toString()).toBe('hindi-mp3:खिड़कियाँ बंद रखें।');
+    expect(voiceHindi).toHaveBeenCalledTimes(1);
+    expect(voice).not.toHaveBeenCalled();
+    // The same words asked for in English are not served from the Hindi audio.
+    await post({ text: 'खिड़कियाँ बंद रखें।', lang: 'en' });
+    expect(voice).toHaveBeenCalledTimes(1);
+  });
+
+  it('refuses a language it is not given a voice for, so the browser can read it', async () => {
+    const quota = memoryQuota();
+    const reply = await handleSpeech(
+      {
+        method: 'POST',
+        path: '/v1/speech',
+        query: {},
+        headers: {},
+        body: JSON.stringify({ text: 'नमस्ते', lang: 'hi' }),
+        sourceIp: '1.1.1.1',
+      },
+      {
+        voice: () => Promise.resolve(new Uint8Array()),
+        enabled: () => Promise.resolve(true),
+        quota,
+        store: { get: () => Promise.resolve(undefined), put: () => Promise.resolve() },
+        clock: fixedClock('2026-10-10T12:00:00.000Z'),
+        salt: 'pepper',
+      },
+    );
+    expect(reply.statusCode).toBe(503);
   });
 });

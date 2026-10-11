@@ -73,8 +73,15 @@ export async function submitFireReport(
   return 'saved';
 }
 
-/** The words for a report that went through, with what it does and does not do. */
-export const sentWords = (how: FireReportSent): string =>
-  how === 'sent'
-    ? `Thank you. Your report is saved. ${FIRE_REPORT_WORDS}`
-    : `Saved on this device only, since this is a sample. ${FIRE_REPORT_WORDS}`;
+export const FIRE_REPORT_WORDS_HINDI =
+  'हम हर रिपोर्ट इसलिए रखते हैं कि कोई व्यक्ति उसे जाँच सके। यह किसी एजेंसी को नहीं भेजी जाती।';
+
+/** The words for a report that went through, with what it does and does not do, in English or in Hindi. */
+export const sentWords = (how: FireReportSent, lang: 'en' | 'hi' = 'en'): string =>
+  lang === 'hi'
+    ? how === 'sent'
+      ? `धन्यवाद। आपकी रिपोर्ट सेव हो गई है। ${FIRE_REPORT_WORDS_HINDI}`
+      : `सिर्फ़ इस डिवाइस पर सेव हुई है, क्योंकि यह एक नमूना है। ${FIRE_REPORT_WORDS_HINDI}`
+    : how === 'sent'
+      ? `Thank you. Your report is saved. ${FIRE_REPORT_WORDS}`
+      : `Saved on this device only, since this is a sample. ${FIRE_REPORT_WORDS}`;

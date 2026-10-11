@@ -8,6 +8,7 @@ import {
 import { today, yesterday, type DateKey } from '../exposure/model';
 import type { Person } from '../exposure/people';
 import { pinForRole, roleOfLabel, ROLE_WORDS, type Role } from '../places/roles';
+import { asciiDigits, minutesInHindi, type Lang } from './lang';
 import { minutesIn } from './outingParse';
 
 /**
@@ -48,17 +49,28 @@ const PAST =
 const OUTSIDE =
   /\b(walk|walked|walking|stroll|strolled|jog|jogged|jogging|ran|run|running|play|played|playing|cycle|cycled|cycling|bike|biked|biking|outside|outdoors?|park|playground|garden)\b/u;
 
+/** The same in Hindi (Devanagari), which has no word boundaries to match on: the stems are matched anywhere. */
+const QUESTION_HI =
+  /^(क्या|कब|कहाँ|कहां|कैसे|क्यों|कौन|कितना|कितनी|कितने|कौन सा|कौन सी)|क्या\s*[^.]*\?/u;
+const PAST_HI =
+  /(गया|गयी|गई|गए|गये|खेला|खेली|खेले|टहला|टहली|टहले|दौड़ा|दौड़ी|दौड़े|चला|चली|चले|किया|की\b|थे\b|था\b|थी\b|लगाई|लगाया|बिताया|बिताए)/u;
+const OUTSIDE_HI = /(टहल|सैर|दौड़|खेल|साइकिल|बाहर|पार्क|मैदान|बगीचा|गार्डन)/u;
+const LOGGING_HI = /(जोड़|दर्ज|लिख|नोट|रिकॉर्ड|सेव)/u;
+
 const ACTIVITY_WORDS: readonly (readonly [Activity, RegExp])[] = [
-  ['walk', /\b(walk|walked|walking|stroll|strolled|jog|jogged|jogging|ran|run|running)\b/u],
-  ['play', /\b(play|played|playing)\b/u],
-  ['cycle', /\b(cycle|cycled|cycling|bike|biked|biking)\b/u],
+  [
+    'walk',
+    /\b(walk|walked|walking|stroll|strolled|jog|jogged|jogging|ran|run|running)\b|टहल|सैर|दौड़|जॉग/u,
+  ],
+  ['play', /\b(play|played|playing)\b|खेल/u],
+  ['cycle', /\b(cycle|cycled|cycling|bike|biked|biking)\b|साइकिल|सायकल/u],
 ];
 
 const WHERE_WORDS: readonly (readonly [Role, RegExp])[] = [
-  ['school', /\b(school|college|campus|class)\b/u],
-  ['work', /\b(work|office)\b/u],
-  ['outdoor', /\b(park|playground|garden|ground)\b/u],
-  ['home', /\b(home|house|flat|apartment)\b/u],
+  ['school', /\b(school|college|campus|class)\b|स्कूल|कॉलेज|विद्यालय/u],
+  ['work', /\b(work|office)\b|दफ़्तर|दफ्तर|ऑफिस|ऑफ़िस|काम की जगह/u],
+  ['outdoor', /\b(park|playground|garden|ground)\b|पार्क|मैदान|बगीचा|गार्डन/u],
+  ['home', /\b(home|house|flat|apartment)\b|घर|मकान|फ्लैट/u],
 ];
 
 /** "from 4:30 to 5" or "4 to 4:30 pm": a start and a length, when both ends are said. */
@@ -92,9 +104,15 @@ function startIn(text: string): number | undefined {
     if (at[3] === 'am' && hour === 12) hour = 0;
     if (hour <= 23 && minute <= 59) return hour * 60 + minute;
   }
-  if (/\bmorning\b/u.test(text)) return 7 * 60;
-  if (/\bafternoon\b/u.test(text)) return 15 * 60;
-  if (/\bevening\b/u.test(text)) return 17 * 60;
+  const baje = /(सुबह|दोपहर|शाम|रात)?\s*(\d{1,2})\s*बजे/u.exec(text);
+  if (baje !== null) {
+    let hour = Number(baje[2]);
+    if ((baje[1] === 'शाम' || baje[1] === 'दोपहर' || baje[1] === 'रात') && hour < 12) hour += 12;
+    if (hour <= 23) return hour * 60;
+  }
+  if (/\bmorning\b|सुबह/u.test(text)) return 7 * 60;
+  if (/\bafternoon\b|दोपहर/u.test(text)) return 15 * 60;
+  if (/\bevening\b|शाम/u.test(text)) return 17 * 60;
   return undefined;
 }
 
@@ -109,11 +127,16 @@ const TIMED =
  * something about the air.
  */
 export function isOutdoorStatement(text: string): boolean {
-  const t = text.toLowerCase().trim();
+  const t = asciiDigits(text.toLowerCase().trim());
+  const outside = OUTSIDE.test(t) || OUTSIDE_HI.test(t);
+  const asking =
+    /^(how|what|where|why|when)\b/u.test(t) || /^(कैसे|क्या|कहाँ|कहां|क्यों|कब)/u.test(t);
   // A request to log, even politely or as a question: "can you log my walk?". Not "how do I log a walk?".
-  if (LOGGING.test(t) && OUTSIDE.test(t) && !/^(how|what|where|why|when)\b/u.test(t)) return true;
-  if (t.endsWith('?') || QUESTION.test(t)) return false;
-  return (PAST.test(t) && OUTSIDE.test(t)) || TIMED.test(t);
+  if ((LOGGING.test(t) || LOGGING_HI.test(t)) && outside && !asking) return true;
+  if (t.endsWith('?') || t.endsWith('？') || QUESTION.test(t) || QUESTION_HI.test(t)) return false;
+  if ((PAST.test(t) || PAST_HI.test(t)) && outside) return true;
+  // An activity with a length of time beside it, with no verb: "30 मिनट टहलना".
+  return TIMED.test(t) || (OUTSIDE_HI.test(t) && minutesInHindi(t) !== undefined);
 }
 
 const escape = (word: string): string => word.replace(/[.*+?^${}()|[\]\\]/gu, '\\$&');
@@ -124,19 +147,24 @@ export function whoIs(text: string, people: readonly Person[]): Person | undefin
   const named = [...people]
     .filter((p) => p.id !== 'me')
     .sort((a, b) => b.name.length - a.name.length)
-    .find((p) => new RegExp(`\\b${escape(p.name.toLowerCase())}\\b`, 'u').test(t));
+    .find((p) =>
+      // A name in Devanagari has no word boundary to match on, so it is looked for anywhere.
+      /[\u0900-\u097F]/u.test(p.name)
+        ? t.includes(p.name.toLowerCase())
+        : new RegExp(`\\b${escape(p.name.toLowerCase())}\\b`, 'u').test(t),
+    );
   return named ?? people.find((p) => p.id === 'me');
 }
 
 /** Reads what a message adds to a draft: an activity, a place, a length of time, a day and a time of day. */
 export function readInto(draft: LogDraft, text: string, pins: readonly Pin[]): LogDraft {
-  const t = text.toLowerCase().trim();
+  const t = asciiDigits(text.toLowerCase().trim());
   let next: LogDraft = { ...draft };
   if (next.activity === undefined) {
     const found = ACTIVITY_WORDS.find(([, pattern]) => pattern.test(t));
     if (found !== undefined) next = { ...next, activity: found[0] };
     // “Something else” is an answer to “what did you do”.
-    else if (draft.asked === 'activity' && /\b(else|other|different)\b/u.test(t))
+    else if (draft.asked === 'activity' && /\b(else|other|different)\b|कुछ और|दूसरा|अलग/u.test(t))
       next = { ...next, activity: 'other' };
   }
   if (next.where === undefined) {
@@ -159,11 +187,13 @@ export function readInto(draft: LogDraft, text: string, pins: readonly Pin[]): L
   if (next.minutes === undefined) {
     const said =
       minutesIn(t) ??
+      minutesInHindi(t) ??
       // A bare number is a length of time only when that is what was just asked.
       (draft.asked === 'minutes' && /^\d{1,3}$/u.test(t) ? Number(t) : undefined);
     if (said !== undefined && said > 0) next = { ...next, minutes: said };
   }
-  if (/\byesterday\b/u.test(t)) next = { ...next, date: yesterday() };
+  if (/\byesterday\b/u.test(t) || (/(बीते कल|कल)/u.test(t) && PAST_HI.test(t)))
+    next = { ...next, date: yesterday() };
   const start = startIn(t);
   if (start !== undefined && next.start === undefined) next = { ...next, start };
   return next;
@@ -197,26 +227,36 @@ export function nextStep(
   people: readonly Person[],
   pins: readonly Pin[],
   now: { readonly date: DateKey; readonly minutes: number },
+  lang: Lang = 'en',
 ): LogStep {
+  const hi = lang === 'hi';
   const person = people.find((p) => p.id === draft.personId);
   const whose = person === undefined || person.id === 'me' ? 'you' : person.name;
   if (draft.activity === undefined)
     return {
       kind: 'ask',
       draft: { ...draft, asked: 'activity' },
-      text: `What did ${whose} do outside: a walk, play, a cycle, or something else?`,
-      chips: ['A walk', 'Play', 'A cycle', 'Something else'],
+      text: hi
+        ? `${whose === 'you' ? 'आपने' : `${whose} ने`} बाहर क्या किया: टहलना, खेल, साइकिल या कुछ और?`
+        : `What did ${whose} do outside: a walk, play, a cycle, or something else?`,
+      chips: hi
+        ? ['टहलना', 'खेल', 'साइकिल', 'कुछ और']
+        : ['A walk', 'Play', 'A cycle', 'Something else'],
     };
   if (draft.where === undefined) {
     if (pins.length === 0)
       return {
         kind: 'needs-place',
-        text: 'Add your places on My Air first (home, work or school, a park), then tell me where it was.',
+        text: hi
+          ? 'पहले मेरी हवा (My Air) पर अपनी जगहें जोड़ें (घर, काम या स्कूल, पार्क), फिर बताएँ कि यह कहाँ हुआ।'
+          : 'Add your places on My Air first (home, work or school, a park), then tell me where it was.',
       };
     return {
       kind: 'ask',
       draft: { ...draft, asked: 'where' },
-      text: 'Where was it? Say a place you have set.',
+      text: hi
+        ? 'यह कहाँ हुआ? अपनी सेट की हुई किसी जगह का नाम बताएँ।'
+        : 'Where was it? Say a place you have set.',
       chips: WHERE_CHIPS(pins),
     };
   }
@@ -227,23 +267,34 @@ export function nextStep(
   if (pin === undefined)
     return {
       kind: 'needs-place',
-      text: `There is no ${whereWords(draft.where)} place set yet. Add it on My Air first, then tell me again.`,
+      text: hi
+        ? `अभी ${WORD_HINDI['role' in draft.where ? draft.where.role : 'outdoor']} वाली जगह सेट नहीं है। पहले मेरी हवा पर जोड़ें, फिर दोबारा बताएँ।`
+        : `There is no ${whereWords(draft.where)} place set yet. Add it on My Air first, then tell me again.`,
     };
   if (draft.minutes === undefined)
     return {
       kind: 'ask',
       draft: { ...draft, asked: 'minutes' },
-      text: `For how long, at ${pin.name}?`,
-      chips: ['15 minutes', '30 minutes', '1 hour'],
+      text: hi ? `${pin.name} में कितनी देर?` : `For how long, at ${pin.name}?`,
+      chips: hi ? ['15 मिनट', '30 मिनट', '1 घंटा'] : ['15 minutes', '30 minutes', '1 hour'],
     };
-  if (person === undefined) return { kind: 'problem', text: 'I could not tell whose day this is.' };
+  if (person === undefined)
+    return {
+      kind: 'problem',
+      text: hi ? 'मैं समझ नहीं पाया कि यह किसका दिन है।' : 'I could not tell whose day this is.',
+    };
   const minutes = draft.minutes;
   let start =
     draft.start ?? (draft.date === now.date ? Math.max(0, now.minutes - minutes) : 17 * 60);
   if (start + minutes > 24 * 60) start = 24 * 60 - minutes;
   const problem = problemWithOuting({ start, minutes }, draft.date, today(), now.minutes);
   if (problem !== undefined)
-    return { kind: 'problem', text: `${problem} Tell me again when it was.` };
+    return {
+      kind: 'problem',
+      text: hi
+        ? 'यह इस तरह दर्ज नहीं हो सकता। कृपया दोबारा बताएँ कि यह कब हुआ था।'
+        : `${problem} Tell me again when it was.`,
+    };
   return {
     kind: 'save',
     person,
@@ -259,6 +310,13 @@ export function nextStep(
     },
   };
 }
+
+const WORD_HINDI: Readonly<Record<Role, string>> = {
+  home: 'घर',
+  work: 'काम',
+  school: 'स्कूल',
+  outdoor: 'पार्क',
+};
 
 /** The words for an activity, for a chip or a sentence. */
 export const activityName = (activity: Activity): string => ACTIVITY_LABELS[activity].toLowerCase();

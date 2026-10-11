@@ -5717,3 +5717,37 @@ table.hourly .row-label {
 .alert-row.blink {
   border: 2.5px dotted var(--edge);
 }
+
+/* The assistant's language switch: two small buttons, English and Hindi, in the sheet's header */
+.lang-switch {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 3px 4px 3px 8px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--card);
+  color: var(--muted);
+}
+.lang-switch button {
+  min-height: 30px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: 999px;
+  background: none;
+  color: var(--text);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.lang-switch button[aria-pressed='true'] {
+  background: #3b82c4;
+  color: #fff;
+}
+
+.lang-row {
+  display: flex;
+  justify-content: flex-start;
+  margin: -4px 0 2px;
+}

@@ -42,3 +42,34 @@ export function walkAdviceFor(aqi: number): WalkAdvice {
     long: 'This is the best hour of a bad day. If you must go out, 10 minutes at most, with a well-fitted N95 or FFP2 mask. Otherwise do it indoors.',
   };
 }
+
+/**
+ * The same advice in Hindi, band for band, written to be read through and not machine-translated. `short` is for a
+ * tight place, `long` for a sentence or two.
+ */
+export function walkAdviceHindi(aqi: number): Pick<WalkAdvice, 'short' | 'long'> {
+  if (aqi <= 50)
+    return {
+      short: 'कहीं भी, जितनी देर चाहें',
+      long: 'हवा अच्छी है: कहीं भी, जितनी देर चाहें टहलें।',
+    };
+  if (aqi <= 100)
+    return {
+      short: 'कहीं भी, जितनी देर चाहें',
+      long: 'ज़्यादातर लोगों के लिए ठीक है: कहीं भी, जितनी देर चाहें टहलें। प्रदूषण के प्रति संवेदनशील हों तो धीरे चलें।',
+    };
+  if (aqi <= 150)
+    return {
+      short: 'थोड़ी देर, पेड़ों वाले पार्क में',
+      long: 'जा सकते हैं, पर थोड़ी देर, लगभग 30 मिनट, और पेड़ों वाला पार्क चुनें, जहाँ हवा थोड़ी साफ़ होती है। संवेदनशील हों तो धीरे चलें।',
+    };
+  if (aqi <= 200)
+    return {
+      short: '15–20 मिनट, पेड़ों वाला पार्क, N95',
+      long: 'तभी जाएँ जब ज़रूरी हो: 15 से 20 मिनट, पेड़ों वाले पार्क में, और अच्छी तरह फिट N95 या FFP2 मास्क पहनें।',
+    };
+  return {
+    short: 'ज़्यादा से ज़्यादा 10 मिनट, N95 के साथ',
+    long: 'यह एक ख़राब दिन का सबसे अच्छा घंटा है। बाहर जाना ही पड़े तो ज़्यादा से ज़्यादा 10 मिनट, अच्छी तरह फिट N95 या FFP2 मास्क के साथ। वरना घर के अंदर करें।',
+  };
+}

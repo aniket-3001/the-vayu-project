@@ -13,7 +13,10 @@ export interface SpeechStore {
 }
 
 export interface SpeechDeps {
+  /** Speaks Indian English. */
   readonly voice: Voice;
+  /** Speaks Hindi (the same voice, Kajal). Absent: Hindi is not spoken and the app's browser voice reads it. */
+  readonly voiceHindi?: Voice | undefined;
   /** The same kill switch as the assistant: off, and nothing is spoken. */
   readonly enabled: Switch;
   readonly quota: Quota;
@@ -67,11 +70,15 @@ export async function handleSpeech(request: ApiRequest, deps: SpeechDeps): Promi
     );
   }
   const { text } = parsed.data;
+  const lang = parsed.data.lang ?? 'en';
+  const speak = lang === 'hi' ? deps.voiceHindi : deps.voice;
+  if (speak === undefined)
+    return failure(503, 'speech_off', 'This language is not spoken here. The browser can read it.');
 
   if (!(await deps.enabled()))
     return failure(503, 'speech_off', 'The voice is switched off right now.');
 
-  const key = `SPEECH#${createHash('sha256').update(`${VOICE_NAME}|${text}`).digest('hex')}`;
+  const key = `SPEECH#${createHash('sha256').update(`${VOICE_NAME}|${lang}|${text}`).digest('hex')}`;
   const kept = await deps.store.get(key);
   if (kept !== undefined)
     return ok({ audio: kept, voice: VOICE_NAME, characters: text.length, cached: true });
@@ -96,7 +103,7 @@ export async function handleSpeech(request: ApiRequest, deps: SpeechDeps): Promi
 
   let audio: Uint8Array;
   try {
-    audio = await deps.voice(text);
+    audio = await speak(text);
   } catch {
     return failure(
       502,
