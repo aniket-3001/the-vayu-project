@@ -5,8 +5,9 @@ the demo. The purifier build is separate and is shown only as a build with a mea
 
 **Status (11 Oct):** the firmware `firmware/vayu-unit/vayu-unit.ino` compiles and runs on an ESP32-S3 (QFN56, with
 Wi-Fi and Bluetooth 5 LE) wired to an SPS30 over UART; the serial monitor shows the sensor's serial number and PM1, PM2.5,
-PM4 and PM10 every two seconds, and the board advertises as `Vayu-XXXX`. **Not yet done:** connecting the app to it over
-Bluetooth from a phone, and any comparison with a monitor. Nothing in the app claims a measurement it has not received.
+PM4 and PM10 every two seconds, and the board advertises as `Vayu-XXXX`. The live site connected to it over Bluetooth from
+Chrome on a Mac and showed the readings. **Not yet done:** connecting from an Android phone, and any comparison with a monitor.
+Nothing in the app claims a measurement it has not received.
 
 ## What it is
 
