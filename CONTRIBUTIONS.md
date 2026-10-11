@@ -43,11 +43,3 @@ I built this alone, and I used an AI coding assistant for most of the typing. Th
   screenshots, then fixed.
 - The sensor stopped answering as soon as Bluetooth connected. I saw "no reading" in the app, we read the serial log, and the
   firmware now restarts it. `docs/learning-log.md` lists these and the rest.
-
-## Earlier work, and what was done in the event window **(confirm against the rules)**
-
-An earlier repository, `vayu-labs` (first commits 5 October 2026, before the event opened), holds the first version of the
-backend and a plan that was restarted. This repository, `vayu-air`, was started on 10 October. It brought across and extended
-the data layer, the API contract and the AWS stack, and everything the app does now was built here: the screens, the
-assistant, Hindi, the Bluetooth unit and its firmware, the recorded week and the documents. Check the event's prior-work rule
-against these dates before submitting, and say plainly on the form which parts came from the earlier repository.

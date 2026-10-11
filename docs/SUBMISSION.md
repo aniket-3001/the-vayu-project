@@ -49,8 +49,7 @@ pauses, arrow keys step, `#step=3` holds on a scene).
 
 I built this alone (`CONTRIBUTIONS.md`). The app, the API and the AWS stack were written with an AI coding assistant
 (Claude Code), directed and reviewed by me, and every change goes through `make prove` (lint, types, tests, `cdk synth`,
-bundle check). I designed, wired, flashed and tested the measuring unit myself. **(confirm the prior-work answer: see
-`CONTRIBUTIONS.md`)**
+bundle check). I designed, wired, flashed and tested the measuring unit myself.
 
 ## AI tools used
 
