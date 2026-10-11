@@ -105,15 +105,24 @@ describe('the Places screen', () => {
     expect(home.querySelector('.pc-aqi strong')).toBeInTheDocument();
   });
 
-  it('shows, on a school’s card and only there, whether the morning assembly is inside or on the ground', () => {
+  it('says in one short line, on a school’s card, whether the morning assembly is inside or on the ground', () => {
     screenWith();
-    const school = cardOf('School');
-    const line = school.querySelector('.pc-assembly');
-    expect(line).toBeInTheDocument();
-    expect(line).toHaveTextContent(/Morning assembly: (Inside|Open ground)/u);
-    expect(line).toHaveTextContent(/AQI \d+/u);
-    expect(cardOf('Home').querySelector('.pc-assembly')).not.toBeInTheDocument();
+    const line = cardOf('School').querySelector('.pc-note');
+    expect(line).toHaveClass('assembly');
+    expect(line).toHaveTextContent(/^Morning assembly: (Inside|Open ground)/u);
+    // One line only: the reasons and the AQI are on the place's page.
+    expect(line?.textContent?.length).toBeLessThan(45);
+    expect(cardOf('Home').querySelector('.pc-note')).not.toHaveClass('assembly');
   });
+
+  it('gives every card one short note in the same place, so the cards read alike', () => {
+    screenWith();
+    const notes = Array.from(document.querySelectorAll('.place-card .pc-note'));
+    expect(notes.length).toBeGreaterThanOrEqual(2);
+    const home = cardOf('Home').querySelector('.pc-note');
+    expect(home).toHaveTextContent(/^Cleanest hour: /u);
+  });
+
   it('removes a place, and remembers it after a reload', async () => {
     screenWith();
     await userEvent.click(screen.getByRole('button', { name: 'Remove School' }));

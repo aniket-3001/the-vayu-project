@@ -1,3 +1,4 @@
+import type { Pin } from '../../data/pins';
 import { levelForAqi } from '../../design/levels';
 import { clock12, dayMonth, weekday } from '../time';
 import type { TodayData } from '../types';
@@ -7,6 +8,7 @@ import { Health } from './Health';
 import { Hero } from './Hero';
 import { History } from './History';
 import { Hourly } from './Hourly';
+import { PlaceSpecial } from './PlaceSpecial';
 import { PollutantTiles } from './Pollutants';
 import { levelVars } from './format';
 
@@ -14,9 +16,12 @@ import { levelVars } from './format';
 export function TodayScreen({
   data,
   back,
+  pin,
 }: {
   readonly data: TodayData;
   readonly back?: React.ReactNode;
+  /** The pinned place, so the page can say what is special about it (a school's assembly, a park's best walk). */
+  readonly pin?: Pin;
 }): React.JSX.Element {
   const level = levelForAqi(data.aqi);
   return (
@@ -32,16 +37,17 @@ export function TodayScreen({
         </p>
       </header>
       <main className="layout">
-        <div className="col-main">
+        {/* Two columns that line up by row: the air and what is special here; the hours and the pollutants; the days
+            and what to do. On a phone they are one column in this order. */}
+        <div className="cell">
           <Hero data={data} />
           <Attribution data={data} />
-          <Hourly data={data} />
-          <Daily data={data} />
         </div>
-        <div className="col-side">
-          <PollutantTiles data={data} />
-          <Health aqi={data.aqi} />
-        </div>
+        <PlaceSpecial data={data} pin={pin} />
+        <Hourly data={data} />
+        <PollutantTiles data={data} />
+        <Daily data={data} />
+        <Health aqi={data.aqi} />
         <div className="col-wide">
           <History data={data} />
         </div>

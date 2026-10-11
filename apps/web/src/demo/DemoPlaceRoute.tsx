@@ -40,6 +40,7 @@ export function DemoPlaceRoute(): React.JSX.Element {
       </div>
       <TodayScreen
         data={readingForPin(pin, day)}
+        pin={pin}
         back={
           <Link to="/" className="back">
             <ChevronLeft size={18} strokeWidth={2} aria-hidden="true" /> My Air

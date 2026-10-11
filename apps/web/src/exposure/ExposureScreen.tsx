@@ -410,6 +410,7 @@ export function ExposureScreen({
                   value={picked}
                   onChange={setPicked}
                   label="Hour"
+                  rowLabel="Your total day"
                   inputId="hour"
                   ticks={HOUR_TICKS}
                   nowIndex={isToday ? hoursSoFar(today()) : undefined}

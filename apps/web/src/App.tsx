@@ -65,6 +65,7 @@ function PlaceRoute(): React.JSX.Element {
     <TodayScreen
       data={{ ...state.data, place: { ...state.data.place, name: pin.name } }}
       back={back}
+      pin={pin}
     />
   );
 }

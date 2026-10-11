@@ -132,8 +132,43 @@ export const SCENARIOS: readonly Scenario[] = [
   },
 ];
 
+/**
+ * More presets to look at one by one: they are in the picker but not in the one-minute tour, which stays about a
+ * minute.
+ */
+export const MORE_SCENARIOS: readonly Scenario[] = [
+  {
+    id: 'rain-alert',
+    label: 'Rain alert',
+    caption: 'Dark clouds, drops that bead and slide down the card: rain should clear the air.',
+    route: '/',
+    seconds: 5,
+    state: { day: 'rainy', openAlert: 'rain-0' },
+  },
+  {
+    id: 'wind',
+    label: 'Windy day',
+    caption: 'Wind carries smoke and dust away: streaks and leaves behind the words.',
+    route: '/',
+    seconds: 5,
+    state: { day: 'hazardous', openAlert: 'wind-0' },
+  },
+  {
+    id: 'place',
+    label: 'Place details',
+    caption:
+      'On a place’s page: its special alerts, then hours beside pollutants, days beside advice.',
+    route: HOME_PAGE,
+    seconds: 6,
+    state: { day: 'hazardous' },
+  },
+];
+
+/** Every preset, tour first. */
+export const ALL_SCENARIOS: readonly Scenario[] = [...SCENARIOS, ...MORE_SCENARIOS];
+
 export const scenarioById = (id: string | null | undefined): Scenario | undefined =>
-  SCENARIOS.find((scenario) => scenario.id === id);
+  ALL_SCENARIOS.find((scenario) => scenario.id === id);
 
 /** Total seconds the tour takes. */
 export const TOUR_SECONDS = SCENARIOS.reduce((sum, scenario) => sum + scenario.seconds, 0);

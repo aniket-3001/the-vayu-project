@@ -105,4 +105,40 @@ describe('the Today screen', () => {
     render(<TodayScreen data={sampleDay('good')} />);
     expect(screen.getByText(/within the WHO 24-hour guideline/u)).toBeInTheDocument();
   });
+
+  it('lines the cards up in rows of two: the air and what is special, hours and pollutants, days and advice', () => {
+    render(<TodayScreen data={sampleDay('hazardous')} />);
+    const main = screen.getByRole('main');
+    const names = Array.from(main.children).map(
+      (el) => el.querySelector('h2')?.textContent ?? el.getAttribute('class') ?? '',
+    );
+    const at = (name: RegExp): number => names.findIndex((n) => name.test(n));
+    expect(at(/Special for this place/u)).toBe(1);
+    expect(at(/Hourly|hour/iu)).toBe(2);
+    expect(at(/pollutant/iu)).toBe(3);
+    expect(at(/Daily forecast/u)).toBe(4);
+    expect(at(/health|recommend/iu)).toBe(5);
+  });
+
+  it('says what is special about a school, in full, with its assembly', () => {
+    const pin = { id: 's', name: 'DAV Public School', lat: 28.4, lng: 77.05 };
+    render(<TodayScreen data={sampleDay('unhealthy')} pin={pin} />);
+    const card = screen.getByRole('region', { name: 'Special for this place' });
+    expect(card).toHaveTextContent('Morning assembly');
+    expect(card).toHaveTextContent(/Hold assembly|Open ground|inside/iu);
+  });
+
+  it('names the best time for a walk in a park, and the cleanest hour anywhere else', () => {
+    const park = { id: 'p', name: 'Park', lat: 28.5, lng: 77.1 };
+    const { unmount } = render(<TodayScreen data={sampleDay('moderate')} pin={park} />);
+    expect(screen.getByRole('region', { name: 'Special for this place' })).toHaveTextContent(
+      'Best time for a walk here',
+    );
+    unmount();
+    const home = { id: 'h', name: 'Home', lat: 28.59, lng: 77.05 };
+    render(<TodayScreen data={sampleDay('moderate')} pin={home} />);
+    expect(screen.getByRole('region', { name: 'Special for this place' })).toHaveTextContent(
+      'Cleanest daylight hour',
+    );
+  });
 });

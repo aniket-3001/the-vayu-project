@@ -15,7 +15,14 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { SAMPLE_AS_OF } from '../today/sample';
 import { clock12 } from '../today/time';
 import { DEVICES, deviceById, fitScale, geometry, type DeviceId } from './devices';
-import { applyScenario, SCENARIOS, scenarioById, TOUR_SECONDS, type Scenario } from './scenarios';
+import {
+  ALL_SCENARIOS,
+  applyScenario,
+  SCENARIOS,
+  scenarioById,
+  TOUR_SECONDS,
+  type Scenario,
+} from './scenarios';
 import { APP_KEYS, readDemo } from './state';
 import { useSize } from './useSize';
 import './demo.css';
@@ -217,7 +224,7 @@ export function DeviceShell(): React.JSX.Element {
           )}
         </button>
         <div className="scene-chips" role="group" aria-label="Scenarios">
-          {SCENARIOS.map((scenario) => (
+          {ALL_SCENARIOS.map((scenario) => (
             <button
               key={scenario.id}
               type="button"

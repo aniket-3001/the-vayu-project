@@ -1,4 +1,4 @@
-import { School, X } from 'lucide-react';
+import { Footprints, School, Sun, X } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import type { Pin } from '../../data/pins';
 import { levelForAqi } from '../../design/levels';
@@ -8,9 +8,8 @@ import { levelVars } from '../../today/ui/format';
 import { CONDITION_LABELS, FaceIcon, WeatherIcon } from '../../today/ui/icons';
 import { AirFigures } from '../../units/AirUnits';
 import { airStore, useToday } from '../../air/store';
-import { assemblyFor } from '../../alerts/assembly';
 import { grapStageFor } from '../../tasks/model';
-import { isSchoolPin } from '../roles';
+import { placeNote } from '../notes';
 import { AirLoading } from '../../components/AirState';
 
 /** When a card was last let go after being dragged, so the press that ends a drag does not open it. */
@@ -106,8 +105,10 @@ export function PlaceCard({
       : live.sameAs === undefined
         ? 'Live location'
         : `Same as ${live.sameAs}`;
-  // A school shows where its morning assembly should be held, from the air expected at eight.
-  const assembly = isSchoolPin(pin) ? assemblyFor(reading) : undefined;
+  // One short line for every card, so the cards read alike: a school's assembly, a park's best walk, and for any other
+  // place the cleanest hour. The detail is on the place's page.
+  const note = placeNote(reading, pin);
+  const NoteIcon = note?.kind === 'assembly' ? School : note?.kind === 'walk' ? Footprints : Sun;
   const level = levelForAqi(reading.aqi);
   // A GRAP stage likely at this place, by our estimate, as a pill that glows in the stage's colour.
   const stage = grapStageFor(reading);
@@ -132,14 +133,18 @@ export function PlaceCard({
         }}
       >
         <span className="pc-name">{heading}</span>
-        <span className="pc-detail">{pin.detail ?? 'Delhi NCR'}</span>
+        <span className="pc-detail">
+          {live?.sameAs === undefined && live !== undefined && (
+            <b className="outdoor-tag">Outdoor</b>
+          )}
+          {pin.detail ?? 'Delhi NCR'}
+        </span>
         {live !== undefined && (
           <span className="live-tags">
             <span className="live-pill">
               <i className="live-dot" aria-hidden="true" />
               LIVE
             </span>
-            {live.sameAs === undefined && <span className="outdoor-tag">Outdoor</span>}
           </span>
         )}
         <AirFigures aqi={reading.aqi} pm25={reading.pm25} layout="auto" />
@@ -168,15 +173,14 @@ export function PlaceCard({
         </span>
       </Link>
       <div className="pc-more">
-        {assembly !== undefined && (
-          <p className={`pc-assembly ${assembly.where}`}>
-            <School size={16} strokeWidth={2} aria-hidden="true" />
-            <span>
-              <strong>Morning assembly: {assembly.label}</strong>
-              <span className="pc-assembly-words">{assembly.words}</span>
-            </span>
-          </p>
-        )}
+        <p className={`pc-note${note === undefined ? ' none' : ` ${note.kind}`}`}>
+          {note !== undefined && (
+            <>
+              <NoteIcon size={15} strokeWidth={2} aria-hidden="true" />
+              <span>{note.short}</span>
+            </>
+          )}
+        </p>
         <ul className="pc-days" aria-label="Today and the next two days">
           {reading.daily.slice(0, 3).map((day, index) => (
             <li key={day.date}>

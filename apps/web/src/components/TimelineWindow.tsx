@@ -22,6 +22,7 @@ export function TimelineWindow({
   bubble,
   inputId,
   max,
+  rowLabel,
 }: {
   readonly slots: readonly TimelineSlot[];
   readonly value: number;
@@ -38,6 +39,8 @@ export function TimelineWindow({
   readonly inputId?: string;
   /** The last slot that can be picked; the line may run on past it. */
   readonly max?: number;
+  /** A name for the bar itself, shown at its left: "Your total day". */
+  readonly rowLabel?: string;
 }): React.JSX.Element {
   const track = useRef<HTMLDivElement>(null);
   const dragging = useRef(false);
@@ -72,6 +75,7 @@ export function TimelineWindow({
           dragging.current = false;
         }}
       >
+        {rowLabel !== undefined && <span className="tl-row-label">{rowLabel}</span>}
         <div className="tl-bar" aria-hidden="true">
           {slots.map((slot, i) => (
             <span

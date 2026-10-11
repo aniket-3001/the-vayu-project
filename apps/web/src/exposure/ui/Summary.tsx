@@ -66,9 +66,9 @@ export function Summary({
           : `The same hours in open air would have averaged AQI ${String(summary.openAirAqi)}, so where you were made no difference.`}
       </p>
       <p className="bar-label">
-        <strong>{summary.fullDay ? 'Your total day' : 'Your total day so far'}</strong>
+        <strong>Hours at each level</strong>
         <span className="muted small">
-          {summary.hours} {summary.hours === 1 ? 'hour' : 'hours'}, by level of air
+          {summary.hours} {summary.hours === 1 ? 'hour' : 'hours'} counted
         </span>
       </p>
       <div
