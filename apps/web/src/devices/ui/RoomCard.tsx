@@ -76,7 +76,7 @@ export function RoomCard(): React.JSX.Element | null {
       </Link>
       <div className="pc-more">
         <div className="pc-live" aria-hidden={room.recent.length < 2 ? 'true' : undefined}>
-          <LiveChart points={room.recent} height={64} compact maxSpanMs={5 * 60_000} />
+          <LiveChart points={room.recent} height={120} compact stretch maxSpanMs={5 * 60_000} />
         </div>
         <p className="pc-source">
           {live ? (

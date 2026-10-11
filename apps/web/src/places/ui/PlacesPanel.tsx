@@ -344,7 +344,6 @@ export function PlacesPanel({
       {/* The dragging library puts its own helper elements beside the list, so it wraps the list, not fills it. */}
       <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
         <ul className="place-grid" aria-label="Your places">
-          <RoomCard />
           {pins.length < MAX_PINS && (
             <li className="add-place add-first">
               <button
@@ -362,6 +361,7 @@ export function PlacesPanel({
               </button>
             </li>
           )}
+          <RoomCard />
           {liveCard !== undefined && <PlaceCard key="live" pin={liveCard} live={{ sameAs }} />}
           <SortableContext items={pins.map((p) => p.id)} strategy={rectSortingStrategy}>
             {pins.map((pin) => (

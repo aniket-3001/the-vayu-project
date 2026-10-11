@@ -57,7 +57,7 @@ describe('the room card on My Air', () => {
     expect(screen.queryByLabelText('Open your room')).toBeNull();
   });
 
-  it('is the first card, with the live line where the forecast is, and opens the room', async () => {
+  it('comes right after Add a place, with the live line where the forecast is, and opens the room', async () => {
     saveUnit();
     const u = unitTransport();
     await sharedUnit.connect(u.transport, () => 'unit:Vayu-78A5');
@@ -72,7 +72,9 @@ describe('the room card on My Air', () => {
       u.send(21);
     });
     const grid = screen.getByRole('list', { name: 'Your places' });
-    const first = grid.firstElementChild;
+    // After the "Add a place" card, which stays first.
+    expect(grid.children[0]).toHaveClass('add-first');
+    const first = grid.children[1];
     expect(first).toContainElement(screen.getByLabelText('Open your room'));
     expect(screen.getByText('Your room')).toBeInTheDocument();
     expect(first?.querySelector('.chart-live.compact svg')).not.toBeNull();
@@ -114,7 +116,9 @@ describe('the room page', () => {
     expect(
       screen.getByRole('heading', { name: 'The room against outside, live' }),
     ).toBeInTheDocument();
-    expect(screen.getByRole('heading', { name: 'The gap' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'What it tells you' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Reconnect device' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Remove device' })).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: 'Your room today' })).toBeInTheDocument();
     expect(screen.queryByText(/\bwind\b/iu)).toBeNull();
     expect(screen.queryByText(/\bhumidity\b/iu)).toBeNull();

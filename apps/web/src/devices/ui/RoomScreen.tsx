@@ -1,12 +1,11 @@
-import { ChevronLeft } from 'lucide-react';
+import { usAqi } from '@vayu/core';
+import { Bluetooth, ChevronLeft, Trash2 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { levelForAqi, LEVELS } from '../../design/levels';
+import { LEVELS, levelForAqi } from '../../design/levels';
 import { today } from '../../exposure/model';
 import { SPOT_LABELS } from '../../exposure/spots';
 import { concentration, levelVars } from '../../today/ui/format';
-import { usAqi } from '@vayu/core';
-import { Bluetooth } from 'lucide-react';
 import type { UnitTransport } from '../ble';
 import { measuredHourly } from '../measured';
 import { roomAdvice } from '../roomAdvice';
@@ -28,8 +27,9 @@ interface Marked {
 }
 
 /**
- * The room, opened out: the live line of the room against the air outside, what that gap is made of, and the room's day.
- * It is the page for "what is the air I am breathing in this room, and what is my purifier or my window doing to it".
+ * The room, opened out on one screen: the live line of the room against the air outside (80%) beside the room's
+ * numbers (20%), then the room's day (half) beside a few plain insights (half). The buttons to reconnect or remove the
+ * unit are at the top right. On a phone the four parts stack.
  */
 export function RoomScreen({
   transport = defaultTransport,
@@ -99,192 +99,74 @@ export function RoomScreen({
   // The room's day from the hours it has measured.
   const measured = measuredHourly(window.localStorage, device.id, today());
   const hoursMeasured = measured.filter((m) => m !== undefined).length;
-
   const stale = ageS !== undefined && ageS > STALE_S;
+
   return (
     <div className="page room-page" style={level === undefined ? undefined : levelVars(level)}>
-      <header className="place">
-        {back}
-        <h1>Your room</h1>
-        <p className="muted">
-          {device.name} · in your {where} ·{' '}
-          {live
-            ? 'Connected'
-            : unit.state.status === 'connecting'
-              ? 'Connecting…'
-              : 'Not connected'}
-        </p>
+      <header className="place room-head">
+        <div>
+          {back}
+          <h1>
+            Your room{' '}
+            <span className="room-meta">
+              {device.name} · in your {where} ·{' '}
+              {live
+                ? 'Connected'
+                : unit.state.status === 'connecting'
+                  ? 'Connecting…'
+                  : 'Not connected'}
+            </span>
+          </h1>
+        </div>
+        <div className="room-actions">
+          {unit.supported && (
+            <button
+              type="button"
+              className="room-action"
+              disabled={unit.state.status === 'connecting'}
+              onClick={() => {
+                void unit.connect(() => device.id);
+              }}
+            >
+              <Bluetooth size={16} aria-hidden="true" />{' '}
+              {unit.state.status === 'connecting' ? 'Connecting…' : 'Reconnect device'}
+            </button>
+          )}
+          <button
+            type="button"
+            className="room-action"
+            onClick={() => {
+              if (unit.state.deviceId === device.id) unit.disconnect();
+              remove(device.id);
+              navigate('/');
+            }}
+          >
+            <Trash2 size={16} aria-hidden="true" /> Remove device
+          </button>
+        </div>
       </header>
-      <main className="layout room-layout">
-        {reading === undefined || aqi === undefined || level === undefined ? (
-          <section className="card col-wide">
+
+      {reading === undefined || aqi === undefined || level === undefined ? (
+        <main className="room-grid">
+          <section className="card room-wait">
             <h2>Connect to see the live air</h2>
             <p className="muted">
-              Switch the unit on and press the button. Chrome will ask which unit; pick{' '}
-              {device.name}.
+              {unit.supported
+                ? `Switch the unit on and press Reconnect device. Chrome will ask which unit; pick ${device.name}.`
+                : 'This browser cannot connect over Bluetooth. Use Chrome on an Android phone or a computer.'}
             </p>
-            {unit.supported ? (
-              <button
-                type="button"
-                className="primary"
-                disabled={unit.state.status === 'connecting'}
-                onClick={() => {
-                  void unit.connect(() => device.id);
-                }}
-              >
-                <Bluetooth size={16} aria-hidden="true" />{' '}
-                {unit.state.status === 'connecting' ? 'Connecting…' : 'Connect over Bluetooth'}
-              </button>
-            ) : (
-              <p className="small" role="status">
-                This browser cannot connect over Bluetooth. Use Chrome on an Android phone or a
-                computer.
-              </p>
-            )}
             {unit.state.problem !== undefined && (
               <p className="small unit-problem" role="status">
                 {unit.state.problem}
               </p>
             )}
           </section>
-        ) : (
-          <>
-            <section className="card room-hero" aria-label="The room now">
-              <div className="room-now">
-                <div className="room-aqi">
-                  <strong className="tnum">{aqi}</strong>
-                  <span>AQI in the room</span>
-                  <span className="room-level">{level.name}</span>
-                </div>
-                <dl className="room-facts">
-                  <div>
-                    <dt>PM2.5</dt>
-                    <dd className="tnum">{concentration(reading.pm25)} µg/m³</dd>
-                  </div>
-                  <div>
-                    <dt>PM1 · PM10</dt>
-                    <dd className="tnum">
-                      {concentration(reading.pm1)} · {concentration(reading.pm10)} µg/m³
-                    </dd>
-                  </div>
-                  {reading.temperatureC !== undefined && reading.humidityPct !== undefined && (
-                    <div>
-                      <dt>Room</dt>
-                      <dd className="tnum">
-                        {reading.temperatureC.toFixed(1)}°C · {Math.round(reading.humidityPct)}%
-                      </dd>
-                    </div>
-                  )}
-                </dl>
-              </div>
-              <p className="small muted" role="status">
-                {reading.warming
-                  ? 'The sensor is warming up. This number is shown but not counted yet.'
-                  : !live || stale
-                    ? `No reading for ${String(ageS ?? 0)} seconds. The unit may be out of range.`
-                    : `Updated ${String(ageS ?? 0)} second${ageS === 1 ? '' : 's'} ago.`}
-              </p>
-              {!live && unit.supported && (
-                <button
-                  type="button"
-                  className="primary"
-                  onClick={() => {
-                    void unit.connect(() => device.id);
-                  }}
-                >
-                  <Bluetooth size={16} aria-hidden="true" /> Connect again
-                </button>
-              )}
-            </section>
-
-            <section className="card col-wide" aria-labelledby="room-vs-title">
-              <div className="card-head">
-                <h2 id="room-vs-title">The room against outside, live</h2>
-              </div>
-              <LiveChart
-                points={recent}
-                height={230}
-                {...(outside === undefined ? {} : { outsidePm25: outside.pm25 })}
-                marks={marks}
-              />
-              <p className="room-key small">
-                <span className="k k-room" /> Room, from your unit{' '}
-                {outside !== undefined && (
-                  <>
-                    <span className="k k-outside" /> Outside at {pin?.name ?? 'your place'}
-                    {p?.stationName !== undefined && p.distanceKm !== undefined
-                      ? `, ${p.stationName}, ${String(Math.round(p.distanceKm * 10) / 10)} km away`
-                      : ' (regional model)'}
-                  </>
-                )}
-              </p>
-              {outside === undefined && (
-                <p className="small muted">
-                  {comparison.status === 'none'
-                    ? 'Add a place on My Air to see the air outside as a second line.'
-                    : comparison.status === 'error'
-                      ? 'The air outside could not be loaded just now.'
-                      : 'Getting the air outside…'}
-                </p>
-              )}
-              <p className="small muted">
-                The room line moves with every reading (about every two seconds). The outside line
-                is the nearest monitor’s latest reading, which changes about once an hour.
-              </p>
-            </section>
-
-            <section className="card" aria-labelledby="gap-title">
-              <h2 id="gap-title">The gap</h2>
-              <dl className="room-stats">
-                <div>
-                  <dt>Room vs outside</dt>
-                  <dd className="tnum">
-                    {lower === undefined
-                      ? '–'
-                      : lower >= 0
-                        ? `${String(lower)}% lower`
-                        : `${String(-lower)}% higher`}
-                  </dd>
-                </div>
-                <div>
-                  <dt>Cleaner than outside</dt>
-                  <dd className="tnum">
-                    {cleaner === undefined ? '–' : `${String(cleaner)}% of the time`}
-                  </dd>
-                </div>
-                <div>
-                  <dt>Average, this window</dt>
-                  <dd className="tnum">{mean === undefined ? '–' : `AQI ${String(mean)}`}</dd>
-                </div>
-                <div>
-                  <dt>Low · high</dt>
-                  <dd className="tnum">
-                    {aqis.length === 0
-                      ? '–'
-                      : `${String(Math.min(...aqis))} · ${String(Math.max(...aqis))}`}
-                  </dd>
-                </div>
-                <div>
-                  <dt>Fine share of PM10</dt>
-                  <dd className="tnum">
-                    {reading.pm10 > 0
-                      ? `${String(Math.round((reading.pm25 / reading.pm10) * 100))}%`
-                      : '–'}
-                  </dd>
-                </div>
-              </dl>
-              <p className="small muted">
-                Smoke and exhaust are mostly fine particles; dust and sweeping are coarser, so a low
-                share points to dust.
-              </p>
-            </section>
-
-            <section className="card" aria-labelledby="test-title">
-              <h2 id="test-title">See what changes the air</h2>
-              <p className="small muted">
-                Press when you switch the purifier on or open a window. The line is marked, and this
-                shows how far the room’s air moved since.
-              </p>
+        </main>
+      ) : (
+        <main className="room-grid">
+          <section className="card room-chart" aria-labelledby="room-vs-title">
+            <div className="room-chart-head">
+              <h2 id="room-vs-title">The room against outside, live</h2>
               <div className="choice-row">
                 {TEST_LABELS.map((label) => (
                   <button
@@ -292,6 +174,7 @@ export function RoomScreen({
                     type="button"
                     className="choice"
                     aria-pressed={mark?.label === label}
+                    title="Mark this moment on the line, and see how far the air moves after it"
                     onClick={() => {
                       setMark(
                         mark?.label === label
@@ -304,103 +187,174 @@ export function RoomScreen({
                   </button>
                 ))}
               </div>
-              {mark !== undefined && change !== undefined && nowPm !== undefined && (
-                <p className="room-test" role="status">
-                  <strong>{mark.label}</strong>,{' '}
-                  {String(Math.max(0, Math.round((nowMs - mark.atMs) / 60_000)))} min ago: PM2.5{' '}
-                  {concentration(mark.pm25)} → {concentration(nowPm)} µg/m³,{' '}
-                  <strong>
-                    {change >= 0 ? `${String(change)}% lower` : `${String(-change)}% higher`}
-                  </strong>
-                  .
-                  {half !== undefined && mark.pm25 > 0
-                    ? ` It halved in ${String(Math.max(1, Math.round((half - mark.atMs) / 60_000)))} min.`
-                    : ''}
-                </p>
+            </div>
+            <div className="room-chart-body">
+              <LiveChart
+                points={recent}
+                height={230}
+                stretch
+                {...(outside === undefined ? {} : { outsidePm25: outside.pm25 })}
+                marks={marks}
+              />
+            </div>
+            <p className="room-key small">
+              <span className="k k-room" /> Room, from your unit{' '}
+              {outside !== undefined ? (
+                <>
+                  <span className="k k-outside" /> Outside at {pin?.name ?? 'your place'}
+                  {p?.stationName !== undefined && p.distanceKm !== undefined
+                    ? `, ${p.stationName}, ${String(Math.round(p.distanceKm * 10) / 10)} km away`
+                    : ' (regional model)'}
+                </>
+              ) : (
+                <span className="muted">
+                  {comparison.status === 'none'
+                    ? 'Add a place on My Air to see the air outside as a second line.'
+                    : comparison.status === 'error'
+                      ? 'The air outside could not be loaded just now.'
+                      : 'Getting the air outside…'}
+                </span>
               )}
-            </section>
-
-            {advice !== undefined && (
-              <section className="card col-wide" aria-labelledby="advice-title">
-                <h2 id="advice-title">{advice.title}</h2>
-                <p>{advice.text}</p>
-                <p className="small muted">Our advice from two numbers, not a health order.</p>
-              </section>
+            </p>
+            {mark !== undefined && change !== undefined && nowPm !== undefined && (
+              <p className="room-test small" role="status">
+                <strong>{mark.label}</strong>,{' '}
+                {String(Math.max(0, Math.round((nowMs - mark.atMs) / 60_000)))} min ago: PM2.5{' '}
+                {concentration(mark.pm25)} → {concentration(nowPm)} µg/m³,{' '}
+                <strong>
+                  {change >= 0 ? `${String(change)}% lower` : `${String(-change)}% higher`}
+                </strong>
+                .
+                {half !== undefined
+                  ? ` It halved in ${String(Math.max(1, Math.round((half - mark.atMs) / 60_000)))} min.`
+                  : ''}
+              </p>
             )}
-          </>
-        )}
+          </section>
 
-        <section className="card col-wide" aria-labelledby="day-title">
-          <h2 id="day-title">Your room today</h2>
-          <div
-            className="room-hours"
-            role="img"
-            aria-label={`Each hour of today, coloured by the room's measured air. ${String(hoursMeasured)} hours measured.`}
-          >
-            {measured.map((m, hour) => {
-              const a = m === undefined ? undefined : aqiOf(m);
-              return (
-                <span
-                  key={hour}
-                  className={`room-hour${a === undefined ? ' none' : ''}`}
-                  style={a === undefined ? undefined : { background: levelForAqi(a).solid }}
-                  title={
-                    a === undefined
-                      ? `${String(hour)}:00 not measured`
-                      : `${String(hour)}:00 AQI ${String(a)}`
-                  }
-                />
-              );
-            })}
-          </div>
-          <p className="small muted room-axis">
-            <span>12 am</span>
-            <span>6 am</span>
-            <span>12 pm</span>
-            <span>6 pm</span>
-          </p>
-          <p className="small muted">
-            {hoursMeasured === 0
-              ? 'No hour is long enough yet. An hour counts after about two minutes of readings.'
-              : `${String(hoursMeasured)} hour${hoursMeasured === 1 ? '' : 's'} measured today.`}{' '}
-            Hours you spend in your {where} are counted in <Link to="/exposure">Exposure</Link> from
-            these, in place of the outside reading at the address.
-          </p>
-          <p className="room-legend small">
-            {LEVELS.map((l) => (
-              <span key={l.name} className="room-legend-item">
-                <i style={{ background: l.solid }} aria-hidden="true" /> {l.short}
-              </span>
-            ))}
-          </p>
-        </section>
+          <aside className="card room-numbers" aria-label="The room now">
+            <div className="room-aqi">
+              <strong className="tnum">{aqi}</strong>
+              <span>AQI in the room</span>
+              <span className="room-level">{level.name}</span>
+            </div>
+            <dl className="room-facts">
+              <div>
+                <dt>PM2.5</dt>
+                <dd className="tnum">{concentration(reading.pm25)} µg/m³</dd>
+              </div>
+              <div>
+                <dt>PM1</dt>
+                <dd className="tnum">{concentration(reading.pm1)} µg/m³</dd>
+              </div>
+              <div>
+                <dt>PM10</dt>
+                <dd className="tnum">{concentration(reading.pm10)} µg/m³</dd>
+              </div>
+              {reading.temperatureC !== undefined && reading.humidityPct !== undefined && (
+                <div>
+                  <dt>Room</dt>
+                  <dd className="tnum">
+                    {reading.temperatureC.toFixed(1)}°C · {Math.round(reading.humidityPct)}%
+                  </dd>
+                </div>
+              )}
+            </dl>
+            <p className="small muted" role="status">
+              {reading.warming
+                ? 'Warming up: shown, not counted yet.'
+                : !live || stale
+                  ? `No reading for ${String(ageS ?? 0)} s. The unit may be out of range.`
+                  : `Updated ${String(ageS ?? 0)} s ago.`}
+            </p>
+          </aside>
 
-        <section className="card col-wide" aria-label="About this unit">
-          <p className="small muted">
-            <strong>Measured</strong> by your own unit. A low-cost particle sensor: its readings are
-            shown next to the nearest monitor’s so you can see how they compare, and are not an
-            official measurement.
-          </p>
-          <div className="form-actions">
-            {live && (
-              <button type="button" className="plain" onClick={unit.disconnect}>
-                Disconnect
-              </button>
-            )}
-            <button
-              type="button"
-              className="plain"
-              onClick={() => {
-                if (unit.state.deviceId === device.id) unit.disconnect();
-                remove(device.id);
-                navigate('/');
-              }}
+          <section className="card room-day" aria-labelledby="day-title">
+            <h2 id="day-title">Your room today</h2>
+            <div
+              className="room-hours"
+              role="img"
+              aria-label={`Each hour of today, coloured by the room's measured air. ${String(hoursMeasured)} hours measured.`}
             >
-              Remove this unit
-            </button>
-          </div>
-        </section>
-      </main>
+              {measured.map((m, hour) => {
+                const a = m === undefined ? undefined : aqiOf(m);
+                return (
+                  <span
+                    key={hour}
+                    className={`room-hour${a === undefined ? ' none' : ''}`}
+                    style={a === undefined ? undefined : { background: levelForAqi(a).solid }}
+                    title={
+                      a === undefined
+                        ? `${String(hour)}:00 not measured`
+                        : `${String(hour)}:00 AQI ${String(a)}`
+                    }
+                  />
+                );
+              })}
+            </div>
+            <p className="small muted room-axis">
+              <span>12 am</span>
+              <span>6 am</span>
+              <span>12 pm</span>
+              <span>6 pm</span>
+            </p>
+            <p className="small muted">
+              {hoursMeasured === 0
+                ? 'No hour is long enough yet (about two minutes of readings). '
+                : `${String(hoursMeasured)} hour${hoursMeasured === 1 ? '' : 's'} measured. `}
+              Counted in <Link to="/exposure">Exposure</Link> for the hours you spend in your{' '}
+              {where}.
+            </p>
+            <p className="room-legend small">
+              {LEVELS.map((l) => (
+                <span key={l.name} className="room-legend-item">
+                  <i style={{ background: l.solid }} aria-hidden="true" /> {l.short}
+                </span>
+              ))}
+            </p>
+          </section>
+
+          <section className="card room-insights" aria-labelledby="insights-title">
+            <h2 id="insights-title">What it tells you</h2>
+            <ul className="room-points">
+              <li>
+                {lower === undefined ? (
+                  <strong>No outside reading to compare with yet</strong>
+                ) : (
+                  <strong>
+                    Your room is {String(Math.abs(lower))}% {lower >= 0 ? 'cleaner' : 'dirtier'}{' '}
+                    than outside
+                  </strong>
+                )}
+                <span className="muted small">
+                  {outside === undefined
+                    ? 'Add a place on My Air.'
+                    : `AQI ${String(aqi)} in the room against ${String(outside.aqi)} outside.`}
+                </span>
+              </li>
+              {cleaner !== undefined && (
+                <li>
+                  <strong>Cleaner than outside {String(cleaner)}% of the time</strong>
+                  <span className="muted small">
+                    In the last {String(Math.round(span / 60_000))} min
+                    {mean === undefined ? '' : `, averaging AQI ${String(mean)}`}.
+                  </span>
+                </li>
+              )}
+              {advice !== undefined && (
+                <li>
+                  <strong>{advice.title}</strong>
+                  <span className="muted small">{advice.text}</span>
+                </li>
+              )}
+            </ul>
+          </section>
+        </main>
+      )}
+      <p className="small muted room-foot">
+        <strong>Measured</strong> by your own unit. A low-cost particle sensor: shown next to the
+        nearest monitor’s so you can see how they compare, not an official measurement.
+      </p>
     </div>
   );
 }

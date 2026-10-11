@@ -1,10 +1,9 @@
 import { usAqi } from '@vayu/core';
 import { scaleLinear } from 'd3-scale';
 import { area, curveMonotoneX, line } from 'd3-shape';
-import { useId } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
 import { LEVELS, levelForAqi } from '../../design/levels';
 import { levelVars } from '../../today/ui/format';
-import { useWidth } from '../../today/ui/hooks';
 
 export interface LivePoint {
   readonly atMs: number;
@@ -45,6 +44,7 @@ export function LiveChart({
   outsidePm25,
   marks = [],
   compact = false,
+  stretch = false,
 }: {
   readonly points: readonly LivePoint[];
   readonly height?: number;
@@ -52,8 +52,28 @@ export function LiveChart({
   readonly outsidePm25?: number;
   readonly marks?: readonly LiveMark[];
   readonly compact?: boolean;
+  /** Take the height of the space it is given, instead of `height`. */
+  readonly stretch?: boolean;
 }): React.JSX.Element | null {
-  const [ref, width] = useWidth<HTMLDivElement>(320);
+  const ref = useRef<HTMLDivElement>(null);
+  // The chart is not drawn until there are two readings, so it is measured once there are.
+  const ready = points.length >= 2;
+  const [box, setBox] = useState({ w: 320, h: height });
+  useEffect(() => {
+    const el = ref.current;
+    if (el === null || typeof ResizeObserver === 'undefined') return;
+    const observer = new ResizeObserver(([entry]) => {
+      const w = Math.round(entry?.contentRect.width ?? 0);
+      const h = Math.round(entry?.contentRect.height ?? 0);
+      if (w > 0) setBox({ w, h: stretch && h > 40 ? h : height });
+    });
+    observer.observe(el);
+    return () => {
+      observer.disconnect();
+    };
+  }, [stretch, height, ready]);
+  const width = box.w;
+  const high = stretch ? box.h : height;
   const gradientId = useId();
   const last = points.at(-1);
   if (last === undefined || points.length < 2) return null;
@@ -72,7 +92,7 @@ export function LiveChart({
     .range([pad.left, width - pad.right]);
   const y = scaleLinear()
     .domain([0, top])
-    .range([height - pad.bottom, pad.top]);
+    .range([high - pad.bottom, pad.top]);
   const path = line<(typeof shown)[number]>()
     .x((p) => x(p.atMs))
     .y((p) => y(p.aqi))
@@ -94,7 +114,7 @@ export function LiveChart({
   const minutes = Math.round(span / 60_000);
 
   return (
-    <div className={`chart-live${compact ? ' compact' : ''}`}>
+    <div className={`chart-live${compact ? ' compact' : ''}${stretch ? ' fill' : ''}`}>
       {!compact && (
         <div className="chart-live-head">
           <span className="chart-live-pill">
@@ -105,10 +125,10 @@ export function LiveChart({
           </span>
         </div>
       )}
-      <div ref={ref} className="chart">
+      <div ref={ref} className="chart" style={stretch ? undefined : { height }}>
         <svg
           width={width}
-          height={height}
+          height={high}
           role="img"
           aria-label={`AQI in the room over the last ${String(minutes)} minutes: low ${String(low)}, high ${String(peak)}, now ${String(now)}${outsideAqi === undefined ? '' : `; outside ${String(outsideAqi)}`}`}
         >
@@ -199,7 +219,7 @@ export function LiveChart({
               <text
                 key={tick.at}
                 x={x(tick.at)}
-                y={height - 8}
+                y={high - 8}
                 textAnchor={i === 0 ? 'end' : 'middle'}
                 className="axis"
               >

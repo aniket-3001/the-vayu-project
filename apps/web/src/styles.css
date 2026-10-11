@@ -6212,3 +6212,257 @@ table.hourly .row-label {
   padding: 0;
   border: 0;
 }
+
+/* The chart fills the space it is given (the room page and the small card) */
+
+.chart-live.fill {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+}
+.chart-live.fill .chart {
+  position: relative;
+  flex: 1 1 auto;
+  min-height: 0;
+}
+.chart-live.fill .chart svg {
+  position: absolute;
+  inset: 0;
+}
+.room-pc .pc-more {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-height: 0;
+}
+.room-pc .pc-live {
+  flex: 1 1 auto;
+  min-height: 110px;
+  margin: 8px 0 6px;
+}
+.room-pc,
+.room-pc .pc-live {
+  min-width: 0;
+  overflow: hidden;
+}
+
+/* The room page: one frame. Chart 80% and numbers 20%, then the day and the insights, half each. */
+
+.room-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.room-head h1 {
+  margin: 0;
+}
+.room-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.room-action {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 40px;
+  padding: 0 14px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--card);
+  color: var(--ink);
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+.room-action:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+.room-grid {
+  display: grid;
+  gap: 12px;
+  margin-top: 12px;
+}
+.room-grid > .card {
+  min-width: 0;
+  min-height: 0;
+  align-content: start;
+}
+.room-chart {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.room-chart-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.room-chart-head h2 {
+  margin: 0;
+}
+.room-chart-body {
+  flex: 1 1 auto;
+  min-height: 220px;
+}
+.room-chart .chart-live {
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+.room-numbers {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.room-numbers .room-aqi {
+  min-width: 0;
+}
+.room-numbers .room-facts {
+  gap: 8px;
+}
+.room-points {
+  display: grid;
+  gap: 12px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.room-points li {
+  display: grid;
+  gap: 2px;
+}
+.room-points strong {
+  font-size: 17px;
+}
+.room-hours {
+  display: grid;
+  grid-template-columns: repeat(24, minmax(0, 1fr));
+  gap: 2px;
+  min-height: 70px;
+}
+.room-hour {
+  min-height: 70px;
+  height: 100%;
+}
+.room-foot {
+  margin: 8px 0 0;
+}
+@media (min-width: 760px) {
+  .page.room-page {
+    display: flex;
+    flex-direction: column;
+    height: 100dvh;
+    min-height: 0;
+    padding-bottom: 96px;
+    overflow: hidden;
+  }
+  .room-page .room-head {
+    flex: none;
+  }
+  .room-grid {
+    flex: 1 1 auto;
+    min-height: 0;
+    grid-template-columns: repeat(10, minmax(0, 1fr));
+    grid-template-rows: minmax(0, 1.25fr) minmax(0, 1fr);
+  }
+  .room-chart {
+    grid-column: span 8;
+  }
+  .room-numbers {
+    grid-column: span 2;
+    overflow: hidden;
+  }
+  .room-day,
+  .room-insights {
+    grid-column: span 5;
+    overflow: hidden;
+  }
+  .room-day {
+    display: flex;
+    flex-direction: column;
+  }
+  .room-day .room-hours {
+    flex: 1 1 auto;
+  }
+  .room-wait {
+    grid-column: 1 / -1;
+  }
+  .room-foot {
+    flex: none;
+  }
+}
+
+/* The room page, tightened to fit one screen */
+
+.room-page .room-head,
+.room-page .room-grid,
+.room-page .room-foot {
+  width: 100%;
+  max-width: 1280px;
+  margin-left: auto;
+  margin-right: auto;
+}
+.room-page .room-head {
+  padding: 12px 0 0;
+}
+.room-page .room-head h1 {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 2px 12px;
+  font-size: 26px;
+}
+.room-meta {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--muted);
+}
+.room-page .card {
+  padding: 14px;
+  gap: 8px;
+}
+.room-numbers .room-aqi {
+  padding: 8px 12px;
+}
+.room-numbers .room-aqi strong {
+  font-size: 34px;
+}
+.room-numbers .room-facts {
+  gap: 2px;
+}
+.room-numbers .room-facts div {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+.room-numbers .room-facts dd {
+  font-size: 15px;
+}
+.room-points {
+  gap: 8px;
+}
+.room-points strong {
+  font-size: 16px;
+}
+@media (min-width: 760px) {
+  .room-chart-body {
+    min-height: 100px;
+  }
+  .room-grid > .card {
+    overflow: hidden;
+  }
+  .room-day .room-hours {
+    min-height: 40px;
+  }
+  .room-hour {
+    min-height: 0;
+  }
+}
