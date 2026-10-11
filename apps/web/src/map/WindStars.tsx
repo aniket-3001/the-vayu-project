@@ -10,7 +10,7 @@ const MAX_STARS = 1100;
 /** How many frames a star lives, how long its tail is, in positions kept. */
 const LIFE_MIN = 90;
 const LIFE_MAX = 170;
-const TAIL = 58;
+const TAIL = 80;
 /** The side of the square at a star's head, in pixels; the ones behind it are smaller. */
 const SQUARE = 3;
 
@@ -135,7 +135,7 @@ export function WindStars({
         const p = s.trail[i];
         if (p === undefined) continue;
         const along = i / (n - 1);
-        const size = along < 0.3 ? SQUARE : along < 0.65 ? SQUARE - 1 : 1;
+        const size = along < 0.12 ? SQUARE : along < 0.4 ? SQUARE - 1 : 1;
         const alpha = strength * (1 - along) ** 1.15;
         if (alpha < 0.04) continue;
         const x = Math.round(p.x - size / 2);
