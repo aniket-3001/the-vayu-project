@@ -13,7 +13,7 @@ const ICONS: Readonly<Record<NoteKind, LucideIcon>> = {
 };
 
 /**
- * What is special about this place, beside its air: the alerts that apply here (a GRAP stage, smog, burning nearby,
+ * Insights for this place, beside its air: the alerts that apply here (a GRAP stage, smog, burning nearby,
  * rain or wind on the way), where a school's assembly should be held, the best time for a walk in a park. Short
  * lines on the place's card point here for the detail.
  */
@@ -30,7 +30,7 @@ export function PlaceSpecial({
   const Icon = note === undefined ? Sun : ICONS[note.kind];
   return (
     <section className="card special" aria-labelledby="special-title">
-      <h2 id="special-title">Special for this place</h2>
+      <h2 id="special-title">Insights for this place</h2>
       {alerts.length > 0 ? (
         <AlertsList alerts={alerts} data={data} />
       ) : (
@@ -44,6 +44,13 @@ export function PlaceSpecial({
           <div>
             <h3>{note.title}</h3>
             <p>{note.long}</p>
+            {note.rules.length > 0 && (
+              <ul className="special-rules">
+                {note.rules.map((rule) => (
+                  <li key={rule}>{rule}</li>
+                ))}
+              </ul>
+            )}
           </div>
         </div>
       )}

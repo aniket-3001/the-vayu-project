@@ -15,6 +15,7 @@ import {
   openMeteoGasRepo,
   openMeteoHistoryRepo,
   openMeteoWeatherForecastRepo,
+  openMeteoWindGridRepo,
   openMeteoWeatherRepo,
 } from '@vayu/data';
 import {
@@ -112,6 +113,7 @@ function buildRoute(): Promise<ReturnType<typeof createRouter>> {
       forecastRepo: openMeteoForecastRepo(),
       weatherRepo: cachedWeatherRepo(openMeteoWeatherRepo(), 15 * 60_000),
       weatherForecastRepo: openMeteoWeatherForecastRepo(),
+      windRepo: openMeteoWindGridRepo(),
       gasRepo: openMeteoGasRepo(),
       historyRepo: openMeteoHistoryRepo(),
       fireRepo: firmsFireRepo({ mapKey: firmsMapKey }),

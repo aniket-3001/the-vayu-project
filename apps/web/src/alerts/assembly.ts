@@ -4,9 +4,15 @@ import type { TodayData } from '../today/types';
 
 /** Where a school's morning assembly should be held, by the air expected at assembly time. */
 export interface AssemblyAdvice {
-  readonly where: 'open' | 'short' | 'inside';
-  /** "Inside", "Open ground, kept short", "Open ground". */
+  readonly where: 'open' | 'short' | 'inside' | 'closed';
+  /** The GRAP stage this follows, 0 to 4; where none could be worked out, the stage the AQI stands in for (0 to 2). */
+  readonly stage: 0 | 1 | 2 | 3 | 4;
+  /** "Inside", "Open ground, kept short", "Open ground", "None: school likely closed". */
   readonly label: string;
+  /** What the stage means for school, as short lines for the place's page. Our reading, never an order. */
+  readonly rules: readonly string[];
+  /** Why: the stage (or AQI) and the hour it was taken at, as one sentence. */
+  readonly basis: string;
   /** One sentence for the school: what to do and why. */
   readonly words: string;
   readonly aqi: number;
@@ -46,28 +52,77 @@ export function assemblyFor(data: TodayData): AssemblyAdvice {
       : `GRAP Stage ${numeral} is likely (AQI ${String(aqi)} at ${when}).`
     : `No GRAP stage could be worked out, so this is from the AQI: ${String(aqi)} at ${when}.`;
   // Without a stage, the AQI stands in for it: unhealthy (151+) is as bad as Stage II, 101 to 150 as Stage I.
-  const effective = known ? stage : aqi >= 151 ? 2 : aqi >= 101 ? 1 : 0;
-  if (effective >= 2)
-    return {
-      where: 'inside',
-      label: 'Inside',
-      words: `Hold assembly inside, in classrooms or the hall. ${basis}`,
-      aqi,
-      when,
-    };
-  if (effective === 1)
-    return {
-      where: 'short',
-      label: 'Open ground, kept short',
-      words: `The open ground is fine if it is short, under 15 minutes. Children with asthma can stay in. ${basis}`,
-      aqi,
-      when,
-    };
-  return {
-    where: 'open',
-    label: 'Open ground',
-    words: `The open ground is fine. ${basis}`,
-    aqi,
-    when,
-  };
+  const effective: 0 | 1 | 2 | 3 | 4 = known ? stage : aqi >= 151 ? 2 : aqi >= 101 ? 1 : 0;
+  switch (effective) {
+    case 4:
+      return {
+        where: 'closed',
+        stage: 4,
+        label: 'None: school likely closed',
+        rules: [
+          'School is likely closed or moved online, so there is no assembly to hold.',
+          'Do not send children before you have read the school’s notice and the official order.',
+          'If the school is open, keep everyone indoors.',
+        ],
+        words: `At Stage IV schools are likely to be shut or moved online, so there is no assembly to hold. Read the school’s notice and the official order. ${basis}`,
+        aqi,
+        when,
+        basis,
+      };
+    case 3:
+      return {
+        where: 'inside',
+        stage: 3,
+        label: 'Inside',
+        rules: [
+          'No assembly, sport or play outside: hold anything that must happen inside.',
+          'Younger classes may be moved online or paused by the authorities.',
+          'Check the school’s notice and the official order.',
+        ],
+        words: `No assembly, sport or play outside; hold it inside if at all. Younger classes may be moved online. ${basis}`,
+        aqi,
+        when,
+        basis,
+      };
+    case 2:
+      return {
+        where: 'inside',
+        stage: 2,
+        label: 'Inside',
+        rules: [
+          'Hold assembly inside, in classrooms or the hall.',
+          'Limit time outside: no outdoor sport or long play.',
+          'A well-fitted N95 or FFP2 mask for the way to and from school.',
+        ],
+        words: `Hold assembly inside, in classrooms or the hall, and limit time outside. ${basis}`,
+        aqi,
+        when,
+        basis,
+      };
+    case 1:
+      return {
+        where: 'short',
+        stage: 1,
+        label: 'Open ground, kept short',
+        rules: [
+          'Keep assembly on the open ground short, under 15 minutes, or hold it inside.',
+          'Limit time outside for sport and play; children with asthma stay in.',
+        ],
+        words: `Limit time outside: the open ground is fine if it is short, under 15 minutes, or hold it inside. Children with asthma can stay in. ${basis}`,
+        aqi,
+        when,
+        basis,
+      };
+    case 0:
+      return {
+        where: 'open',
+        stage: 0,
+        label: 'Open ground',
+        rules: ['The open ground is fine for assembly, sport and play.'],
+        words: `The open ground is fine. ${basis}`,
+        aqi,
+        when,
+        basis,
+      };
+  }
 }

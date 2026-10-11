@@ -247,6 +247,24 @@ export const Stations = record({
 });
 export type Stations = z.infer<typeof Stations>;
 
+/** The wind at one point of the map's grid: metres per second, and the compass bearing it blows from. */
+export const WindPoint = record({
+  lat: z.number(),
+  lng: z.number(),
+  speed: z.number().min(0),
+  fromDeg: z.number().min(0).max(360),
+});
+export type WindPoint = z.infer<typeof WindPoint>;
+
+/** `/v1/wind`: the wind across the map's grid right now, from the weather model, shared by every visitor. */
+export const WindGrid = record({
+  schemaVersion: z.literal(1),
+  asOf: z.string(),
+  source: z.string(),
+  points: list(WindPoint),
+});
+export type WindGrid = z.infer<typeof WindGrid>;
+
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/u;
 const MOBILE = /^(?:\+?91[\s-]?)?[6-9]\d{9}$/u;
 

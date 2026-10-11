@@ -87,3 +87,5 @@ Unticked means not yet seen live.
 5. The map's monitor job ran into OpenAQ's rate limit, and also took longer than its two-minute limit. It now waits as long as OpenAQ asks, up to three times a run, starts requests a fixed time apart, and stops at a time budget.
 6. The first deploy failed on an API stage setting that named a route before it existed, and the rollback failed too.
    The stage now waits for its routes.
+
+- [ ] `/v1/wind` answers 200 with a few hundred points and `cache-control: public, max-age=1800`; the map's wind arrows then follow real data (and the browser makes no request to api.open-meteo.com for wind).

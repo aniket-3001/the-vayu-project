@@ -109,7 +109,9 @@ describe('the Places screen', () => {
     screenWith();
     const line = cardOf('School').querySelector('.pc-note');
     expect(line).toHaveClass('assembly');
-    expect(line).toHaveTextContent(/^Morning assembly: (Inside|Open ground)/u);
+    expect(line).toHaveTextContent(
+      /^(Morning assembly: (Inside|Open ground)|School likely closed)/u,
+    );
     // One line only: the reasons and the AQI are on the place's page.
     expect(line?.textContent?.length).toBeLessThan(45);
     expect(cardOf('Home').querySelector('.pc-note')).not.toHaveClass('assembly');

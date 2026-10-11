@@ -60,7 +60,7 @@ export function sceneFor(alert: Alert): SceneTheme {
         tint: rgb,
         stage,
         className: 'scene-air',
-        style: sceneVars(colours.solid, colours.soft, rgb),
+        style: sceneVars(colours.solid, colours.soft, rgb, colours.onSolid),
       };
     }
     case 'smog': {
@@ -77,17 +77,18 @@ export function sceneFor(alert: Alert): SceneTheme {
         tint: hazy,
         stage: 1,
         className: 'scene-air',
-        style: sceneVars(level.solid, level.soft, rgb),
+        style: sceneVars(level.solid, level.soft, rgb, level.onSolid),
       };
     }
   }
 }
 
-function sceneVars(solid: string, soft: string, rgb: Rgb): CSSProperties {
+function sceneVars(solid: string, soft: string, rgb: Rgb, ink: string): CSSProperties {
   const triple = `${String(rgb[0])} ${String(rgb[1])} ${String(rgb[2])}`;
   return {
     '--scene-solid': solid,
     '--scene-soft': soft,
+    '--scene-ink': ink,
     '--edge': solid,
     '--glow': triple,
   } as CSSProperties;

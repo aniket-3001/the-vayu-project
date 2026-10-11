@@ -213,7 +213,7 @@ describe('the AIR Lens', () => {
     expect(screen.getByRole('link', { name: 'Pin a place on My Air' })).toBeInTheDocument();
   });
 
-  it('plays the next 36 hours in five seconds from a play button, and stops at the end', async () => {
+  it('plays the next 36 hours in five seconds from a play button, then stops and goes back to the start', async () => {
     vi.useFakeTimers();
     try {
       open();
@@ -233,7 +233,8 @@ describe('the AIR Lens', () => {
       await act(async () => {
         await vi.advanceTimersByTimeAsync(3000);
       });
-      expect(dial).toHaveValue('36');
+      // It has shown the last hour and come back to now.
+      expect(dial).toHaveValue('0');
       expect(screen.getByRole('button', { name: 'Play the next 36 hours' })).toHaveAttribute(
         'aria-pressed',
         'false',

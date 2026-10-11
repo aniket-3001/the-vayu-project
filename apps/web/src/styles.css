@@ -5445,38 +5445,58 @@ table.hourly .row-label {
   color: #ffd9bf;
 }
 
-/* In the list: the row is the scene and the veil is inset in it so the picture shows around the words */
-.alert-row.scene {
-  padding: 6px;
-  border: 1px solid rgb(255 255 255 / 0.6);
-  background-clip: padding-box;
-}
-.alert-row.scene.severe {
-  border: 2.5px dotted var(--edge, #d92d20);
-}
-.alert-row .alert-veil {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  width: 100%;
-  min-width: 0;
-  padding: 8px 10px;
-  border-radius: 11px;
-}
-.alert-row .alert-words .small,
-.alert-row .alert-words strong {
-  color: inherit;
-}
-.alert-row .alert-words strong {
-  font-weight: 800;
+/* In the list, an alert is plain: one colour for what it is, with no picture or see-through card. The pictures and
+   the translucent card come when it is opened up close. */
+.alert-row {
+  border: 1.5px solid transparent;
+  color: var(--scene-ink, var(--text));
 }
 .alert-row .alert-words .small {
-  font-weight: 600;
+  color: inherit;
+  font-weight: 650;
   opacity: 0.92;
 }
-.alert-row.scene-stubble .alert-icon {
-  background: rgb(255 150 80 / 0.25);
-  color: #ffd9bf;
+.alert-row .alert-words strong {
+  color: inherit;
+  font-weight: 800;
+}
+/* A GRAP stage and a smog day: the AQI scale's colour for the air, set inline */
+.alert-row.scene-air {
+  background: var(--scene-solid, #f39595);
+  border-color: rgb(255 255 255 / 0.55);
+}
+/* Rain: a light pastel blue with a subtle glowing white border */
+.alert-row.scene-rain {
+  background: #d6ebfa;
+  border-color: #fff;
+  box-shadow:
+    0 0 0 1px rgb(255 255 255 / 0.9),
+    0 0 12px 2px rgb(255 255 255 / 0.85);
+}
+/* Wind: a pale airy teal */
+.alert-row.scene-wind {
+  background: #d3efec;
+  border-color: rgb(255 255 255 / 0.9);
+  box-shadow: 0 0 10px 1px rgb(255 255 255 / 0.7);
+}
+/* Burning: a warm orange, and its border blinks to catch the eye */
+.alert-row.scene-stubble {
+  --edge: #e8590c;
+  --glow: 232 89 12;
+  background: #ffc999;
+}
+/* The ones that need the eye (a GRAP stage III or IV, smog, burning) blink their border */
+.alert-row.blink {
+  border: 2.5px dotted var(--edge, #d92d20);
+  box-shadow:
+    0 0 0 0 rgb(var(--glow, 217 45 32) / 0.55),
+    0 0 16px 2px rgb(var(--glow, 217 45 32) / 0.45);
+  animation: alert-pulse 1.5s ease-in-out infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .alert-row.blink {
+    animation: none;
+  }
 }
 
 /* Up close: the sheet is the scene, the words scroll inside it */
@@ -5652,4 +5672,20 @@ table.hourly .row-label {
     width: 74px;
     font-size: 13px;
   }
+}
+
+.special-rules {
+  display: grid;
+  gap: 4px;
+  margin: 8px 0 0;
+  padding-left: 18px;
+  font-weight: 650;
+  list-style: disc;
+}
+
+/* The day's pill on a plain alert row stays readable on every colour */
+.alert-row .pill {
+  border-color: transparent;
+  background: rgb(255 255 255 / 0.85);
+  color: #334155;
 }

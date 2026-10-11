@@ -35,7 +35,9 @@ export function aqiOverWindow(data: TodayData, hours: SchoolHours): number {
 
 /** What to do about a school day at an AQI, in a sentence a parent can act on. */
 function adviceForChild(aqi: number, stage: number): string {
-  if (stage >= 3)
+  if (stage >= 4)
+    return 'The school is likely shut or online: read the school’s notice and the official order before sending them.';
+  if (stage === 3)
     return 'Keep them indoors at school, with no play or sport outside. Check the school’s notice and the official order.';
   if (stage === 2 || aqi >= 151)
     return 'Ask for break and sport indoors, and a well-fitted N95 or FFP2 mask for the way there and back.';

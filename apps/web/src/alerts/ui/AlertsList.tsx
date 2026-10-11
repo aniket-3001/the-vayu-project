@@ -6,12 +6,12 @@ import type { TodayData } from '../../today/types';
 import { dayWord, type Alert } from '../model';
 import { ALERT_ICONS, AlertSheet } from './AlertSheet';
 import { AuthoritiesSheet } from './AuthoritiesSheet';
-import { SceneBackdrop, SceneVeil, sceneFor } from './AlertScene';
+import { sceneFor } from './AlertScene';
 
 /**
- * What to watch for in the next three days, worst first, as a short list down the page. Each has its own moving
- * scene (rain, burning, wind, haze, a GRAP stage in its level's colour) behind a translucent card with the words; a
- * severe one glows with a pulsing dotted edge. Pressing one
+ * What to watch for in the next three days, worst first, as a short list down the page. Each row is plain: one colour for
+ * what it is (the AQI scale's colour for a GRAP stage or smog, pastel blue for rain, pale teal for wind, orange for
+ * burning), and a blinking border where it needs the eye. The moving scene is for the opened view. Pressing one
  * opens it up close, with the short reason it is there.
  */
 export function AlertsList({
@@ -43,28 +43,25 @@ export function AlertsList({
             <li key={alert.id}>
               <button
                 type="button"
-                className={`alert-row scene ${theme.className} ${alert.severity}${alert.day === 0 ? ' now' : ''}`}
+                className={`alert-row ${theme.className} ${alert.severity}${alert.severity === 'severe' || alert.kind === 'stubble' ? ' blink' : ''}${alert.day === 0 ? ' now' : ''}`}
                 style={theme.style}
                 aria-haspopup="dialog"
                 onClick={() => {
                   setOpen(alert);
                 }}
               >
-                <SceneBackdrop alert={alert} compact />
-                <SceneVeil alert={alert} compact as="span" className="alert-veil">
-                  <span className={`alert-icon alert-${alert.kind}`}>
-                    <Icon size={20} strokeWidth={2} aria-hidden="true" />
+                <span className={`alert-icon alert-${alert.kind}`}>
+                  <Icon size={20} strokeWidth={2} aria-hidden="true" />
+                </span>
+                <span className="alert-words">
+                  <strong>{alert.title}</strong>
+                  <span className="small">
+                    {alert.place !== undefined && <b className="alert-place">{alert.place} · </b>}
+                    {alert.body}
                   </span>
-                  <span className="alert-words">
-                    <strong>{alert.title}</strong>
-                    <span className="small">
-                      {alert.place !== undefined && <b className="alert-place">{alert.place} · </b>}
-                      {alert.body}
-                    </span>
-                  </span>
-                  <Pill>{dayWord(alert.day, data)}</Pill>
-                  <ChevronRight size={18} aria-hidden="true" className="alert-go" />
-                </SceneVeil>
+                </span>
+                <Pill>{dayWord(alert.day, data)}</Pill>
+                <ChevronRight size={18} aria-hidden="true" className="alert-go" />
               </button>
             </li>
           );

@@ -8,7 +8,7 @@ import {
   TreePine,
   type LucideIcon,
 } from 'lucide-react';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { airStore, useToday } from '../air/store';
 import { AirError, AirLoading } from '../components/AirState';
@@ -81,18 +81,23 @@ export function LensScreen(): React.JSX.Element {
   const series = useMemo(() => (data === undefined ? [] : lensSeries(data)), [data]);
   const hour = series[Math.min(step, series.length - 1)];
   const lastStep = Math.max(0, Math.min(DIAL_HOURS, series.length - 1));
-  // Playing steps the window along the whole run in five seconds, and stops at the end.
+  // Playing steps the window along the whole run in five seconds, and when it has shown the last hour it stops and
+  // the window goes back to the start (now).
+  const stepNow = useRef(step);
+  stepNow.current = step;
   useEffect(() => {
     if (!playing || lastStep === 0) return undefined;
     const timer = window.setInterval(
       () => {
-        setStep((current) => {
-          if (current >= lastStep) {
-            setPlaying(false);
-            return current;
-          }
-          return current + 1;
-        });
+        if (stepNow.current >= lastStep) {
+          window.clearInterval(timer);
+          setPlaying(false);
+          setStep(0);
+          stepNow.current = 0;
+          return;
+        }
+        stepNow.current += 1;
+        setStep(stepNow.current);
       },
       PLAY_SECONDS * (1000 / lastStep),
     );

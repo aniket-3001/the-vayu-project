@@ -14,3 +14,4 @@ export * from './fromHarvest';
 export * from './weather';
 export * from './weatherForecast';
 export * from './mapStations';
+export * from './windGrid';

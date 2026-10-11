@@ -108,6 +108,31 @@ export async function fetchWindGrid(
   return winds;
 }
 
+/**
+ * The wind from our own API: the same grid, asked of the weather model once for everyone and kept half an hour, so no
+ * visitor's address is spent asking it. Throws when the API has none (it answers 502 rather than guess).
+ */
+export async function fetchWindFromApi(
+  baseUrl: string,
+  fetchImpl: typeof fetch = fetch,
+): Promise<readonly WindPoint[]> {
+  const res = await fetchImpl(`${baseUrl.replace(/\/$/, '')}/v1/wind`);
+  if (!res.ok) throw new Error(`The API answered ${String(res.status)} for the wind`);
+  const body = (await res.json()) as { points?: unknown };
+  const points = Array.isArray(body.points) ? (body.points as readonly unknown[]) : [];
+  const winds = points.filter(
+    (p): p is WindPoint =>
+      typeof p === 'object' &&
+      p !== null &&
+      typeof (p as WindPoint).lat === 'number' &&
+      typeof (p as WindPoint).lng === 'number' &&
+      typeof (p as WindPoint).speed === 'number' &&
+      typeof (p as WindPoint).fromDeg === 'number',
+  );
+  if (winds.length === 0) throw new Error('No wind came back');
+  return winds;
+}
+
 /** The number of fires our API counted in the last 24 hours (NASA satellite detections), or undefined. */
 export async function fetchFireCount(
   baseUrl: string,

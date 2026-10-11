@@ -133,7 +133,7 @@ const latOfMercatorY = (y: number): number =>
   (Math.atan(Math.sinh(Math.PI * (1 - 2 * y))) * 180) / Math.PI;
 
 /** A repeatable number between 0 and 1 for a pixel, so the grain does not shimmer from one draw to the next. */
-const noise = (col: number, row: number): number => {
+export const noise = (col: number, row: number): number => {
   let h = (col * 374761393 + row * 668265263) | 0;
   h = (h ^ (h >>> 13)) * 1274126177;
   return ((h ^ (h >>> 16)) >>> 0) / 4294967295;
@@ -159,11 +159,11 @@ export const FIELD_TILES: readonly Window[] = [-180, -90, 0, 90].map((west) => (
 }));
 
 /** The field over a window as two grids: the estimated AQI and how sure we are, rows spaced evenly in mercator y. */
-function sampleField(
+export function sampleField(
   monitors: readonly Monitor[],
   cols: number,
   rows: number,
-  window: Window,
+  window: Window = FIELD_BOUNDS,
 ): { readonly aqi: Float32Array; readonly confidence: Float32Array } {
   const aqi = new Float32Array(cols * rows);
   const confidence = new Float32Array(cols * rows);
@@ -188,124 +188,6 @@ function sampleField(
     }
   }
   return { aqi, confidence };
-}
-
-/** RGBA pixels for the field over a window (all of `FIELD_BOUNDS` by default), rows spaced evenly in mercator y. */
-export function renderField(
-  monitors: readonly Monitor[],
-  cols: number,
-  rows: number,
-  window: Window = FIELD_BOUNDS,
-): Uint8ClampedArray {
-  const pixels = new Uint8ClampedArray(cols * rows * 4);
-  const { aqi, confidence } = sampleField(monitors, cols, rows, window);
-  for (let i = 0; i < cols * rows; i++) {
-    const c = confidence[i] ?? 0;
-    if (c === 0) continue;
-    const [r, g, b] = gradientColour(aqi[i] ?? 0);
-    pixels[i * 4] = r;
-    pixels[i * 4 + 1] = g;
-    pixels[i * 4 + 2] = b;
-    pixels[i * 4 + 3] = Math.round(c * 215);
-  }
-  return pixels;
-}
-
-/** Where each level's colour sits along the scale: the middle of its band. */
-const SCALE_STOPS = LEVELS.map((level, i) => ({
-  at: (level.from + (LEVELS[i + 1]?.from ?? 501) - 1) / 2,
-  rgb: hexToRgb(level.solid),
-}));
-
-/**
- * The colour of an AQI as the scale shows it: always one of the level colours, never a mix. Between two bands the
- * pixel is one colour or the other by `n` (a number from 0 to 1), more of the next as the air gets nearer to it, so
- * a boundary is a stipple of the two scale colours rather than a smooth wash.
- */
-export function scaleColour(aqi: number, n: number): [number, number, number] {
-  const first = SCALE_STOPS[0];
-  const last = SCALE_STOPS[SCALE_STOPS.length - 1];
-  if (first === undefined || last === undefined) return [0, 0, 0];
-  if (aqi <= first.at) return [...first.rgb];
-  if (aqi >= last.at) return [...last.rgb];
-  for (let i = 0; i < SCALE_STOPS.length - 1; i++) {
-    const a = SCALE_STOPS[i];
-    const b = SCALE_STOPS[i + 1];
-    if (a !== undefined && b !== undefined && aqi <= b.at) {
-      const t = (aqi - a.at) / (b.at - a.at);
-      // The middle of the stretch is where the two mix; either end is plainly its own colour.
-      const share = Math.min(1, Math.max(0, (t - 0.25) / 0.5));
-      return [...(n < share ? b.rgb : a.rgb)];
-    }
-  }
-  return [...last.rgb];
-}
-
-/**
- * The field as a fine picture: the estimates are stretched up by `scale` with bilinear blending, then every pixel is
- * given the scale colour for its air, stippled between neighbouring levels, and roughened with grain, so the air
- * reads like dust and not like a wash or blocks. Where we are less sure, fewer pixels are kept, so the edges thin
- * out into specks. The grain is a fixed pattern, so it does not shimmer between draws.
- */
-export function grainyField(
-  monitors: readonly Monitor[],
-  cols: number,
-  rows: number,
-  scale: number,
-  window: Window = FIELD_BOUNDS,
-): { readonly pixels: Uint8ClampedArray; readonly width: number; readonly height: number } {
-  const { aqi, confidence } = sampleField(monitors, cols, rows, window);
-  const width = cols * scale;
-  const height = rows * scale;
-  // The grain is fixed to the ground, not to the picture: a pixel at a place has the same grain whichever window
-  // it was drawn in, so the dust does not crawl when the map is moved and the picture drawn again.
-  const degPerPx = (window.east - window.west) / width;
-  const yPerPx = (mercatorY(window.south) - mercatorY(window.north)) / height;
-  const offsetX = Math.round(window.west / degPerPx);
-  const offsetY = Math.round(mercatorY(window.north) / yPerPx);
-  const pixels = new Uint8ClampedArray(width * height * 4);
-  const cell = (c: number, r: number): number =>
-    Math.min(rows - 1, Math.max(0, r)) * cols + Math.min(cols - 1, Math.max(0, c));
-  for (let y = 0; y < height; y++) {
-    const fy = (y + 0.5) / scale - 0.5;
-    const r0 = Math.floor(fy);
-    const ty = fy - r0;
-    for (let x = 0; x < width; x++) {
-      const fx = (x + 0.5) / scale - 0.5;
-      const c0 = Math.floor(fx);
-      const tx = fx - c0;
-      // Blend the four neighbours, weighting the air by how sure we are so empty ground does not pull it down.
-      let sure = 0;
-      let weighted = 0;
-      for (const [dc, dr, w] of [
-        [0, 0, (1 - tx) * (1 - ty)],
-        [1, 0, tx * (1 - ty)],
-        [0, 1, (1 - tx) * ty],
-        [1, 1, tx * ty],
-      ] as const) {
-        const i = cell(c0 + dc, r0 + dr);
-        const c = confidence[i] ?? 0;
-        sure += w * c;
-        weighted += w * c * (aqi[i] ?? 0);
-      }
-      if (sure < 0.03) continue;
-      const n = noise(x + offsetX, y + offsetY);
-      const n2 = noise(y + offsetY + 7919, x + offsetX + 104729);
-      const n3 = noise(x + offsetX + 31337, y + offsetY + 65537);
-      // Thin out where we are less sure: a pixel is kept in proportion to how sure we are.
-      if (n3 > Math.min(1, sure * 1.7)) continue;
-      // Grain in the opacity: mostly strong, with the odd hole.
-      const grain = n2 < 0.06 ? 0.15 : 0.62 + 0.38 * n;
-      const [r, g, b] = scaleColour(weighted / sure, noise(x + offsetX + 977, y + offsetY + 211));
-      const shade = (n - 0.5) * 20;
-      const i = (y * width + x) * 4;
-      pixels[i] = Math.max(0, Math.min(255, r + shade));
-      pixels[i + 1] = Math.max(0, Math.min(255, g + shade));
-      pixels[i + 2] = Math.max(0, Math.min(255, b + shade));
-      pixels[i + 3] = Math.round(255 * grain);
-    }
-  }
-  return { pixels, width, height };
 }
 
 /** What part of a window the viewport sees, padded a little so a small pan does not show an edge; undefined if none. */

@@ -186,7 +186,7 @@ describe('the Breathe better tips on My Air', () => {
       const card = screen.getByRole('region', { name: 'Breathe better today' });
       expect(card).toHaveTextContent('Home');
       expect(card).toHaveTextContent('DAV Public School');
-      expect(card).toHaveTextContent(/Morning assembly: (Inside|Open ground)/u);
+      expect(card).toHaveTextContent(/Morning assembly: (Inside|Open ground|None)/u);
       expect(card).toHaveTextContent(/Asha, 9: AQI \d+ at school/u);
       // Each school tip says which place it is for.
       const places = Array.from(card.querySelectorAll('.tip-place')).map((el) => el.textContent);

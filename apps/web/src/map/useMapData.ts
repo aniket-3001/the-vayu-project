@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { fetchWindGrid, recall, remember, type WindPoint } from './live';
+import { fetchWindFromApi, fetchWindGrid, recall, remember, type WindPoint } from './live';
 import { API_URL } from '../config';
 import { readDemo } from '../demo/state';
 import { airStore } from '../air/store';
@@ -48,13 +48,16 @@ export function useMapData(fetchImpl: typeof fetch = fetch): MapData {
       if (current) setData((now) => ({ ...now, ...patch }));
     };
     if (missing.current.wind) {
-      fetchWindGrid(fetchImpl).then(
-        (wind) => {
-          remember('wind', wind);
-          apply({ wind, windLive: true });
-        },
-        () => undefined,
-      );
+      // Our API first (the wind is asked of the weather model once for everyone); the model itself only if that fails.
+      fetchWindFromApi(API_URL, fetchImpl)
+        .catch(() => fetchWindGrid(fetchImpl))
+        .then(
+          (wind) => {
+            remember('wind', wind);
+            apply({ wind, windLive: true });
+          },
+          () => undefined,
+        );
     }
     if (readDemo()?.fires === undefined) {
       fetchFires(API_URL, fetchImpl).then(

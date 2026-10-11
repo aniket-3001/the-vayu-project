@@ -86,13 +86,24 @@ export function tasksFor(data: TodayData): readonly Task[] {
   const now = data.aqi;
 
   // The cleanest daylight hour ahead is always named, with how long to stay out and where by how clean it is.
+  // A GRAP stage from II up advises against walks and exercise outdoors, so the hour is for going out only if you must.
+  const grap = grapStageFor(data);
   if (best !== undefined) {
     const advice = walkAdviceFor(best.aqi);
+    const when = range(best.at, data.asOf);
     tasks.push({
       id: 'walk',
       kind: 'walk',
-      title: `${best.aqi <= 100 ? 'A good hour' : 'Cleanest hour'} for a walk: ${range(best.at, data.asOf)}`,
-      why: `AQI ${String(best.aqi)}. ${advice.long}`,
+      title:
+        grap >= 2
+          ? `If you must go out, the cleanest hour: ${when}`
+          : `${best.aqi <= 100 ? 'A good hour' : 'Cleanest hour'} for a walk: ${when}`,
+      why:
+        grap >= 3
+          ? `GRAP Stage ${ROMAN[grap]} is likely, so avoid going out. If you must, AQI is ${String(best.aqi)} then; wear a well-fitted N95 and keep it short.`
+          : grap === 2
+            ? `GRAP Stage II is likely, so skip outdoor walks and exercise. If you must go out, AQI is ${String(best.aqi)} then; wear a well-fitted N95.`
+            : `AQI ${String(best.aqi)}. ${advice.long}${grap === 1 ? ' GRAP Stage I is likely, so limit time outside.' : ''}`,
       points: POINTS.walk,
     });
   }
@@ -125,7 +136,7 @@ export function tasksFor(data: TodayData): readonly Task[] {
     });
   }
 
-  const stage = grapStageFor(data);
+  const stage = grap;
   if (stage > 0) {
     tasks.push({
       id: 'grap',

@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   GRID,
   fetchFireCount,
+  fetchWindFromApi,
   fetchWindGrid,
   gridPoints,
   worldPoints,
@@ -28,6 +29,9 @@ const echo = (current: Record<string, number>): typeof fetch =>
       ),
     );
   }) as unknown as typeof fetch;
+
+const requestUrl = (input: RequestInfo | URL): string =>
+  typeof input === 'string' ? input : input instanceof URL ? input.href : input.url;
 
 describe('the grid', () => {
   it('covers south Asia at the step asked, with a point at each corner', () => {
@@ -115,5 +119,34 @@ describe('remembering for half an hour', () => {
     window.sessionStorage.setItem('vayu.mapdata.v1.x', (old ?? '').replace(/"at":\d+/u, '"at":1'));
     expect(recall('x')).toBeUndefined();
     expect(recall('nothing')).toBeUndefined();
+  });
+
+  it('takes the wind from our own API, so no visitor spends their own daily allowance on it', async () => {
+    const urls: string[] = [];
+    const wind = await fetchWindFromApi('https://api.example/', (input) => {
+      urls.push(requestUrl(input));
+      return Promise.resolve(
+        new Response(
+          JSON.stringify({
+            points: [
+              { lat: 28, lng: 77, speed: 3.5, fromDeg: 310 },
+              { lat: 1, lng: 'x' },
+            ],
+          }),
+          { status: 200 },
+        ),
+      );
+    });
+    expect(urls).toEqual(['https://api.example/v1/wind']);
+    expect(wind).toEqual([{ lat: 28, lng: 77, speed: 3.5, fromDeg: 310 }]);
+  });
+
+  it('throws when our API has no wind, so the caller can fall back and never invents one', async () => {
+    await expect(
+      fetchWindFromApi('', () => Promise.resolve(new Response('{}', { status: 502 }))),
+    ).rejects.toThrow(/502/u);
+    await expect(
+      fetchWindFromApi('', () => Promise.resolve(new Response('{"points":[]}', { status: 200 }))),
+    ).rejects.toThrow(/No wind/u);
   });
 });

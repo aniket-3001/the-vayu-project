@@ -113,7 +113,7 @@ describe('the Today screen', () => {
       (el) => el.querySelector('h2')?.textContent ?? el.getAttribute('class') ?? '',
     );
     const at = (name: RegExp): number => names.findIndex((n) => name.test(n));
-    expect(at(/Special for this place/u)).toBe(1);
+    expect(at(/Insights for this place/u)).toBe(1);
     expect(at(/Hourly|hour/iu)).toBe(2);
     expect(at(/pollutant/iu)).toBe(3);
     expect(at(/Daily forecast/u)).toBe(4);
@@ -123,7 +123,7 @@ describe('the Today screen', () => {
   it('says what is special about a school, in full, with its assembly', () => {
     const pin = { id: 's', name: 'DAV Public School', lat: 28.4, lng: 77.05 };
     render(<TodayScreen data={sampleDay('unhealthy')} pin={pin} />);
-    const card = screen.getByRole('region', { name: 'Special for this place' });
+    const card = screen.getByRole('region', { name: 'Insights for this place' });
     expect(card).toHaveTextContent('Morning assembly');
     expect(card).toHaveTextContent(/Hold assembly|Open ground|inside/iu);
   });
@@ -131,14 +131,33 @@ describe('the Today screen', () => {
   it('names the best time for a walk in a park, and the cleanest hour anywhere else', () => {
     const park = { id: 'p', name: 'Park', lat: 28.5, lng: 77.1 };
     const { unmount } = render(<TodayScreen data={sampleDay('moderate')} pin={park} />);
-    expect(screen.getByRole('region', { name: 'Special for this place' })).toHaveTextContent(
+    expect(screen.getByRole('region', { name: 'Insights for this place' })).toHaveTextContent(
       'Best time for a walk here',
     );
     unmount();
     const home = { id: 'h', name: 'Home', lat: 28.59, lng: 77.05 };
     render(<TodayScreen data={sampleDay('moderate')} pin={home} />);
-    expect(screen.getByRole('region', { name: 'Special for this place' })).toHaveTextContent(
+    expect(screen.getByRole('region', { name: 'Insights for this place' })).toHaveTextContent(
       'Cleanest daylight hour',
     );
+  });
+
+  it('follows the guidelines: at GRAP Stage IV a school is likely closed and holds no assembly inside', () => {
+    const pin = { id: 's', name: 'DAV Public School', lat: 28.4, lng: 77.05 };
+    render(<TodayScreen data={sampleDay('hazardous')} pin={pin} />);
+    const card = screen.getByRole('region', { name: 'Insights for this place' });
+    expect(card).toHaveTextContent('School is likely closed');
+    expect(card).toHaveTextContent(/no assembly to hold/u);
+    expect(card).not.toHaveTextContent(/hold assembly inside/iu);
+  });
+
+  it('follows the guidelines: from GRAP Stage II up a park is not for walks, only if you must go out', () => {
+    const park = { id: 'p', name: 'Park', lat: 28.5, lng: 77.1 };
+    render(<TodayScreen data={sampleDay('hazardous')} pin={park} />);
+    const card = screen.getByRole('region', { name: 'Insights for this place' });
+    expect(card).toHaveTextContent('Avoid walks here for now');
+    expect(card).toHaveTextContent(/skip outdoor walks/u);
+    expect(card).toHaveTextContent(/If you must go out/u);
+    expect(card).not.toHaveTextContent('Best time for a walk here');
   });
 });

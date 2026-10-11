@@ -1,5 +1,7 @@
 import { walkAdviceFor } from '@vayu/core';
 import { assemblyFor } from '../alerts/assembly';
+import { ROMAN } from '../alerts/model';
+import { grapStageFor } from '../tasks/model';
 import type { Pin } from '../data/pins';
 import { bestHour, lensSeries } from '../lens/model';
 import { hourRange, hourOfDay, isoDate } from '../today/time';
@@ -18,6 +20,8 @@ export interface PlaceNote {
   readonly short: string;
   /** The words for the place's page. */
   readonly long: string;
+  /** What the guidance comes to, as short lines for the page. */
+  readonly rules: readonly string[];
 }
 
 const PARKISH = /\b(park|garden|playground|ground|trail|lake)\b/iu;
@@ -35,29 +39,55 @@ export function isParkPin(pin: Pin): boolean {
 export function placeNote(data: TodayData, pin: Pin): PlaceNote | undefined {
   if (isSchoolPin(pin)) {
     const assembly = assemblyFor(data);
+    const closed = assembly.where === 'closed';
     return {
       kind: 'assembly',
-      title: 'Morning assembly',
-      short: `Morning assembly: ${assembly.label}`,
-      long: assembly.words,
+      title: closed ? 'School is likely closed' : 'Morning assembly',
+      short: closed ? 'School likely closed' : `Morning assembly: ${assembly.label}`,
+      // The page shows the rules as lines, so the paragraph only says why.
+      long: assembly.basis,
+      rules: assembly.rules,
     };
   }
   const best = bestHour(lensSeries(data));
   if (best === undefined) return undefined;
   const when = `${hourRange(Math.floor(hourOfDay(best.at)))}${isoDate(best.at) === isoDate(data.asOf) ? '' : ' tomorrow'}`;
   const advice = walkAdviceFor(best.aqi);
-  if (isParkPin(pin)) {
+  const stage = grapStageFor(data);
+  const numeral = ROMAN[stage];
+  const park = isParkPin(pin);
+  // A GRAP stage from II up advises against outdoor walks and exercise: the cleanest hour is then only for going out
+  // when you must. Stage I asks to limit time outside.
+  if (stage >= 2) {
+    return {
+      kind: park ? 'walk' : 'clean',
+      title: park ? 'Avoid walks here for now' : 'Stay in where you can',
+      short: park ? `No walks: GRAP ${numeral}` : `Stay in: GRAP ${numeral}`,
+      long: `GRAP Stage ${numeral} is likely, so skip outdoor walks and exercise${stage >= 3 ? ' and avoid going out unless you must' : ''}. If you must go out, the cleanest daylight hour is ${when} (AQI ${String(best.aqi)}); wear a well-fitted N95.`,
+      rules: [
+        'Move walks and exercise indoors.',
+        `If you must go out, ${when} is the cleanest daylight hour (AQI ${String(best.aqi)}).`,
+        'Wear a well-fitted N95 or FFP2 mask, and keep it short.',
+      ],
+    };
+  }
+  if (park) {
     return {
       kind: 'walk',
       title: 'Best time for a walk here',
-      short: `Best walk: ${when}`,
-      long: `${when}, when the air is cleanest in daylight (AQI ${String(best.aqi)}). ${advice.long}`,
+      short: stage === 1 ? `Short walk: ${when}` : `Best walk: ${when}`,
+      long: `${when}, when the air is cleanest in daylight (AQI ${String(best.aqi)}). ${advice.long}${stage === 1 ? ' GRAP Stage I is likely, so limit time outside.' : ''}`,
+      rules: [
+        advice.short,
+        ...(stage === 1 ? ['GRAP Stage I is likely: limit time outside.'] : []),
+      ],
     };
   }
   return {
     kind: 'clean',
     title: 'Cleanest daylight hour',
     short: `Cleanest hour: ${when}`,
-    long: `${when} (AQI ${String(best.aqi)}). ${advice.long}`,
+    long: `${when} (AQI ${String(best.aqi)}). ${advice.long}${stage === 1 ? ' GRAP Stage I is likely, so limit time outside.' : ''}`,
+    rules: [advice.short, ...(stage === 1 ? ['GRAP Stage I is likely: limit time outside.'] : [])],
   };
 }

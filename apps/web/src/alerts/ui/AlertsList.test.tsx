@@ -165,7 +165,11 @@ describe('the alerts list', () => {
     it('wear the AQI scale’s colour for a GRAP stage, on the row and in the sheet', async () => {
       open('hazardous', 127);
       const row = screen.getByRole('button', { name: /GRAP Stage IV likely today/u });
-      expect(row).toHaveClass('scene', 'scene-air');
+      expect(row).toHaveClass('scene-air');
+      // In the list it is plain: one colour, no picture and no see-through card.
+      expect(row.querySelector('canvas')).not.toBeInTheDocument();
+      expect(row.querySelector('.scene-veil')).not.toBeInTheDocument();
+      expect(row).toHaveClass('blink');
       expect(row.style.getPropertyValue('--scene-solid')).toBe(GRAP_COLOURS[4].solid);
       await userEvent.click(row);
       const sheet = screen.getByRole('dialog');

@@ -13,16 +13,18 @@ import { useEffect, useRef } from 'react';
 import { LEVELS } from '../design/levels';
 import type { Monitor } from './monitors';
 import { cigarettesPerDay, describeCigarettes } from '../units/smoke';
-import { FIELD_TILES, grainyField, mercatorY, visibleWindow, type Window } from './field';
+import { buildDust, paintDust, type Dust } from './dust';
+import { FIELD_TILES, mercatorY, visibleWindow, type Window } from './field';
 import { firesGeoJson, type Fire } from './fires';
 import { monitorsGeoJson } from './monitors';
 
-/** The part of MapLibre's image source that swaps the picture. */
-interface ImageUpdater {
-  updateImage: (options: {
-    url: string;
-    coordinates?: [[number, number], [number, number], [number, number], [number, number]];
-  }) => void;
+/** The parts of MapLibre's canvas source that place the picture and take a fresh frame of it. */
+interface CanvasPlacer {
+  setCoordinates: (
+    coordinates: [[number, number], [number, number], [number, number], [number, number]],
+  ) => void;
+  play: () => void;
+  pause: () => void;
 }
 
 export interface MapLayers {
@@ -55,32 +57,17 @@ const aqiColour = (value: unknown): unknown => [
   ...LEVELS.slice(1).flatMap((level) => [level.from, level.solid]),
 ];
 
-/**
- * One fully transparent pixel, for when there is no air colour to draw: nothing is better than a made-up wash. It is
- * drawn rather than written out, so it can be nothing but empty.
- */
-function clearPixel(): string {
-  const canvas = document.createElement('canvas');
-  canvas.width = 1;
-  canvas.height = 1;
-  return canvas.toDataURL();
-}
+/** The longest side of the dust picture, in pixels. */
+const MAX_SIDE = 1400;
 
 /**
- * The air colour for a window of the world, as a picture. The picture's detail follows the zoom (about one
- * picture pixel to two screen pixels), so the dust is as fine in a street view as across a continent, and it is
- * only drawn for the part of the world that is on screen.
+ * How big the picture of a window of the world should be: about a pixel for each screen pixel, so the dust is as fine
+ * in a street view as across a continent, and as tall as the ground is (a tall strip of the globe is much taller than
+ * wide in mercator). When it would be too big both sides shrink together, so a pixel is always square.
  */
-/** The longest side of a field picture, in pixels. */
-const MAX_SIDE = 1100;
-
-function fieldImage(air: readonly Monitor[], window: Window, pxPerDeg: number): string {
-  if (air.length === 0) return clearPixel();
-  const SCALE = 3;
+function dustSize(window: Window, pxPerDeg: number): { width: number; height: number } {
   const widthDeg = window.east - window.west;
   const yShare = mercatorY(window.south) - mercatorY(window.north);
-  // A picture is as wide as the zoom wants and as tall as the ground is (a tall strip of the globe is much taller
-  // than wide in mercator), and when it would be too big both sides shrink together, so a pixel is always square.
   let width = Math.max(24, widthDeg * pxPerDeg);
   let height = (width * yShare) / (widthDeg / 360);
   const biggest = Math.max(width, height);
@@ -88,22 +75,15 @@ function fieldImage(air: readonly Monitor[], window: Window, pxPerDeg: number): 
     width *= MAX_SIDE / biggest;
     height *= MAX_SIDE / biggest;
   }
-  width = Math.max(24, Math.round(width));
-  height = Math.max(24, Math.round(height));
-  const {
-    pixels,
-    width: w,
-    height: h,
-  } = grainyField(air, Math.ceil(width / SCALE), Math.ceil(height / SCALE), SCALE, window);
-  const canvas = document.createElement('canvas');
-  canvas.width = w;
-  canvas.height = h;
-  const ctx = canvas.getContext('2d');
-  if (ctx === null) return '';
-  const data = ctx.createImageData(w, h);
-  data.data.set(pixels);
-  ctx.putImageData(data, 0, 0);
-  return canvas.toDataURL();
+  return { width: Math.max(24, Math.round(width)), height: Math.max(24, Math.round(height)) };
+}
+
+/** A tile of the dust: a picture that is redrawn a few times a second, laid on the map where its window is. */
+interface DustTile {
+  readonly canvas: HTMLCanvasElement;
+  readonly ctx: CanvasRenderingContext2D | null;
+  image: ImageData | undefined;
+  dust: Dust | undefined;
 }
 
 /**
@@ -219,8 +199,8 @@ const DOT_RADIUS_SMOKE = ['interpolate', ['linear'], ['zoom'], 0, 2.6, 3, 4, 6, 
 const LABEL_SIZE = ['interpolate', ['linear'], ['zoom'], 6, 12, 12, 16];
 const LABEL_SIZE_SMOKE = ['interpolate', ['linear'], ['zoom'], 6, 11, 12, 15];
 
-/** Picture pixels to a degree for a zoom: about one for every two screen pixels. */
-const pxPerDegAt = (zoom: number): number => (512 * 2 ** zoom) / 360 / 2;
+/** Picture pixels to a degree for a zoom: about one for each screen pixel. */
+const pxPerDegAt = (zoom: number): number => (512 * 2 ** zoom) / 360;
 const LABEL_FROM_ZOOM = 6;
 
 /** The map itself: monitors, the colour field between them, fires, and a switch between flat and globe. */
@@ -276,7 +256,33 @@ export function MapView({
     if (import.meta.env.DEV) Object.assign(window, { __vayuMap: m });
     m.addControl(new NavigationControl({ showCompass: false }), 'top-right');
 
-    // The air colour is drawn for what is on screen, finer as you come in, and again when the map has stopped moving.
+    // The air is dust, built for what is on screen (finer as you come in) when the map has stopped moving, and
+    // redrawn a few times a second so each speck jostles about its place.
+    const dustTiles: DustTile[] = FIELD_TILES.map(() => {
+      const canvas = document.createElement('canvas');
+      canvas.width = 2;
+      canvas.height = 2;
+      let ctx: CanvasRenderingContext2D | null = null;
+      try {
+        ctx = canvas.getContext('2d');
+      } catch {
+        ctx = null;
+      }
+      return { canvas, ctx, image: undefined, dust: undefined };
+    });
+    const reduced =
+      typeof window.matchMedia === 'function' &&
+      window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const frame = (tile: DustTile, source: CanvasPlacer, ms: number): void => {
+      if (tile.dust === undefined || tile.image === undefined || tile.ctx === null) return;
+      paintDust(tile.dust, tile.image.data, ms);
+      tile.ctx.putImageData(tile.image, 0, 0);
+      // The source refreshes its texture only while it plays, so play for one frame.
+      source.play();
+      window.requestAnimationFrame(() => {
+        source.pause();
+      });
+    };
     const draw = (): void => {
       if (!ready.current) return;
       const { air: monitorsForField, layers: on } = latest.current;
@@ -290,25 +296,32 @@ export function MapView({
       };
       FIELD_TILES.forEach((tile, i) => {
         const id = FIELD_IDS[i] ?? '';
-        const source = m.getSource(id);
-        if (source === undefined || !('updateImage' in source)) return;
+        const dustTile = dustTiles[i];
+        const source = m.getSource(id) as unknown as CanvasPlacer | undefined;
+        if (dustTile === undefined || source === undefined || !('setCoordinates' in source)) return;
         // Zoomed right out, the whole tile; otherwise only the part of it that is in view.
         const window = zoom < 2.5 ? tile : visibleWindow(tile, view);
         if (m.getLayer(id) === undefined) return;
-        if (window === undefined) {
+        if (window === undefined || monitorsForField.length === 0 || dustTile.ctx === null) {
+          dustTile.dust = undefined;
           m.setLayoutProperty(id, 'visibility', 'none');
           return;
         }
         if (on.gradient) m.setLayoutProperty(id, 'visibility', 'visible');
-        (source as unknown as ImageUpdater).updateImage({
-          url: fieldImage(monitorsForField, window, pxPerDegAt(zoom)),
-          coordinates: [
-            [window.west, window.north],
-            [window.east, window.north],
-            [window.east, window.south],
-            [window.west, window.south],
-          ],
-        });
+        const { width, height } = dustSize(window, pxPerDegAt(zoom));
+        if (dustTile.canvas.width !== width || dustTile.canvas.height !== height) {
+          dustTile.canvas.width = width;
+          dustTile.canvas.height = height;
+          dustTile.image = dustTile.ctx.createImageData(width, height);
+        }
+        dustTile.dust = buildDust(monitorsForField, window, width, height);
+        source.setCoordinates([
+          [window.west, window.north],
+          [window.east, window.north],
+          [window.east, window.south],
+          [window.west, window.south],
+        ]);
+        frame(dustTile, source, performance.now());
       });
     };
     redrawField.current = draw;
@@ -317,6 +330,20 @@ export function MapView({
       if (fieldTimer !== undefined) clearTimeout(fieldTimer);
       fieldTimer = setTimeout(draw, 140);
     });
+    // The jostling: a few frames a second, only while the page is shown and motion is welcome.
+    const jostle =
+      reduced || typeof window === 'undefined'
+        ? undefined
+        : window.setInterval(() => {
+            if (document.hidden || !ready.current) return;
+            const now = performance.now();
+            FIELD_TILES.forEach((_, i) => {
+              const dustTile = dustTiles[i];
+              const source = m.getSource(FIELD_IDS[i] ?? '') as unknown as CanvasPlacer | undefined;
+              if (dustTile?.dust === undefined || source === undefined) return;
+              frame(dustTile, source, now);
+            });
+          }, 130);
 
     const addLayers = (): void => {
       ready.current = true;
@@ -327,8 +354,9 @@ export function MapView({
       FIELD_TILES.forEach((tile, i) => {
         const id = FIELD_IDS[i] ?? `field-${String(i)}`;
         m.addSource(id, {
-          type: 'image',
-          url: clearPixel(),
+          type: 'canvas',
+          canvas: dustTiles[i]?.canvas ?? document.createElement('canvas'),
+          animate: false,
           coordinates: [
             [tile.west, tile.north],
             [tile.east, tile.north],
@@ -347,16 +375,16 @@ export function MapView({
               ['linear'],
               ['zoom'],
               0,
-              0.95,
+              1,
               7,
-              0.9,
+              0.95,
               11,
-              0.5,
+              0.6,
               14,
-              0.18,
+              0.22,
             ] as never,
             'raster-fade-duration': 0,
-            'raster-resampling': 'nearest',
+            'raster-resampling': 'linear',
           },
           layout: { visibility: on.gradient ? 'visible' : 'none' },
         });
@@ -559,6 +587,7 @@ export function MapView({
     onReady(m);
     return () => {
       if (fieldTimer !== undefined) clearTimeout(fieldTimer);
+      if (jostle !== undefined) window.clearInterval(jostle);
       redrawField.current = undefined;
       m.remove();
       map.current = undefined;

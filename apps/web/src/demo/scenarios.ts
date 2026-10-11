@@ -156,8 +156,7 @@ export const MORE_SCENARIOS: readonly Scenario[] = [
   {
     id: 'place',
     label: 'Place details',
-    caption:
-      'On a place’s page: its special alerts, then hours beside pollutants, days beside advice.',
+    caption: 'On a place’s page: its insights, then hours beside pollutants, days beside advice.',
     route: HOME_PAGE,
     seconds: 6,
     state: { day: 'hazardous' },

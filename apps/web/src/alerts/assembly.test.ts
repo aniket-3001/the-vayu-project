@@ -35,18 +35,28 @@ describe('where the morning assembly should be, by GRAP stage', () => {
     expect(advice.words).toMatch(/under 15 minutes/u);
   });
 
-  it('is inside from Stage II up', () => {
-    for (const [pm25, numeral] of [
-      [160, 'II'],
-      [330, 'IV'],
-    ] as const) {
+  it('is inside in Stage II and III, limiting time outside', () => {
+    for (const pm25 of [160, 235]) {
       const day = steady(pm25);
-      expect(grapStageFor(day)).toBeGreaterThanOrEqual(2);
+      const stage = grapStageFor(day);
+      expect(stage).toBeGreaterThanOrEqual(2);
+      expect(stage).toBeLessThanOrEqual(3);
       const advice = assemblyFor(day);
       expect(advice.where).toBe('inside');
       expect(advice.words).toMatch(/GRAP Stage/u);
-      expect(numeral.length).toBeGreaterThan(0);
     }
+    expect(assemblyFor(steady(160)).words).toMatch(/limit time outside/iu);
+  });
+
+  it('holds no assembly at all in Stage IV: the school is likely closed', () => {
+    const day = steady(330);
+    expect(grapStageFor(day)).toBe(4);
+    const advice = assemblyFor(day);
+    expect(advice.where).toBe('closed');
+    expect(advice.label).toMatch(/school likely closed/iu);
+    expect(advice.words).toMatch(/no assembly to hold/u);
+    expect(advice.words).not.toMatch(/hold assembly inside/iu);
+    expect(advice.rules.join(' ')).toMatch(/closed or moved online/u);
   });
 
   it('falls back to the AQI, and says so, when no stage can be worked out', () => {
