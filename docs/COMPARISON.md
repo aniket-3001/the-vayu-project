@@ -16,11 +16,11 @@ What the Dyson figures are, where they come from, and what we can and cannot say
 
 ## Ours
 
-| Item                  | Figure                                                            | Source                               |
-| --------------------- | ----------------------------------------------------------------- | ------------------------------------ |
-| Airflow at the outlet | about 191 cfm, about 325 m³/h                                     | `PURIFIER.md`, the anemometer frames |
-| CADR                  | **not measured**                                                  |                                      |
-| Cost                  | the author's bill of materials (not yet written down in the repo) |                                      |
+| Item                  | Figure                                                 | Source                               |
+| --------------------- | ------------------------------------------------------ | ------------------------------------ |
+| Airflow at the outlet | about 191 cfm, about 325 m³/h                          | `PURIFIER.md`, the anemometer frames |
+| CADR                  | **not measured**                                       |                                      |
+| Parts cost            | ₹5,000: box free, fan ₹3,300, filter ₹1,500, foam ₹200 | `PURIFIER.md`                        |
 
 ## What can honestly be said
 

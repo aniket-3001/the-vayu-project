@@ -47,7 +47,7 @@ I have not compared the unit with a monitor for days, so I do not know how well 
 
 ## I built a cleaner too
 
-The room page can mark the moment a purifier goes on and say how fast the room's PM2.5 fell. That needs a purifier, so I built a prototype: a box, a Hicool BCF-250 backward-curved centrifugal fan inside it, a pleated Smart Air filter laid over the fan's inlet, and a sheet of foam over the filter as a pre-filter.
+The room page can mark the moment a purifier goes on and say how fast the room's PM2.5 fell. That needs a purifier, so I built a prototype: a box, a Hicool BCF-250 backward-curved centrifugal fan inside it, a pleated Smart Air filter laid over the fan's inlet, and a sheet of foam over the filter as a pre-filter. The parts cost ₹5,000: the box was free, the fan ₹3,300, the filter ₹1,500, the foam ₹200.
 
 ![The cleaner built in five steps](images/collage-build.jpg)
 _The cleaner in five steps: 1 the box, 2 the fan inside it, 3 the pleated filter laid on the fan, 4 the foam laid over the filter, 5 assembled, with the foam on top and the fan's outlet in the side of the box._
