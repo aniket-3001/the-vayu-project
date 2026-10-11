@@ -4,6 +4,7 @@ import { AlertsList } from '../../alerts/ui/AlertsList';
 import { useFires } from '../../alerts/useFires';
 import type { Pin } from '../../data/pins';
 import { placeNote, type NoteKind } from '../../places/notes';
+import { isSchoolPin } from '../../places/roles';
 import type { TodayData } from '../types';
 
 const ICONS: Readonly<Record<NoteKind, LucideIcon>> = {
@@ -25,7 +26,8 @@ export function PlaceSpecial({
   readonly pin: Pin | undefined;
 }): React.JSX.Element {
   const fires = useFires(pin, data.hourly[0]?.weather?.windFromDeg);
-  const alerts = alertsFor(data, fires);
+  // The lines about assembly are for a school's page; anywhere else they would be noise.
+  const alerts = alertsFor(data, fires, { school: pin !== undefined && isSchoolPin(pin) });
   const note = pin === undefined ? undefined : placeNote(data, pin);
   const Icon = note === undefined ? Sun : ICONS[note.kind];
   return (

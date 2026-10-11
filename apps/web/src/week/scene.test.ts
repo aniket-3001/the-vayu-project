@@ -30,6 +30,6 @@ describe('a recorded day’s scene', () => {
       return day === undefined ? NaN : (dayAqi(day) ?? NaN);
     };
     expect(aqi('2025-10-07')).toBeLessThan(aqi('2025-10-21'));
-    expect(aqi('2025-10-06')).toBeLessThan(aqi('2025-12-22'));
+    expect(aqi('2025-10-07')).toBeLessThan(aqi('2025-12-22'));
   });
 });

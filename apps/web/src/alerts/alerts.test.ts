@@ -98,6 +98,15 @@ describe('when the day arrives', () => {
     expect(rain?.avoid).toEqual([]);
     // Warnings first, good news last.
     expect(alerts[alerts.length - 1]?.kind).toBe('rain');
+    // Rain with a forecast no cleaner than now is said plainly, not sold as clean air.
+    const notCleaner = {
+      ...rainy,
+      daily: rainy.daily.map((d, i) => (i === 1 ? { ...d, aqi: rainy.aqi + 20 } : d)),
+    } as typeof day;
+    const honest = alertsFor(notCleaner, undefined).find((a) => a.kind === 'rain');
+    expect(honest?.title).toBe('Rain tomorrow');
+    expect(honest?.body).toMatch(/no cleaner than now/u);
+    expect(honest?.body).not.toMatch(/down from/u);
     // No rain, no rain alert.
     const dry = {
       ...day,

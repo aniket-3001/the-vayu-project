@@ -1,7 +1,6 @@
-import { DEMO_PLACES } from '@vayu/contracts';
 import { pinId, type Pin } from '../data/pins';
 import { saveHousehold, type Household } from '../exposure/people';
-import { sampleSpotsFor, saveSpots } from '../exposure/spots';
+import { saveSpots } from '../exposure/spots';
 
 /** A storage that lives only as long as the page: what the recorded days keeps, so the person's own data is untouched. */
 export class MemoryStorage implements Storage {
@@ -27,17 +26,26 @@ export class MemoryStorage implements Storage {
 }
 
 /**
- * The two places the recording starts with: home, and a park to walk in. No school and no office, so what each day
- * shows is about the air itself: the GRAP stage, the fires, the rain, the wind, the best hour for a walk, the windows.
+ * The two places the recording starts with: a home in south Delhi, near the R K Puram monitor, and Lodhi Garden
+ * to walk in. No school and no office, so what each day shows is about the air itself: the GRAP stage, the fires, the
+ * rain, the wind, the best hour for a walk, the windows. They are examples: the nearest monitor on each day is named.
  */
-export const WEEK_PINS: readonly Pin[] = DEMO_PLACES.filter(
-  (place) => place.name === 'Home' || place.name === 'Park',
-).map((place) => ({
-  id: pinId(place.lat, place.lng),
-  name: place.name,
-  lat: place.lat,
-  lng: place.lng,
-}));
+export const WEEK_PINS: readonly Pin[] = [
+  {
+    id: pinId(28.5702, 77.1884),
+    name: 'Home',
+    detail: 'Near R K Puram, South Delhi',
+    lat: 28.5702,
+    lng: 77.1884,
+  },
+  {
+    id: pinId(28.5931, 77.2197),
+    name: 'Park',
+    detail: 'Lodhi Garden, New Delhi',
+    lat: 28.5931,
+    lng: 77.2197,
+  },
+];
 
 /** The household of the recording: one person, who is mostly at home. */
 export const WEEK_HOUSEHOLD: Household = {
@@ -54,6 +62,8 @@ export function installMemoryStorage(): Storage {
   const storage = new MemoryStorage();
   Object.defineProperty(window, 'localStorage', { value: storage, configurable: true });
   saveHousehold(storage, WEEK_HOUSEHOLD);
-  saveSpots(storage, 'me', sampleSpotsFor('senior'));
+  // Home, all day, at the first place: the person is mostly at home.
+  const home = WEEK_PINS[0];
+  if (home !== undefined) saveSpots(storage, 'me', { home: { pin: home, from: 0, to: 24 } });
   return storage;
 }

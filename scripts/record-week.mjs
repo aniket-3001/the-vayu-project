@@ -22,12 +22,16 @@ const FIRE_BOX = '73.5,28,78,32.5';
 const AS_OF_HOUR = 8;
 
 const DAYS = [
-  { date: '2025-10-06', title: 'A rainy day', tags: ['Rain'] },
-  { date: '2025-10-07', title: 'The clean day after the rain', tags: ['Cleanest air'] },
+  {
+    date: '2025-10-07',
+    title: 'Rain, and the cleanest air of the seven',
+    tags: ['Rain', 'Cleanest air'],
+  },
   { date: '2025-10-21', title: 'The day after Diwali', tags: ['Fireworks smog'] },
   { date: '2025-10-31', title: 'Stubble-burning peak', tags: ['Stubble fires'] },
-  { date: '2025-11-12', title: 'Smog settles in', tags: ['Smog'] },
-  { date: '2025-12-22', title: 'GRAP IV, by our estimate', tags: ['Smog'] },
+  { date: '2025-11-09', title: 'Smog settles in', tags: ['Smog'] },
+  { date: '2025-12-22', title: 'Smog, and worse to come', tags: ['Smog'] },
+  { date: '2026-01-23', title: 'Heavy rain, and the smog clears by morning', tags: ['Rain'] },
   { date: '2026-03-30', title: 'A windy day', tags: ['Wind'] },
 ];
 /** Days before the demo day kept for the history, and days after it kept as "what came next". */

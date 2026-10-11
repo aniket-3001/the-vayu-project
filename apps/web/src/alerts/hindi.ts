@@ -16,7 +16,10 @@ export function alertTitleHindi(alert: Alert): string {
     case 'stubble':
       return 'आसपास पराली जलाने की घटनाएँ ज़्यादा';
     case 'rain':
-      return `${day} बारिश से हवा साफ़ होगी`;
+      // The English title promises clean air only when the forecast for the day shows it.
+      return alert.title.includes('should clear the air')
+        ? `${day} बारिश से हवा साफ़ होगी`
+        : `${day} बारिश की संभावना`;
     case 'wind':
       return `${day} तेज़ हवा से हवा हल्की होगी`;
   }

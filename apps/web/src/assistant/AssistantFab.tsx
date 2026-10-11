@@ -112,11 +112,11 @@ export function AssistantFab({
     return buildContext(
       first.id === 'live' ? 'Your location' : first.name,
       reading,
-      alertsFor(reading, fires),
+      alertsFor(reading, fires, { school: pinForRole('school', pins) !== undefined }),
       fires,
       household.people,
     );
-  }, [first, reading, fires, household.people]);
+  }, [first, reading, fires, household.people, pins]);
 
   // The air at the school and at the work place too, so a question about either is answered from there.
   const schoolPin = pinForRole('school', pins);
@@ -145,7 +145,7 @@ export function AssistantFab({
         : buildContext(
             workPin.name,
             workReading,
-            alertsFor(workReading, fires),
+            alertsFor(workReading, fires, { school: false }),
             fires,
             household.people,
           ),

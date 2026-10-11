@@ -27,15 +27,53 @@ describe('GRAP stage from the 24-hour CPCB AQI', () => {
     expect(grapStageFor(sampleDay('dusty'))).toBeGreaterThanOrEqual(2);
   });
 
-  it('says nothing, rather than guess, when the model’s PM10 is missing or far out of line with the PM2.5', () => {
+  it('uses the PM2.5 alone, as a floor, when the model’s PM10 is missing, and never stretches a ratio over the day', () => {
     const day = sampleDay('hazardous');
-    expect(grapStageFor({ ...day, pollutants: { pm25: day.pollutants.pm25 } })).toBe(0);
-    expect(
-      cpcbAqiFor({ ...day, pollutants: { ...day.pollutants, pm10: day.pollutants.pm25 * 9 } }),
-    ).toBeNull();
-    expect(
-      cpcbAqiFor({ ...day, pollutants: { ...day.pollutants, pm10: day.pollutants.pm25 * 0.5 } }),
-    ).toBeNull();
+    const base = cpcbAqiFor({ ...day, pollutants: { pm25: day.pollutants.pm25 } });
+    expect(base).not.toBeNull();
+    // A PM10 nine times the PM2.5 is a dust plume, not the day: it counts as at most twice.
+    const wild = cpcbAqiFor({
+      ...day,
+      pollutants: { ...day.pollutants, pm10: day.pollutants.pm25 * 9 },
+    });
+    const twice = cpcbAqiFor({
+      ...day,
+      pollutants: { ...day.pollutants, pm10: day.pollutants.pm25 * 2 },
+    });
+    expect(wild).toBe(twice);
+    // A PM10 below the PM2.5 cannot be: it counts as equal to it.
+    const low = cpcbAqiFor({
+      ...day,
+      pollutants: { ...day.pollutants, pm10: day.pollutants.pm25 * 0.5 },
+    });
+    expect(low).toBe(base);
+    // So the figure is never below what the PM2.5 alone gives.
+    expect(twice ?? 0).toBeGreaterThanOrEqual(base ?? 0);
+  });
+
+  it('counts only the hours that ended in the last 24 hours, so a monitor with gaps does not borrow older, cleaner ones', () => {
+    const day = sampleDay('hazardous');
+    const asOf = Date.parse(day.asOf);
+    const hour = 3_600_000;
+    // Ten bad hours in the last day, and fourteen clean hours from two days ago.
+    const bad = Array.from({ length: 10 }, (_, i) => ({
+      at: new Date(asOf - (i + 1) * hour).toISOString(),
+      aqi: 400,
+      pm25: 300,
+    }));
+    const old = Array.from({ length: 14 }, (_, i) => ({
+      at: new Date(asOf - (48 + i) * hour).toISOString(),
+      aqi: 20,
+      pm25: 5,
+    }));
+    // Ten valid hours are fewer than CPCB's sixteen: no figure, and so no stage, rather than a diluted one.
+    expect(cpcbAqiFor({ ...day, history: [...old, ...bad] })).toBeNull();
+    const sixteen = Array.from({ length: 16 }, (_, i) => ({
+      at: new Date(asOf - (i + 1) * hour).toISOString(),
+      aqi: 400,
+      pm25: 300,
+    }));
+    expect(cpcbAqiFor({ ...day, history: [...old, ...sixteen] })).toBeGreaterThan(400);
   });
 });
 

@@ -156,8 +156,11 @@ describe('the alerts list', () => {
       sky: Partial<NonNullable<ReturnType<typeof sampleDay>['daily'][number]['sky']>>,
     ): ReturnType<typeof sampleDay> => {
       const data = sampleDay('moderate');
+      // Tomorrow is cleaner than now, so rain is good news and the card says so.
       const daily = data.daily.map((d, i) =>
-        i === 1 && d.sky !== undefined ? { ...d, sky: { ...d.sky, ...sky } } : d,
+        i === 1 && d.sky !== undefined
+          ? { ...d, aqi: Math.max(1, data.aqi - 30), sky: { ...d.sky, ...sky } }
+          : d,
       );
       return { ...data, daily };
     };

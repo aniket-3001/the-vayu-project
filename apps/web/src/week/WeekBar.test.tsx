@@ -11,10 +11,10 @@ afterEach(cleanup);
 
 describe('the week bar', () => {
   it('says which day it is, in words', () => {
-    expect(shortDate('2025-10-06')).toBe('6 Oct');
+    expect(shortDate('2025-10-07')).toBe('7 Oct');
     const first = recorded.days[0];
     if (first === undefined) throw new Error('no days');
-    expect(momentWords(first)).toBe('Mon 6 Oct 2025, 8 am');
+    expect(momentWords(first)).toBe('Tue 7 Oct 2025, 8 am');
   });
 
   it('has a chip for each day, and steps, plays and leaves', () => {
@@ -24,7 +24,7 @@ describe('the week bar', () => {
     render(
       <WeekBar
         recorded={recorded}
-        index={2}
+        index={1}
         playing={false}
         onSelect={onSelect}
         onPlay={onPlay}
@@ -35,11 +35,11 @@ describe('the week bar', () => {
     expect(screen.getByRole('tab', { selected: true })).toHaveTextContent('21 Oct');
     expect(screen.getByText('The day after Diwali')).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: 'Next day' }));
-    expect(onSelect).toHaveBeenLastCalledWith(3);
+    expect(onSelect).toHaveBeenLastCalledWith(2);
     fireEvent.click(screen.getByRole('button', { name: 'Previous day' }));
-    expect(onSelect).toHaveBeenLastCalledWith(1);
-    fireEvent.click(screen.getByRole('tab', { name: /12 Nov/u }));
-    expect(onSelect).toHaveBeenLastCalledWith(4);
+    expect(onSelect).toHaveBeenLastCalledWith(0);
+    fireEvent.click(screen.getByRole('tab', { name: /9 Nov/u }));
+    expect(onSelect).toHaveBeenLastCalledWith(3);
     fireEvent.click(screen.getByRole('button', { name: 'Play the week' }));
     expect(onPlay).toHaveBeenCalledWith(true);
     fireEvent.click(screen.getByRole('button', { name: 'Leave the recorded days' }));

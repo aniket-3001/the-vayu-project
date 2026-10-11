@@ -1,4 +1,4 @@
-import { cpcbAqiFor, grapStageFor } from '../tasks/model';
+import { cpcbAqiFor, grapStageFor, grapStageNow } from '../tasks/model';
 import { levelForAqi } from '../design/levels';
 import { weekday } from '../today/time';
 import type { TodayData } from '../today/types';
@@ -106,6 +106,20 @@ export const GRAP_GUIDE: Readonly<
   },
 };
 
+/** A stage's guide with the lines about school assembly and school sport left out, for someone with no school. */
+function withoutSchool(
+  guide: (typeof GRAP_GUIDE)[1 | 2 | 3 | 4],
+): (typeof GRAP_GUIDE)[1 | 2 | 3 | 4] {
+  const sentences = guide.short
+    .split(/(?<=\.)\s+/u)
+    .filter((part) => !/school assembly/iu.test(part));
+  return {
+    short: sentences.join(' ').replace('play, sport or open assembly', 'play or sport'),
+    avoid: guide.avoid.filter((line) => !/^(long )?open-ground school assembly/iu.test(line)),
+    todo: guide.todo,
+  };
+}
+
 /** "Today", "Tomorrow", or the weekday. */
 export function dayWord(day: 0 | 1 | 2, data: TodayData): string {
   if (day === 0) return 'Today';
@@ -119,11 +133,24 @@ export function dayWord(day: 0 | 1 | 2, data: TodayData): string {
  * today's, so they turn into suggestions in the tips. `fires` is the number our API counted in the last day.
  * Everything here is our estimate, never an order, and says so.
  */
-export function alertsFor(data: TodayData, fires: number | undefined): readonly Alert[] {
+export function alertsFor(
+  data: TodayData,
+  fires: number | undefined,
+  options: { readonly school?: boolean } = {},
+): readonly Alert[] {
   const alerts: Alert[] = [];
   const stage = grapStageFor(data);
+  // A person with no school has no use for the lines about assembly and school sport.
+  const school = options.school ?? true;
   if (stage !== 0) {
-    const guide = GRAP_GUIDE[stage];
+    const guide = school ? GRAP_GUIDE[stage] : withoutSchool(GRAP_GUIDE[stage]);
+    const average = Math.round(cpcbAqiFor(data) ?? 0);
+    const now = grapStageNow(data);
+    // GRAP follows the 24-hour average, which lags a spike. Say so when this hour is at a higher stage than the day.
+    const worse =
+      now > stage
+        ? ` This hour alone is at Stage ${ROMAN[now]} levels, so the air is worse right now than the day's average.`
+        : '';
     alerts.push({
       id: 'grap-today',
       kind: 'grap',
@@ -132,8 +159,8 @@ export function alertsFor(data: TodayData, fires: number | undefined): readonly 
       aqi: data.aqi,
       day: 0,
       title: `GRAP Stage ${ROMAN[stage]} likely today`,
-      body: guide.short,
-      reason: `The last 24 hours average about ${String(Math.round(cpcbAqiFor(data) ?? 0))} on India’s own scale (CPCB). That is in the band where GRAP Stage ${ROMAN[stage]} applies. This is our estimate, and only the official order counts.`,
+      body: `${guide.short} The last 24 hours average AQI ${String(average)} on India’s scale.${worse}`,
+      reason: `The last 24 hours average about ${String(average)} on India’s own scale (CPCB). That is in the band where GRAP Stage ${ROMAN[stage]} applies.${worse} GRAP follows the 24-hour average, not the hour. This is our estimate, and only the official order counts.`,
       avoid: guide.avoid,
       todo: ['Read today’s official GRAP order at caqm.nic.in.', ...guide.todo],
       authorities: false,
@@ -193,19 +220,25 @@ export function alertsFor(data: TodayData, fires: number | undefined): readonly 
     const offset = rainDay as 0 | 1 | 2;
     const when = offset === 0 ? 'today' : offset === 1 ? 'tomorrow' : dayWord(offset, data);
     const down = rainy.aqi !== undefined && rainy.aqi < data.aqi;
+    // The day's own forecast is no cleaner than now: say so, rather than promise clean air the forecast does not show.
+    const notCleaner = rainy.aqi !== undefined && rainy.aqi >= data.aqi;
     alerts.push({
       id: `rain-${String(offset)}`,
       kind: 'rain',
       severity: 'good',
       day: offset,
-      title: `Rain ${when} should clear the air`,
+      title: notCleaner ? `Rain ${when}` : `Rain ${when} should clear the air`,
       body: down
         ? `${String(rainy.sky.rainChancePct)}% chance of rain. AQI near ${String(rainy.aqi)}, down from ${String(data.aqi)}.`
-        : `${String(rainy.sky.rainChancePct)}% chance of rain. Rain washes particles out of the air, so the air should be cleaner after it.`,
-      reason: `The forecast gives ${String(rainy.sky.rainChancePct)}% chance of rain ${when}. Rain carries fine particles and dust down out of the air${down ? `, and our forecast puts the day near AQI ${String(rainy.aqi)}, down from ${String(data.aqi)} now` : ''}. It is a forecast, so it can change.`,
+        : notCleaner
+          ? `${String(rainy.sky.rainChancePct)}% chance of rain. It washes particles out of the air, but the forecast for the day (AQI near ${String(rainy.aqi)}) is no cleaner than now, so do not count on it.`
+          : `${String(rainy.sky.rainChancePct)}% chance of rain. Rain washes particles out of the air, so the air should be cleaner after it.`,
+      reason: `The forecast gives ${String(rainy.sky.rainChancePct)}% chance of rain ${when}. Rain carries fine particles and dust down out of the air${down ? `, and our forecast puts the day near AQI ${String(rainy.aqi)}, down from ${String(data.aqi)} now` : notCleaner ? `, but our forecast puts the day near AQI ${String(rainy.aqi)}, no better than ${String(data.aqi)} now` : ''}. It is a forecast, so it can change.`,
       avoid: [],
       todo: [
-        'Air the rooms and go for your walk after the rain stops, while the air is clean.',
+        notCleaner
+          ? 'Check the air once the rain stops before you air the rooms or go for a walk: the forecast does not show it cleaner yet.'
+          : 'Air the rooms and go for your walk after the rain stops, while the air is clean.',
         'Dust can lift again once the ground has dried, so check the air before a long outing.',
       ],
       authorities: false,

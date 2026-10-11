@@ -54,6 +54,9 @@ export function MyAirScreen({ search, locate, address }: Props): React.JSX.Eleme
   const fires = useFires(home?.pin, reading?.hourly[0]?.weather?.windFromDeg);
   const many = places.length > 1;
 
+  // The lines about school assembly are for a person who has a school among their places.
+  const hasSchool = places.some((p) => p.role === 'school');
+
   const tips = useMemo(() => {
     const out: Task[] = [];
     for (const place of places) {
@@ -83,7 +86,7 @@ export function MyAirScreen({ search, locate, address }: Props): React.JSX.Eleme
     for (const place of places) {
       const loaded = readings.get(place.pin.id);
       if (loaded?.status !== 'ready') continue;
-      for (const alert of alertsFor(loaded.data, fires)) {
+      for (const alert of alertsFor(loaded.data, fires, { school: hasSchool })) {
         const key = `${alert.title}|${String(alert.day)}`;
         const have = merged.get(key);
         merged.set(
@@ -100,7 +103,7 @@ export function MyAirScreen({ search, locate, address }: Props): React.JSX.Eleme
         (a, b) =>
           (a.severity === 'severe' ? 0 : 1) - (b.severity === 'severe' ? 0 : 1) || a.day - b.day,
       );
-  }, [places, readings, fires, many]);
+  }, [places, readings, fires, many, hasSchool]);
   const names = places.map((p) => p.pin.name).join(' · ');
   return (
     <div className="page places">

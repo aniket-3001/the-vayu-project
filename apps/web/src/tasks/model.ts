@@ -36,22 +36,56 @@ export function grapStage(cpcbAqi: number | null): 0 | 1 | 2 | 3 | 4 {
   return 4;
 }
 
-/** The 24-hour CPCB AQI the last day points to, for the GRAP bands. Our estimate, from PM2.5 and a PM10 scaled from it. */
+const HOUR_MS = 3_600_000;
+
+/** The most PM10 can be taken to exceed PM2.5, in Delhi's smog: one hour's ratio is never stretched over a whole day. */
+const MAX_PM10_RATIO = 2;
+
+/**
+ * The 24-hour CPCB AQI of the last day, for the GRAP bands. It is only the hours that ended in the last 24 hours (a
+ * monitor with gaps does not borrow older, cleaner hours), and CPCB's rule of at least sixteen valid hours holds: with
+ * fewer, there is no figure and so no stage. Where the hour's PM10 is known, the day's PM10 is the day's PM2.5 scaled
+ * by the ratio, kept between 1 and 2; where it is not, PM10 is taken to equal PM2.5, which can only understate the
+ * index. So the figure never calls a stage the PM2.5 alone does not support, and it can fall short of the real one in a
+ * dust event. Our estimate; the official order is the CAQM's.
+ */
 export function cpcbAqiFor(data: TodayData): number | null {
-  const last24 = data.history.slice(-24).map((h) => h.pm25);
-  // The 24-hour CPCB figure needs PM10 too. Without the model's PM10 we cannot work it out, so we say nothing.
-  if (data.pollutants.pm10 === undefined || data.pollutants.pm25 <= 0) return null;
-  const ratio = data.pollutants.pm10 / data.pollutants.pm25;
-  // Delhi's PM10 is about one to three times its PM2.5, and up to five in a dust storm. A model value far outside that is a fault or a dust
-  // plume, and an alert built on it would be a guess, so we say nothing.
-  if (ratio < 1 || ratio > 5) return null;
-  const pm10 = last24.map((v) => v * ratio);
-  return aqi24h(last24, pm10)?.aqi ?? null;
+  const startMs = Date.parse(data.asOf) - 24 * HOUR_MS;
+  const last24 = data.history
+    .filter((h) => Date.parse(h.at) + HOUR_MS > startMs)
+    .map((h) => h.pm25);
+  if (data.pollutants.pm25 <= 0) return null;
+  const measured =
+    data.pollutants.pm10 === undefined ? 1 : data.pollutants.pm10 / data.pollutants.pm25;
+  const ratio = Number.isFinite(measured) ? Math.min(MAX_PM10_RATIO, Math.max(1, measured)) : 1;
+  return (
+    aqi24h(
+      last24,
+      last24.map((v) => v * ratio),
+    )?.aqi ?? null
+  );
+}
+
+/**
+ * The CPCB AQI this one hour would be if the whole day were like it: not a GRAP figure (GRAP follows the 24-hour
+ * average) but the answer to "how bad is it right now, on India's scale". Null where there is nothing to say.
+ */
+export function cpcbAqiNow(data: TodayData): number | null {
+  if (data.pollutants.pm25 <= 0) return null;
+  const measured =
+    data.pollutants.pm10 === undefined ? 1 : data.pollutants.pm10 / data.pollutants.pm25;
+  const ratio = Number.isFinite(measured) ? Math.min(MAX_PM10_RATIO, Math.max(1, measured)) : 1;
+  return aqi24h([data.pollutants.pm25], [data.pollutants.pm25 * ratio], 1)?.aqi ?? null;
 }
 
 /** The GRAP stage the last 24 hours point to, by our own estimate. Official orders always come first. */
 export function grapStageFor(data: TodayData): 0 | 1 | 2 | 3 | 4 {
   return grapStage(cpcbAqiFor(data));
+}
+
+/** The stage this hour alone would be at, which can be well above `grapStageFor` when the air has just turned. */
+export function grapStageNow(data: TodayData): 0 | 1 | 2 | 3 | 4 {
+  return grapStage(cpcbAqiNow(data));
 }
 
 /** Points for each kind of task. */
