@@ -40,6 +40,13 @@ Airflow at the cleaner's outlet, with a handheld vane anemometer (HTC): **about 
 - It is not a filter-efficiency figure, a noise figure or a power figure. None of those was measured.
 - It is one measurement of one prototype. It does not say how the cleaner performs in a room, over time, or with a loaded filter.
 
+## Weak points of the measurement, and a safety note
+
+- **How the airflow was read.** A vane anemometer held at a turbulent outlet reads the speed of air at one spot. Turning that into a volume needs the outlet's cross-section and a steady flow across it, and the build does not record a cross-section or take several positions. Treat 191 cfm as a rough figure.
+- **Leaks.** Air that bypasses the filter around its edge is the usual failure of a home-built cleaner, and the seal was not tested. The airflow says how much air moves, not how much of it is cleaned.
+- **Mains power.** The fan is a 230 V, 190 W mains fan, and the parts list has no cable, plug, switch or enclosure for the wiring. The prototype has had no electrical safety review. Do not copy it without a proper mains connection, an earthed plug and a fuse, and do not leave it running unattended. At 190 W it also uses far more power than a typical purifier of its size, and it has not been measured for noise.
+- **The room-against-outside comparison.** The room page compares the unit's reading with the nearest monitor's, which may be kilometres away and is a different instrument. The unit's accuracy has not been tested, so the percentage is a rough guide to the gap, not a measured effect of the cleaner.
+
 ## What comes next
 
 Run the smoke-decay test with the measuring unit: raise the room's PM2.5 with incense, let it mix, log how fast it falls with the cleaner off, then on, and fit the decay (the fit rules are in `packages/core/src/cadr.ts`: at least ten samples and R² of 0.95 or better). The room page's "Purifier on" marker is the same test, live. Until then, the honest claim is the airflow reading and nothing more.
