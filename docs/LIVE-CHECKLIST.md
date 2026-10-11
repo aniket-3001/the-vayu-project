@@ -15,7 +15,7 @@ Unticked means not yet seen live.
 - [x] Bad input is refused with a reason: unknown place, out-of-range history, outside north India, bad room name, invalid request form
 - [x] Every answer says where its numbers come from and how old they are
 - [x] A model-only answer has a figure for the hour in progress
-- [x] Monitors for the map: 68 monitors in the list after the first complete run of the stations job
+- [x] Monitors for the map: 7,268 monitors in the list after the first complete run of the stations job with the renewed key (11 Oct)
 
 ## Checked by hand
 

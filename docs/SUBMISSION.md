@@ -69,5 +69,4 @@ Things we hit, in the order we hit them:
 
 - No hardware has been built or measured. Rules I13 and I16 apply to it and are untested on a device.
 - Telegram alerts are built and tested against fakes; live scheduled sends are off and there is no in-app screen to link a chat.
-- The OpenAQ key was rejected (401) late on 10 October, so the map's monitors are empty until it is renewed; the
-  colour then comes from the regional air model and says so.
+- OpenAQ rejected our key (401) late on 10 October and a new one was put in on 11 October; the stations job then read 7,268 monitors. If it is rejected again, the map's colour comes from the regional air model and says so.
