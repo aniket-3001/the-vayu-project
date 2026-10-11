@@ -16,11 +16,11 @@ You add the places you care about: Home, a school, an office, a park. Each card 
 Around My Air are a map of monitors, wind and satellite fires, AIR Lens (the air drawn as particles in front of your camera), an assistant, and Exposure, which adds up what a person breathed, hour by hour.
 
 ![Six screens of the app](images/collage-features.jpg)
-_The six screens. Top row: My Air on live data with the preset's places; the recorded days on 21 Oct 2025, where the alert is GRAP Stage IV, the app's estimate from the last 24 hours; the map on 31 Oct 2025 with NASA satellite fire detections and wind. Bottom row: AIR Lens; the assistant; Exposure. All but My Air on live data are from the recorded days._
+_The six screens. Top row: My Air on live data with four places set; the recorded days on 21 Oct 2025, where the alert is GRAP Stage IV, the app's estimate from the last 24 hours; the map on 31 Oct 2025 with NASA satellite fire detections and wind. Bottom row: AIR Lens; the assistant; Exposure. All but My Air on live data are from the recorded days._
 
 A small measuring unit, an ESP32-S3 board with a Sensirion SPS30 laser particle sensor, adds the air in one room over Bluetooth.
 
-I built the whole thing alone, with an AI coding assistant (Claude Code). I chose what it should do and what it must never claim. The assistant wrote most of the code, and I read every change and sent it back when it was wrong. I wired, flashed and tested the unit and built the cleaner myself. The stack runs in my own AWS account.
+I built the whole thing alone. I chose what it should do and what it must never claim, and I read, ran and tested every change. I wired, flashed and tested the unit and built the cleaner myself. The stack runs in my own AWS account.
 
 ## The one rule: code decides, AI only words
 
@@ -30,7 +30,7 @@ The app has an assistant you can ask, in English or Hindi, "When can I go for a 
 
 ## It is all real data
 
-The deployed app has no made-up data. A prototype build with invented days lives in the repo and is never uploaded, and `make prove` checks the bundle for it. A Use preset button loads a sample family's places, and the air at them is still read live. The live app reads real monitors (OpenAQ), weather, forecast and wind (Open-Meteo, with MET Norway as a second wind source) and satellite fires (NASA FIRMS), through my own API on AWS. So that you can see every feature without waiting for a bad day, the app also replays seven recorded days (https://d3lmq1mze2gup3.cloudfront.net/#/week): rain in early October, the morning after Diwali, stubble fires, November and December smog, a January downpour and a windy March day, each played as if it were today at 8 am. Every screen says "recorded". The air comes from four Delhi monitors in OpenAQ's public archive, and the weather and fires are archives too.
+The deployed app has no made-up data. A prototype build with invented days lives in the repo and is never uploaded, and `make prove` checks the bundle for it. The live app reads real monitors (OpenAQ), weather, forecast and wind (Open-Meteo, with MET Norway as a second wind source) and satellite fires (NASA FIRMS), through my own API on AWS. So that you can see every feature without waiting for a bad day, the app also replays seven recorded days (https://d3lmq1mze2gup3.cloudfront.net/#/week, which a button on My Air opens in a new tab): rain in early October, the morning after Diwali, stubble fires, November and December smog, a January downpour and a windy March day, each played as if it were today at 8 am. Every screen says "recorded". The air comes from four Delhi monitors in OpenAQ's public archive, and the weather and fires are archives too.
 
 The archive had mess in it, so I cleaned it with two written rules. The first drops a PM2.5 of 999 or more (the feed's "out of range"), a PM10 of 2,000 or more, and a PM10 below the same hour's PM2.5, which real air cannot give. The second drops a monitor's hour when it reads over three times the median of at least two others and is itself high (PM2.5 over 200, PM10 over 500). The file counts what the second rule removed: 86 lone spikes across the seven days. I changed nothing else. In the recorded days the map's wind is one recorded wind for central Delhi, drawn the same everywhere, and the map says so.
 
@@ -100,7 +100,7 @@ Other fixes are in [`docs/learning-log.md`](learning-log.md).
 
 ## Numbers
 
-- 1,255 tests pass in one command, `make prove`, which also runs lint, types, `cdk synth`, and a check that the deployed bundle holds no prototype code.
+- 1,253 tests pass in one command, `make prove`, which also runs lint, types, `cdk synth`, and a check that the deployed bundle holds no prototype code.
 - The stack costs about $4.50 a month idle, at list prices. An assistant question costs about $0.0008 (almost all of it the guardrail), and a visit at most $0.00014.
 - Caps: 40 assistant questions per caller and 500 a day, 12,000 spoken characters per caller and 60,000 a day, 25 API requests a second. One parameter switches the assistant off.
 
@@ -110,4 +110,4 @@ One cost is not capped: a flood against CloudFront itself. The stack makes its o
 
 Next is the smoke-decay test with the unit beside the cleaner: raise the room's PM2.5 with incense, log how fast it falls with the cleaner off, then on, and fit the decay. The room page's "Purifier on" marker is that same test, live. After that, I will put the unit beside a monitor for a few days and publish the difference. Later come Telegram alerts with a screen to link a chat, and the unit's readings sent to my API so a school can see many rooms.
 
-Code: https://github.com/hrsh-kr/vayu-air
+Code: https://github.com/hrsh-kr/the-vayu-project

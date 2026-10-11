@@ -4,7 +4,7 @@ The Vayu Project is a free web app that turns those numbers into that decision f
 
 A city average cannot see your room, so I built a small unit (ESP32-S3, Sensirion SPS30 laser sensor) that shows your room's air beside the outside air over Bluetooth.
 
-Live, real data only: https://d3lmq1mze2gup3.cloudfront.net. The recorded days (/#/week) replay seven real days. On 21 Oct 2025, the day after Diwali, Home read AQI 500 (the US scale) from the Lodhi Road monitor 3.8 km away, and the app said: avoid going out, and GRAP Stage IV (Delhi's emergency pollution stage) is likely, by our estimate, not an order. Fixed rules decide the advice; the AI only words it, and any number not in the facts is thrown out. 1,255 tests pass in one command, `make prove`.
+Live, real data only: https://d3lmq1mze2gup3.cloudfront.net. The recorded days (/#/week) replay seven real days. On 21 Oct 2025, the day after Diwali, Home read AQI 500 (the US scale) from the Lodhi Road monitor 3.8 km away, and the app said: avoid going out, and GRAP Stage IV (Delhi's emergency pollution stage) is likely, by our estimate, not an order. Fixed rules decide the advice; the AI only words it, and any number not in the facts is thrown out. 1,253 tests pass in one command, `make prove`.
 
 Not measured yet: the unit's accuracy against a monitor. Bluetooth is tested only in Chrome on a Mac.
 
@@ -16,5 +16,5 @@ Facts used
 - Unit (ESP32-S3, SPS30, Bluetooth): `docs/UNIT.md`, `firmware/vayu-unit/vayu-unit.ino`.
 - Real data only, recorded days of seven real days: `README.md` "It is all real data", `docs/claims.md`.
 - Rules decide, AI rewords: `docs/safety.md` rule I6, `docs/AGENT-BOUNDARIES.md`.
-- 1,255 tests with lint, types and CDK build in `make prove`: `docs/claims.md`, `Makefile`.
+- 1,253 tests with lint, types and CDK build in `make prove`: `docs/claims.md`, `Makefile`.
 - Not built or not measured, Chrome on a Mac only: `docs/AS-BUILT.md`, `docs/claims.md` "Claims we do not make" (Bluetooth row), `docs/UNIT.md`.

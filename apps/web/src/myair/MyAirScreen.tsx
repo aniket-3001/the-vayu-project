@@ -1,4 +1,4 @@
-import { Plus, Wand2 } from 'lucide-react';
+import { ExternalLink, Plus } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useTodays } from '../air/store';
@@ -11,7 +11,6 @@ import { alertsFor, type Alert } from '../alerts/model';
 import { useFires } from '../alerts/useFires';
 import { TipsCard } from '../tasks/ui/TipsCard';
 import { AddDeviceSheet } from '../devices/ui/AddDeviceSheet';
-import { applyPreset } from '../places/preset';
 import { PlacesPanel } from '../places/ui/PlacesPanel';
 import type { PlaceMatch } from '../data/geocode';
 
@@ -127,19 +126,12 @@ export function MyAirScreen({ search, locate, address }: Props): React.JSX.Eleme
           </button>
         </div>
         {pins.length === 0 && (
-          <p className="preset-line">
-            <button
-              type="button"
-              className="preset-button"
-              onClick={() => {
-                applyPreset(window.localStorage);
-              }}
-            >
-              <Wand2 size={16} strokeWidth={2.25} aria-hidden="true" /> Use preset
-            </button>
+          <p className="demo-line">
+            <a href="#/week" target="_blank" rel="noopener" className="demo-button">
+              <ExternalLink size={16} strokeWidth={2.25} aria-hidden="true" /> See the recorded days
+            </a>
             <span className="muted small">
-              A family with Home, School, Office and Park, read live. Replace them with your own any
-              time.
+              Seven real days from the archive, played through this app, in a new tab.
             </span>
           </p>
         )}

@@ -11,7 +11,7 @@ All taken from the live site (https://d3lmq1mze2gup3.cloudfront.net) on 11 Octob
 | `04-exposure-phone.png`                   | Exposure on 9 Nov 2025: the air a person breathed, hour by hour, in the recorded days                                                                              |
 | `05-air-lens-phone.png`                   | AIR Lens on 9 Nov 2025: the air as particles in front of the camera                                                                                                |
 | `06-assistant-answer-phone.png`           | The assistant's answer on 9 Nov 2025, from fixed rules (GRAP Stage III likely at Home, the cleanest hour, a mask) |
-| `07-live-my-air-phone.png`                | My Air on live data (today), the four places of the Use preset button                                                                                                         |
+| `07-live-my-air-phone.png`                | My Air on live data (today), four places set (Home, School, Office, Park in Delhi)                                                                                                         |
 | `08-architecture-scene-1.png` to `-5.png` | The five scenes of `docs/architecture-animated.html`                                                                                                 |
 
 ## The cleaner and the unit (taken by me, in `build/`)

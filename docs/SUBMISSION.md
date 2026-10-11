@@ -49,13 +49,11 @@ pauses, arrow keys step, `#step=3` holds on a scene).
 
 ## What each person did **(confirm)**
 
-I built this alone (`CONTRIBUTIONS.md`). The app, the API and the AWS stack were written with an AI coding assistant
-(Claude Code), directed and reviewed by me, and every change goes through `make prove` (lint, types, tests, `cdk synth`,
+I built this alone (`CONTRIBUTIONS.md`). Every change goes through `make prove` (lint, types, tests, `cdk synth`,
 bundle check). I designed, wired, flashed and tested the measuring unit myself.
 
-## AI tools used
+## AI services in the app
 
-- Claude Code: writing and testing the code, the firmware and the documents, from my direction.
 - Amazon Bedrock, Nova Micro, with a guardrail: rewording the assistant's answers at run time. It has no tools and
   cannot act. See `docs/AGENT-BOUNDARIES.md`.
 - Amazon Polly: reads answers aloud in English and Hindi. Hindi answers are fixed wording and never go through the model.

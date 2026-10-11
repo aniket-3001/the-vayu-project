@@ -10,7 +10,7 @@ AWS Air track submission, 8 to 11 October 2026.
 
 ## It is all real data
 
-Every number in the live app comes from a real source (OpenAQ monitors, Open-Meteo weather, forecast and wind, MET Norway wind as a second source, NASA FIRMS fires) through our own API on AWS. There is no demo mode and no made-up number in the deployed bundle; `make prove` fails if one gets in. **Use preset** on My Air (shown only when you have no places) loads a family with Home, School, Office and Park so you can see a filled profile at once: it sets places and people, and every reading at them is still the real, live one.
+Every number in the live app comes from a real source (OpenAQ monitors, Open-Meteo weather, forecast and wind, MET Norway wind as a second source, NASA FIRMS fires) through our own API on AWS. There is no demo mode and no made-up number in the deployed bundle; `make prove` fails if one gets in. **See the recorded days** on My Air (shown only when you have no places) opens the recorded days in a new tab, so you can see every feature on seven real past days without waiting for a bad one.
 
 **The recorded days is real too.** Open `/#/week` and the same app plays seven real days from last winter, one at a time, as if each were today at 8 am: 7 Oct 2025 (rain, and the cleanest of the seven), 21 Oct (the day after Diwali, GRAP Stage IV by our estimate), 31 Oct (stubble fires), 9 Nov (smog, Stage III), 22 Dec (smog, Stage II), 23 Jan 2026 (heavy rain clears the smog overnight) and 30 Mar (wind). The air comes from four Delhi monitors in OpenAQ's public archive, the weather from Open-Meteo's archive, the fires from NASA FIRMS. It is there so you can see every feature without waiting for a bad day, and the page says it is recorded. Cleaning is two rules, written in the file and counted (see [`docs/AS-BUILT.md`](docs/AS-BUILT.md)).
 
@@ -18,7 +18,7 @@ The only made-up days in the repository are in the separate prototype build (`np
 
 ## Try it in two minutes
 
-1. Open the live address. Press **Use preset** for a filled profile, or add a place (search, or "Detect my location"): its card shows the AQI, the weather, the nearest monitor's name, distance and age, and today and the next two days.
+1. Open the live address. Add a place (search, or "Detect my location"): its card shows the AQI, the weather, the nearest monitor's name, distance and age, and today and the next two days.
 2. Open the card: **Insights for this place** (a school's morning assembly, a walk in a park, alerts that apply there).
 3. Open the **Map** (every monitor, wind, fires), **Exposure** (the air a person breathed, hour by hour) and **AIR Lens** (the air as particles in front of the camera).
 4. Press the round **Ask** button and ask "When can I walk today?" in English or हिन्दी. Fixed rules decide the answer; the model only rewords it.
@@ -98,7 +98,7 @@ Needs Node 22 or later.
 
 ```bash
 npm ci
-make prove     # lint, types, every test (1,255), cdk synth, and a check that the deployed bundle holds no prototype code
+make prove     # lint, types, every test (1,253), cdk synth, and a check that the deployed bundle holds no prototype code
 make local-api # in one terminal: the API on your machine (real monitors need OPENAQ_API_KEY in the environment)
 make local     # in another: the app on your machine, reading it
 ```
@@ -131,29 +131,29 @@ The stack deploys with `cd infra && npx cdk deploy`. It needs three secrets made
 
 ## Documents
 
-|                                   |                                                                              |
-| --------------------------------- | ---------------------------------------------------------------------------- |
-| `docs/AS-BUILT.md`                | What is live, what is not                                                    |
-| `docs/architecture.md`            | The parts, the data, and the Well-Architected pillars                        |
-| `docs/architecture-animated.html` | An animated diagram of the same, for the video (open it in a browser)        |
-| `docs/safety.md`                  | Every rule, how it is enforced, the test that proves it                      |
-| `docs/AGENT-BOUNDARIES.md`        | What the AI may and may not do                                               |
-| `docs/claims.md`                  | Every public claim, and what supports it                                     |
-| `docs/cost.md`                    | What it costs, per unit and at each limit                                    |
-| `docs/PURIFIER.md`                | The cleaner prototype: the build, the airflow measured, what that is not     |
-| `docs/COMPARISON.md`              | The Dyson HushJet figures and what can honestly be said beside ours          |
-| `docs/UNIT.md`                    | The measuring unit: parts, wiring, protocol, what may be said                |
-| `docs/LIVE-CHECKLIST.md`          | What was checked on the live address, and what was found                     |
-| `docs/SUBMISSION.md`              | The words for the form, the video script, the AI tools used, feedback on AWS |
-| `docs/blog.md`                    | The write-up                                                                 |
-| `docs/learning-log.md`            | What broke and how it was fixed                                              |
-| `docs/IMPLEMENTATION-PLAN.md`     | The plan the deployed app was first built to (historical)                    |
-| `CONTRIBUTIONS.md`                | Who did what, and how AI was used                                            |
-| `DESIGN.md`                       | The visual design brief                                                      |
+|                                   |                                                                                 |
+| --------------------------------- | ------------------------------------------------------------------------------- |
+| `docs/AS-BUILT.md`                | What is live, what is not                                                       |
+| `docs/architecture.md`            | The parts, the data, and the Well-Architected pillars                           |
+| `docs/architecture-animated.html` | An animated diagram of the same, for the video (open it in a browser)           |
+| `docs/safety.md`                  | Every rule, how it is enforced, the test that proves it                         |
+| `docs/AGENT-BOUNDARIES.md`        | What the app's assistant may and may not do                                     |
+| `docs/claims.md`                  | Every public claim, and what supports it                                        |
+| `docs/cost.md`                    | What it costs, per unit and at each limit                                       |
+| `docs/PURIFIER.md`                | The cleaner prototype: the build, the airflow measured, what that is not        |
+| `docs/COMPARISON.md`              | The Dyson HushJet figures and what can honestly be said beside ours             |
+| `docs/UNIT.md`                    | The measuring unit: parts, wiring, protocol, what may be said                   |
+| `docs/LIVE-CHECKLIST.md`          | What was checked on the live address, and what was found                        |
+| `docs/SUBMISSION.md`              | The words for the form, the video script, the AI services used, feedback on AWS |
+| `docs/blog.md`                    | The write-up                                                                    |
+| `docs/learning-log.md`            | What broke and how it was fixed                                                 |
+| `docs/IMPLEMENTATION-PLAN.md`     | The plan the deployed app was first built to (historical)                       |
+| `CONTRIBUTIONS.md`                | Who did what, and how AI was used                                               |
+| `DESIGN.md`                       | The visual design brief                                                         |
 
-## AI tools used
+## AI in the app
 
-Claude Code wrote and tested most of the code and the documents, directed and reviewed by me, the only author ([`CONTRIBUTIONS.md`](CONTRIBUTIONS.md)). At run time, Amazon Bedrock (Nova Micro, behind a guardrail) rewords the assistant's answers and cannot act ([`docs/AGENT-BOUNDARIES.md`](docs/AGENT-BOUNDARIES.md)).
+At run time, Amazon Bedrock (Nova Micro, behind a guardrail) rewords the assistant's answers, or answers from the facts it is given, and cannot act ([`docs/AGENT-BOUNDARIES.md`](docs/AGENT-BOUNDARIES.md)). I am the only author ([`CONTRIBUTIONS.md`](CONTRIBUTIONS.md)).
 
 ## Licence
 

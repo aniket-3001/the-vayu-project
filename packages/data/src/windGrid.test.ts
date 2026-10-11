@@ -141,7 +141,7 @@ describe('the second source, MET Norway', () => {
     const points = await repo.grid();
     expect(points).toHaveLength(metNoWindPoints().length);
     expect([...agents]).toHaveLength(1);
-    expect([...agents][0]).toMatch(/VayuAir/u);
+    expect([...agents][0]).toMatch(/TheVayuProject/u);
     expect(most).toBeLessThanOrEqual(5);
     expect(points[0]?.speed).toBeGreaterThan(0);
   });

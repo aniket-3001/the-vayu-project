@@ -6516,25 +6516,26 @@ table.hourly .row-label {
   margin-top: 4px;
 }
 
-/* The preset: one tap to see the app with a profile already there */
+/* The recorded days: one tap, in a new tab, to see the app on seven real past days */
 
-.preset-line {
+.demo-line {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: 8px 12px;
   margin: 10px 0 0;
 }
-.preset-button {
+.demo-button {
+  text-decoration: none;
   display: inline-flex;
   align-items: center;
   gap: 6px;
   min-height: 40px;
   padding: 0 16px;
-  border: 1px solid var(--ink);
+  border: 1px solid #bcd3ee;
   border-radius: 999px;
-  background: var(--ink);
-  color: #fff;
+  background: #e8f1fb;
+  color: #1f4f8f;
   font: inherit;
   font-weight: 700;
   cursor: pointer;

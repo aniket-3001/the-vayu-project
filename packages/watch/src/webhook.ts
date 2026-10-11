@@ -72,7 +72,7 @@ async function handleMessage(
       {
         kind: 'reply',
         chatId,
-        text: 'Vayu Labs Watch. Send /link <code> to connect your role, /unlink to stop and delete your data here.',
+        text: 'The Vayu Project Watch. Send /link <code> to connect your role, /unlink to stop and delete your data here.',
       },
     ];
   }

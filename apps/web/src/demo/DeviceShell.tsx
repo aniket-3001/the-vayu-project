@@ -77,7 +77,7 @@ function BrowserBar({
           <RotateCw size={16} />
         </button>
         <span className="url" aria-hidden="true">
-          <Lock size={13} /> vayuair.in
+          <Lock size={13} /> the-vayu-project
         </span>
       </div>
     </div>

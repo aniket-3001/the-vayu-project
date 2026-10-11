@@ -8,7 +8,7 @@ Step Functions. A person's tap became a step in the workflow, with no polling co
 
 EventBridge Scheduler. I liked that retries are a setting on the schedule itself. I set them to zero so a failed harvest waits for the next 15-minute run instead of stacking up behind it, and a test holds that (`infra/test/VayuStack.test.ts`).
 
-AWS Price List API. I had Claude Code read it with `aws pricing get-price-list-file-url` and put the sums in `docs/cost.md`. The prices are for ap-south-1, with CloudFront at its India rate, so every line in the cost document is the list price for my region, not a guess, and can be checked against the source.
+AWS Price List API. `aws pricing get-price-list-file-url` gave me the list prices, and I put the sums in `docs/cost.md`. The prices are for ap-south-1, with CloudFront at its India rate, so every line in the cost document is the list price for my region, not a guess, and can be checked against the source.
 
 ---
 
