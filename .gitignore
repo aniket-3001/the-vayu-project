@@ -16,3 +16,4 @@ photos/
 
 # Arduino IDE build output
 firmware/**/build/
+tests/live-check/out/

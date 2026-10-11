@@ -11,6 +11,8 @@ export default tseslint.config(
       '**/dist/**',
       '**/dist-demo/**',
       '**/cdk.out/**',
+      // Hand-run browser checks against the live site, not part of the build.
+      'tests/live-check/**',
       '**/coverage/**',
       'docs/**',
     ],

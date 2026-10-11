@@ -4,7 +4,7 @@
 
 It is 8 am, the morning after Diwali, in Delhi. The city app says "bad". A parent still has to decide: do we walk to school?
 
-The Vayu Project answers for _one place_. Home, near R K Puram: **AQI 500**, from the Lodhi Road monitor **3.8 km** away, as recorded. **GRAP Stage IV is likely** (our estimate, never the official order). Stay in; if you must go out, 4 to 5 pm is the cleanest hour.
+The Vayu Project answers for _one place_. Home, near R K Puram: **AQI 500**, from the Lodhi Road monitor **3.8 km** away, as recorded (the recording uses four Delhi monitors; the live app chooses from about 7,000). **GRAP Stage IV is likely** (our estimate, never the official order). Stay in; if you must go out, 4 to 5 pm is the cleanest hour.
 
 Live: **https://d3lmq1mze2gup3.cloudfront.net** (a phone or a laptop; no sign-in) · See it on seven real past days: **https://d3lmq1mze2gup3.cloudfront.net/#/week** · Blog: [`docs/blog.md`](docs/blog.md) · Video: _to be added_
 
@@ -35,7 +35,7 @@ AWS Air track submission, 8 to 11 October 2026. Built alone.
 | **My Air**            | Alerts for the next three days (GRAP stages, smog, stubble burning, rain, wind) and small tasks for today, then your cards: **Your room** (when a unit is added), then your places, each in the colour of its air.                  |
 | **Your room**         | The unit's live reading against the air outside at your place, the gap between them, a test that marks "purifier on" or "window opened" and shows how far the air moved, the room's day by hour, and a few plain insights.          |
 | **Exposure**          | A 24-hour dial of the air a person breathed: at home, at work or school, and outdoors. Add the people in a family, with school or work hours. Log outdoor time. Hours the unit measured replace the outside reading at the address. |
-| **Map**               | Every monitor the app can read, wind, fires, and the colour between. Advice is given only for Delhi and north India.                                                                                                                                                       |
+| **Map**               | Every monitor the app can read, wind, fires, and the colour between. Advice is given only for Delhi and north India.                                                                                                                |
 | **AIR Lens**          | Point a phone camera and see the air as particles, with a scene for each place; an eye button makes the card see-through.                                                                                                           |
 | **Assistant**         | Ask a question or tell it something ("Asha walked in the park for 40 minutes"), in English or Hindi, read aloud in either.                                                                                                          |
 | **The recorded days** | The whole app on seven real past days, labelled recorded.                                                                                                                                                                           |
@@ -54,7 +54,7 @@ The unit reads a Sensirion SPS30 laser sensor through an ESP32-S3 and sends the 
 
 Every number in the live app comes from a real source (OpenAQ monitors, Open-Meteo weather, forecast and wind, MET Norway wind as a second source, NASA FIRMS fires) through our own API on AWS. There is no demo mode and no made-up number in the deployed bundle; `make prove` fails if one gets in. **See the recorded days** on My Air (shown only when you have no places) opens the recorded days in a new tab, so you can see every feature on seven real past days without waiting for a bad one.
 
-**The recorded days is real too.** Open `/#/week` and the same app plays seven real days from last winter, one at a time, as if each were today at 8 am: 7 Oct 2025 (rain, and the cleanest of the seven), 21 Oct (the day after Diwali, GRAP Stage IV by our estimate), 31 Oct (stubble fires), 9 Nov (smog, Stage III), 22 Dec (smog, Stage II), 23 Jan 2026 (heavy rain clears the smog overnight) and 30 Mar (wind). The air comes from four Delhi monitors in OpenAQ's public archive, the weather from Open-Meteo's archive, the fires from NASA FIRMS. It is there so you can see every feature without waiting for a bad day, and the page says it is recorded. Cleaning is two rules, written in the file and counted (see [`docs/AS-BUILT.md`](docs/AS-BUILT.md)).
+**The recorded days are real too.** Open `/#/week` and the same app plays seven real days from last winter, one at a time, as if each were today at 8 am: 7 Oct 2025 (rain, and the cleanest of the seven), 21 Oct (the day after Diwali, GRAP Stage IV by our estimate), 31 Oct (stubble fires), 9 Nov (smog, Stage III), 22 Dec (smog, Stage II), 23 Jan 2026 (heavy rain clears the smog overnight) and 30 Mar (wind). The air comes from four Delhi monitors in OpenAQ's public archive, the weather from Open-Meteo's archive, the fires from NASA FIRMS. It is there so you can see every feature without waiting for a bad day, and the page says it is recorded. Cleaning is two rules, written in the file and counted (see [`docs/AS-BUILT.md`](docs/AS-BUILT.md)).
 
 The only made-up days in the repository are in the separate prototype build (`npm run build:demo`: device frames, scenarios, a simulated Bluetooth unit), which is never uploaded and is labelled "Sample data" wherever it shows a number.
 
@@ -86,14 +86,33 @@ The headline rule: **code decides and AI only words things.** The rules decide t
 
 | Part                                                  | State                                                                                                                                                                                                                                                                                                                                   |
 | ----------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| The web app, the API, the stack, the recorded days    | Live, seen working                                                                                                                                                                                                                                                                                                                      |
+| The web app, the API, the stack, the recorded days    | Live. The data, rules and headers are checked by `make smoke`; the screens are checked by a script in headless Chrome at phone and laptop width (`tests/live-check/`); some things have not been checked on a real phone (list in [`docs/LIVE-CHECKLIST.md`](docs/LIVE-CHECKLIST.md))                                                   |
 | The measuring unit (ESP32-S3 + SPS30, over Bluetooth) | Built and running: the board reads the sensor, and the live site connects, shows readings, and counts measured hours in Exposure                                                                                                                                                                                                        |
 | Accuracy of the unit                                  | **Not measured.** It has not been compared with a monitor over days. It is a low-cost sensor and is labelled that way                                                                                                                                                                                                                   |
 | Telegram alerts                                       | Built and tested against fakes; live scheduled sends are off; no in-app screen to link a chat                                                                                                                                                                                                                                           |
 | The air cleaner prototype                             | **Built** (a centrifugal fan, a pleated filter and a foam pre-filter in a box; [`docs/PURIFIER.md`](docs/PURIFIER.md)). Its airflow at the outlet was measured at about **191 cfm** with a vane anemometer. That is airflow, **not CADR**: the smoke-decay test has not been run. It does not switch itself on or off by the room's air |
 | Phone Bluetooth                                       | Chrome on a computer is tested; Android Chrome is not; iPhone Safari cannot                                                                                                                                                                                                                                                             |
 
-Details, with dates: [`docs/AS-BUILT.md`](docs/AS-BUILT.md). What was checked by hand on the live address: [`docs/LIVE-CHECKLIST.md`](docs/LIVE-CHECKLIST.md).
+Details: [`docs/AS-BUILT.md`](docs/AS-BUILT.md). What was checked on the live address, and what was not: [`docs/LIVE-CHECKLIST.md`](docs/LIVE-CHECKLIST.md).
+
+## Known limits
+
+Short version; the full list is in [`docs/AS-BUILT.md`](docs/AS-BUILT.md).
+
+- **Two scales.** The AQI on a card is the US EPA scale applied to PM2.5, and the colour scale says so. A GRAP stage is worked out on India's CPCB scale, and the alert says "on India's scale". They are different numbers, so a card can read Moderate while the 24-hour CPCB average is already in a GRAP band. US AQI stops at 500, so "AQI 500" means "at least 500".
+- **GRAP is our estimate.** It is checked against the monitors' own PM10 on 24 station-days, not against the CAQM orders. Official orders come first.
+- **The recorded days are hindsight.** The hours after each day's 8 am are what was recorded next, not a forecast made at the time, and they use only four Delhi monitors.
+- **Exposure is an estimate.** It assumes indoor air is 60% of outdoor when there is no monitor in the room, and 85% in a park with trees. The advice thresholds are our words from the US AQI bands, not a medical rule. The cigarette figure is Berkeley Earth's rule of thumb.
+- **Nothing is claimed about users or health outcomes.** There has been no pilot.
+- **Hindi answers never use the model.** They are fixed wording matched by keyword.
+
+## Data and credits
+
+Monitor readings from [OpenAQ](https://openaq.org) (CPCB, DPCC and IITM monitors, among others); weather, forecast, air-quality model and place search from [Open-Meteo](https://open-meteo.com) (which includes CAMS data from Copernicus); wind from [MET Norway](https://api.met.no) as a second source; fires from [NASA FIRMS](https://firms.modaps.eosdis.nasa.gov); map tiles from [OpenFreeMap](https://openfreemap.org) with data © OpenStreetMap contributors; place names from [Photon](https://photon.komoot.io). The cigarette rule of thumb is Berkeley Earth's.
+
+## Privacy
+
+There are no accounts. Your places, people and outdoor time are saved in your browser on your device only. Search sends the words you type to Open-Meteo and Photon. The request form and fire reports are sent to our API and kept for 180 days; the visitor's address is never stored, only a daily-changing hash used for the daily limit. The app asks the device for its location only when you press Detect my location or turn on live location. To look up the air it sends the place's coordinates, rounded to two decimals, to our API. A pinned place is saved on your device, not on a server. A fire report keeps the point's coordinates and any line you add (up to 200 characters). Nothing is sold or shared.
 
 ## Cost
 

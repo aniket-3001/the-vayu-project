@@ -54,7 +54,7 @@ Seven real days, each played as "now" at 8 am India time: 7 Oct, 21 Oct, 31 Oct,
 | Replay of a past week (an API route)                                             | Tested. No screen uses it; the recorded days use a file instead.                                                                                                                                  |
 | Budget alert by email                                                            | The stack makes one when given an address; none was given. The account has two $50 budgets made by hand. Budgets only send email.                                                                 |
 
-Polly in the live assistant (spoken answers, above) is live. The "Hindi voice notes" row is only about Telegram.
+Polly in the live assistant (spoken answers, above) is live. Only voice notes inside Telegram alerts are off.
 
 ## Not built
 
