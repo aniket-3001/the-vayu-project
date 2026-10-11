@@ -70,7 +70,7 @@ describe('the AIR Lens', () => {
     expect(sceneFor('My flat')).toBe('home');
   });
 
-  it('is one card: the scale on top, the coloured air card, then the hour window with the three buttons', () => {
+  it('is one card: the scale on top, the coloured air card, then the hour window with its buttons', () => {
     open();
     expect(document.querySelector('.lens-top')).not.toBeInTheDocument();
     const hud = document.querySelector('.lens-hud');
@@ -81,10 +81,11 @@ describe('the AIR Lens', () => {
     expect(unit?.querySelector('.lens-unit-scale .aqi-scale')).toBeInTheDocument();
     const time = unit?.querySelector('.lens-unit-time');
     expect(time?.querySelector('.timeline')).toBeInTheDocument();
-    // After the slider, in a row: Ask, cigarettes, GPS.
+    // After the slider, in a row: Ask, cigarettes, then the eye stacked over GPS.
     const buttons = Array.from(time?.querySelectorAll('.dock-buttons button') ?? []);
-    expect(buttons).toHaveLength(3);
-    expect(buttons[2]).toHaveAccessibleName('GPS');
+    expect(buttons).toHaveLength(4);
+    expect(buttons[2]).toHaveAccessibleName('See through the card');
+    expect(buttons[3]).toHaveAccessibleName('GPS');
     expect(screen.getByText('Slide the window along the next 36 hours')).toBeInTheDocument();
   });
 
@@ -204,6 +205,25 @@ describe('the AIR Lens', () => {
     fireEvent.change(screen.getByRole('combobox'), { target: { value: 'live' } });
     expect(set).toHaveBeenCalledWith(true);
     setLiveLocation(undefined);
+  });
+
+  it('has an eye over the GPS button that makes the card see-through, and brings it back', () => {
+    open();
+    const card = screen.getByRole('region', { name: 'The air here, hour by hour' });
+    expect(card).not.toHaveClass('clear');
+    const eye = screen.getByRole('button', { name: 'See through the card' });
+    // It sits in the same stack as GPS, over it.
+    const stack = eye.parentElement;
+    expect(stack?.children[0]).toBe(eye);
+    expect(stack?.children[1]).toBe(screen.getByRole('button', { name: 'GPS' }));
+    fireEvent.click(eye);
+    expect(card).toHaveClass('clear');
+    expect(screen.getByRole('button', { name: 'Show the card' })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    );
+    fireEvent.click(screen.getByRole('button', { name: 'Show the card' }));
+    expect(card).not.toHaveClass('clear');
   });
 
   it('says what to do when nothing is pinned', () => {

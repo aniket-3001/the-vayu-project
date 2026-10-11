@@ -9,14 +9,24 @@ import { GpsToggle } from './GpsToggle';
  */
 export function DockButtons({
   layout = 'column',
+  aboveGps,
 }: {
   readonly layout?: 'column' | 'row';
+  /** A button the screen wants stacked over the GPS button (the AIR Lens's eye). */
+  readonly aboveGps?: React.ReactNode;
 }): React.JSX.Element {
   return (
     <div className={`dock-buttons ${layout}`}>
       <AssistantFab />
       <SmokeToggle />
-      <GpsToggle />
+      {aboveGps === undefined ? (
+        <GpsToggle />
+      ) : (
+        <div className="dock-stack">
+          {aboveGps}
+          <GpsToggle />
+        </div>
+      )}
     </div>
   );
 }

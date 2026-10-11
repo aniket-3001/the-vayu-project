@@ -3,6 +3,8 @@ import {
   GraduationCap,
   House,
   MapPin,
+  Eye,
+  EyeOff,
   Pause,
   Play,
   TreePine,
@@ -56,6 +58,8 @@ export function LensScreen(): React.JSX.Element {
   const [placeId, setPlaceId] = useState('');
   const [step, setStep] = useState(0);
   const [playing, setPlaying] = useState(false);
+  // The eye: the card goes see-through so the view behind it can be seen.
+  const [clear, setClear] = useState(false);
   const camera = useCamera();
 
   const pin = pins.find((p) => p.id === placeId) ?? pins[0];
@@ -173,7 +177,10 @@ export function LensScreen(): React.JSX.Element {
 
       <div className="lens-hud">
         {/* One card, top to bottom: the colour scale, the air, then the hour window with the three buttons. */}
-        <section className="lens-unit" aria-label="The air here, hour by hour">
+        <section
+          className={`lens-unit${clear ? ' clear' : ''}`}
+          aria-label="The air here, hour by hour"
+        >
           <div className="lens-unit-scale">
             <AqiScale aqi={hour.aqi} className="lens-scale" />
           </div>
@@ -240,7 +247,27 @@ export function LensScreen(): React.JSX.Element {
                 </p>
               </div>
             </div>
-            <DockButtons layout="row" />
+            <DockButtons
+              layout="row"
+              aboveGps={
+                <button
+                  type="button"
+                  className="smoke-toggle lens-eye"
+                  aria-pressed={clear}
+                  aria-label={clear ? 'Show the card' : 'See through the card'}
+                  title={clear ? 'Show the card again' : 'Make the card see-through'}
+                  onClick={() => {
+                    setClear(!clear);
+                  }}
+                >
+                  {clear ? (
+                    <EyeOff size={22} strokeWidth={2} aria-hidden="true" />
+                  ) : (
+                    <Eye size={22} strokeWidth={2} aria-hidden="true" />
+                  )}
+                </button>
+              }
+            />
           </div>
         </section>
       </div>
