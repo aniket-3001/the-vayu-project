@@ -7,6 +7,7 @@ import {
   House,
   School,
   UserRound,
+  X,
   Star,
   TriangleAlert,
   type LucideIcon,
@@ -102,6 +103,77 @@ function Points({ points }: { readonly points: number }): React.JSX.Element {
 }
 
 /**
+ * One tip up close, the way an alert opens: its heading, the full words behind it, where it is for, what it is worth,
+ * and a button to tick it off. The card holds only the heading so that it can be read at a glance.
+ */
+function TipSheet({
+  task,
+  done,
+  onToggle,
+  onClose,
+}: {
+  readonly task: Task;
+  readonly done: boolean;
+  readonly onToggle: () => void;
+  readonly onClose: () => void;
+}): React.JSX.Element {
+  useEffect(() => {
+    const onKey = (event: KeyboardEvent): void => {
+      if (event.key === 'Escape') onClose();
+    };
+    window.addEventListener('keydown', onKey);
+    return () => {
+      window.removeEventListener('keydown', onKey);
+    };
+  }, [onClose]);
+  const Icon = task.kind === 'mask' ? undefined : ICONS[task.kind];
+  return (
+    <div
+      className="sheet-backdrop"
+      role="presentation"
+      onClick={(event) => {
+        if (event.target === event.currentTarget) onClose();
+      }}
+    >
+      <div
+        className="sheet alert-sheet tip-sheet"
+        role="dialog"
+        aria-modal="true"
+        aria-label={task.title}
+      >
+        <button type="button" className="icon-button sheet-x" aria-label="Close" onClick={onClose}>
+          <X size={20} aria-hidden="true" />
+        </button>
+        <div className="alert-hero">
+          <span className={`alert-big-icon task-${task.kind}`}>
+            {Icon === undefined ? (
+              <MaskIcon size={40} />
+            ) : (
+              <Icon size={40} strokeWidth={1.75} aria-hidden="true" />
+            )}
+          </span>
+          {task.place !== undefined && <span className="pill">{task.place}</span>}
+          <h2>{task.title}</h2>
+        </div>
+        <section aria-label="Details">
+          <p>{task.why}</p>
+        </section>
+        <p className="tip-worth">
+          <Star size={18} strokeWidth={2} className="ic-star" aria-hidden="true" />
+          <strong>{task.points} points</strong> for doing it
+        </p>
+        <button type="button" className="primary" onClick={onToggle}>
+          {done ? 'Mark as not done' : 'Mark as done'}
+        </button>
+        <button type="button" className="plain" onClick={onClose}>
+          Done
+        </button>
+      </div>
+    </div>
+  );
+}
+
+/**
  * Breathe better today: what to watch for (the alerts, worst first, as a short list) and small things worth
  * doing given the air, as cards you swipe sideways, each with its reason and a gold coin of points. Tick them off
  * for points and a streak.
@@ -118,6 +190,7 @@ export function TipsCard({
 }): React.JSX.Element {
   const progress = useTasks();
   const reduced = useReducedMotion() === true;
+  const [shown, setShown] = useState<Task | undefined>(undefined);
   const doneCount = tips.filter((t) => progress.done.has(t.id)).length;
   // The scroll indicator under the row: how much of the row is in view, and where. It is drawn from the row's own
   // scroll position, so it needs no lining up with the cards, whatever their width.
@@ -184,21 +257,30 @@ export function TipsCard({
                 >
                   {checked && <Check size={18} strokeWidth={3} aria-hidden="true" />}
                 </motion.button>
-                <span className={`task-icon task-${task.kind}`}>
-                  {Icon === undefined ? (
-                    <MaskIcon size={20} />
-                  ) : (
-                    <Icon size={20} strokeWidth={1.75} aria-hidden="true" />
-                  )}
-                </span>
-                <span className="task-words">
-                  {task.place !== undefined && (
-                    <span className="tip-place small">{task.place}</span>
-                  )}
-                  <strong>{task.title}</strong>
-                  <span className="muted small">{task.why}</span>
-                </span>
-                <Points points={task.points} />
+                {/* The rest of the card is one button: the heading, and the full words behind it. */}
+                <button
+                  type="button"
+                  className="tip-open"
+                  aria-haspopup="dialog"
+                  onClick={() => {
+                    setShown(task);
+                  }}
+                >
+                  <span className={`task-icon task-${task.kind}`}>
+                    {Icon === undefined ? (
+                      <MaskIcon size={20} />
+                    ) : (
+                      <Icon size={20} strokeWidth={1.75} aria-hidden="true" />
+                    )}
+                  </span>
+                  <span className="task-words">
+                    {task.place !== undefined && (
+                      <span className="tip-place small">{task.place}</span>
+                    )}
+                    <strong>{task.title}</strong>
+                  </span>
+                  <Points points={task.points} />
+                </button>
               </li>
             );
           })}
@@ -221,6 +303,18 @@ export function TipsCard({
             style={{ width: `${String(view.size * 100)}%`, left: `${String(view.at * 100)}%` }}
           />
         </div>
+      )}
+      {shown !== undefined && (
+        <TipSheet
+          task={shown}
+          done={progress.done.has(shown.id)}
+          onToggle={() => {
+            progress.toggle(shown.id);
+          }}
+          onClose={() => {
+            setShown(undefined);
+          }}
+        />
       )}
       <div className="tips-footer">
         <Progress progress={progress} />

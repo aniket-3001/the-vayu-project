@@ -17,16 +17,22 @@ export function Summary({
   summary,
   cells,
   span,
+  action,
 }: {
   readonly summary: SummaryData | undefined;
   readonly cells: readonly Cell[];
   /** Words for the span: "so far today (17 hours)", "over the day". */
   readonly span: string;
+  /** Something for the card's top right corner, such as the button to log time outdoors. */
+  readonly action?: React.ReactNode;
 }): React.JSX.Element {
   if (summary === undefined) {
     return (
       <section className="card" aria-labelledby="sum-title">
-        <h2 id="sum-title">Your day in the air</h2>
+        <div className="sum-head">
+          <h2 id="sum-title">Your day in the air</h2>
+          {action}
+        </div>
         <p className="muted">
           Nothing to add up yet. Set a place below, or turn on live location, and the hours fill in.
         </p>
@@ -43,7 +49,10 @@ export function Summary({
   const saved = summary.openAirAqi - summary.aqi;
   return (
     <section className="card" aria-labelledby="sum-title">
-      <h2 id="sum-title">Your day in the air</h2>
+      <div className="sum-head">
+        <h2 id="sum-title">Your day in the air</h2>
+        {action}
+      </div>
       <p className="sum-lead">
         <ChipPair pm25={summary.meanPm25}>
           <AqiChip aqi={summary.aqi} />

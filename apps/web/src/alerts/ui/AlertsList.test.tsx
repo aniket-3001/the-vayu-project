@@ -134,4 +134,19 @@ describe('the alerts list', () => {
     await userEvent.keyboard('{Escape}');
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
   });
+
+  it('puts a moving picture behind an alert opened up close: raindrops, haze, or a GRAP stage’s specks', async () => {
+    open('hazardous', 127);
+    await userEvent.click(screen.getByRole('button', { name: /GRAP Stage IV likely today/u }));
+    let sheet = screen.getByRole('dialog');
+    expect(sheet.querySelector('canvas.air-particles')).toHaveAttribute('data-kind', 'grap');
+    await userEvent.click(within(sheet).getByRole('button', { name: 'Done' }));
+    await userEvent.click(screen.getByRole('button', { name: /Smog likely/u }));
+    sheet = screen.getByRole('dialog');
+    expect(sheet.querySelector('canvas.air-particles')).toHaveAttribute('data-kind', 'smog');
+    await userEvent.click(within(sheet).getByRole('button', { name: 'Done' }));
+    await userEvent.click(screen.getByRole('button', { name: /Heavy stubble burning/u }));
+    sheet = screen.getByRole('dialog');
+    expect(sheet.querySelector('canvas.air-particles')).toHaveAttribute('data-kind', 'smoke');
+  });
 });

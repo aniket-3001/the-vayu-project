@@ -67,6 +67,10 @@ Unticked means not yet seen live.
 | Map            | The map's colour is grainy at every zoom; wind stays when zoomed in; cigarette symbols show before numbers       | [ ]  |
 | GPS            | The GPS button turns location off for the whole app; Detect my location says so while it is off                  | [ ]  |
 | AIR Lens       | One card: scale, air, then the 36-hour window with the three buttons                                             | [ ]  |
+| My Air         | A tip is its heading; pressing it opens the full words; an alert opens with rain, smog or GRAP specks behind it  | [ ]  |
+| My Air         | A card with a GRAP stage wears a glowing GRAP pill in the stage's colour                                         | [ ]  |
+| Exposure       | Three labelled lines on the left with the window under them; Your day in the air on the right                    | [ ]  |
+| AIR Lens       | The play button runs the 36 hours in five seconds                                                                | [ ]  |
 | Laptop         | Every screen at a laptop width                                                                                   | [ ]  |
 | Offline        | Switch the phone to airplane mode: the last good readings stay and say how old they are                          | [ ]  |
 

@@ -70,4 +70,43 @@ describe('when the day arrives', () => {
     const stubble = alertsFor(sampleDay('good'), 127).find((a) => a.kind === 'stubble');
     expect(stubble && suggestionFrom(stubble)).toBeUndefined();
   });
+
+  it('has good news too: rain to come says the air should clear, and sorts after the warnings', () => {
+    const day = sampleDay('hazardous');
+    const rainy = {
+      ...day,
+      daily: day.daily.map((d, i) =>
+        i === 1
+          ? {
+              ...d,
+              aqi: 180,
+              sky: {
+                ...(d.sky ?? day.daily[0]?.sky),
+                rainChancePct: 85,
+                condition: 'rain' as const,
+              },
+            }
+          : d,
+      ),
+    } as typeof day;
+    const alerts = alertsFor(rainy, undefined);
+    const rain = alerts.find((a) => a.kind === 'rain');
+    expect(rain?.severity).toBe('good');
+    expect(rain?.title).toBe('Rain tomorrow should clear the air');
+    expect(rain?.body).toMatch(/85% chance of rain/u);
+    expect(rain?.body).toMatch(/down from/u);
+    expect(rain?.avoid).toEqual([]);
+    // Warnings first, good news last.
+    expect(alerts[alerts.length - 1]?.kind).toBe('rain');
+    // No rain, no rain alert.
+    const dry = {
+      ...day,
+      daily: day.daily.map((d) => ({
+        ...d,
+        sky:
+          d.sky === undefined ? d.sky : { ...d.sky, rainChancePct: 5, condition: 'clear' as const },
+      })),
+    } as typeof day;
+    expect(alertsFor(dry, undefined).some((a) => a.kind === 'rain')).toBe(false);
+  });
 });

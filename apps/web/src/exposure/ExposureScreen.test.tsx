@@ -63,11 +63,11 @@ const closePanel = async (): Promise<void> => {
 };
 
 describe('the Exposure screen', () => {
-  it('opens on Today, for me, with a dial and an answer, and nothing to set up on the page', () => {
+  it('opens on Today, for me, with the day’s lines and an answer, and nothing to set up on the page', () => {
     open();
     expect(screen.getByRole('heading', { level: 1, name: 'Today’s exposure' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /^Me/u })).toHaveAttribute('aria-pressed', 'true');
-    expect(screen.getByRole('img', { name: /24-hour dial/u })).toBeInTheDocument();
+    expect(screen.getByRole('img', { name: /24-hour chart/u })).toBeInTheDocument();
     expect(screen.getByText(/You breathed an average of AQI/u)).toHaveTextContent(
       'so far today (18 hours)',
     );
@@ -76,46 +76,37 @@ describe('the Exposure screen', () => {
     }
   });
 
-  it('ends at Your day in the air: the last thing on the page is the answer', () => {
+  it('puts the lines and the hour window on the left and Your day in the air on the right', () => {
     open();
-    const main = document.querySelector('.exposure-main');
-    expect(main?.lastElementChild).toBe(
-      screen.getByRole('region', { name: 'Your day in the air' }),
-    );
+    const split = document.querySelector('.exposure-split');
+    expect(split?.children).toHaveLength(2);
+    const [left, right] = Array.from(split?.children ?? []);
+    expect(left?.querySelector('.daylines')).toBeInTheDocument();
+    expect(left?.querySelector('.timeline')).toBeInTheDocument();
+    expect(right).toContainElement(screen.getByRole('region', { name: 'Your day in the air' }));
+    // The button to log time outdoors sits in the corner of that card.
+    const head = right?.querySelector('.sum-head');
+    expect(head?.querySelector('button.dial-log')).toHaveAccessibleName('Log outdoor time');
   });
 
-  it('has three rings, home, work or school, and live outdoor location, and nothing in the circle but the person', () => {
+  it('has three labelled lines, home, school or work, and live outdoor location, and no filters', () => {
     open();
     expect(screen.queryByRole('button', { name: 'All' })).not.toBeInTheDocument();
-    expect(document.querySelectorAll('.dial .ring')).toHaveLength(3);
+    expect(screen.queryByRole('group', { name: 'Show one place' })).not.toBeInTheDocument();
+    expect(document.querySelectorAll('.daylines .dl-row')).toHaveLength(3);
     expect(
-      Array.from(document.querySelectorAll('.dial .ring-name')).map((el) => el.textContent),
+      Array.from(document.querySelectorAll('.daylines .dl-row .dl-name')).map(
+        (el) => el.textContent,
+      ),
     ).toEqual(['Home', 'School / Work', 'Live outdoor location']);
-    // The circle holds the person icon and no words.
-    expect(document.querySelector('.dial .dial-name')).not.toBeInTheDocument();
-    expect(document.querySelector('.dial .dial-person')).toBeInTheDocument();
-  });
-
-  it('has a filter for each ring that lifts it, and a second press clears it', async () => {
-    open();
-    const group = screen.getByRole('group', { name: 'Show one place' });
-    const names = within(group)
-      .getAllByRole('button')
-      .map((b) => b.textContent);
-    expect(names).toEqual(['Home', 'School / Work', 'Live outdoor location']);
-    expect(document.querySelector('.dial .ring.lifted')).not.toBeInTheDocument();
-    await userEvent.click(within(group).getByRole('button', { name: 'Home' }));
-    expect(within(group).getByRole('button', { name: 'Home' })).toHaveAttribute(
-      'aria-pressed',
-      'true',
+    // A time axis along the top, in am and pm.
+    const axis = Array.from(document.querySelectorAll('.daylines .dl-ticks span')).map(
+      (el) => el.textContent,
     );
-    expect(document.querySelectorAll('.dial .ring.lifted')).toHaveLength(1);
-    expect(document.querySelectorAll('.dial .ring.faded')).toHaveLength(2);
-    expect(screen.getByText(/You breathed an average of AQI/u)).toHaveTextContent(
-      'hours you were at Home',
-    );
-    await userEvent.click(within(group).getByRole('button', { name: 'Home' }));
-    expect(document.querySelector('.dial .ring.lifted')).not.toBeInTheDocument();
+    expect(axis).toEqual(['12 am', '3 am', '6 am', '9 am', '12 pm', '3 pm', '6 pm', '9 pm']);
+    expect(
+      document.querySelectorAll('.daylines .dl-row')[0]?.querySelectorAll('.dl-cell'),
+    ).toHaveLength(24);
   });
 
   it('has a labelled day timeline with a one-hour window, coloured by AQI, in am and pm', () => {
@@ -128,23 +119,8 @@ describe('the Exposure screen', () => {
       (el) => el.textContent,
     );
     expect(labels).toEqual(['12 am', '3 am', '6 am', '9 am', '12 pm', '3 pm', '6 pm', '9 pm']);
-    const dialLabels = Array.from(document.querySelectorAll('.dial .dial-label')).map(
-      (el) => el.textContent,
-    );
-    expect(dialLabels).toContain('6 am');
-    expect(dialLabels.join(' ')).not.toMatch(/\b(1[3-9]|2[0-3])\b/u);
     fireEvent.change(slider, { target: { value: '9' } });
     expect(document.querySelector('.tl-bubble output')).toHaveTextContent('9 am to 10 am');
-  });
-
-  it('keeps the person in the middle of the circle, at a size that fills it', () => {
-    open();
-    const person = document.querySelector('.dial .dial-person');
-    const centre = document.querySelector('.dial .dial-centre');
-    expect(Number(person?.getAttribute('width'))).toBeGreaterThanOrEqual(44);
-    const size = Number(person?.getAttribute('width'));
-    expect(Number(person?.getAttribute('x')) + size / 2).toBe(Number(centre?.getAttribute('cx')));
-    expect(Number(person?.getAttribute('y')) + size / 2).toBe(Number(centre?.getAttribute('cy')));
   });
 
   it('switches to a person when their profile is pressed, and opens their day only from the pencil', async () => {
@@ -202,10 +178,10 @@ describe('the Exposure screen', () => {
       await fillSlot('School', 'School');
     });
     expect(screen.getByRole('button', { name: /^Asha/u })).toHaveAttribute('aria-pressed', 'true');
-    // The middle ring is School for a child, and Work is not offered.
+    // The middle line is School / Work for a child as for anyone.
     expect(
-      Array.from(document.querySelectorAll('.dial .ring-name')).map((el) => el.textContent),
-    ).toEqual(['Home', 'School / Work', 'Live outdoor location']);
+      Array.from(document.querySelectorAll('.daylines .dl-name')).map((el) => el.textContent),
+    ).toContain('School / Work');
     const panel = await openPanel('Asha');
     expect(within(panel).getByLabelText('School from')).toHaveValue('8');
     expect(within(panel).getByLabelText('School until')).toHaveValue('15');
@@ -215,13 +191,10 @@ describe('the Exposure screen', () => {
     expect(window.localStorage.getItem(PEOPLE_STORAGE_KEY)).toContain('Asha');
   });
 
-  it('adds an older person who stays mostly home: still three rings', async () => {
+  it('adds an older person who stays mostly home: still three lines', async () => {
     open();
     await addPerson('Dadu', '70');
-    expect(document.querySelectorAll('.dial .ring')).toHaveLength(3);
-    expect(
-      Array.from(document.querySelectorAll('.dial .ring-name')).map((el) => el.textContent),
-    ).toEqual(['Home', 'School / Work', 'Live outdoor location']);
+    expect(document.querySelectorAll('.daylines .dl-row')).toHaveLength(3);
   });
 
   it('lets the hours be changed before adding, and uses them', async () => {
@@ -245,13 +218,13 @@ describe('the Exposure screen', () => {
     expect(screen.queryByRole('button', { name: 'Set Home' })).not.toBeInTheDocument();
   });
 
-  it('fills one ring for each hour, the place the person was in, and leaves the others empty', () => {
+  it('colours one line for each hour, the place the person was in, and leaves the others blank', () => {
     open();
     // 24 hours, three rings: at most one filled segment in each hour, so a place never shows twice at once.
     const perHour = new Map<string, number>();
-    document.querySelectorAll('.dial .ring').forEach((ring) => {
-      ring.querySelectorAll('.cell').forEach((cell, hour) => {
-        if (!cell.classList.contains('empty'))
+    document.querySelectorAll('.daylines .dl-row').forEach((row) => {
+      row.querySelectorAll('.dl-cell').forEach((cell, hour) => {
+        if (!cell.classList.contains('blank'))
           perHour.set(String(hour), (perHour.get(String(hour)) ?? 0) + 1);
       });
     });
@@ -264,8 +237,10 @@ describe('the Exposure screen', () => {
     expect(screen.queryByText(/How to read this/u)).not.toBeInTheDocument();
     await userEvent.click(screen.getByRole('button', { name: 'How to read this chart' }));
     const card = screen.getByRole('dialog', { name: 'How to read this chart' });
-    expect(within(card).getByRole('list', { name: 'The rings, outside in' })).toBeInTheDocument();
-    expect(card).toHaveTextContent(/one ring is filled/u);
+    expect(
+      within(card).getByRole('list', { name: 'The lines, top to bottom' }),
+    ).toBeInTheDocument();
+    expect(card).toHaveTextContent(/one line has a colour there/u);
     await userEvent.keyboard('{Escape}');
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
   });
@@ -364,7 +339,7 @@ describe('the Exposure screen', () => {
     ).toBeInTheDocument();
     fireEvent.change(date, { target: { value: '2026-03-01' } });
     expect(screen.getByRole('status')).toHaveTextContent('No data for Sun 1 Mar.');
-    expect(screen.queryByRole('img', { name: /24-hour dial/u })).not.toBeInTheDocument();
+    expect(screen.queryByRole('img', { name: /24-hour chart/u })).not.toBeInTheDocument();
     fireEvent.change(date, { target: { value: '2026-10-20' } });
     expect(screen.getByRole('status')).toHaveTextContent('No data for Tue 20 Oct.');
   });
@@ -390,12 +365,12 @@ describe('the Exposure screen', () => {
     expect(document.querySelector('.readout')).toHaveTextContent(/Work, /u);
   });
 
-  it('changes the hours a place is usually used from the timetable, and the dial follows', async () => {
+  it('changes the hours a place is usually used from the timetable, and the lines follow', async () => {
     open();
     await userEvent.click(screen.getByRole('button', { name: 'Yesterday' }));
     const ringFilled = (i: number): number =>
-      document.querySelectorAll('.dial .ring')[i]?.querySelectorAll('.cell:not(.empty)').length ??
-      0;
+      document.querySelectorAll('.daylines .dl-row')[i]?.querySelectorAll('.dl-cell:not(.blank)')
+        .length ?? 0;
     const before = ringFilled(1);
     expect(before).toBeGreaterThan(0);
     const panel = await openPanel('Me');
@@ -604,7 +579,8 @@ describe('working it out from where I am', () => {
     await userEvent.click(within(sheet).getByRole('button', { name: /Add to Asha/u }));
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
     expect(
-      document.querySelectorAll('.dial .ring')[2]?.querySelectorAll('.cell:not(.empty)').length,
+      document.querySelectorAll('.daylines .dl-row')[2]?.querySelectorAll('.dl-cell:not(.blank)')
+        .length,
     ).toBeGreaterThan(0);
     const panel = await openPanel('Asha');
     const outdoor = within(panel).getByRole('region', { name: 'Outdoor time' });

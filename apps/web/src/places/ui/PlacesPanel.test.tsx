@@ -79,6 +79,25 @@ describe('the Places screen', () => {
     expect(home).toHaveTextContent('Sample data');
   });
 
+  it('shows a glowing GRAP pill, coloured by stage, on a card where a stage is likely, and only there', () => {
+    screenWith();
+    const cards = Array.from(
+      screen
+        .getByRole('list', { name: 'Your places' })
+        .querySelectorAll<HTMLElement>('li.place-card'),
+    );
+    const withPill = cards.filter((card) => card.querySelector('.grap-pill') !== null);
+    // The sample Park is clean and the sample school is hazardous: one has a stage, the other none.
+    expect(withPill.length).toBeGreaterThan(0);
+    expect(withPill.length).toBeLessThan(cards.length);
+    for (const card of withPill) {
+      const pill = card.querySelector('.grap-pill');
+      expect(pill?.className).toMatch(/grap-s[1-4]/u);
+      expect(pill?.textContent).toMatch(/^GRAP [1-4]$/u);
+    }
+    expect(cardOf('Park').querySelector('.grap-pill')).not.toBeInTheDocument();
+  });
+
   it('has the face, and the number with its label, on the card', () => {
     screenWith();
     const home = cardOf('Home');

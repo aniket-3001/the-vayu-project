@@ -1,5 +1,14 @@
-import { Briefcase, GraduationCap, House, MapPin, TreePine, type LucideIcon } from 'lucide-react';
-import { useMemo, useState } from 'react';
+import {
+  Briefcase,
+  GraduationCap,
+  House,
+  MapPin,
+  Pause,
+  Play,
+  TreePine,
+  type LucideIcon,
+} from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { airStore, useToday } from '../air/store';
 import { AirError, AirLoading } from '../components/AirState';
@@ -24,6 +33,9 @@ const SCENE_ICONS: Readonly<Record<ScenePlace, LucideIcon>> = {
 };
 import { useCamera } from './useCamera';
 
+/** How long the play button takes to run through the whole of the next 36 hours. */
+const PLAY_SECONDS = 5;
+
 /** Said on the card only when the camera is being asked for or could not be had. */
 const CAMERA_WORDS = {
   asking: 'Asking for your camera…',
@@ -43,6 +55,7 @@ export function LensScreen(): React.JSX.Element {
   );
   const [placeId, setPlaceId] = useState('');
   const [step, setStep] = useState(0);
+  const [playing, setPlaying] = useState(false);
   const camera = useCamera();
 
   const pin = pins.find((p) => p.id === placeId) ?? pins[0];
@@ -67,6 +80,26 @@ export function LensScreen(): React.JSX.Element {
   const data = state?.status === 'ready' ? state.data : undefined;
   const series = useMemo(() => (data === undefined ? [] : lensSeries(data)), [data]);
   const hour = series[Math.min(step, series.length - 1)];
+  const lastStep = Math.max(0, Math.min(DIAL_HOURS, series.length - 1));
+  // Playing steps the window along the whole run in five seconds, and stops at the end.
+  useEffect(() => {
+    if (!playing || lastStep === 0) return undefined;
+    const timer = window.setInterval(
+      () => {
+        setStep((current) => {
+          if (current >= lastStep) {
+            setPlaying(false);
+            return current;
+          }
+          return current + 1;
+        });
+      },
+      PLAY_SECONDS * (1000 / lastStep),
+    );
+    return () => {
+      window.clearInterval(timer);
+    };
+  }, [playing, lastStep]);
 
   if (pin === undefined || data === undefined || hour === undefined) {
     return (
@@ -175,9 +208,32 @@ export function LensScreen(): React.JSX.Element {
                 bubble={step === 0 ? 'Now' : clock12(hour.at)}
                 max={Math.min(DIAL_HOURS, series.length - 1)}
               />
-              <p className="muted small lens-hint">
-                {step === 0 ? 'Slide the window along the next 36 hours' : `in ${String(step)} h`}
-              </p>
+              <div className="lens-hint-row">
+                <button
+                  type="button"
+                  className="lens-play"
+                  aria-pressed={playing}
+                  aria-label={playing ? 'Pause the 36 hours' : 'Play the next 36 hours'}
+                  onClick={() => {
+                    if (playing) {
+                      setPlaying(false);
+                      return;
+                    }
+                    // From the start again if it is at the end; the whole run takes five seconds.
+                    if (step >= lastStep) setStep(0);
+                    setPlaying(true);
+                  }}
+                >
+                  {playing ? (
+                    <Pause size={16} strokeWidth={2.5} aria-hidden="true" />
+                  ) : (
+                    <Play size={16} strokeWidth={2.5} aria-hidden="true" />
+                  )}
+                </button>
+                <p className="muted small lens-hint">
+                  {step === 0 ? 'Slide the window along the next 36 hours' : `in ${String(step)} h`}
+                </p>
+              </div>
             </div>
             <DockButtons layout="row" />
           </div>

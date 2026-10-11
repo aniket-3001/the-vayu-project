@@ -3,10 +3,10 @@ import { levelForAqi } from '../design/levels';
 import { weekday } from '../today/time';
 import type { TodayData } from '../today/types';
 
-export type AlertKind = 'grap' | 'smog' | 'stubble';
+export type AlertKind = 'grap' | 'smog' | 'stubble' | 'rain';
 
-/** How loud an alert is: a severe one glows red and comes first; the rest are cautions, in soft yellow. */
-export type AlertSeverity = 'severe' | 'caution';
+/** How loud an alert is: a severe one glows and comes first; cautions are soft yellow; good news (rain to come) is calm. */
+export type AlertSeverity = 'severe' | 'caution' | 'good';
 
 export interface Alert {
   readonly id: string;
@@ -172,8 +172,43 @@ export function alertsFor(data: TodayData, fires: number | undefined): readonly 
       authorities: true,
     });
   }
+  // Good news too: rain on its way washes particles out of the air, so the air is likely to be cleaner after it.
+  const rainDay = data.daily.slice(0, 3).findIndex((day) => {
+    const sky = day.sky;
+    return (
+      sky !== undefined &&
+      (sky.rainChancePct >= 60 ||
+        sky.condition === 'rain' ||
+        sky.condition === 'thunderstorm' ||
+        sky.condition === 'drizzle')
+    );
+  });
+  const rainy = rainDay < 0 ? undefined : data.daily[rainDay];
+  if (rainy?.sky !== undefined) {
+    const offset = rainDay as 0 | 1 | 2;
+    const when = offset === 0 ? 'today' : offset === 1 ? 'tomorrow' : dayWord(offset, data);
+    const down = rainy.aqi !== undefined && rainy.aqi < data.aqi;
+    alerts.push({
+      id: `rain-${String(offset)}`,
+      kind: 'rain',
+      severity: 'good',
+      day: offset,
+      title: `Rain ${when} should clear the air`,
+      body: down
+        ? `${String(rainy.sky.rainChancePct)}% chance of rain. AQI near ${String(rainy.aqi)}, down from ${String(data.aqi)}.`
+        : `${String(rainy.sky.rainChancePct)}% chance of rain. Rain washes particles out of the air, so the air should be cleaner after it.`,
+      reason: `The forecast gives ${String(rainy.sky.rainChancePct)}% chance of rain ${when}. Rain carries fine particles and dust down out of the air${down ? `, and our forecast puts the day near AQI ${String(rainy.aqi)}, down from ${String(data.aqi)} now` : ''}. It is a forecast, so it can change.`,
+      avoid: [],
+      todo: [
+        'Air the rooms and go for your walk after the rain stops, while the air is clean.',
+        'Dust can lift again once the ground has dried, so check the air before a long outing.',
+      ],
+      authorities: false,
+    });
+  }
   // The worst first, and within that today before tomorrow.
-  const rank = (a: Alert): number => (a.severity === 'severe' ? 0 : 1);
+  const rank = (a: Alert): number =>
+    a.severity === 'severe' ? 0 : a.severity === 'caution' ? 1 : 2;
   return alerts.sort((a, b) => rank(a) - rank(b) || a.day - b.day);
 }
 

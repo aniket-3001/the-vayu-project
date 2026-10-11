@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { cleanup, fireEvent, render, screen, within } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -211,5 +211,55 @@ describe('the AIR Lens', () => {
     open();
     expect(screen.getByText(/Nothing pinned yet/u)).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Pin a place on My Air' })).toBeInTheDocument();
+  });
+
+  it('plays the next 36 hours in five seconds from a play button, and stops at the end', async () => {
+    vi.useFakeTimers();
+    try {
+      open();
+      const dial = screen.getByRole('slider', { name: 'Time, hours from now' });
+      expect(dial).toHaveValue('0');
+      fireEvent.click(screen.getByRole('button', { name: 'Play the next 36 hours' }));
+      expect(screen.getByRole('button', { name: 'Pause the 36 hours' })).toHaveAttribute(
+        'aria-pressed',
+        'true',
+      );
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(2500);
+      });
+      const half = Number((dial as HTMLInputElement).value);
+      expect(half).toBeGreaterThan(10);
+      expect(half).toBeLessThan(26);
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(3000);
+      });
+      expect(dial).toHaveValue('36');
+      expect(screen.getByRole('button', { name: 'Play the next 36 hours' })).toHaveAttribute(
+        'aria-pressed',
+        'false',
+      );
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('pauses where it is when pressed again', async () => {
+    vi.useFakeTimers();
+    try {
+      open();
+      fireEvent.click(screen.getByRole('button', { name: 'Play the next 36 hours' }));
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(1000);
+      });
+      fireEvent.click(screen.getByRole('button', { name: 'Pause the 36 hours' }));
+      const dial = screen.getByRole('slider', { name: 'Time, hours from now' });
+      const at = (dial as HTMLInputElement).value;
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(2000);
+      });
+      expect(dial).toHaveValue(at);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });

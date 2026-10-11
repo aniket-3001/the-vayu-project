@@ -97,8 +97,27 @@ describe('the Breathe better tips on My Air', () => {
     expect(row).toBeInTheDocument();
     expect(card.querySelector('.carousel-dots')).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /See all|Fold/u })).not.toBeInTheDocument();
-    // Each tip shows its reason in full beside its star, with no unfolding.
-    expect(row?.querySelector('li .task-words .muted')).toBeInTheDocument();
+    // A card holds only the heading; the full words are behind it.
+    expect(row?.querySelector('li .task-words .muted')).not.toBeInTheDocument();
+    expect(row?.querySelector('li .tip-open strong')).toBeInTheDocument();
+  });
+
+  it('open a tip up close from its heading, with the full words, and tick it off from there', async () => {
+    open();
+    const card = screen.getByRole('region', { name: 'Breathe better today' });
+    const heading = card.querySelector<HTMLElement>('.tip-open');
+    if (heading === null) throw new Error('no tip');
+    await userEvent.click(heading);
+    const sheet = screen.getByRole('dialog');
+    expect(sheet).toHaveTextContent(/\d+ points/u);
+    expect(
+      within(sheet).getByRole('region', { name: 'Details' }).textContent?.length,
+    ).toBeGreaterThan(20);
+    await userEvent.click(within(sheet).getByRole('button', { name: 'Mark as done' }));
+    expect(within(sheet).getByRole('button', { name: 'Mark as not done' })).toBeInTheDocument();
+    await userEvent.click(within(sheet).getByRole('button', { name: 'Done' }));
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    expect(within(card).getAllByRole('checkbox')[0]).toHaveAttribute('aria-checked', 'true');
   });
 
   it('shows how much of the row is in view, and where, from the row’s own scroll position', () => {
@@ -167,7 +186,6 @@ describe('the Breathe better tips on My Air', () => {
       expect(card).toHaveTextContent('DAV Public School');
       expect(card).toHaveTextContent(/Morning assembly: (Inside|Open ground)/u);
       expect(card).toHaveTextContent(/Asha, 9: AQI \d+ at school/u);
-      expect(card).toHaveTextContent(/8 am to 3 pm/u);
       // Each school tip says which place it is for.
       const places = Array.from(card.querySelectorAll('.tip-place')).map((el) => el.textContent);
       expect(places).toContain('DAV Public School');

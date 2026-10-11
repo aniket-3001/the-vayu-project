@@ -9,6 +9,7 @@ import { CONDITION_LABELS, FaceIcon, WeatherIcon } from '../../today/ui/icons';
 import { AirFigures } from '../../units/AirUnits';
 import { airStore, useToday } from '../../air/store';
 import { assemblyFor } from '../../alerts/assembly';
+import { grapStageFor } from '../../tasks/model';
 import { isSchoolPin } from '../roles';
 import { AirLoading } from '../../components/AirState';
 
@@ -108,6 +109,8 @@ export function PlaceCard({
   // A school shows where its morning assembly should be held, from the air expected at eight.
   const assembly = isSchoolPin(pin) ? assemblyFor(reading) : undefined;
   const level = levelForAqi(reading.aqi);
+  // A GRAP stage likely at this place, by our estimate, as a pill that glows in the stage's colour.
+  const stage = grapStageFor(reading);
   const p = reading.provenance;
   const w = reading.weather;
   return (
@@ -141,6 +144,14 @@ export function PlaceCard({
         )}
         <AirFigures aqi={reading.aqi} pm25={reading.pm25} layout="auto" />
         <span className="pc-line">
+          {stage !== 0 && (
+            <span
+              className={`grap-pill grap-s${String(stage)}`}
+              title={`GRAP Stage ${String(stage)} is likely here (our estimate, not an order)`}
+            >
+              GRAP {stage}
+            </span>
+          )}
           <span className="pc-level">{level.name}</span>
           {w !== undefined && (
             <span className="pc-sky">

@@ -4,8 +4,35 @@ import { isoDate, clock12, weekday, dayMonth } from '../time';
 import type { TodayData } from '../types';
 import { AqiChip } from './Chip';
 import { WeatherIcon, WindArrow } from './icons';
+import type { Condition } from '../types';
 
-/** The next 48 hours as a table that scrolls sideways, with a symbol for each row instead of a label. The row names are still there for screen readers. */
+/** The word for the sky in an hour, as a person would say it: sunny by day, clear at night. */
+export const skyWord = (condition: Condition, isDay: boolean): string => {
+  switch (condition) {
+    case 'clear':
+      return isDay ? 'Sunny' : 'Clear';
+    case 'partly-cloudy':
+      return 'Partly cloudy';
+    case 'cloudy':
+      return 'Cloudy';
+    case 'haze':
+      return 'Hazy';
+    case 'fog':
+      return 'Foggy';
+    case 'drizzle':
+      return 'Drizzle';
+    case 'rain':
+      return 'Rainy';
+    case 'thunderstorm':
+      return 'Stormy';
+    case 'windy':
+      return 'Windy';
+    case 'dust':
+      return 'Dusty';
+  }
+};
+
+/** The next 48 hours as a table that scrolls sideways, each row named at its left: air, sky, temperature, wind speed, humidity, chance of rain. */
 export function Hourly({ data }: { readonly data: TodayData }): React.JSX.Element {
   const points = data.hourly;
   const startsDay = (index: number): boolean => {
@@ -30,7 +57,7 @@ export function Hourly({ data }: { readonly data: TodayData }): React.JSX.Elemen
         <table className="hourly">
           <thead>
             <tr>
-              <th scope="row" className="sr-only">
+              <th scope="row" className="row-label">
                 Time
               </th>
               {points.map((point, index) => (
@@ -50,7 +77,7 @@ export function Hourly({ data }: { readonly data: TodayData }): React.JSX.Elemen
             </tr>
           </thead>
           <tbody>
-            <Row label="AQI" points={points} cell={(p) => <AqiChip aqi={p.aqi} />} />
+            <Row label="Air quality (AQI)" points={points} cell={(p) => <AqiChip aqi={p.aqi} />} />
             <Row
               label="Sky"
               points={points}
@@ -58,12 +85,17 @@ export function Hourly({ data }: { readonly data: TodayData }): React.JSX.Elemen
                 p.weather === undefined ? (
                   <Missing />
                 ) : (
-                  <WeatherIcon condition={p.weather.condition} isDay={p.weather.isDay} />
+                  <span className="stack">
+                    <WeatherIcon condition={p.weather.condition} isDay={p.weather.isDay} />
+                    <span className="sky-word">
+                      {skyWord(p.weather.condition, p.weather.isDay)}
+                    </span>
+                  </span>
                 )
               }
             />
             <Row
-              label="Temp, °C"
+              label="Temperature, °C"
               points={points}
               cell={(p) =>
                 p.weather === undefined ? (
@@ -74,7 +106,7 @@ export function Hourly({ data }: { readonly data: TodayData }): React.JSX.Elemen
               }
             />
             <Row
-              label="Wind, km/h"
+              label="Wind speed, km/h"
               points={points}
               cell={(p) =>
                 p.weather === undefined ? (
@@ -103,7 +135,7 @@ export function Hourly({ data }: { readonly data: TodayData }): React.JSX.Elemen
               }
             />
             <Row
-              label="Rain chance, %"
+              label="Chance of rain, %"
               points={points}
               cell={(p) =>
                 p.weather === undefined ? (
@@ -146,7 +178,7 @@ function Row({
 }): React.JSX.Element {
   return (
     <tr>
-      <th scope="row" className="sr-only">
+      <th scope="row" className="row-label">
         {label}
       </th>
       {points.map((point, index) => (

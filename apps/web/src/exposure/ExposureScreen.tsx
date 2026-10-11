@@ -33,7 +33,7 @@ import { DAY_LABELS, initials, MAX_PEOPLE, personaOf } from './people';
 import { loadAllSpots } from './spots';
 import { sourcesNote } from './sources';
 import { TimelineWindow } from '../components/TimelineWindow';
-import { DIAL_RINGS, Dial, DialInfo, WHERE_LABELS, ringOf, type DialRing } from './ui/Dial';
+import { DayLines, DialInfo, WHERE_LABELS, type DialRing } from './ui/DayLines';
 import { Summary } from './ui/Summary';
 import { WeekStrip } from './ui/WeekStrip';
 import { allUnits } from './units';
@@ -146,12 +146,8 @@ export function ExposureScreen({
   );
   // At any hour a person is in one place, so one cell is kept for each hour: the others overlap it and are left out.
   const counted = useMemo(() => countedCells(cells), [cells]);
-  // The filter looks at one ring: its hours are what the dial lifts, what the readout lists and what is added up.
-  const [filter, setFilter] = useState<DialRing | undefined>(undefined);
-  const shown = useMemo(
-    () => (filter === undefined ? counted : counted.filter((cell) => ringOf(cell) === filter)),
-    [counted, filter],
-  );
+  // At any hour a person is in one place, so one cell is kept for each hour: the others overlap it and are left out.
+  const shown = counted;
   const summary = summarise(shown, openAirFor(shown, visible, live.log, date));
   const week = useMemo(
     () => lastWeek().map((d) => ({ date: d, summary: daySummary(visible, units, {}, d, outings) })),
@@ -173,11 +169,7 @@ export function ExposureScreen({
   const nothingSet = Object.keys(visible).length === 0 && counted.length === 0;
   const isToday = date === today();
   const span =
-    filter !== undefined && summary !== undefined
-      ? `in the ${String(summary.hours)} ${summary.hours === 1 ? 'hour' : 'hours'} you were at ${ringNames[filter]}`
-      : summary?.fullDay === false
-        ? `so far today (${String(summary.hours)} hours)`
-        : 'over the day';
+    summary?.fullDay === false ? `so far today (${String(summary.hours)} hours)` : 'over the day';
   const noData = view !== 'week' && !hasData(view);
 
   const open = (next: View): void => {
@@ -401,91 +393,90 @@ export function ExposureScreen({
 
         {view !== 'week' && !noData && (
           <>
-            <div className="ring-filters" role="group" aria-label="Show one place">
-              {DIAL_RINGS.map((ring) => (
-                <button
-                  key={ring}
-                  type="button"
-                  aria-pressed={filter === ring}
-                  onClick={() => {
-                    setFilter((current) => (current === ring ? undefined : ring));
-                  }}
-                >
-                  {ringNames[ring]}
-                </button>
-              ))}
+            <div className="exposure-split">
+              <div className="exposure-left">
+                <div className="daylines-wrap">
+                  <DayLines
+                    cells={counted}
+                    names={ringNames}
+                    nowHour={isToday ? hoursSoFar(today()) + 0.5 : undefined}
+                    picked={picked}
+                    onPick={setPicked}
+                  />
+                  <DialInfo names={ringNames} />
+                </div>
+                <TimelineWindow
+                  slots={hourSlots}
+                  value={picked}
+                  onChange={setPicked}
+                  label="Hour"
+                  inputId="hour"
+                  ticks={HOUR_TICKS}
+                  nowIndex={isToday ? hoursSoFar(today()) : undefined}
+                  bubble={hourSpan(picked)}
+                  max={23}
+                />
+                <div className="readout" aria-live="polite">
+                  {atPicked.length === 0 ? (
+                    <p className="muted">
+                      {isToday && picked > hoursSoFar(today())
+                        ? 'That hour has not happened yet.'
+                        : 'No place was set for this hour.'}
+                    </p>
+                  ) : (
+                    <ul>
+                      {atPicked.map((cell) => (
+                        <li key={cell.where}>
+                          <ChipPair pm25={cell.pm25}>
+                            <span
+                              className="chip"
+                              style={{
+                                background: levelForAqi(cell.aqi).solid,
+                                color: levelForAqi(cell.aqi).onSolid,
+                              }}
+                            >
+                              {cell.aqi}
+                            </span>
+                          </ChipPair>
+                          <span>
+                            <strong>{WHERE_LABELS[cell.where]}</strong>,{' '}
+                            {levelForAqi(cell.aqi).name.toLowerCase()}. {cell.pm25} µg/m³ PM
+                            <sub>2.5</sub>
+                            {cell.source === 'assumed' || cell.source === 'trees'
+                              ? ' (assumed)'
+                              : ''}
+                            {cell.source === 'unit' ? ' (from a nearby unit)' : ''}
+                            {cell.where === 'outdoor' && (cell.share ?? 1) < 1
+                              ? ` · ${String(Math.round((cell.share ?? 1) * 60))} min of this hour outside, the rest where you were`
+                              : ''}
+                          </span>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+              </div>
+              <div className="exposure-right">
+                <Summary
+                  summary={summary}
+                  cells={shown}
+                  span={span}
+                  action={
+                    <button
+                      type="button"
+                      className="dial-log"
+                      aria-label={isMe ? 'Log outdoor time' : `Log outdoor time for ${person.name}`}
+                      onClick={() => {
+                        setLogging(true);
+                      }}
+                    >
+                      <Plus size={18} strokeWidth={2.5} aria-hidden="true" />
+                      <span>Log outdoor time</span>
+                    </button>
+                  }
+                />
+              </div>
             </div>
-            <div className="dial-wrap">
-              <Dial
-                cells={counted}
-                focus={filter}
-                names={ringNames}
-                nowHour={isToday ? hoursSoFar(today()) + 0.5 : undefined}
-                picked={picked}
-                onPick={setPicked}
-              />
-              <DialInfo names={ringNames} />
-            </div>
-            <TimelineWindow
-              slots={hourSlots}
-              value={picked}
-              onChange={setPicked}
-              label="Hour"
-              inputId="hour"
-              ticks={HOUR_TICKS}
-              nowIndex={isToday ? hoursSoFar(today()) : undefined}
-              bubble={hourSpan(picked)}
-              max={23}
-            />
-            <button
-              type="button"
-              className="dial-log"
-              aria-label={isMe ? 'Log outdoor time' : `Log outdoor time for ${person.name}`}
-              onClick={() => {
-                setLogging(true);
-              }}
-            >
-              <Plus size={18} strokeWidth={2.5} aria-hidden="true" />
-              <span>Log outdoor time</span>
-            </button>
-            <div className="readout" aria-live="polite">
-              {atPicked.length === 0 ? (
-                <p className="muted">
-                  {isToday && picked > hoursSoFar(today())
-                    ? 'That hour has not happened yet.'
-                    : 'No place was set for this hour.'}
-                </p>
-              ) : (
-                <ul>
-                  {atPicked.map((cell) => (
-                    <li key={cell.where}>
-                      <ChipPair pm25={cell.pm25}>
-                        <span
-                          className="chip"
-                          style={{
-                            background: levelForAqi(cell.aqi).solid,
-                            color: levelForAqi(cell.aqi).onSolid,
-                          }}
-                        >
-                          {cell.aqi}
-                        </span>
-                      </ChipPair>
-                      <span>
-                        <strong>{WHERE_LABELS[cell.where]}</strong>,{' '}
-                        {levelForAqi(cell.aqi).name.toLowerCase()}. {cell.pm25} µg/m³ PM
-                        <sub>2.5</sub>
-                        {cell.source === 'assumed' || cell.source === 'trees' ? ' (assumed)' : ''}
-                        {cell.source === 'unit' ? ' (from a nearby unit)' : ''}
-                        {cell.where === 'outdoor' && (cell.share ?? 1) < 1
-                          ? ` · ${String(Math.round((cell.share ?? 1) * 60))} min of this hour outside, the rest where you were`
-                          : ''}
-                      </span>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </div>
-            <Summary summary={summary} cells={shown} span={span} />
           </>
         )}
       </main>

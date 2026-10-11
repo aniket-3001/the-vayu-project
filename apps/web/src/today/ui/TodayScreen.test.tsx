@@ -34,7 +34,7 @@ describe('the Today screen', () => {
     render(<TodayScreen data={day} />);
     const table = screen.getByRole('table');
     expect(within(table).getAllByRole('columnheader')).toHaveLength(48);
-    expect(within(table).getByRole('rowheader', { name: 'Wind, km/h' })).toBeInTheDocument();
+    expect(within(table).getByRole('rowheader', { name: 'Wind speed, km/h' })).toBeInTheDocument();
     expect(within(table).getByRole('rowheader', { name: 'Humidity, %' })).toBeInTheDocument();
     expect(
       within(screen.getByRole('region', { name: /Daily forecast/u })).getAllByRole('listitem'),
@@ -43,6 +43,29 @@ describe('the Today screen', () => {
       /µg\/m³/u,
     );
     expect(tiles.length).toBeGreaterThanOrEqual(6);
+  });
+
+  it('names each row of the hourly table, and says the sky in words', () => {
+    render(<TodayScreen data={sampleDay('good')} />);
+    const table = screen.getByRole('table');
+    const labels = within(table)
+      .getAllByRole('rowheader')
+      .map((el) => el.textContent);
+    expect(labels).toEqual([
+      'Time',
+      'Air quality (AQI)',
+      'Sky',
+      'Temperature, °C',
+      'Wind speed, km/h',
+      'Humidity, %',
+      'Chance of rain, %',
+    ]);
+    const words = Array.from(table.querySelectorAll('.sky-word')).map((el) => el.textContent);
+    expect(words.length).toBeGreaterThan(0);
+    for (const word of words)
+      expect(word).toMatch(
+        /^(Sunny|Clear|Partly cloudy|Cloudy|Hazy|Foggy|Drizzle|Rainy|Stormy|Windy|Dusty)$/u,
+      );
   });
 
   it('shows all seven days with 7 days chosen, saying where the air forecast does not reach', () => {

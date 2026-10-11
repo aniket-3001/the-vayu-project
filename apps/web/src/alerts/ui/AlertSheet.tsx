@@ -1,4 +1,5 @@
-import { Flame, Phone, TriangleAlert, Wind, X, type LucideIcon } from 'lucide-react';
+import { CloudRain, Flame, Phone, TriangleAlert, Wind, X, type LucideIcon } from 'lucide-react';
+import { AirParticles, type ParticleKind } from '../../components/AirParticles';
 import { useEffect } from 'react';
 import { Pill } from '../../today/ui/Chip';
 import type { TodayData } from '../../today/types';
@@ -8,6 +9,7 @@ export const ALERT_ICONS: Readonly<Record<AlertKind, LucideIcon>> = {
   grap: TriangleAlert,
   smog: Wind,
   stubble: Flame,
+  rain: CloudRain,
 };
 
 /**
@@ -35,6 +37,16 @@ export function AlertSheet({
     };
   }, [onClose]);
   const Icon = ALERT_ICONS[alert.kind];
+  // What moves behind the card: rain for rain, smoke for burning, haze and dust for smog, and a GRAP stage's own
+  // specks, in its colour.
+  const particles: ParticleKind =
+    alert.kind === 'rain'
+      ? 'rain'
+      : alert.kind === 'stubble'
+        ? 'smoke'
+        : alert.kind === 'grap'
+          ? 'grap'
+          : 'smog';
   return (
     <div
       className="sheet-backdrop"
@@ -52,6 +64,7 @@ export function AlertSheet({
         aria-modal="true"
         aria-labelledby="alert-title"
       >
+        <AirParticles kind={particles} stage={alert.stage ?? 1} />
         <button type="button" className="icon-button sheet-x" aria-label="Close" onClick={onClose}>
           <X size={20} aria-hidden="true" />
         </button>
