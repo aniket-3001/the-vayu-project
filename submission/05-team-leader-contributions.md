@@ -1,4 +1,4 @@
-I built the Vayu Project alone, so every role is mine. I decided what to build, and I reviewed and ran each change. No change was accepted until `make prove` passed: lint, types, 1,257 tests, `cdk synth` and a bundle check.
+I built the Vayu Project alone, so every role is mine. I decided what to build, and I reviewed and ran each change. No change was accepted until `make prove` passed: lint, types, 1,263 tests, `cdk synth` and a bundle check.
 
 - **Product owner.** I chose the problem (a parent has the numbers but no decision), the screens, and what the app may say. Deliverables: a written set of safety rules, and a list of the claims I refuse to make.
 - **Cloud engineer.** The stack runs in my own AWS account. I put the provider keys into Secrets Manager myself, approved each deploy and checked it with the live smoke test, and replaced the OpenAQ key after it was rejected late on 10 October. Deliverables: the live app and API at https://d3lmq1mze2gup3.cloudfront.net, the CDK stack, an architecture note and a cost model priced from AWS's own price list.

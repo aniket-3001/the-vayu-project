@@ -4,7 +4,7 @@
 
 **Who it is for.** Delhi families, schools and housing societies.
 
-**On real recorded days** (https://d3lmq1mze2gup3.cloudfront.net/#/week). On the morning after Diwali, 21 Oct 2025, Home read AQI 500 from a monitor 3.8 km away and the app said: avoid going out. On 9 Nov 2025 two places four kilometres apart got two answers: Home 424 (Stage III likely), the park 249 (Stage II likely). A city number cannot show that. It costs about $4.50 a month idle to run, and $0.0008 for an assistant question, so a school or society can host its own. 1,257 tests pass in one command.
+**On real recorded days** (https://d3lmq1mze2gup3.cloudfront.net/#/week). On the morning after Diwali, 21 Oct 2025, Home read AQI 500 from a monitor 3.8 km away and the app said: avoid going out. On 9 Nov 2025 two places four kilometres apart read AQI 424 (Home) and 249 (the park), from different monitors. A city number cannot show that gap. (The app works out a GRAP stage from each monitor, as our estimate; the official stage is one decision for all of Delhi-NCR.) It costs about $4.50 a month idle to run, and $0.0008 for an assistant question, so a school or society can host its own. 1,263 tests pass in one command.
 
 **What I learned.** Keep the model's job small: rules decide, the AI only words, every number is checked. And read your own screenshots: mine showed AQI 500 beside the wrong stage.
 
