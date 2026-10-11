@@ -5,14 +5,14 @@ import { angleBetween, HORIZON_DEG } from './sphere';
 import { advectWith, speedOf, type Wind } from './wind';
 
 /** Roughly one star for each this many square pixels of map. */
-const PIXELS_PER_STAR = 900;
-const MAX_STARS = 700;
+const PIXELS_PER_STAR = 520;
+const MAX_STARS = 1100;
 /** How many frames a star lives, how long its tail is, in positions kept. */
 const LIFE_MIN = 90;
 const LIFE_MAX = 170;
-const TAIL = 56;
-/** Half the widest the sliver gets, in pixels. */
-const WIDTH = 2.5;
+const TAIL = 44;
+/** Half the widest the sliver gets, in pixels: fine, so there can be many. */
+const WIDTH = 1.5;
 
 interface Star {
   lat: number;
@@ -124,7 +124,7 @@ export function WindStars({
       const envelope = Math.sin(Math.PI * Math.min(1, s.age / s.life));
       if (envelope <= 0.02 || s.trail.length < 2) return;
       const speed = speedOf(field(s.lat, s.lng));
-      const strength = Math.min(0.9, 0.5 + speed / 16) * envelope;
+      const strength = Math.min(1, 0.62 + speed / 14) * envelope;
       const n = s.trail.length;
       // A sliver, as Windy draws it: full width a little behind the head, tapering to a point at the tail.
       // Drawn twice: the grey-blue body, then a narrower pale shine down its middle.
@@ -158,8 +158,8 @@ export function WindStars({
         ctx.fillStyle = fill;
         ctx.fill();
       };
-      sliver(1, `rgba(102, 126, 160, ${(strength * 0.65).toFixed(3)})`);
-      sliver(0.38, `rgba(240, 246, 255, ${(strength * 0.85).toFixed(3)})`);
+      sliver(1, `rgba(52, 72, 108, ${(strength * 0.85).toFixed(3)})`);
+      sliver(0.3, `rgba(226, 236, 252, ${(strength * 0.55).toFixed(3)})`);
     };
 
     const tick = (): void => {
