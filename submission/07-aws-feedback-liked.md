@@ -9,14 +9,3 @@ Step Functions. A person's tap became a step in the workflow, with no polling co
 EventBridge Scheduler. I liked that retries are a setting on the schedule itself. I set them to zero so a failed harvest waits for the next 15-minute run instead of stacking up behind it, and a test holds that (`infra/test/VayuStack.test.ts`).
 
 AWS Price List API. `aws pricing get-price-list-file-url` gave me the list prices, and I put the sums in `docs/cost.md`. The prices are for ap-south-1, with CloudFront at its India rate, so every line in the cost document is the list price for my region, not a guess, and can be checked against the source.
-
----
-
-Facts used
-
-- Assertion tests: `infra/test/VayuStack.test.ts` lines 35 (buckets block public access), 195 (one `SendTaskSuccess`), 362 and 423 (retries off); function time limit: line 699.
-- Conditional update and TTL: `apps/api/src/quota.ts`; 500 a day: `docs/cost.md` "What the limits allow", `apps/api/src/assistantRoute.ts` line 73; on demand: `docs/architecture.md`.
-- Cost per question, 98%, token cost, trace: `docs/cost.md` "Cost of one thing" and "How to check these figures".
-- `waitForTaskToken`, `TimeoutSecondsPath`: `infra/lib/alertLoopDefinition.ts` lines 41 and 50.
-- Scheduler retries off: `infra/lib/Harvest.ts` line 82, `infra/test/VayuStack.test.ts` lines 362-367.
-- Price List API: `docs/cost.md` opening and "How to check these figures".

@@ -9,14 +9,3 @@ CDK and CloudFormation. My first deploy failed, and the rollback failed too: an 
 EventBridge Scheduler. A schedule that never runs raises no error. I added a CloudWatch alarm on too few invocations, with missing data counted as bad (`infra/lib/Operations.ts`). A ready-made "did not fire" alarm would remove that work.
 
 Step Functions. `states:SendTaskSuccess` has no resource-level permission, so my API function grants it on `*` (`infra/lib/VayuStack.ts`). Letting me scope it to the state machine that issued the task token would close that gap.
-
----
-
-Facts used
-
-- Host 403: `docs/learning-log.md` row 1, `infra/lib/Site.ts` lines 133-137, `infra/test/VayuStack.test.ts` line 308.
-- Guardrail filter, `guardrail_intervened` seen by code (`packages/watch/src/phrase.ts` line 154), and "Wording by AI" label: `docs/learning-log.md` row 2, `docs/AS-BUILT.md` "Checked, not assumed", `infra/lib/Assistant.ts` (PROMPT_ATTACK filter; the call sets no trace).
-- Bare id versus inference profile, ARNs: `docs/SUBMISSION.md` "Feedback on AWS", `infra/lib/Assistant.ts` lines 12-13 and 98-105, `infra/lib/AlertLoop.ts` lines 89-100.
-- Failed deploy and rollback: `docs/learning-log.md` row 6, `docs/AS-BUILT.md` "Things found by testing the live site".
-- Alarm on missing invocations: `infra/lib/Operations.ts` (`TreatMissingData.BREACHING`), `infra/test/VayuStack.test.ts` lines 451-458, `docs/SUBMISSION.md` ("neither is a default").
-- No resource scope for the task-token action: `infra/lib/VayuStack.ts` lines 184-192.

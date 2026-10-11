@@ -106,6 +106,14 @@ Other fixes are in [`docs/learning-log.md`](learning-log.md).
 
 One cost is not capped: a flood against CloudFront itself. The stack makes its own budget only when given an email address, and I deployed without one; the two $50 budgets in my account were made by hand, and budgets only send email, they stop nothing. [`docs/cost.md`](cost.md) has the arithmetic.
 
+## What I learned
+
+- Make the rule smaller than the model. The model words; code decides and checks. Every failure I had with it (a guardrail that blocked my own instruction, a masked name read as a number) was a place where that line was not tight enough.
+- Read your own screenshots as a stranger would. A number can be right and the sentence beside it wrong.
+- Real AWS finds what tests do not: a Host header, a rollback that failed, a schedule that stops without an error.
+- Price a thing before you cap it. The guardrail was 98% of a question's cost, so that is where the caps went.
+- Say what you did not measure. It changed what I put in front of people.
+
 ## What is next
 
 Next is the smoke-decay test with the unit beside the cleaner: raise the room's PM2.5 with incense, log how fast it falls with the cleaner off, then on, and fit the decay. The room page's "Purifier on" marker is that same test, live. After that, I will put the unit beside a monitor for a few days and publish the difference. Later come Telegram alerts with a screen to link a chat, and the unit's readings sent to my API so a school can see many rooms.
