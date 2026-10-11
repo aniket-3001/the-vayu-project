@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { openMeteoWindGridRepo, windGridPoints } from './windGrid';
+import {
+  metNoWindGridRepo,
+  metNoWindPoints,
+  openMeteoWindGridRepo,
+  windGridPoints,
+  windGridWithFallback,
+} from './windGrid';
 
 const answerFor = (url: string): unknown => {
   const q = new URL(url).searchParams;
@@ -85,5 +91,82 @@ describe('the wind grid', () => {
       fetchImpl: () => Promise.resolve(new Response('{}', { status: 429 })),
     });
     await expect(down.grid()).rejects.toThrow(/429/u);
+  });
+});
+
+describe('the second source, MET Norway', () => {
+  const metAnswer = (url: string): unknown => {
+    const q = new URL(url).searchParams;
+    return {
+      properties: {
+        timeseries: [
+          {
+            data: {
+              instant: {
+                details: {
+                  wind_speed: 3 + Number(q.get('lat')) / 40,
+                  wind_from_direction: 200 + Number(q.get('lon')) / 2,
+                },
+              },
+            },
+          },
+        ],
+      },
+    };
+  };
+
+  it('has a grid of about two hundred points over the whole globe', () => {
+    const points = metNoWindPoints();
+    expect(points.length).toBeGreaterThan(150);
+    expect(points.length).toBeLessThan(260);
+    expect(points.some((p) => p.lat <= -60)).toBe(true);
+    expect(points.some((p) => p.lng <= -170)).toBe(true);
+  });
+
+  it('asks a point at a time, says who it is, and returns the wind it was given', async () => {
+    const agents = new Set<string>();
+    let busy = 0;
+    let most = 0;
+    const repo = metNoWindGridRepo({
+      concurrency: 5,
+      fetchImpl: async (input, init) => {
+        agents.add(String((init?.headers as Record<string, string> | undefined)?.['user-agent']));
+        busy += 1;
+        most = Math.max(most, busy);
+        await Promise.resolve();
+        busy -= 1;
+        return new Response(JSON.stringify(metAnswer(requestUrl(input))), { status: 200 });
+      },
+    });
+    const points = await repo.grid();
+    expect(points).toHaveLength(metNoWindPoints().length);
+    expect([...agents]).toHaveLength(1);
+    expect([...agents][0]).toMatch(/VayuAir/u);
+    expect(most).toBeLessThanOrEqual(5);
+    expect(points[0]?.speed).toBeGreaterThan(0);
+  });
+
+  it('gives up, rather than a patchy wind, when most points fail', async () => {
+    let n = 0;
+    const repo = metNoWindGridRepo({
+      fetchImpl: (input) => {
+        n += 1;
+        return Promise.resolve(
+          n % 4 === 0
+            ? new Response(JSON.stringify(metAnswer(requestUrl(input))), { status: 200 })
+            : new Response('', { status: 429 }),
+        );
+      },
+    });
+    await expect(repo.grid()).rejects.toThrow(/too little/u);
+  });
+
+  it('is used only when the first source fails', async () => {
+    const good = { grid: () => Promise.resolve([{ lat: 1, lng: 2, speed: 3, fromDeg: 4 }]) };
+    const down = { grid: () => Promise.reject(new Error('429')) };
+    const spare = { grid: () => Promise.resolve([{ lat: 9, lng: 9, speed: 9, fromDeg: 9 }]) };
+    expect((await windGridWithFallback(good, spare).grid())[0]?.lat).toBe(1);
+    expect((await windGridWithFallback(down, spare).grid())[0]?.lat).toBe(9);
+    await expect(windGridWithFallback(down, down).grid()).rejects.toThrow(/429/u);
   });
 });

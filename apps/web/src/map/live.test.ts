@@ -4,6 +4,8 @@ import {
   GRID,
   fetchFireCount,
   fetchWindFromApi,
+  fetchWindFromMetNo,
+  metNoPoints,
   fetchWindGrid,
   gridPoints,
   worldPoints,
@@ -148,5 +150,36 @@ describe('remembering for half an hour', () => {
     await expect(
       fetchWindFromApi('', () => Promise.resolve(new Response('{"points":[]}', { status: 200 }))),
     ).rejects.toThrow(/No wind/u);
+  });
+
+  it('has a second source, MET Norway, on a coarser grid of about two hundred points', async () => {
+    const points = metNoPoints();
+    expect(points.length).toBeGreaterThan(150);
+    expect(points.length).toBeLessThan(260);
+    const urls: string[] = [];
+    const wind = await fetchWindFromMetNo((input) => {
+      urls.push(requestUrl(input));
+      return Promise.resolve(
+        new Response(
+          JSON.stringify({
+            properties: {
+              timeseries: [
+                { data: { instant: { details: { wind_speed: 4.2, wind_from_direction: 285 } } } },
+              ],
+            },
+          }),
+          { status: 200 },
+        ),
+      );
+    });
+    expect(wind).toHaveLength(points.length);
+    expect(urls[0]).toMatch(/api\.met\.no.*lat=.*lon=/u);
+    expect(wind[0]).toMatchObject({ speed: 4.2, fromDeg: 285 });
+  });
+
+  it('gives no wind from MET Norway when most points fail, rather than a patchy one', async () => {
+    await expect(
+      fetchWindFromMetNo(() => Promise.resolve(new Response('', { status: 429 }))),
+    ).rejects.toThrow(/too little/u);
   });
 });

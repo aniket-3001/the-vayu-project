@@ -15,7 +15,9 @@ import {
   openMeteoGasRepo,
   openMeteoHistoryRepo,
   openMeteoWeatherForecastRepo,
+  metNoWindGridRepo,
   openMeteoWindGridRepo,
+  windGridWithFallback,
   openMeteoWeatherRepo,
 } from '@vayu/data';
 import {
@@ -113,7 +115,8 @@ function buildRoute(): Promise<ReturnType<typeof createRouter>> {
       forecastRepo: openMeteoForecastRepo(),
       weatherRepo: cachedWeatherRepo(openMeteoWeatherRepo(), 15 * 60_000),
       weatherForecastRepo: openMeteoWeatherForecastRepo(),
-      windRepo: openMeteoWindGridRepo(),
+      // Open-Meteo first; MET Norway when it has run out of allowance.
+      windRepo: windGridWithFallback(openMeteoWindGridRepo(), metNoWindGridRepo()),
       gasRepo: openMeteoGasRepo(),
       historyRepo: openMeteoHistoryRepo(),
       fireRepo: firmsFireRepo({ mapKey: firmsMapKey }),

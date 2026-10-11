@@ -108,6 +108,67 @@ export async function fetchWindGrid(
   return winds;
 }
 
+/** The grid MET Norway is asked for, a point at a time: a coarser one, about two hundred requests. */
+export function metNoPoints(): readonly { readonly lat: number; readonly lng: number }[] {
+  const points: { lat: number; lng: number }[] = [];
+  for (let lat = GRID.south; lat <= GRID.north; lat += 4)
+    for (let lng = GRID.west; lng <= GRID.east; lng += 4) points.push({ lat, lng });
+  for (let lat = -60; lat <= 60; lat += 20) {
+    for (let lng = -180; lng < 180; lng += 20) {
+      const inside =
+        lat >= GRID.south - 2 &&
+        lat <= GRID.north + 2 &&
+        lng >= GRID.west - 2 &&
+        lng <= GRID.east + 2;
+      if (!inside) points.push({ lat, lng });
+    }
+  }
+  return points;
+}
+
+const MET_NO_URL = 'https://api.met.no/weatherapi/locationforecast/2.0/compact';
+
+/**
+ * The wind from MET Norway's Locationforecast, which needs no key and does not share Open-Meteo's daily allowance. It
+ * is the second source when Open-Meteo has turned the browser away: a coarser grid, six points at a time. Points
+ * that fail are left out, and with fewer than half there is no wind (it throws), so a patchy one is never shown.
+ */
+export async function fetchWindFromMetNo(
+  fetchImpl: typeof fetch = fetch,
+): Promise<readonly WindPoint[]> {
+  const wanted = metNoPoints();
+  const out: (WindPoint | undefined)[] = new Array<WindPoint | undefined>(wanted.length);
+  let next = 0;
+  const worker = async (): Promise<void> => {
+    for (;;) {
+      const i = next;
+      next += 1;
+      const at = wanted[i];
+      if (at === undefined) return;
+      try {
+        const res = await fetchImpl(`${MET_NO_URL}?lat=${String(at.lat)}&lon=${String(at.lng)}`);
+        if (!res.ok) continue;
+        const body = (await res.json()) as {
+          properties?: {
+            timeseries?: { data?: { instant?: { details?: Record<string, unknown> } } }[];
+          };
+        };
+        const details = body.properties?.timeseries?.[0]?.data?.instant?.details;
+        const speed = details?.wind_speed;
+        const fromDeg = details?.wind_from_direction;
+        if (typeof speed === 'number' && typeof fromDeg === 'number')
+          out[i] = { lat: at.lat, lng: at.lng, speed, fromDeg };
+      } catch {
+        // This point is left out.
+      }
+    }
+  };
+  await Promise.all(Array.from({ length: 6 }, worker));
+  const winds = out.filter((p): p is WindPoint => p !== undefined);
+  if (winds.length < wanted.length / 2) throw new Error('MET Norway gave too little wind');
+  return winds;
+}
+
 /**
  * The wind from our own API: the same grid, asked of the weather model once for everyone and kept half an hour, so no
  * visitor's address is spent asking it. Throws when the API has none (it answers 502 rather than guess).

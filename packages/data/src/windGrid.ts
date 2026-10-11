@@ -97,3 +97,118 @@ export function openMeteoWindGridRepo(options: OpenMeteoWindGridOptions = {}): W
     },
   };
 }
+
+/** The grid for MET Norway, which answers one point at a time: a coarser one, about two hundred requests in all. */
+export function metNoWindPoints(): readonly { readonly lat: number; readonly lng: number }[] {
+  const points: { lat: number; lng: number }[] = [];
+  for (let lat = CLOSE.south; lat <= CLOSE.north; lat += 4)
+    for (let lng = CLOSE.west; lng <= CLOSE.east; lng += 4) points.push({ lat, lng });
+  for (let lat = -60; lat <= 60; lat += 20) {
+    for (let lng = -180; lng < 180; lng += 20) {
+      const inside =
+        lat >= CLOSE.south - 2 &&
+        lat <= CLOSE.north + 2 &&
+        lng >= CLOSE.west - 2 &&
+        lng <= CLOSE.east + 2;
+      if (!inside) points.push({ lat, lng });
+    }
+  }
+  return points;
+}
+
+const MetNo = z.object({
+  properties: z.object({
+    timeseries: z
+      .array(
+        z.object({
+          data: z.object({
+            instant: z.object({
+              details: z.object({
+                wind_speed: z.number().optional(),
+                wind_from_direction: z.number().optional(),
+              }),
+            }),
+          }),
+        }),
+      )
+      .min(1),
+  }),
+});
+
+export interface MetNoWindGridOptions {
+  readonly baseUrl?: string;
+  readonly fetchImpl?: typeof fetch;
+  /** MET Norway asks every app to say who it is. */
+  readonly userAgent?: string;
+  readonly keepMs?: number;
+  readonly now?: () => number;
+  /** How many points are asked for at once. */
+  readonly concurrency?: number;
+}
+
+/**
+ * The wind from MET Norway's Locationforecast (no key; free for non-commercial use with a named app, 20 requests a
+ * second at most; built on ECMWF and its own model). It is the second source, for when Open-Meteo is out of
+ * allowance: a coarser grid, a point at a time, a few at once, kept half an hour. Points that fail are left out, and
+ * with fewer than half the grid there is no answer at all rather than a patchy wind.
+ */
+export function metNoWindGridRepo(options: MetNoWindGridOptions = {}): WindGridRepo {
+  const baseUrl = options.baseUrl ?? 'https://api.met.no/weatherapi/locationforecast/2.0/compact';
+  const fetchImpl = options.fetchImpl ?? fetch;
+  const userAgent =
+    options.userAgent ?? 'VayuAir/0.1 github.com/vayu-air (air quality app, prototype)';
+  const keepMs = options.keepMs ?? 30 * 60_000;
+  const now = options.now ?? Date.now;
+  const concurrency = Math.max(1, options.concurrency ?? 8);
+  let kept: { readonly at: number; readonly points: readonly WindPoint[] } | undefined;
+  return {
+    async grid() {
+      if (kept !== undefined && now() - kept.at < keepMs) return kept.points;
+      const wanted = metNoWindPoints();
+      const out: (WindPoint | undefined)[] = new Array<WindPoint | undefined>(wanted.length);
+      let next = 0;
+      const worker = async (): Promise<void> => {
+        for (;;) {
+          const i = next;
+          next += 1;
+          const at = wanted[i];
+          if (at === undefined) return;
+          try {
+            const res = await fetchImpl(`${baseUrl}?lat=${String(at.lat)}&lon=${String(at.lng)}`, {
+              headers: { 'user-agent': userAgent },
+            });
+            if (!res.ok) continue;
+            const body = MetNo.safeParse(await res.json());
+            const details = body.success
+              ? body.data.properties.timeseries[0]?.data.instant.details
+              : undefined;
+            const speed = details?.wind_speed;
+            const fromDeg = details?.wind_from_direction;
+            if (typeof speed === 'number' && typeof fromDeg === 'number')
+              out[i] = { lat: at.lat, lng: at.lng, speed, fromDeg: ((fromDeg % 360) + 360) % 360 };
+          } catch {
+            // This point is left out.
+          }
+        }
+      };
+      await Promise.all(Array.from({ length: concurrency }, worker));
+      const points = out.filter((p): p is WindPoint => p !== undefined);
+      if (points.length < wanted.length / 2) throw new Error('MET Norway gave too little wind');
+      kept = { at: now(), points };
+      return points;
+    },
+  };
+}
+
+/** Asks the first source, and the second only when the first fails: so the wind is real whichever one is out of allowance. */
+export function windGridWithFallback(primary: WindGridRepo, fallback: WindGridRepo): WindGridRepo {
+  return {
+    async grid() {
+      try {
+        return await primary.grid();
+      } catch {
+        return fallback.grid();
+      }
+    },
+  };
+}

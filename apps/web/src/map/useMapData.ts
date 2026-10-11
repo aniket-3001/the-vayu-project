@@ -1,5 +1,12 @@
 import { useEffect, useRef, useState } from 'react';
-import { fetchWindFromApi, fetchWindGrid, recall, remember, type WindPoint } from './live';
+import {
+  fetchWindFromApi,
+  fetchWindFromMetNo,
+  fetchWindGrid,
+  recall,
+  remember,
+  type WindPoint,
+} from './live';
 import { API_URL } from '../config';
 import { readDemo } from '../demo/state';
 import { airStore } from '../air/store';
@@ -48,9 +55,11 @@ export function useMapData(fetchImpl: typeof fetch = fetch): MapData {
       if (current) setData((now) => ({ ...now, ...patch }));
     };
     if (missing.current.wind) {
-      // Our API first (the wind is asked of the weather model once for everyone); the model itself only if that fails.
+      // Our API first (the wind is asked of the weather models once for everyone); then Open-Meteo itself, and MET
+      // Norway, which has no daily allowance to run out of, if that is turned away. Never a made-up wind.
       fetchWindFromApi(API_URL, fetchImpl)
         .catch(() => fetchWindGrid(fetchImpl))
+        .catch(() => fetchWindFromMetNo(fetchImpl))
         .then(
           (wind) => {
             remember('wind', wind);
