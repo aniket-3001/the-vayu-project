@@ -48,17 +48,17 @@ CADR (clean air delivery rate), the number purifiers are rated by, also depends 
 
 Everything is one CDK app, in Mumbai (`ap-south-1`) except one call: Nova Micro is reached through an Asia Pacific inference profile, so the model may run in another Asia Pacific region. The AWS open source I used is the CDK and Powertools for AWS Lambda (Logger and Tracer).
 
-| Service                             | Why it is there                                                                                                                                                     |
-| ----------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| CloudFront and S3                   | One address for the page and the API, a private bucket                                                                                                              |
-| API Gateway and Lambda              | Every route checks its request and answer against a contract                                                                                                        |
-| DynamoDB                            | The cache the scheduled jobs fill, the quotas, items that expire                                                                                                    |
-| EventBridge Scheduler               | A 15-minute job keeps four reference places warm and a 30-minute job fills the map's monitors; for other places the API fetches on request and CloudFront caches it |
-| Bedrock with a guardrail, and Polly | Bedrock rewords an answer the rules decided and never decides; Polly reads it aloud                                                                                 |
-| Step Functions                      | The alert loop waits for a tap, reminds, escalates; built and tested, live sends switched off                                                                       |
-| Cognito and an API Gateway authorizer | Optional accounts: email and password, a saved copy of your places per person, checked by token |
-| Secrets Manager and SSM             | No key in code; one command switches the assistant off                                                                                                              |
-| CloudWatch and X-Ray                | An alarm for each thing that can stop, and traces                                                                                                                   |
+| Service                               | Why it is there                                                                                                                                                     |
+| ------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| CloudFront and S3                     | One address for the page and the API, a private bucket                                                                                                              |
+| API Gateway and Lambda                | Every route checks its request and answer against a contract                                                                                                        |
+| DynamoDB                              | The cache the scheduled jobs fill, the quotas, items that expire                                                                                                    |
+| EventBridge Scheduler                 | A 15-minute job keeps four reference places warm and a 30-minute job fills the map's monitors; for other places the API fetches on request and CloudFront caches it |
+| Bedrock with a guardrail, and Polly   | Bedrock rewords an answer the rules decided and never decides; Polly reads it aloud                                                                                 |
+| Step Functions                        | The alert loop waits for a tap, reminds, escalates; built and tested, live sends switched off                                                                       |
+| Cognito and an API Gateway authorizer | Optional accounts: email and password, a saved copy of your places per person, checked by token                                                                     |
+| Secrets Manager and SSM               | No key in code; one command switches the assistant off                                                                                                              |
+| CloudWatch and X-Ray                  | An alarm for each thing that can stop, and traces                                                                                                                   |
 
 Visitors' browsers still call Open-Meteo to search for a place by name (it sends only the name typed) and OpenFreeMap for map tiles. An IoT Core, Firehose and Athena path is built, but the unit talks straight to the phone.
 
@@ -88,7 +88,7 @@ Other fixes are in [`docs/learning-log.md`](https://github.com/hrsh-kr/the-vayu-
 
 ## Numbers
 
-- 1,263 tests pass in one command, `make prove`, which also runs lint, types, `cdk synth`, and a check that the deployed bundle holds no prototype code.
+- 1,313 tests pass in one command, `make prove`, which also runs lint, types, `cdk synth`, and a check that the deployed bundle holds no prototype code.
 - The stack costs about $4.50 a month idle, at list prices. An assistant question costs about $0.0008 (almost all of it the guardrail), and a visit at most $0.00014.
 - Caps: 40 assistant questions per caller and 500 a day, 12,000 spoken characters per caller and 60,000 a day, 25 API requests a second. One parameter switches the assistant off.
 

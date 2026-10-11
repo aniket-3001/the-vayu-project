@@ -11,7 +11,7 @@ For any "impact" or "who benefits" box.
 - 31 Oct 2025: the alert counted 85 satellite fires in the last 24 hours, near Home or upwind, and said smoke could reach it within a day or two.
 - These are replayed from public archives (OpenAQ, Open-Meteo, NASA FIRMS) in the app itself, labelled "recorded". The band is my estimate for a place's own air, never the official order. The recorded days play what was recorded next as the forecast, so they show the features, not forecast accuracy.
 
-**Why others can use it.** It is free, and an account is optional: it only saves your places and family. It costs about $4.50 a month idle at list prices and $0.0008 an assistant question, so a school or society can run its own copy. The code is public (https://github.com/hrsh-kr/the-vayu-project) with 1,263 tests, and the app is live at https://d3lmq1mze2gup3.cloudfront.net.
+**Why others can use it.** It is free, and an account is optional: it only saves your places and family. It costs about $4.50 a month idle at list prices and $0.0008 an assistant question, so a school or society can run its own copy. The code is public (https://github.com/hrsh-kr/the-vayu-project) with 1,313 tests, and the app is live at https://d3lmq1mze2gup3.cloudfront.net.
 
 **Honest limits.** I have not run a pilot, so I make no claim of users or health outcomes. The unit has not been compared with a monitor. The cleaner I built (about 191 cfm of airflow, ₹5,000 of parts) has no CADR measured.
 
