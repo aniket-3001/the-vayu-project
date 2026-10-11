@@ -4,11 +4,11 @@ DynamoDB. The assistant's 500-a-day cap in `apps/api/src/quota.ts` is one condit
 
 Bedrock. One Converse call to Nova Micro rewords an answer, and the guardrail checks the question and the answer, one text unit each. With the trace turned on for a test call, the response listed the text units and tokens, so a question's cost, $0.0008 (98% of it the guardrail), is measured on the deployed guardrail, not guessed (`docs/cost.md`).
 
-Step Functions. What I liked: a person's tap became a step in the workflow with no polling code. `waitForTaskToken` pauses the alert loop until the tap, and `TimeoutSecondsPath` takes each wait's length from the input, so no alert waits for ever.
+Step Functions. A person's tap became a step in the workflow, with no polling code. `waitForTaskToken` pauses the alert loop until the tap, and `TimeoutSecondsPath` takes each wait's length from the input, so no alert waits for ever.
 
 EventBridge Scheduler. I liked that retries are a setting on the schedule itself. I set them to zero so a failed harvest waits for the next 15-minute run instead of stacking up behind it, and a test holds that (`infra/test/VayuStack.test.ts`).
 
-AWS Price List API. I had Claude Code read it with `aws pricing get-price-list-file-url` and put the sums in `docs/cost.md`. The prices are for ap-south-1, with CloudFront at its India rate, so each line can be checked against the source.
+AWS Price List API. I had Claude Code read it with `aws pricing get-price-list-file-url` and put the sums in `docs/cost.md`. The prices are for ap-south-1, with CloudFront at its India rate, so every line in the cost document is the list price for my region, not a guess, and can be checked against the source.
 
 ---
 
