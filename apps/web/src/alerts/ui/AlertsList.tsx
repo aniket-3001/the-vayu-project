@@ -6,10 +6,12 @@ import type { TodayData } from '../../today/types';
 import { dayWord, type Alert } from '../model';
 import { ALERT_ICONS, AlertSheet } from './AlertSheet';
 import { AuthoritiesSheet } from './AuthoritiesSheet';
+import { SceneBackdrop, SceneVeil, sceneFor } from './AlertScene';
 
 /**
- * What to watch for in the next three days, worst first, as a short list down the page. A severe one (a GRAP
- * stage that is high, a smog day) glows red with a pulsing dotted edge; the others are soft yellow. Pressing one
+ * What to watch for in the next three days, worst first, as a short list down the page. Each has its own moving
+ * scene (rain, burning, wind, haze, a GRAP stage in its level's colour) behind a translucent card with the words; a
+ * severe one glows with a pulsing dotted edge. Pressing one
  * opens it up close, with the short reason it is there.
  */
 export function AlertsList({
@@ -36,28 +38,33 @@ export function AlertsList({
       <ul className="alert-list" aria-label="Alerts">
         {alerts.map((alert) => {
           const Icon = ALERT_ICONS[alert.kind];
+          const theme = sceneFor(alert);
           return (
             <li key={alert.id}>
               <button
                 type="button"
-                className={`alert-row ${alert.severity} ${alert.stage === undefined ? alert.kind : `grap-s${String(alert.stage)}`}${alert.day === 0 ? ' now' : ''}`}
+                className={`alert-row scene ${theme.className} ${alert.severity}${alert.day === 0 ? ' now' : ''}`}
+                style={theme.style}
                 aria-haspopup="dialog"
                 onClick={() => {
                   setOpen(alert);
                 }}
               >
-                <span className={`alert-icon alert-${alert.kind}`}>
-                  <Icon size={20} strokeWidth={2} aria-hidden="true" />
-                </span>
-                <span className="alert-words">
-                  <strong>{alert.title}</strong>
-                  <span className="small">
-                    {alert.place !== undefined && <b className="alert-place">{alert.place} · </b>}
-                    {alert.body}
+                <SceneBackdrop alert={alert} compact />
+                <SceneVeil alert={alert} compact as="span" className="alert-veil">
+                  <span className={`alert-icon alert-${alert.kind}`}>
+                    <Icon size={20} strokeWidth={2} aria-hidden="true" />
                   </span>
-                </span>
-                <Pill>{dayWord(alert.day, data)}</Pill>
-                <ChevronRight size={18} aria-hidden="true" className="alert-go" />
+                  <span className="alert-words">
+                    <strong>{alert.title}</strong>
+                    <span className="small">
+                      {alert.place !== undefined && <b className="alert-place">{alert.place} · </b>}
+                      {alert.body}
+                    </span>
+                  </span>
+                  <Pill>{dayWord(alert.day, data)}</Pill>
+                  <ChevronRight size={18} aria-hidden="true" className="alert-go" />
+                </SceneVeil>
               </button>
             </li>
           );

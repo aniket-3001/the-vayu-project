@@ -2,6 +2,7 @@
 import { cleanup, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it } from 'vitest';
+import { GRAP_COLOURS } from '../../design/levels';
 import { sampleDay } from '../../today/sample';
 import { alertsFor } from '../model';
 import { AlertsList } from './AlertsList';
@@ -147,6 +148,63 @@ describe('the alerts list', () => {
     await userEvent.click(within(sheet).getByRole('button', { name: 'Done' }));
     await userEvent.click(screen.getByRole('button', { name: /Heavy stubble burning/u }));
     sheet = screen.getByRole('dialog');
-    expect(sheet.querySelector('canvas.air-particles')).toHaveAttribute('data-kind', 'smoke');
+    expect(sheet.querySelector('canvas.air-particles')).toHaveAttribute('data-kind', 'sparks');
+  });
+
+  describe('as scenes', () => {
+    const withSky = (
+      sky: Partial<NonNullable<ReturnType<typeof sampleDay>['daily'][number]['sky']>>,
+    ): ReturnType<typeof sampleDay> => {
+      const data = sampleDay('moderate');
+      const daily = data.daily.map((d, i) =>
+        i === 1 && d.sky !== undefined ? { ...d, sky: { ...d.sky, ...sky } } : d,
+      );
+      return { ...data, daily };
+    };
+
+    it('wear the AQI scale’s colour for a GRAP stage, on the row and in the sheet', async () => {
+      open('hazardous', 127);
+      const row = screen.getByRole('button', { name: /GRAP Stage IV likely today/u });
+      expect(row).toHaveClass('scene', 'scene-air');
+      expect(row.style.getPropertyValue('--scene-solid')).toBe(GRAP_COLOURS[4].solid);
+      await userEvent.click(row);
+      const sheet = screen.getByRole('dialog');
+      expect(sheet).toHaveClass('scene-sheet', 'scene-air');
+      expect(sheet.style.getPropertyValue('--scene-solid')).toBe(GRAP_COLOURS[4].solid);
+      // The words are on a translucent card over the scene.
+      expect(sheet.querySelector('.scene-veil')).toHaveTextContent('Why');
+    });
+
+    it('make rain a sky-blue card under clouds, with drops beading and sliding down the text', async () => {
+      const data = withSky({ rainChancePct: 90, condition: 'rain' });
+      render(<AlertsList alerts={alertsFor(data, undefined)} data={data} />);
+      const row = screen.getByRole('button', { name: /Rain tomorrow should clear the air/u });
+      expect(row).toHaveClass('scene-rain');
+      await userEvent.click(row);
+      const sheet = screen.getByRole('dialog');
+      const kinds = Array.from(sheet.querySelectorAll('canvas.air-particles')).map((c) =>
+        c.getAttribute('data-kind'),
+      );
+      expect(kinds).toEqual(['rain', 'drip']);
+      // The beads are on the text card itself.
+      expect(sheet.querySelector('.scene-veil > canvas[data-kind="drip"]')).toBeInTheDocument();
+    });
+
+    it('make burning a dark card with sparks, and wind an airy one with streaks', async () => {
+      open('hazardous', 127);
+      expect(screen.getByRole('button', { name: /Heavy stubble burning/u })).toHaveClass(
+        'scene-stubble',
+      );
+      cleanup();
+      const data = withSky({ windKmh: 34, rainChancePct: 5, condition: 'clear' });
+      render(<AlertsList alerts={alertsFor(data, undefined)} data={data} />);
+      const row = screen.getByRole('button', { name: /Wind tomorrow should thin the air/u });
+      expect(row).toHaveClass('scene-wind');
+      await userEvent.click(row);
+      expect(screen.getByRole('dialog').querySelector('canvas.air-particles')).toHaveAttribute(
+        'data-kind',
+        'wind',
+      );
+    });
   });
 });

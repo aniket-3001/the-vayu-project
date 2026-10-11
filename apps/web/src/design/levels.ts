@@ -88,3 +88,16 @@ export function levelForAqi(aqi: number): Level {
   for (const level of LEVELS) if (aqi >= level.from) found = level;
   return found;
 }
+
+/** The colours a GRAP stage wears, taken from the AQI scale: the level its air falls in. Stage IV is the deepest. */
+export interface StageColours {
+  readonly solid: string;
+  readonly soft: string;
+  readonly onSolid: string;
+}
+export const GRAP_COLOURS: Readonly<Record<1 | 2 | 3 | 4, StageColours>> = {
+  1: { solid: '#f39595', soft: '#fde4e4', onSolid: INK },
+  2: { solid: '#c4a3e3', soft: '#f0e6f8', onSolid: INK },
+  3: { solid: '#b0527a', soft: '#f4dde6', onSolid: '#ffffff' },
+  4: { solid: '#8a3560', soft: '#efd3e1', onSolid: '#ffffff' },
+};

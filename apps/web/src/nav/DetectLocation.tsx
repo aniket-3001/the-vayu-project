@@ -8,8 +8,8 @@ const NOTES = {
 } as const;
 
 /**
- * Detect my location: one switch for live location, wherever it is wanted on a screen. On, the app follows the
- * device while the page is open; off, only the places you set count. It says plainly when the browser refused.
+ * Detect my location: one switch for live location, wherever it is wanted on a screen. On, the app uses the
+ * device's position while the page is open; off, only the places you set count. It says plainly when the browser refused.
  */
 export function DetectLocation({
   className = '',
@@ -37,7 +37,11 @@ export function DetectLocation({
       >
         <LocateFixed size={18} strokeWidth={2} aria-hidden="true" />
         <span>
-          {status === 'asking' ? 'Finding you…' : on ? 'Following you' : 'Detect my location'}
+          {status === 'asking'
+            ? 'Finding you…'
+            : on
+              ? 'Live location detected'
+              : 'Detect my location'}
         </span>
       </button>
       {note !== undefined && (

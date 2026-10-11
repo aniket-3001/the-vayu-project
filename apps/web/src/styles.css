@@ -4401,14 +4401,10 @@ h2 {
 }
 .alert-row.severe {
   border: 2.5px dotted #d92d20;
-  background: #ffe4e1;
   box-shadow:
     0 0 0 0 rgb(217 45 32 / 0.55),
     0 0 16px 2px rgb(217 45 32 / 0.45);
   animation: alert-glow 1.5s ease-in-out infinite;
-}
-.alert-row.severe .alert-words .small {
-  color: #7a1d16;
 }
 @keyframes alert-glow {
   0%,
@@ -4696,38 +4692,13 @@ h2 {
   }
 }
 
-/* GRAP stages: yellow, orange, red, purple. The top two glow and pulse a dotted edge. */
-.alert-row.grap-s1 {
-  border-color: #ecd566;
-  background: #fff7c2;
-}
-.alert-row.grap-s2 {
-  border-color: #f0a856;
-  background: #ffe2c2;
-}
-.alert-row.grap-s3 {
-  --edge: #d92d20;
-  --glow: 217 45 32;
-  background: #ffdad5;
-}
-.alert-row.grap-s4 {
-  --edge: #7d3cc8;
-  --glow: 125 60 200;
-  background: #eadcff;
-}
-.alert-row.smog {
-  --edge: #d92d20;
-  --glow: 217 45 32;
-}
+/* GRAP stages wear the AQI scale's colours; a severe alert pulses a dotted edge in its colour. */
 .alert-row.severe {
   border: 2.5px dotted var(--edge, #d92d20);
   box-shadow:
     0 0 0 0 rgb(var(--glow, 217 45 32) / 0.55),
     0 0 16px 2px rgb(var(--glow, 217 45 32) / 0.45);
   animation: alert-pulse 1.5s ease-in-out infinite;
-}
-.alert-row.grap-s4 .alert-words .small {
-  color: #3f1a73;
 }
 @keyframes alert-pulse {
   0%,
@@ -4938,24 +4909,59 @@ h2 {
   font-weight: 700;
 }
 
-/* A profile in Exposure: press it to switch to them, the pencil beside it to edit their day */
+/* A profile in Exposure: one pill. Press it to switch to them; the soft pencil inside it, at the right, edits their day */
 .person-wrap {
   display: inline-flex;
   flex: none;
   align-items: center;
   gap: 2px;
+  padding-right: 8px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--card);
+}
+.person-wrap .person {
+  border: 0;
+  background: none;
+  box-shadow: none;
+}
+.person-wrap.selected {
+  border-color: #3b82c4;
+  background: color-mix(in srgb, #3b82c4 9%, var(--card));
+  box-shadow: inset 0 0 0 1px #3b82c4;
 }
 .person-edit {
   display: grid;
+  flex: none;
   place-items: center;
-  width: 36px;
-  height: 36px;
+  width: 30px;
+  height: 30px;
   padding: 0;
-  border: 1px solid var(--line);
+  border: 0;
   border-radius: 50%;
-  background: var(--card);
-  color: #2f6aa3;
+  background: rgb(47 106 163 / 0.1);
+  color: rgb(47 106 163 / 0.7);
   cursor: pointer;
+}
+.person-edit:hover,
+.person-edit:focus-visible {
+  background: rgb(47 106 163 / 0.18);
+  color: #2f6aa3;
+}
+
+/* The label on the combined bar, and the AQI scale for reference under the day's numbers */
+.bar-label {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 4px 10px;
+  margin: 6px 0 -4px;
+}
+.summary-scale,
+.tips-scale {
+  margin-top: 4px;
+  padding-bottom: 12px;
 }
 
 /* The three buttons sit inside the bottom card of the map (a column to its right) and the AIR Lens (a row after the
@@ -5109,16 +5115,17 @@ table.hourly .row-label {
   white-space: nowrap;
 }
 
-/* A GRAP stage on a card: a pill that glows in the stage's colour (yellow, orange, red, purple) */
+/* A GRAP stage on a card: a pill in the AQI scale's colour for the stage, which glows (pink, purple, plum, deep plum) */
 .grap-pill {
-  --glow: 245 196 0;
+  --glow: 243 149 149;
+  --pill-ink: #334155;
   display: inline-flex;
   align-items: center;
   padding: 2px 9px;
   border: 1.5px solid rgb(var(--glow));
   border-radius: 999px;
-  background: #fff;
-  color: #2b3645;
+  background: rgb(var(--glow));
+  color: var(--pill-ink);
   font-size: 11.5px;
   font-weight: 800;
   letter-spacing: 0.04em;
@@ -5126,13 +5133,15 @@ table.hourly .row-label {
   animation: grap-glow 2s ease-in-out infinite;
 }
 .grap-pill.grap-s2 {
-  --glow: 240 138 36;
+  --glow: 196 163 227;
 }
 .grap-pill.grap-s3 {
-  --glow: 224 49 49;
+  --glow: 176 82 122;
+  --pill-ink: #fff;
 }
 .grap-pill.grap-s4 {
-  --glow: 142 68 216;
+  --glow: 138 53 96;
+  --pill-ink: #fff;
 }
 @keyframes grap-glow {
   50% {
@@ -5196,10 +5205,6 @@ table.hourly .row-label {
   width: 100%;
   height: 100%;
   pointer-events: none;
-}
-.alert-row.good {
-  border-color: #b9d8ee;
-  background: #e8f4fc;
 }
 
 /* Exposure as straight lines: the lines and the hour window on the left, the day's answer on the right */
@@ -5361,5 +5366,177 @@ table.hourly .row-label {
   }
   .exposure-left > .timeline {
     padding-left: 83px;
+  }
+}
+
+/* ---- Alerts as scenes: a moving picture behind a translucent card with the words ---- */
+.scene {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+}
+.scene > .air-particles {
+  z-index: 0;
+}
+/* The scene's own colours: a GRAP stage and smog use the AQI scale's colour (set inline); the others are fixed */
+.scene.scene-air {
+  background: linear-gradient(
+    165deg,
+    var(--scene-solid, #f39595) 0%,
+    var(--scene-soft, #fde4e4) 100%
+  );
+}
+.scene.scene-rain {
+  background: linear-gradient(180deg, #5a687e 0%, #7f9cba 24%, #a9d0ec 58%, #d6ecfb 100%);
+}
+.scene.scene-stubble {
+  background:
+    radial-gradient(120% 60% at 50% 110%, rgb(255 110 30 / 0.42), transparent 70%),
+    linear-gradient(180deg, #221915 0%, #2f1e17 62%, #3d2216 100%);
+}
+.scene.scene-wind {
+  background: linear-gradient(180deg, #cfeeee 0%, #e6f6f4 60%, #f2fbf8 100%);
+}
+
+/* The translucent card the words sit on */
+.scene-veil {
+  position: relative;
+  z-index: 1;
+  overflow: hidden;
+  border: 1px solid rgb(255 255 255 / 0.7);
+  border-radius: 16px;
+  background: rgb(255 255 255 / 0.44);
+  color: var(--text);
+  font-weight: 600;
+  -webkit-backdrop-filter: blur(1.5px) saturate(1.15);
+  backdrop-filter: blur(1.5px) saturate(1.15);
+}
+.scene-veil > :not(.air-particles) {
+  position: relative;
+  z-index: 1;
+}
+.scene-veil > .air-particles {
+  z-index: 0;
+}
+.scene-rain .scene-veil {
+  border-color: rgb(255 255 255 / 0.75);
+  background: rgb(176 218 248 / 0.55);
+}
+.scene-wind .scene-veil {
+  background: rgb(255 255 255 / 0.4);
+}
+.scene-stubble .scene-veil {
+  border-color: rgb(255 150 80 / 0.28);
+  background: rgb(34 24 20 / 0.5);
+  color: #fdeee4;
+}
+.scene-stubble .scene-veil .muted,
+.scene-stubble .scene-veil .small,
+.scene-stubble .scene-veil h3,
+.scene-stubble .scene-veil .scene-fine {
+  color: #f1cdb8;
+}
+.scene-stubble .scene-veil .pill {
+  background: rgb(255 150 80 / 0.2);
+  border-color: rgb(255 150 80 / 0.4);
+  color: #ffd9bf;
+}
+
+/* In the list: the row is the scene and the veil is inset in it so the picture shows around the words */
+.alert-row.scene {
+  padding: 6px;
+  border: 1px solid rgb(255 255 255 / 0.6);
+  background-clip: padding-box;
+}
+.alert-row.scene.severe {
+  border: 2.5px dotted var(--edge, #d92d20);
+}
+.alert-row .alert-veil {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-width: 0;
+  padding: 8px 10px;
+  border-radius: 11px;
+}
+.alert-row .alert-words .small,
+.alert-row .alert-words strong {
+  color: inherit;
+}
+.alert-row .alert-words strong {
+  font-weight: 800;
+}
+.alert-row .alert-words .small {
+  font-weight: 600;
+  opacity: 0.92;
+}
+.alert-row.scene-stubble .alert-icon {
+  background: rgb(255 150 80 / 0.25);
+  color: #ffd9bf;
+}
+
+/* Up close: the sheet is the scene, the words scroll inside it */
+.alert-sheet.scene-sheet {
+  display: block;
+  padding: 0;
+  overflow: hidden;
+}
+.scene-sheet > .air-particles {
+  position: absolute;
+  inset: 0;
+}
+.scene-sheet .sheet-x {
+  border-radius: 50%;
+  background: rgb(255 255 255 / 0.7);
+  color: #334155;
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 3;
+}
+.scene-scroll {
+  position: relative;
+  z-index: 1;
+  max-height: 88dvh;
+  padding: 64px 12px calc(18px + env(safe-area-inset-bottom));
+  overflow-y: auto;
+}
+.scene-card {
+  display: grid;
+  gap: 14px;
+  padding: 16px 14px;
+  border-radius: 20px;
+}
+.scene-card h3 {
+  color: inherit;
+  opacity: 0.8;
+  font-weight: 800;
+}
+.scene-card p,
+.scene-card li,
+.scene-card .todo {
+  font-weight: 650;
+}
+.scene-card .alert-hero h2 {
+  font-weight: 800;
+}
+.scene-card .scene-fine {
+  opacity: 0.85;
+}
+.scene-card .plain {
+  color: inherit;
+}
+.scene-card .alert-big-icon {
+  background: rgb(255 255 255 / 0.8);
+}
+.scene-stubble .scene-card .alert-big-icon {
+  background: rgb(255 140 60 / 0.25);
+  color: #ffc9a0;
+  box-shadow: 0 0 30px -4px rgb(255 120 40 / 0.55);
+}
+@media (prefers-reduced-motion: reduce) {
+  .scene .air-particles {
+    opacity: 0.85;
   }
 }

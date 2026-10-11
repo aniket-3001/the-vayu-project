@@ -1,6 +1,5 @@
 // @vitest-environment jsdom
 import { cleanup, render, screen, within } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it } from 'vitest';
 import { levelForAqi } from '../../design/levels';
 import { SAMPLE_IDS, sampleDay } from '../sample';
@@ -29,7 +28,7 @@ describe('the Today screen', () => {
     }
   });
 
-  it('gives 48 hourly columns, 7 daily rows and 6 pollutant tiles, each with units', () => {
+  it('gives 48 hourly columns, 5 daily rows and 6 pollutant tiles, each with units', () => {
     const day = sampleDay('unhealthy');
     render(<TodayScreen data={day} />);
     const table = screen.getByRole('table');
@@ -38,7 +37,7 @@ describe('the Today screen', () => {
     expect(within(table).getByRole('rowheader', { name: 'Humidity, %' })).toBeInTheDocument();
     expect(
       within(screen.getByRole('region', { name: /Daily forecast/u })).getAllByRole('listitem'),
-    ).toHaveLength(7);
+    ).toHaveLength(5);
     const tiles = within(screen.getByRole('region', { name: 'Air pollutants' })).getAllByText(
       /µg\/m³/u,
     );
@@ -68,25 +67,23 @@ describe('the Today screen', () => {
       );
   });
 
-  it('shows all seven days with 7 days chosen, saying where the air forecast does not reach', () => {
+  it('shows the next five days only, with no choice of range', () => {
+    render(<TodayScreen data={sampleDay('unhealthy')} />);
+    const region = screen.getByRole('region', { name: 'Daily forecast' });
+    expect(within(region).getAllByRole('listitem')).toHaveLength(5);
+    expect(screen.queryByRole('button', { name: /^\d days$/u })).not.toBeInTheDocument();
+    expect(region).toHaveTextContent('Next 5 days');
+  });
+
+  it('says where the air forecast does not reach, if a day in the five has none', () => {
     const day = sampleDay('unhealthy');
-    // From the sixth day on, the weather is there and the air forecast is not.
     const daily = day.daily.map((d, i) =>
-      i < 5 ? d : { date: d.date, ...(d.sky === undefined ? {} : { sky: d.sky }) },
+      i < 4 ? d : { date: d.date, ...(d.sky === undefined ? {} : { sky: d.sky }) },
     );
     render(<TodayScreen data={{ ...day, daily }} />);
     const region = screen.getByRole('region', { name: 'Daily forecast' });
-    expect(screen.getByRole('button', { name: '7 days' })).toHaveAttribute('aria-pressed', 'true');
-    expect(within(region).getAllByRole('listitem')).toHaveLength(7);
-    expect(within(region).getAllByText('No air forecast yet')).toHaveLength(2);
-    expect(region).toHaveTextContent(/air forecast reaches about five days/u);
-  });
-
-  it('shows three days when asked', async () => {
-    render(<TodayScreen data={sampleDay('good')} />);
-    await userEvent.click(screen.getByRole('button', { name: '3 days' }));
-    const daily = screen.getByRole('region', { name: 'Daily forecast' });
-    expect(within(daily).getAllByRole('listitem')).toHaveLength(3);
+    expect(within(region).getAllByText('No air forecast yet')).toHaveLength(1);
+    expect(region).toHaveTextContent(/do not guess the air/u);
   });
 
   it('puts a moon at night and a sun by day in the hourly sky row', () => {

@@ -12,3 +12,8 @@ setAirStoreFactory(() => new AirStore(sampleAirSource()));
 if (typeof Element !== 'undefined' && typeof Element.prototype.scrollIntoView !== 'function') {
   Element.prototype.scrollIntoView = (): void => undefined;
 }
+
+// jsdom has no canvas and says so loudly each time one is asked for a drawing context; the app copes with none.
+if (typeof HTMLCanvasElement !== 'undefined') {
+  HTMLCanvasElement.prototype.getContext = (): null => null;
+}

@@ -1,3 +1,4 @@
+import { AqiScale } from '../../components/AqiScale';
 import { LEVELS } from '../../design/levels';
 import { AqiChip } from '../../today/ui/Chip';
 import { concentration } from '../../today/ui/format';
@@ -64,6 +65,12 @@ export function Summary({
           ? `The same hours in open air would have averaged AQI ${String(summary.openAirAqi)}. Where you spent your time kept ${String(saved)} points off.`
           : `The same hours in open air would have averaged AQI ${String(summary.openAirAqi)}, so where you were made no difference.`}
       </p>
+      <p className="bar-label">
+        <strong>{summary.fullDay ? 'Your total day' : 'Your total day so far'}</strong>
+        <span className="muted small">
+          {summary.hours} {summary.hours === 1 ? 'hour' : 'hours'}, by level of air
+        </span>
+      </p>
       <div
         className="level-bar"
         role="img"
@@ -89,6 +96,7 @@ export function Summary({
         {assumed > 0 &&
           ` ${String(assumed)} of ${String(summary.hours)} hours rest on an assumption.`}
       </p>
+      <AqiScale aqi={summary.aqi} className="summary-scale" />
       <details className="how">
         <summary>How each hour is worked out</summary>
         <ul>

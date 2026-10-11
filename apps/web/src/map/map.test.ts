@@ -19,14 +19,17 @@ describe('sample monitors', () => {
     }
   });
 
-  it('has unique ids and sits inside south Asia', () => {
+  it('has unique ids, is thickest over south Asia and reaches every continent', () => {
     expect(new Set(monitors.map((m) => m.id)).size).toBe(monitors.length);
-    for (const m of monitors) {
-      expect(m.lat).toBeGreaterThan(5);
-      expect(m.lat).toBeLessThan(36);
-      expect(m.lng).toBeGreaterThan(68);
-      expect(m.lng).toBeLessThan(92);
-    }
+    const asia = monitors.filter((m) => m.lat > 5 && m.lat < 36 && m.lng > 68 && m.lng < 92);
+    expect(asia.length).toBeGreaterThan(monitors.length / 2);
+    const lats = monitors.map((m) => m.lat);
+    const lngs = monitors.map((m) => m.lng);
+    // Far north and south, and from the Americas across to the Pacific: the whole globe has something to show.
+    expect(Math.min(...lats)).toBeLessThan(-30);
+    expect(Math.max(...lats)).toBeGreaterThan(55);
+    expect(Math.min(...lngs)).toBeLessThan(-100);
+    expect(Math.max(...lngs)).toBeGreaterThan(150);
   });
 
   it('is dirtiest on the Indo-Gangetic plain and cleanest in the south', () => {

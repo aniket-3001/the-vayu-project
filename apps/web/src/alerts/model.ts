@@ -3,7 +3,7 @@ import { levelForAqi } from '../design/levels';
 import { weekday } from '../today/time';
 import type { TodayData } from '../today/types';
 
-export type AlertKind = 'grap' | 'smog' | 'stubble' | 'rain';
+export type AlertKind = 'grap' | 'smog' | 'stubble' | 'rain' | 'wind';
 
 /** How loud an alert is: a severe one glows and comes first; cautions are soft yellow; good news (rain to come) is calm. */
 export type AlertSeverity = 'severe' | 'caution' | 'good';
@@ -16,6 +16,8 @@ export interface Alert {
   readonly stage?: 1 | 2 | 3 | 4;
   /** Where it applies, when more than one place is being watched: "DAV Public School", "Home and DAV Public School". */
   readonly place?: string;
+  /** The AQI the alert is about (today's for GRAP, the forecast's for smog): its level sets the scene's colour. */
+  readonly aqi?: number;
   /** What to avoid, in plain words: walks, outdoor sport, open-ground school assembly. */
   readonly avoid: readonly string[];
   /** 0 is today, 1 tomorrow, 2 the day after. */
@@ -31,6 +33,9 @@ export interface Alert {
 }
 
 /** Fires in the last 24 hours at which stubble burning counts as heavy. */
+/** Wind, in km/h, from which a day counts as windy enough to thin the air. */
+export const WINDY_KMH = 22;
+
 /** Fires near a place (within 100 km, or upwind within 300 km) that make a stubble alert. */
 export const HEAVY_FIRES = 10;
 
@@ -121,6 +126,7 @@ export function alertsFor(data: TodayData, fires: number | undefined): readonly 
       kind: 'grap',
       severity: stage >= 3 ? 'severe' : 'caution',
       stage,
+      aqi: data.aqi,
       day: 0,
       title: `GRAP Stage ${ROMAN[stage]} likely today`,
       body: guide.short,
@@ -137,6 +143,7 @@ export function alertsFor(data: TodayData, fires: number | undefined): readonly 
         id: `smog-${String(offset)}`,
         kind: 'smog',
         severity: 'severe',
+        aqi: day.aqi,
         day: offset,
         title: `Smog likely ${offset === 1 ? 'tomorrow' : dayWord(offset, data)}`,
         body: `AQI near ${String(day.aqi)}, ${levelForAqi(day.aqi).name.toLowerCase()}. Plan outdoor time before then.`,
@@ -202,6 +209,36 @@ export function alertsFor(data: TodayData, fires: number | undefined): readonly 
       todo: [
         'Air the rooms and go for your walk after the rain stops, while the air is clean.',
         'Dust can lift again once the ground has dried, so check the air before a long outing.',
+      ],
+      authorities: false,
+    });
+  }
+  // Good news too: a strong wind carries smoke and dust away, so the air is likely to be no worse, and often better.
+  const windDay = data.daily.slice(0, 3).findIndex((day) => {
+    const sky = day.sky;
+    return (
+      sky !== undefined &&
+      sky.windKmh >= WINDY_KMH &&
+      sky.rainChancePct < 60 &&
+      (day.aqi === undefined || day.aqi <= data.aqi)
+    );
+  });
+  const windy = windDay < 0 ? undefined : data.daily[windDay];
+  if (windy?.sky !== undefined) {
+    const offset = windDay as 0 | 1 | 2;
+    const when = offset === 0 ? 'today' : offset === 1 ? 'tomorrow' : dayWord(offset, data);
+    alerts.push({
+      id: `wind-${String(offset)}`,
+      kind: 'wind',
+      severity: 'good',
+      day: offset,
+      title: `Wind ${when} should thin the air`,
+      body: `Winds near ${String(windy.sky.windKmh)} km/h. A breeze like this carries smoke and dust away from the city.`,
+      reason: `The forecast gives winds near ${String(windy.sky.windKmh)} km/h ${when}. Wind mixes the air and blows fine particles away, so the air is often cleaner while it lasts. It also lifts dust from dry ground, so it is not always a clean day. It is a forecast, so it can change.`,
+      avoid: [],
+      todo: [
+        'Air the rooms while the wind is up and the air is cleaner.',
+        'Keep your eyes and the washing out of the dust on very dry, open ground.',
       ],
       authorities: false,
     });

@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import { motion, useReducedMotion } from 'motion/react';
 import { useEffect, useRef, useState } from 'react';
+import { AqiScale } from '../../components/AqiScale';
 import { MaskIcon } from '../../today/ui/icons';
 import { POINTS, type Task, type TaskKind } from '../model';
 import { useTasks } from '../useTasks';
@@ -319,6 +320,7 @@ export function TipsCard({
       <div className="tips-footer">
         <Progress progress={progress} />
       </div>
+      <AqiScale className="tips-scale" />
     </section>
   );
 }

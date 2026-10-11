@@ -221,7 +221,7 @@ export function ExposureScreen({
         </div>
         <div className="people-row" role="group" aria-label="Who is this for">
           {household.people.map((p) => (
-            <span key={p.id} className="person-wrap">
+            <span key={p.id} className={`person-wrap${person.id === p.id ? ' selected' : ''}`}>
               <button
                 type="button"
                 className="person"
@@ -249,7 +249,7 @@ export function ExposureScreen({
                   choosePerson(p.id);
                 }}
               >
-                <Pencil size={16} strokeWidth={2} aria-hidden="true" />
+                <Pencil size={14} strokeWidth={2.25} aria-hidden="true" />
               </button>
             </span>
           ))}

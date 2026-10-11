@@ -1,35 +1,21 @@
-import { useState } from 'react';
 import { dayMonth, weekday } from '../time';
 import type { TodayData } from '../types';
 import { AqiChip } from './Chip';
 import { CONDITION_LABELS, WeatherIcon, WindArrow } from './icons';
 
-const RANGES = [3, 7] as const;
+/** How many days the list shows: the air forecast reaches about five days. */
+const DAYS = 5;
 
-/** Three or seven days: air, sky, high and low, wind and rain. */
+/** The next five days: air, sky, high and low, wind and rain. */
 export function Daily({ data }: { readonly data: TodayData }): React.JSX.Element {
-  const [range, setRange] = useState<(typeof RANGES)[number]>(7);
   return (
     <section className="card" aria-labelledby="daily-title">
       <div className="card-head">
         <h2 id="daily-title">Daily forecast</h2>
-        <div className="segmented" role="group" aria-label="Days to show">
-          {RANGES.map((n) => (
-            <button
-              key={n}
-              type="button"
-              aria-pressed={range === n}
-              onClick={() => {
-                setRange(n);
-              }}
-            >
-              {n} days
-            </button>
-          ))}
-        </div>
+        <span className="muted small">Next 5 days</span>
       </div>
       <ul className="daily">
-        {data.daily.slice(0, range).map((day, index) => (
+        {data.daily.slice(0, DAYS).map((day, index) => (
           <li key={day.date}>
             <span className="daily-day">
               <strong>{index === 0 ? 'Today' : weekday(day.date)}</strong>
@@ -65,10 +51,9 @@ export function Daily({ data }: { readonly data: TodayData }): React.JSX.Element
           </li>
         ))}
       </ul>
-      {data.daily.slice(0, range).some((day) => day.aqi === undefined) && (
+      {data.daily.slice(0, DAYS).some((day) => day.aqi === undefined) && (
         <p className="muted small">
-          The air forecast reaches about five days. The last days show the weather only, and we do
-          not guess the air.
+          Days with no air forecast show the weather only, and we do not guess the air.
         </p>
       )}
     </section>

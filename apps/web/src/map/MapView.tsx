@@ -71,13 +71,25 @@ function clearPixel(): string {
  * picture pixel to two screen pixels), so the dust is as fine in a street view as across a continent, and it is
  * only drawn for the part of the world that is on screen.
  */
+/** The longest side of a field picture, in pixels. */
+const MAX_SIDE = 1100;
+
 function fieldImage(air: readonly Monitor[], window: Window, pxPerDeg: number): string {
   if (air.length === 0) return clearPixel();
   const SCALE = 3;
   const widthDeg = window.east - window.west;
   const yShare = mercatorY(window.south) - mercatorY(window.north);
-  const width = Math.min(840, Math.max(24, Math.round(widthDeg * pxPerDeg)));
-  const height = Math.min(840, Math.max(24, Math.round((width * yShare) / (widthDeg / 360))));
+  // A picture is as wide as the zoom wants and as tall as the ground is (a tall strip of the globe is much taller
+  // than wide in mercator), and when it would be too big both sides shrink together, so a pixel is always square.
+  let width = Math.max(24, widthDeg * pxPerDeg);
+  let height = (width * yShare) / (widthDeg / 360);
+  const biggest = Math.max(width, height);
+  if (biggest > MAX_SIDE) {
+    width *= MAX_SIDE / biggest;
+    height *= MAX_SIDE / biggest;
+  }
+  width = Math.max(24, Math.round(width));
+  height = Math.max(24, Math.round(height));
   const {
     pixels,
     width: w,
@@ -242,6 +254,7 @@ export function MapView({
   const container = useRef<HTMLDivElement>(null);
   const map = useRef<MapLibreMap>();
   const ready = useRef(false);
+  const redrawField = useRef<(() => void) | undefined>(undefined);
   const latest = useRef({ layers, smoke, air, monitors, fires, sample, start, onReportFire });
   latest.current = { layers, smoke, air, monitors, fires, sample, start, onReportFire };
 
@@ -263,6 +276,48 @@ export function MapView({
     if (import.meta.env.DEV) Object.assign(window, { __vayuMap: m });
     m.addControl(new NavigationControl({ showCompass: false }), 'top-right');
 
+    // The air colour is drawn for what is on screen, finer as you come in, and again when the map has stopped moving.
+    const draw = (): void => {
+      if (!ready.current) return;
+      const { air: monitorsForField, layers: on } = latest.current;
+      const zoom = m.getZoom();
+      const bounds = m.getBounds();
+      const view = {
+        west: bounds.getWest(),
+        east: bounds.getEast(),
+        south: Math.max(-80, bounds.getSouth()),
+        north: Math.min(80, bounds.getNorth()),
+      };
+      FIELD_TILES.forEach((tile, i) => {
+        const id = FIELD_IDS[i] ?? '';
+        const source = m.getSource(id);
+        if (source === undefined || !('updateImage' in source)) return;
+        // Zoomed right out, the whole tile; otherwise only the part of it that is in view.
+        const window = zoom < 2.5 ? tile : visibleWindow(tile, view);
+        if (m.getLayer(id) === undefined) return;
+        if (window === undefined) {
+          m.setLayoutProperty(id, 'visibility', 'none');
+          return;
+        }
+        if (on.gradient) m.setLayoutProperty(id, 'visibility', 'visible');
+        (source as unknown as ImageUpdater).updateImage({
+          url: fieldImage(monitorsForField, window, pxPerDegAt(zoom)),
+          coordinates: [
+            [window.west, window.north],
+            [window.east, window.north],
+            [window.east, window.south],
+            [window.west, window.south],
+          ],
+        });
+      });
+    };
+    redrawField.current = draw;
+    let fieldTimer: ReturnType<typeof setTimeout> | undefined;
+    m.on('moveend', () => {
+      if (fieldTimer !== undefined) clearTimeout(fieldTimer);
+      fieldTimer = setTimeout(draw, 140);
+    });
+
     const addLayers = (): void => {
       ready.current = true;
       if (m.getSource('field-0') !== undefined) return;
@@ -273,7 +328,7 @@ export function MapView({
         const id = FIELD_IDS[i] ?? `field-${String(i)}`;
         m.addSource(id, {
           type: 'image',
-          url: fieldImage(latest.current.air, tile, pxPerDegAt(m.getZoom())),
+          url: clearPixel(),
           coordinates: [
             [tile.west, tile.north],
             [tile.east, tile.north],
@@ -292,16 +347,16 @@ export function MapView({
               ['linear'],
               ['zoom'],
               0,
-              0.8,
+              0.95,
               7,
-              0.7,
+              0.9,
               11,
-              0.3,
+              0.5,
               14,
-              0.12,
+              0.18,
             ] as never,
             'raster-fade-duration': 0,
-            'raster-resampling': 'linear',
+            'raster-resampling': 'nearest',
           },
           layout: { visibility: on.gradient ? 'visible' : 'none' },
         });
@@ -401,6 +456,7 @@ export function MapView({
           },
         });
       });
+      draw();
     };
 
     m.on('style.load', addLayers);
@@ -502,6 +558,8 @@ export function MapView({
 
     onReady(m);
     return () => {
+      if (fieldTimer !== undefined) clearTimeout(fieldTimer);
+      redrawField.current = undefined;
       m.remove();
       map.current = undefined;
     };
@@ -555,53 +613,10 @@ export function MapView({
     if (smoke) m.triggerRepaint();
   }, [smoke]);
 
-  // The air colour is drawn for what is on screen, finer as you come in, and again when the map has stopped moving.
+  // The air colour is drawn again when the monitors change or the layer is switched; the map itself redraws it when
+  // it has stopped moving.
   useEffect(() => {
-    const m = map.current;
-    if (m === undefined || !ready.current) return;
-    let timer: ReturnType<typeof setTimeout> | undefined;
-    const draw = (): void => {
-      const zoom = m.getZoom();
-      const bounds = m.getBounds();
-      const view = {
-        west: bounds.getWest(),
-        east: bounds.getEast(),
-        south: Math.max(-80, bounds.getSouth()),
-        north: Math.min(80, bounds.getNorth()),
-      };
-      FIELD_TILES.forEach((tile, i) => {
-        const id = FIELD_IDS[i] ?? '';
-        const source = m.getSource(id);
-        if (source === undefined || !('updateImage' in source)) return;
-        // Zoomed right out, the whole tile; otherwise only the part of it that is in view.
-        const window = zoom < 2.5 ? tile : visibleWindow(tile, view);
-        if (m.getLayer(id) === undefined) return;
-        if (window === undefined) {
-          m.setLayoutProperty(id, 'visibility', 'none');
-          return;
-        }
-        if (layers.gradient) m.setLayoutProperty(id, 'visibility', 'visible');
-        (source as unknown as ImageUpdater).updateImage({
-          url: fieldImage(air, window, pxPerDegAt(zoom)),
-          coordinates: [
-            [window.west, window.north],
-            [window.east, window.north],
-            [window.east, window.south],
-            [window.west, window.south],
-          ],
-        });
-      });
-    };
-    const soon = (): void => {
-      if (timer !== undefined) clearTimeout(timer);
-      timer = setTimeout(draw, 140);
-    };
-    draw();
-    m.on('moveend', soon);
-    return () => {
-      m.off('moveend', soon);
-      if (timer !== undefined) clearTimeout(timer);
-    };
+    redrawField.current?.();
   }, [air, layers.gradient]);
 
   useEffect(() => {

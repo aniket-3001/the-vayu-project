@@ -38,7 +38,9 @@ describe('the Breathe better tips on My Air', () => {
     expect(footer).toBeInTheDocument();
     expect(footer).toHaveTextContent('No streak yet');
     expect(card.querySelector('ul')?.contains(footer)).toBe(false);
-    expect(card.lastElementChild).toBe(footer);
+    // The colour scale for reference comes after it, and nothing else.
+    expect(footer?.nextElementSibling).toBe(card.lastElementChild);
+    expect(card.lastElementChild).toHaveClass('aqi-scale');
     expect(card.querySelector('.tip-stat')).not.toBeInTheDocument();
   });
 
