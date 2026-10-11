@@ -6539,3 +6539,22 @@ table.hourly .row-label {
   font-weight: 700;
   cursor: pointer;
 }
+
+/* The assistant on a phone: the answer needs the room, so the offer to ask for Vayu is one short line and the sheet
+   may be taller. */
+@media (max-width: 520px) {
+  .sheet.assistant {
+    height: min(90dvh, 760px, calc(var(--vv-height, 100dvh) - 16px));
+    max-height: none;
+  }
+  .sheet.assistant .ask-cta {
+    margin: 2px 0;
+    padding: 6px 10px;
+  }
+  .sheet.assistant .ask-cta > span > .muted {
+    display: none;
+  }
+  .sheet.assistant .ask-cta .primary {
+    min-height: 36px;
+  }
+}
