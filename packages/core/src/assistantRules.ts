@@ -21,7 +21,7 @@ function walk(c: AssistantContext): string {
   // A GRAP stage, by our estimate, settles it: walk and exercise indoors. The cleanest hour is still given, for
   // anyone who has to go out.
   if (c.grapStage >= 1) {
-    const stage = `GRAP Stage ${['', 'I', 'II', 'III', 'IV'][c.grapStage] ?? String(c.grapStage)} is likely today at ${c.place} by our estimate (unofficial; the official order counts).`;
+    const stage = `The air is in the GRAP Stage ${['', 'I', 'II', 'III', 'IV'][c.grapStage] ?? String(c.grapStage)} band today at ${c.place}, by our estimate from the nearest monitor (unofficial; GRAP is one order for all of Delhi-NCR, and the official order counts).`;
     const outside =
       c.best === undefined
         ? ''

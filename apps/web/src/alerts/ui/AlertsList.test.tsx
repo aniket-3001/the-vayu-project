@@ -26,7 +26,7 @@ describe('the alerts list', () => {
     const rows = within(list).getAllByRole('button');
     expect(rows.length).toBeGreaterThanOrEqual(3);
     expect(rows[0]).toHaveClass('now');
-    expect(list).toHaveTextContent('GRAP Stage IV likely today');
+    expect(list).toHaveTextContent('Air here is in the GRAP Stage IV band today');
     expect(list).toHaveTextContent('Heavy stubble burning nearby');
     expect(list).toHaveTextContent('Tomorrow');
   });
@@ -36,7 +36,7 @@ describe('the alerts list', () => {
     const rows = within(screen.getByRole('list', { name: 'Alerts' })).getAllByRole('button');
     const severities = rows.map((row) => (row.classList.contains('severe') ? 'severe' : 'caution'));
     expect(severities[0]).toBe('severe');
-    expect(rows[0]).toHaveTextContent('GRAP Stage IV likely today');
+    expect(rows[0]).toHaveTextContent('Air here is in the GRAP Stage IV band today');
     const firstCaution = severities.indexOf('caution');
     expect(firstCaution).toBeGreaterThan(0);
     expect(severities.slice(firstCaution)).not.toContain('severe');
@@ -79,8 +79,12 @@ describe('the alerts list', () => {
 
   it('opens an alert up close, with a short reason and what to do, and closes it again', async () => {
     open('hazardous', 127);
-    await userEvent.click(screen.getByRole('button', { name: /GRAP Stage IV likely today/u }));
-    const sheet = screen.getByRole('dialog', { name: 'GRAP Stage IV likely today' });
+    await userEvent.click(
+      screen.getByRole('button', { name: /Air here is in the GRAP Stage IV band today/u }),
+    );
+    const sheet = screen.getByRole('dialog', {
+      name: 'Air here is in the GRAP Stage IV band today',
+    });
     expect(within(sheet).getByRole('region', { name: 'Why' })).toHaveTextContent(
       /India’s own scale \(CPCB\)/u,
     );
@@ -98,7 +102,7 @@ describe('the alerts list', () => {
   it('gives each kind of alert a reason of its own', async () => {
     open('hazardous', 127);
     for (const [name, why] of [
-      [/GRAP Stage IV likely today/u, /India’s own scale \(CPCB\)/u],
+      [/Air here is in the GRAP Stage IV band today/u, /India’s own scale \(CPCB\)/u],
       [
         /Heavy stubble burning nearby/u,
         /127 fires.*within 100 km.*upwind|127 fires.*within 100 km.*side the wind comes from/su,
@@ -138,7 +142,9 @@ describe('the alerts list', () => {
 
   it('puts a moving picture behind an alert opened up close: raindrops, haze, or a GRAP stage’s specks', async () => {
     open('hazardous', 127);
-    await userEvent.click(screen.getByRole('button', { name: /GRAP Stage IV likely today/u }));
+    await userEvent.click(
+      screen.getByRole('button', { name: /Air here is in the GRAP Stage IV band today/u }),
+    );
     let sheet = screen.getByRole('dialog');
     expect(sheet.querySelector('canvas.air-particles')).toHaveAttribute('data-kind', 'grap');
     await userEvent.click(within(sheet).getByRole('button', { name: 'Done' }));
@@ -167,7 +173,9 @@ describe('the alerts list', () => {
 
     it('wear the AQI scale’s colour for a GRAP stage, on the row and in the sheet', async () => {
       open('hazardous', 127);
-      const row = screen.getByRole('button', { name: /GRAP Stage IV likely today/u });
+      const row = screen.getByRole('button', {
+        name: /Air here is in the GRAP Stage IV band today/u,
+      });
       expect(row).toHaveClass('scene-air');
       // In the list it is plain: one colour, no picture and no see-through card.
       expect(row.querySelector('canvas')).not.toBeInTheDocument();

@@ -44,4 +44,4 @@ cannot act. Amazon Polly reads answers aloud. See `docs/AGENT-BOUNDARIES.md`.
   firmware now restarts it.
 - On 11 October my own screenshot showed AQI 500 beside "GRAP Stage II". The estimate used the last 24 hours the monitor had,
   not the last 24 hours, and stretched one hour's PM10 over the day. It is fixed and checked against the monitors' own PM10
-  on 24 station-days. `docs/learning-log.md` lists these and the rest.
+  on 24 station-days: 22 landed in the same stage as the monitor's own index and 2 had no estimate (too few recent hours). `docs/learning-log.md` lists these and the rest.

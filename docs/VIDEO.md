@@ -23,7 +23,7 @@ Times are for the cut. "AWS on screen" is the console page to cut to for about 2
 
 | #   | Time        | On screen (exactly)                                                                                                                                                                                                                                         | Caption (burned in)                                           | AWS on screen                                                                                                                                         |
 | --- | ----------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 1   | 0:00 – 0:18 | `https://d3lmq1mze2gup3.cloudfront.net/#/week`, chip **21 Oct**, tap the **Home** card. Hold on AQI 500, "Lodhi Road, 3.8 km away · as recorded" and the GRAP Stage IV alert.                                                                               | "21 Oct 2025, 8 am, South Delhi. Recorded."                   | CloudFront → Distributions → `E307NJQA7AAV9Z`, Enabled                                                                                                |
+| 1   | 0:00 – 0:18 | `https://d3lmq1mze2gup3.cloudfront.net/#/week`, chip **21 Oct**, tap the **Home** card. Hold on AQI 500, "Lodhi Road, 3.8 km away · as recorded" and the GRAP Stage IV band alert.                                                                          | "21 Oct 2025, 8 am, South Delhi. Recorded."                   | CloudFront → Distributions → `E307NJQA7AAV9Z`, Enabled                                                                                                |
 | 2   | 0:18 – 0:46 | New private window, phone width (390 px). My Air is empty. Search "Dwarka", pick it, name it Home. The card appears. Tap it. Point at the monitor line, the age, the cleanest hour.                                                                         | "Live. Monitor, distance and age on every number."            | Lambda → `Vayu-ApiFunction…` → Monitor: the invocation spike from the search                                                                          |
 | 3   | 0:46 – 1:16 | Back on My Air, tap **See the recorded days** (it opens a new tab). Chip **9 Nov**: Home 424 beside Park 249 (their GRAP pills differ, as per-monitor estimates; the official stage is one for NCR). Chip **31 Oct**, then the **Map** tab: fires and wind. | "Seven real days. Two places, 4 km apart, two answers."       | S3 → site bucket → `assets/recorded-….js`: the recorded days are one file served by CloudFront                                                        |
 | 4   | 1:16 – 1:40 | Phone video of the unit on the desk. Chrome on the Mac: **Add device**, **Connect**, the room card and chart (room against outside). Then `docs/images/collage-build.jpg`, then `docs/images/build/airflow-proof.mp4`.                                      | "Bluetooth to the phone. No cloud in this path."              | None. Say so in the caption.                                                                                                                          |
@@ -34,19 +34,19 @@ Times are for the cut. "AWS on screen" is the console page to cut to for about 2
 ## What to say (read it, about 370 words, 2 minutes 40 at an easy pace)
 
 **1. The morning** (18 s)
-"8 am, the morning after Diwali. A parent in South Delhi has one question: do we walk to school? The city app says bad. The Vayu Project answers for this place: air quality 500, from the Lodhi Road monitor, three point eight kilometres away. Stay in."
+"8 am, the morning after Diwali. A parent in South Delhi has one question: do we walk to school? The city app says bad. The Vayu Project answers for this place: air quality 500 on the US scale, its ceiling, from the Lodhi Road monitor, three point eight kilometres away. The official pollution stage that day was two, for all of Delhi; this one monitor's air is in the stage four band. The app shows both, and the official order counts. Stay in."
 
 **2. Live** (28 s)
 "This is live, on AWS. I search for a place. The card names the monitor, how far it is, and how old the reading is. Past six hours old, it gives no advice, only a labelled estimate. The cleanest hour, a mask, the windows. No sign-in."
 
 **3. Recorded days** (30 s)
-"To see a bad day without waiting for one, this button opens seven real days from the public archives, played through the same app. 9 November: Home reads 424. The park, four kilometres away, reads 249. A city number cannot see that gap. Our stage estimate is per monitor; the official stage covers all of NCR. 31 October: satellite fires upwind, and the alert before the smoke arrives."
+"To see a bad day without waiting for one, this button opens seven real days from the public archives, played through the same app. 9 November: on India's scale the last 24 hours averaged 434 at Home and 319 at the park, four kilometres away. A city number cannot see that gap. The stage band is per place; the official stage is one order for all of NCR. 31 October: satellite fires upwind, and the alert before the smoke arrives."
 
 **4. The room and the cleaner** (24 s)
 "A city number cannot see your room either. I built a measuring unit, an ESP32 and a laser particle sensor, that sends to the phone over Bluetooth, so your room sits beside the outside air. I also built a cleaner, with five thousand rupees of parts. I measured its airflow, 191 cubic feet a minute. I have not measured its CADR."
 
 **5. The build** (35 s)
-"One CDK stack in Mumbai, traced with Powertools for Lambda. CloudFront and S3 serve the app. API Gateway and one Lambda answer. EventBridge Scheduler fills DynamoDB every fifteen minutes, so visitors never call the air providers. Bedrock, Nova Micro, behind a guardrail, may put an answer in friendly words. Polly reads it aloud. Secrets Manager keeps the keys."
+"One CDK stack in Mumbai, traced with Powertools for Lambda. CloudFront and S3 serve the app. API Gateway and one Lambda answer. EventBridge Scheduler keeps reference places and the map's monitors fresh in DynamoDB, and a browser never calls the air providers: my API does, and CloudFront caches it. Bedrock, Nova Micro, behind a guardrail, may put an answer in friendly words. Polly reads it aloud. Secrets Manager keeps the keys."
 
 **6. The rule** (25 s)
 "The rule: code decides, the model only words. Every number in its wording is checked against the facts. Switch it off in Parameter Store, and the same numbers come out in plain words. A daily cap and this switch keep it near four dollars fifty a month idle, and under a tenth of a cent a question."
@@ -75,7 +75,7 @@ If the cleaner line (segment 4) runs long, and you want to compare with the Dyso
 - What the unit costs, or what a station costs (no source: `docs/claims.md`).
 - "Accurate", "reference-grade" or "agrees with a monitor" about the unit.
 - That the cleaner works, or that 191 cfm beats the Dyson's CADR. It is airflow, and CADR is a different number.
-- That GRAP Stage IV is official, or that a school is closed. It is "likely", our estimate.
+- That a GRAP stage is official, or that a school is closed. The app shows which band a place's own air is in; the official order is one for all of NCR (on 21 Oct it was Stage II).
 - Anything about Telegram except "not built yet" (it is built and tested against fakes; live sends are off).
 - That the assistant answers every question with the model. Fixed rules decide the advice; the model words it, or answers a question no rule covers from the facts it is given.
 

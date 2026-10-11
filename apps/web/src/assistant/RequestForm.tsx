@@ -102,7 +102,8 @@ export function RequestForm({
       </button>
       <h3>We would like Vayu at our place</h3>
       <p className="muted small">
-        A short form. We keep it for 180 days and use it only to get back to you about a demo or monitors. Nothing is sent to anyone automatically.
+        A short form. We keep it for 180 days and use it only to get back to you about a demo or
+        monitors. Nothing is sent to anyone automatically.
       </p>
 
       <fieldset className="field">

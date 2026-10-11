@@ -2,10 +2,10 @@
 
 Picture a parent in South Delhi at 8 am on 21 October 2025, the morning after Diwali. The phone shows one city-wide Air Quality Index (AQI) figure. The child's bag is by the door. The question is small: do we walk to school, or not?
 
-The parent is made up; the morning is real. The nearest monitor with a fresh reading that day, Lodhi Road, 3.8 km from the spot I had set as "Home" (near R K Puram), read 500, the top of the US AQI scale the card uses, with PM2.5 (fine particles) at 980 µg/m³. On India's scale the last 24 hours also averaged 500. The app added what to do: stay in where you can, and if you must go out, 4 to 5 pm is the cleanest daylight hour, at AQI 134 (on a recorded day that is known in hindsight; live, it is a forecast).
+The parent is made up; the morning is real. The nearest monitor with a fresh reading that day, Lodhi Road, 3.8 km from the spot I had set as "Home" (near R K Puram), read 500, the top of the US AQI scale the card uses, with PM2.5 (fine particles) at 980 µg/m³. On India's scale the last 24 hours at this monitor also averaged 500. The official stage that morning was II, set once for all of Delhi-NCR from the city's 24-hour average of 351; this one monitor was far above the city, so the band for this place's air was IV. The app shows the band beside the official order and never instead of it. The app added what to do: stay in where you can, and if you must go out, 4 to 5 pm is the cleanest daylight hour, at AQI 134 (on a recorded day that is known in hindsight; live, it is a forecast).
 
 ![Home on the recorded morning after Diwali: AQI 500, the monitor's name and distance, and advice for this place](images/02b-place-insights-desktop.png)
-_The recorded morning after Diwali, 21 Oct 2025, 8 am. The card names the monitor (Lodhi Road, 3.8 km away) and says "as recorded". The alert row, "GRAP Stage IV likely today", is my estimate from the last 24 hours' average AQI of 500 (GRAP is Delhi's Graded Response Action Plan, the official pollution stages), and the card adds that official orders come first._
+_The recorded morning after Diwali, 21 Oct 2025, 8 am. The card names the monitor (Lodhi Road, 3.8 km away) and says "as recorded". The alert row, "Air here is in the GRAP Stage IV band today", is my estimate from the last 24 hours at this monitor, an average AQI of 500 on India's scale (GRAP is Delhi's Graded Response Action Plan, the official pollution stages), and the card adds that official orders come first._
 
 Delhi has plenty of air-quality numbers. A city figure cannot see one street or one room, and none says what to do. The Vayu Project gives one answer for one place, with the monitor's name, its distance and the age of the reading beside it. It is free, has no sign-up, and opens now: https://d3lmq1mze2gup3.cloudfront.net.
 
@@ -16,7 +16,7 @@ You add the places you care about: Home, a school, an office, a park. Each card 
 Around My Air are a map of monitors, wind and satellite fires, AIR Lens (the air drawn as particles in front of your camera), an assistant, and Exposure, which adds up what a person breathed, hour by hour.
 
 ![Six screens of the app](images/collage-features.jpg)
-_The six screens. Top row: My Air on live data with four places set; the recorded days on 21 Oct 2025, where the alert is GRAP Stage IV, the app's estimate from the last 24 hours; the map on 31 Oct 2025 with NASA satellite fire detections and wind. Bottom row: AIR Lens; the assistant; Exposure. All but My Air on live data are from the recorded days._
+_The six screens. Top row: My Air on live data with four places set; the recorded days on 21 Oct 2025, where the alert says the air is in the GRAP Stage IV band, my estimate for that monitor; the map on 31 Oct 2025 with NASA satellite fire detections and wind. Bottom row: AIR Lens; the assistant; Exposure. All but My Air on live data are from the recorded days._
 
 A small measuring unit, an ESP32-S3 board with a Sensirion SPS30 laser particle sensor, adds the air in one room over Bluetooth.
 
@@ -61,16 +61,16 @@ CADR (clean air delivery rate), the number purifiers are rated by, also depends 
 
 Everything is one CDK app, in Mumbai (`ap-south-1`) except one call: Nova Micro is reached through an Asia Pacific inference profile, so the model may run in another Asia Pacific region. The AWS open source I used is the CDK and Powertools for AWS Lambda (Logger and Tracer).
 
-| Service                             | Why it is there                                                                                 |
-| ----------------------------------- | ----------------------------------------------------------------------------------------------- |
-| CloudFront and S3                   | One address for the page and the API, a private bucket                                          |
-| API Gateway and Lambda              | Every route checks its request and answer against a contract                                    |
-| DynamoDB                            | The cache the scheduled jobs fill, the quotas, items that expire                                |
-| EventBridge Scheduler               | Monitor harvest every 15 minutes and the map's monitors every 30, so visitors never call OpenAQ |
-| Bedrock with a guardrail, and Polly | Bedrock rewords an answer the rules decided and never decides; Polly reads it aloud             |
-| Step Functions                      | The alert loop waits for a tap, reminds, escalates; built and tested, live sends switched off   |
-| Secrets Manager and SSM             | No key in code; one command switches the assistant off                                          |
-| CloudWatch and X-Ray                | An alarm for each thing that can stop, and traces                                               |
+| Service                             | Why it is there                                                                                                                                                     |
+| ----------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| CloudFront and S3                   | One address for the page and the API, a private bucket                                                                                                              |
+| API Gateway and Lambda              | Every route checks its request and answer against a contract                                                                                                        |
+| DynamoDB                            | The cache the scheduled jobs fill, the quotas, items that expire                                                                                                    |
+| EventBridge Scheduler               | A 15-minute job keeps four reference places warm and a 30-minute job fills the map's monitors; for other places the API fetches on request and CloudFront caches it |
+| Bedrock with a guardrail, and Polly | Bedrock rewords an answer the rules decided and never decides; Polly reads it aloud                                                                                 |
+| Step Functions                      | The alert loop waits for a tap, reminds, escalates; built and tested, live sends switched off                                                                       |
+| Secrets Manager and SSM             | No key in code; one command switches the assistant off                                                                                                              |
+| CloudWatch and X-Ray                | An alarm for each thing that can stop, and traces                                                                                                                   |
 
 Visitors' browsers still call Open-Meteo to search for a place by name (it sends only the name typed) and OpenFreeMap for map tiles. An IoT Core, Firehose and Athena path is built, but the unit talks straight to the phone.
 
@@ -78,7 +78,7 @@ Visitors' browsers still call Open-Meteo to search for a place by name (it sends
 
 ### My own screenshot said AQI 500 beside "GRAP Stage II"
 
-Writing this post, I looked hard at my own screenshot of the morning after Diwali: AQI 500, and "GRAP Stage II likely". Those two do not go together. The estimate averaged the last 24 hours the monitor _had_, so gaps pulled in older, cleaner hours, and it stretched one hour's PM10 to PM2.5 ratio, however large, over the whole day. Now it uses the last 24 hours only (16 must be there), caps that ratio at 2, and treats a missing PM10 as a floor. I checked it against the monitors' own PM10 on 24 station-days, and no day lands in the wrong stage. The same audit turned up a rain alert that promised clean air when the forecast showed none, and an assistant sheet on a phone that left the answer 236 pixels of room. A second pass, a script driving the live site in a browser, found a model-worded answer that read "[Place] has good air quality" at AQI 61: the model had capitalised my masked-name placeholder, so it was not put back, and it had called a Moderate level good. Placeholders are now restored in any case, and an answer that calls the air good or clean when the level is not Good is refused.
+Writing this post, I looked hard at my own screenshot of the morning after Diwali: AQI 500, and a "GRAP Stage II" alert. Those two do not go together. The estimate averaged the last 24 hours the monitor _had_, so gaps pulled in older, cleaner hours, and it stretched one hour's PM10 to PM2.5 ratio, however large, over the whole day. Now it uses the last 24 hours only (16 must be there), caps that ratio at 2, and treats a missing PM10 as a floor. I checked it against the monitors' own PM10 on 24 station-days: 22 landed in the same stage as the monitor's own index and 2 had no estimate (too few recent hours). The same audit turned up a rain alert that promised clean air when the forecast showed none, and an assistant sheet on a phone that left the answer 236 pixels of room. A second pass, a script driving the live site in a browser, found a model-worded answer that read "[Place] has good air quality" at AQI 61: the model had capitalised my masked-name placeholder, so it was not put back, and it had called a Moderate level good. Placeholders are now restored in any case, and an answer that calls the air good or clean when the level is not Good is refused.
 
 ### The model never answered
 
@@ -108,7 +108,7 @@ One cost is not capped: a flood against CloudFront itself. The stack makes its o
 
 ## What I learned
 
-- Make the rule smaller than the model. The model words; code decides and checks. Every failure I had with it (a guardrail that blocked my own instruction, a masked name read as a number) was a place where that line was not tight enough.
+- Keep the model's job small. The model words; code decides and checks. Every failure I had with it (a guardrail that blocked my own instruction, a masked name read as a number) was a place where that line was not tight enough.
 - Read your own screenshots as a stranger would. A number can be right and the sentence beside it wrong.
 - Real AWS finds what tests do not: a Host header, a rollback that failed, a schedule that stops without an error.
 - Price a thing before you cap it. The guardrail was 98% of a question's cost, so that is where the caps went.

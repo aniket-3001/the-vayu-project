@@ -18,12 +18,12 @@ const steady = (pm25: number): TodayData => {
 };
 
 describe('where the morning assembly should be, by GRAP stage', () => {
-  it('is on the open ground when no stage is likely', () => {
+  it('is on the open ground when the air is below the GRAP bands', () => {
     const day = steady(20);
     expect(grapStageFor(day)).toBe(0);
     const advice = assemblyFor(day);
     expect(advice.where).toBe('open');
-    expect(advice.words).toMatch(/No GRAP stage is likely/u);
+    expect(advice.words).toMatch(/The air is below the GRAP bands/u);
   });
 
   it('is on the open ground, kept short, in Stage I', () => {
@@ -31,7 +31,7 @@ describe('where the morning assembly should be, by GRAP stage', () => {
     expect(grapStageFor(day)).toBe(1);
     const advice = assemblyFor(day);
     expect(advice.where).toBe('short');
-    expect(advice.words).toMatch(/GRAP Stage I is likely/u);
+    expect(advice.words).toMatch(/GRAP Stage I band/u);
     expect(advice.words).toMatch(/under 15 minutes/u);
   });
 

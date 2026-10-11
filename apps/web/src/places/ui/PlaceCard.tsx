@@ -152,7 +152,7 @@ export function PlaceCard({
           {stage !== 0 && (
             <span
               className={`grap-pill grap-s${String(stage)}`}
-              title={`GRAP Stage ${String(stage)} is likely here (our estimate, not an order)`}
+              title={`The air here is in the GRAP Stage ${String(stage)} band (our estimate for this monitor; the official stage is one order for all of NCR)`}
             >
               GRAP {stage}
             </span>

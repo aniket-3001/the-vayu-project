@@ -48,8 +48,8 @@ export function assemblyFor(data: TodayData): AssemblyAdvice {
   const numeral = ['', 'I', 'II', 'III', 'IV'][stage] ?? '';
   const basis = known
     ? stage === 0
-      ? `No GRAP stage is likely (US AQI ${String(aqi)} at ${when}).`
-      : `GRAP Stage ${numeral} is likely (US AQI ${String(aqi)} at ${when}; the stage is from India’s scale over 24 hours).`
+      ? `The air is below the GRAP bands (US AQI ${String(aqi)} at ${when}).`
+      : `The air here is in the GRAP Stage ${numeral} band (US AQI ${String(aqi)} at ${when}; the band is from India’s scale over 24 hours).`
     : `No GRAP stage could be worked out, so this is from the US AQI: ${String(aqi)} at ${when}.`;
   // Without a stage, the AQI stands in for it: unhealthy (151+) is as bad as Stage II, 101 to 150 as Stage I.
   const effective: 0 | 1 | 2 | 3 | 4 = known ? stage : aqi >= 151 ? 2 : aqi >= 101 ? 1 : 0;

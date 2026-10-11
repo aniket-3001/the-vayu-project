@@ -134,10 +134,10 @@ export function tasksFor(data: TodayData): readonly Task[] {
           : `${best.aqi <= 100 ? 'A good hour' : 'Cleanest hour'} for a walk: ${when}`,
       why:
         grap >= 3
-          ? `GRAP Stage ${ROMAN[grap]} is likely, so avoid going out. If you must, AQI is ${String(best.aqi)} then; wear a well-fitted N95 and keep it short.`
+          ? `The air here is in the GRAP Stage ${ROMAN[grap]} band, so avoid going out. If you must, AQI is ${String(best.aqi)} then; wear a well-fitted N95 and keep it short.`
           : grap === 2
-            ? `GRAP Stage II is likely, so skip outdoor walks and exercise. If you must go out, AQI is ${String(best.aqi)} then; wear a well-fitted N95.`
-            : `AQI ${String(best.aqi)}. ${advice.long}${grap === 1 ? ' GRAP Stage I is likely, so limit time outside.' : ''}`,
+            ? `The air here is in the GRAP Stage II band, so skip outdoor walks and exercise. If you must go out, AQI is ${String(best.aqi)} then; wear a well-fitted N95.`
+            : `AQI ${String(best.aqi)}. ${advice.long}${grap === 1 ? ' The air here is in the GRAP Stage I band, so limit time outside.' : ''}`,
       points: POINTS.walk,
     });
   }

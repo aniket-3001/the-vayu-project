@@ -43,7 +43,7 @@ const grap = (c: AssistantContext): string => `ग्रैप चरण ${Strin
 
 export function walkHindi(c: AssistantContext): string {
   if (c.grapStage >= 1) {
-    const stage = `आज ${c.place} में हमारे अनुमान से ${grap(c)} की संभावना है (अनौपचारिक; आधिकारिक आदेश ही मान्य है)।`;
+    const stage = `आज ${c.place} की हवा हमारे अनुमान से ${grap(c)} के दायरे में है, पास के मॉनिटर के हिसाब से (अनौपचारिक; ग्रैप पूरे दिल्ली-एनसीआर का एक ही आदेश है, और आधिकारिक आदेश ही मान्य है)।`;
     const outside =
       c.best === undefined
         ? ''

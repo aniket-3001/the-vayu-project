@@ -3,10 +3,10 @@ import { sampleDay } from '../today/sample';
 import { HEAVY_FIRES, alertsFor, dayWord, onDay, suggestionFrom } from './model';
 
 describe('alerts for the next three days', () => {
-  it('say GRAP is likely on a smog day, today, and call it our estimate', () => {
+  it('say the air is in a GRAP band on a smog day, today, and call it our estimate', () => {
     const alerts = alertsFor(sampleDay('hazardous'), undefined);
     const grap = alerts.find((a) => a.kind === 'grap');
-    expect(grap?.title).toBe('GRAP Stage IV likely today');
+    expect(grap?.title).toBe('Air here is in the GRAP Stage IV band today');
     expect(grap?.reason).toMatch(
       /our estimate from the monitor nearest this place.*only the official order counts/u,
     );

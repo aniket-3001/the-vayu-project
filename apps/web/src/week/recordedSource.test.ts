@@ -115,8 +115,8 @@ describe('the recorded source', () => {
     const data = await recordedSource(recorded, day).today(park);
     expect(data.aqi).toBe(500);
     const grap = alertsFor(data, 0, { school: false }).find((a) => a.kind === 'grap');
-    expect(grap?.title).toBe('GRAP Stage IV likely today');
-    expect(grap?.body).toContain('last 24 hours average AQI 500');
+    expect(grap?.title).toBe('Air here is in the GRAP Stage IV band today');
+    expect(grap?.body).toContain('last 24 hours at this monitor average AQI 500');
     // No school among the places: no line about assembly.
     expect(grap?.body).not.toMatch(/assembly/iu);
   });

@@ -63,7 +63,7 @@ export function placeNote(data: TodayData, pin: Pin): PlaceNote | undefined {
       kind: park ? 'walk' : 'clean',
       title: park ? 'Avoid walks here for now' : 'Stay in where you can',
       short: park ? `No walks: GRAP ${numeral}` : `Stay in: GRAP ${numeral}`,
-      long: `GRAP Stage ${numeral} is likely, so skip outdoor walks and exercise${stage >= 3 ? ' and avoid going out unless you must' : ''}. If you must go out, the cleanest daylight hour is ${when} (AQI ${String(best.aqi)}); wear a well-fitted N95.`,
+      long: `The air here is in the GRAP Stage ${numeral} band, so skip outdoor walks and exercise${stage >= 3 ? ' and avoid going out unless you must' : ''}. If you must go out, the cleanest daylight hour is ${when} (AQI ${String(best.aqi)}); wear a well-fitted N95.`,
       rules: [
         'Move walks and exercise indoors.',
         `If you must go out, ${when} is the cleanest daylight hour (AQI ${String(best.aqi)}).`,
@@ -76,10 +76,10 @@ export function placeNote(data: TodayData, pin: Pin): PlaceNote | undefined {
       kind: 'walk',
       title: 'Best time for a walk here',
       short: stage === 1 ? `Short walk: ${when}` : `Best walk: ${when}`,
-      long: `${when}, when the air is cleanest in daylight (AQI ${String(best.aqi)}). ${advice.long}${stage === 1 ? ' GRAP Stage I is likely, so limit time outside.' : ''}`,
+      long: `${when}, when the air is cleanest in daylight (AQI ${String(best.aqi)}). ${advice.long}${stage === 1 ? ' The air here is in the GRAP Stage I band, so limit time outside.' : ''}`,
       rules: [
         advice.short,
-        ...(stage === 1 ? ['GRAP Stage I is likely: limit time outside.'] : []),
+        ...(stage === 1 ? ['GRAP Stage I band here: limit time outside.'] : []),
       ],
     };
   }
@@ -87,7 +87,7 @@ export function placeNote(data: TodayData, pin: Pin): PlaceNote | undefined {
     kind: 'clean',
     title: 'Cleanest daylight hour',
     short: `Cleanest hour: ${when}`,
-    long: `${when} (AQI ${String(best.aqi)}). ${advice.long}${stage === 1 ? ' GRAP Stage I is likely, so limit time outside.' : ''}`,
-    rules: [advice.short, ...(stage === 1 ? ['GRAP Stage I is likely: limit time outside.'] : [])],
+    long: `${when} (AQI ${String(best.aqi)}). ${advice.long}${stage === 1 ? ' The air here is in the GRAP Stage I band, so limit time outside.' : ''}`,
+    rules: [advice.short, ...(stage === 1 ? ['GRAP Stage I band here: limit time outside.'] : [])],
   };
 }

@@ -10,7 +10,7 @@ export function alertTitleHindi(alert: Alert): string {
   const day = DAY[alert.day];
   switch (alert.kind) {
     case 'grap':
-      return `${day} ग्रैप चरण ${String(alert.stage ?? 1)} की संभावना`;
+      return `${day} हवा ग्रैप चरण ${String(alert.stage ?? 1)} के दायरे में`;
     case 'smog':
       return `${day} स्मॉग की संभावना`;
     case 'stubble':

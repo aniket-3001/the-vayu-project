@@ -64,7 +64,7 @@ describe('the local answers', () => {
       grapStage: 2,
       best: { span: '4 to 5 pm', aqi: 180 },
     });
-    expect(text).toMatch(/GRAP Stage II is likely today/u);
+    expect(text).toMatch(/GRAP Stage II band today/u);
     expect(text).toMatch(/Walk or exercise indoors today/u);
     expect(text).toMatch(/cleanest hour is 4 to 5 pm, at AQI 180/u);
     expect(text).toMatch(/unofficial/u);
