@@ -3,7 +3,7 @@ import { useEffect } from 'react';
 import type { PlaceMatch } from '../../data/geocode';
 import type { Pin } from '../../data/pins';
 import { DAY_LABELS, personaBlurb, type Person } from '../people';
-import { ACTIVITY_LABELS, clockOf, type Outing } from '../outings';
+import { ACTIVITY_LABELS, clockWords, type Outing } from '../outings';
 import { formatDate } from '../model';
 import type { Spot, SpotKind, Spots } from '../spots';
 import type { Unit } from '../units';
@@ -150,7 +150,7 @@ export function PersonPanel({
                           {ACTIVITY_LABELS[o.activity]} in {o.pin.name}
                         </strong>
                         <span className="muted small">
-                          {formatDate(o.date)}, {clockOf(o.start)}, {o.minutes} min
+                          {formatDate(o.date)}, {clockWords(o.start)}, {o.minutes} min
                         </span>
                       </span>
                       <button

@@ -6,7 +6,7 @@ import { HttpLambdaIntegration } from 'aws-cdk-lib/aws-apigatewayv2-integrations
 import { CfnBudget } from 'aws-cdk-lib/aws-budgets';
 import { AttributeType, BillingMode, Table } from 'aws-cdk-lib/aws-dynamodb';
 import { Effect, PolicyStatement } from 'aws-cdk-lib/aws-iam';
-import { Runtime, Tracing } from 'aws-cdk-lib/aws-lambda';
+import { Architecture, Runtime, Tracing } from 'aws-cdk-lib/aws-lambda';
 import { NodejsFunction } from 'aws-cdk-lib/aws-lambda-nodejs';
 import { LogGroup, RetentionDays } from 'aws-cdk-lib/aws-logs';
 import { BlockPublicAccess, Bucket, BucketEncryption } from 'aws-cdk-lib/aws-s3';
@@ -107,6 +107,7 @@ export class VayuStack extends Stack {
     const apiFunction = new NodejsFunction(this, 'ApiFunction', {
       entry: apiEntry,
       runtime: Runtime.NODEJS_22_X,
+      architecture: Architecture.ARM_64,
       // X-Ray: every call to AWS from this function shows up in the service map.
       tracing: Tracing.ACTIVE,
       memorySize: 256,

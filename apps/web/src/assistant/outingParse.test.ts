@@ -104,7 +104,7 @@ describe('telling the assistant what someone did outdoors', () => {
     if (got?.kind !== 'add') throw new Error('not added');
     const text = addedText(got.person, got.outing);
     expect(text).toMatch(
-      /^Added to Asha’s day: walk or run in Park, 40 minutes from 16:50, today\./u,
+      /^Added to Asha’s day: walk or run in Park, 40 minutes from 4:50 pm, today\./u,
     );
     expect(text).toMatch(/AQI \d+/u);
     expect(text).toMatch(/lower for trees \(assumed\)/u);

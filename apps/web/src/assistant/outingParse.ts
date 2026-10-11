@@ -2,7 +2,7 @@ import type { Pin } from '../data/pins';
 import { yesterday, today, ambientByHour, formatDate, type DateKey } from '../exposure/model';
 import {
   ACTIVITY_LABELS,
-  clockOf,
+  clockWords,
   problemWithOuting,
   type Activity,
   type Outing,
@@ -156,13 +156,13 @@ export function addedText(person: Person, outing: Omit<Outing, 'id'>, lang: Lang
   if (lang === 'hi') {
     const whose = person.id === 'me' ? 'आपके' : `${person.name} के`;
     const day = outing.date === today() ? 'आज' : formatDate(outing.date);
-    return `${whose} दिन में जोड़ दिया: ${ACTIVITY_HINDI[outing.activity]}, ${outing.pin.name} में, ${clockOf(outing.start)} से ${String(outing.minutes)} मिनट, ${day}। ${
+    return `${whose} दिन में जोड़ दिया: ${ACTIVITY_HINDI[outing.activity]}, ${outing.pin.name} में, ${clockWords(outing.start)} से ${String(outing.minutes)} मिनट, ${day}। ${
       aqi === undefined ? '' : `तब वहाँ की हवा एक्यूआई ${String(aqi)} थी। `
     }इसे बाहर की हवा के रूप में गिना गया${outing.trees ? ', पेड़ों की वजह से थोड़ा कम (अनुमानित)' : ''}। आप ${whose} बाहर के समय में इसे देख या हटा सकते हैं।`;
   }
   const what = ACTIVITY_LABELS[outing.activity].toLowerCase();
   const whose = person.id === 'me' ? 'your' : `${person.name}’s`;
-  return `Added to ${whose} day: ${what} in ${outing.pin.name}, ${String(outing.minutes)} minutes from ${clockOf(outing.start)}, ${outing.date === today() ? 'today' : formatDate(outing.date)}. ${
+  return `Added to ${whose} day: ${what} in ${outing.pin.name}, ${String(outing.minutes)} minutes from ${clockWords(outing.start)}, ${outing.date === today() ? 'today' : formatDate(outing.date)}. ${
     aqi === undefined ? '' : `The air there then was AQI ${String(aqi)}. `
   }It is counted as outside air${outing.trees ? ', a little lower for trees (assumed)' : ''}. You can see or remove it in ${whose} outdoor time.`;
 }

@@ -690,7 +690,11 @@ describe('the public site', () => {
   describe('rules I9, I14 and I15, for every function', () => {
     const template = synth();
     const functions = (): {
-      Properties: { Timeout?: number; Environment?: { Variables?: Record<string, unknown> } };
+      Properties: {
+        Timeout?: number;
+        Architectures?: string[];
+        Environment?: { Variables?: Record<string, unknown> };
+      };
     }[] => Object.values(template.findResources('AWS::Lambda::Function')) as never;
     // The CDK adds helper functions (for example to empty a bucket on delete); only ours are checked.
     const ours = (): ReturnType<typeof functions> =>
@@ -702,6 +706,10 @@ describe('the public site', () => {
         expect(f.Properties.Timeout).toBeDefined();
         expect(f.Properties.Timeout).toBeLessThanOrEqual(120);
       }
+    });
+
+    it('every function runs on Graviton (arm64), which costs less per second than x86', () => {
+      for (const f of ours()) expect(f.Properties.Architectures).toEqual(['arm64']);
     });
 
     it('rule I14: no function holds a secret value, only the address of where it is kept', () => {

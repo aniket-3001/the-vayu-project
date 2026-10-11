@@ -1,4 +1,5 @@
 import { pinId, type Pin } from '../data/pins';
+import { hourName } from '../today/time';
 import type { DateKey } from './model';
 
 /** What someone was doing outdoors. */
@@ -106,6 +107,10 @@ export const removeOuting = (outings: readonly Outing[], id: string): readonly O
   outings.filter((o) => o.id !== id);
 
 /** "17:05". */
+/** A time of day as a person says it: 4 pm, 4:30 pm. `clockOf` stays 24-hour because a time field needs it. */
+export const clockWords = (minutes: number): string =>
+  hourName(Math.floor(minutes / 60), minutes % 60);
+
 export const clockOf = (minutes: number): string =>
   `${String(Math.floor(minutes / 60) % 24).padStart(2, '0')}:${String(minutes % 60).padStart(2, '0')}`;
 

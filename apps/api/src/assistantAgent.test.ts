@@ -177,6 +177,41 @@ describe('the assistant keeps names away from the model', () => {
   });
 });
 
+describe('a placeholder that comes back in another case', () => {
+  const q = 'Should my dad, who has asthma, be worried about the air?';
+  it('is turned back into the name, so "[Place]" never reaches a person', async () => {
+    const reply = await ask(q, {
+      grounded: () =>
+        Promise.resolve('[Place] has an AQI of 158, which is unhealthy. Please ask his doctor.'),
+    });
+    expect(reply.source).toBe('model_grounded');
+    expect(reply.text).not.toMatch(/\[[a-z]+( \d+)?\]/iu);
+    expect(reply.text).toContain(context.place);
+  });
+
+  it('falls back to the rules when a case-changed placeholder was never sent', async () => {
+    const rule = answerFromRules('Is school safe today?', context).text;
+    const reply = await ask('Is school safe today?', {
+      reword: () => Promise.resolve(rule.replace('Asha', '[Person 9]')),
+    });
+    expect(reply.source).toBe('rules');
+  });
+});
+
+describe('a word that contradicts the level', () => {
+  const q = 'Should my dad, who has asthma, be worried about the air?';
+  it('is refused: the air is not called good when the level is Unhealthy', async () => {
+    for (const bad of [
+      'The air quality is good at AQI 158, so there is no need to worry.',
+      'There is good air quality here at AQI 158.',
+      'It is clean air at AQI 158.',
+    ]) {
+      const reply = await ask(q, { grounded: () => Promise.resolve(bad) });
+      expect(reply.source).toBe('rules');
+    }
+  });
+});
+
 describe('a question no rule covers', () => {
   const q = 'Should my dad, who has asthma, be worried about the air?';
   it('is answered by the rules’ summary when the model is off', async () => {

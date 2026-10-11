@@ -2,7 +2,7 @@ import { fileURLToPath } from 'node:url';
 import { Duration, RemovalPolicy } from 'aws-cdk-lib';
 import type { Table } from 'aws-cdk-lib/aws-dynamodb';
 import { Effect, PolicyStatement, Role, ServicePrincipal } from 'aws-cdk-lib/aws-iam';
-import { Runtime, Tracing } from 'aws-cdk-lib/aws-lambda';
+import { Architecture, Runtime, Tracing } from 'aws-cdk-lib/aws-lambda';
 import { NodejsFunction } from 'aws-cdk-lib/aws-lambda-nodejs';
 import { LogGroup, RetentionDays } from 'aws-cdk-lib/aws-logs';
 import type { IBucket } from 'aws-cdk-lib/aws-s3';
@@ -39,6 +39,7 @@ export class Harvest extends Construct {
     this.harvestFunction = new NodejsFunction(this, 'HarvestFunction', {
       entry: harvestEntry,
       runtime: Runtime.NODEJS_22_X,
+      architecture: Architecture.ARM_64,
       // X-Ray: every call to AWS from this function shows up in the service map.
       tracing: Tracing.ACTIVE,
       memorySize: 256,

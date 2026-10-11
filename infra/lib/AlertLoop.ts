@@ -2,7 +2,7 @@ import { fileURLToPath } from 'node:url';
 import { CfnOutput, Duration, RemovalPolicy, Stack } from 'aws-cdk-lib';
 import type { Table } from 'aws-cdk-lib/aws-dynamodb';
 import { Effect, PolicyStatement } from 'aws-cdk-lib/aws-iam';
-import { Runtime, Tracing } from 'aws-cdk-lib/aws-lambda';
+import { Architecture, Runtime, Tracing } from 'aws-cdk-lib/aws-lambda';
 import { NodejsFunction } from 'aws-cdk-lib/aws-lambda-nodejs';
 import { LogGroup, RetentionDays } from 'aws-cdk-lib/aws-logs';
 import type { ISecret } from 'aws-cdk-lib/aws-secretsmanager';
@@ -53,6 +53,7 @@ export class AlertLoop extends Construct {
     this.sendFunction = new NodejsFunction(this, 'SendFunction', {
       entry: sendEntry,
       runtime: Runtime.NODEJS_22_X,
+      architecture: Architecture.ARM_64,
       // X-Ray: every call to AWS from this function shows up in the service map.
       tracing: Tracing.ACTIVE,
       memorySize: 256,

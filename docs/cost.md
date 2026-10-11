@@ -8,19 +8,19 @@ All figures are list prices in US dollars, before any free tier. The always-free
 
 ## The prices used
 
-| Service                             | Price                                                                           | Unit                                               |
-| ----------------------------------- | ------------------------------------------------------------------------------- | -------------------------------------------------- |
-| Lambda                              | $0.20 per million requests; $0.0000166667                                       | request; GB-second (x86)                           |
-| API Gateway (HTTP API)              | $0.00000105                                                                     | request                                            |
-| DynamoDB on demand                  | $0.00000071 write; $0.0000001425 read; $0.285                                   | write unit; read unit; GB-month (first 25 GB free) |
-| CloudFront (India)                  | $0.109 first 10 TB; $0.0000012                                                  | GB out; HTTPS request                              |
-| S3                                  | $0.025                                                                          | GB-month                                           |
-| Secrets Manager                     | $0.40; $0.000005                                                                | secret a month; API request                        |
-| CloudWatch                          | $0.10; $0.67                                                                    | alarm a month; GB of logs ingested                 |
-| Step Functions (Standard)           | $0.0000285                                                                      | state transition                                   |
-| EventBridge Scheduler               | free for the first 14 million; $0.00000105 after                                | invocation                                         |
-| Bedrock, Amazon Nova Micro (Mumbai) | $0.000041 input; $0.000164 output                                               | 1,000 tokens                                       |
-| Bedrock Guardrails                  | $0.00015 content filters; $0.00015 denied topics; $0.0001 sensitive information | text unit (up to 1,000 characters)                 |
+| Service                             | Price                                                                           | Unit                                                                                                          |
+| ----------------------------------- | ------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------- |
+| Lambda                              | $0.20 per million requests; $0.0000166667                                       | request; GB-second (x86 rate; the functions run on arm64, which is cheaper, so these sums are an upper bound) |
+| API Gateway (HTTP API)              | $0.00000105                                                                     | request                                                                                                       |
+| DynamoDB on demand                  | $0.00000071 write; $0.0000001425 read; $0.285                                   | write unit; read unit; GB-month (first 25 GB free)                                                            |
+| CloudFront (India)                  | $0.109 first 10 TB; $0.0000012                                                  | GB out; HTTPS request                                                                                         |
+| S3                                  | $0.025                                                                          | GB-month                                                                                                      |
+| Secrets Manager                     | $0.40; $0.000005                                                                | secret a month; API request                                                                                   |
+| CloudWatch                          | $0.10; $0.67                                                                    | alarm a month; GB of logs ingested                                                                            |
+| Step Functions (Standard)           | $0.0000285                                                                      | state transition                                                                                              |
+| EventBridge Scheduler               | free for the first 14 million; $0.00000105 after                                | invocation                                                                                                    |
+| Bedrock, Amazon Nova Micro (Mumbai) | $0.000041 input; $0.000164 output                                               | 1,000 tokens                                                                                                  |
+| Bedrock Guardrails                  | $0.00015 content filters; $0.00015 denied topics; $0.0001 sensitive information | text unit (up to 1,000 characters)                                                                            |
 
 ## Cost of one thing
 
@@ -50,19 +50,22 @@ All figures are list prices in US dollars, before any free tier. The always-free
 
 These are the most each limit lets the app spend, which is the point of having them.
 
-| Limit                                                              | Allows at most                                            | Calculation                                                                                                              |
-| ------------------------------------------------------------------ | --------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
-| Assistant: 500 questions a day for the whole service (40 a caller) | **$0.42 a day, about $12.70 a month**                     | 500 × $0.00085. The earlier limit of 1,500 would have been up to $38 a month, most of the $50 budget, so it was lowered. |
-| Request form: 200 a day (5 a caller)                               | under $0.001 a day                                        | 200 × $0.0000033. The cost that matters is a person reading them.                                                        |
-| API: 25 requests a second, burst 50                                | **about $6 a day** if it is hit without a break for a day | 2.16 million requests × $0.0000028.                                                                                      |
-| CloudFront on top of that                                          | about $2.60 a day                                         | Its own request fee, $0.0000012 each, is charged before the API throttle can say no.                                     |
-| Assistant and form: 3 and 1 a second                               | far below the rest                                        | Their own throttles.                                                                                                     |
-| Model output                                                       | 220 tokens                                                | A reply cannot grow the bill.                                                                                            |
-| Model failures                                                     | the plain answer costs nothing                            | If the model is off, slow, or fails a check, the rules answer instead.                                                   |
-| Kill switch                                                        | $0                                                        | `/vayu/assistant/enabled` off: no model, no guardrail.                                                                   |
-| Athena                                                             | 1 GB scanned per query                                    | A larger query is refused.                                                                                               |
-| Lambda                                                             | at most 2 minutes each                                    | Nothing runs for hours.                                                                                                  |
-| Alerts                                                             | none sent                                                 | Sends are off unless a person switches them on.                                                                          |
+| Limit                                                                           | Allows at most                                            | Calculation                                                                                                              |
+| ------------------------------------------------------------------------------- | --------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
+| Assistant: 500 questions a day for the whole service (40 a caller)              | **$0.42 a day, about $12.70 a month**                     | 500 × $0.00085. The earlier limit of 1,500 would have been up to $38 a month, most of the $50 budget, so it was lowered. |
+| Spoken answers: 60,000 characters a day for the whole service (12,000 a caller) | **$0.96 a day, about $29 a month**                        | 60,000 × $0.000016 (Polly neural, list price). The largest of the capped lines, larger than the assistant.               |
+| Request form: 200 a day (5 a caller)                                            | under $0.001 a day                                        | 200 × $0.0000033. The cost that matters is a person reading them.                                                        |
+| API: 25 requests a second, burst 50                                             | **about $6 a day** if it is hit without a break for a day | 2.16 million requests × $0.0000028.                                                                                      |
+| CloudFront on top of that                                                       | about $2.60 a day                                         | Its own request fee, $0.0000012 each, is charged before the API throttle can say no.                                     |
+| Assistant and form: 3 and 1 a second                                            | far below the rest                                        | Their own throttles.                                                                                                     |
+| Model output                                                                    | 220 tokens                                                | A reply cannot grow the bill.                                                                                            |
+| Model failures                                                                  | the plain answer costs nothing                            | If the model is off, slow, or fails a check, the rules answer instead.                                                   |
+| Kill switch                                                                     | $0                                                        | `/vayu/assistant/enabled` off: no model, no guardrail.                                                                   |
+| Athena                                                                          | 1 GB scanned per query                                    | A larger query is refused.                                                                                               |
+| Lambda                                                                          | at most 2 minutes each                                    | Nothing runs for hours.                                                                                                  |
+| Alerts                                                                          | none sent                                                 | Sends are off unless a person switches them on.                                                                          |
+
+Everything at its cap for a whole month, with no flood: about $4.50 idle + $12.70 assistant + $29 spoken answers, roughly $46. That is close to the $50 budget, which only sends email.
 
 ## What is not capped
 
@@ -76,4 +79,4 @@ These are the most each limit lets the app spend, which is the point of having t
 - Prices: `aws pricing list-price-lists` and `get-price-list-file-url` for the service and `ap-south-1` (CloudFront: `aws-other`).
 - Guardrail units and tokens: call the model with `guardrailConfig.trace = "enabled"`; the response lists the text units used and the token counts.
 - Lambda durations: the `REPORT` lines in each function's log group.
-- Spend: the Billing console and AWS Budgets. Month to date on 10 October 2026: $0.00.
+- Spend: the Billing console and AWS Budgets. The console showed $0.00 month to date on 10 October 2026, but billing lags and the account may still be in a free period, so that is not a measure of cost. The $4.50 is computed from list prices, not read from a bill.

@@ -1,7 +1,7 @@
 import { fileURLToPath } from 'node:url';
 import { Duration, RemovalPolicy, Stack } from 'aws-cdk-lib';
 import type { Table } from 'aws-cdk-lib/aws-dynamodb';
-import { Runtime, Tracing } from 'aws-cdk-lib/aws-lambda';
+import { Architecture, Runtime, Tracing } from 'aws-cdk-lib/aws-lambda';
 import { NodejsFunction } from 'aws-cdk-lib/aws-lambda-nodejs';
 import { LogGroup, RetentionDays } from 'aws-cdk-lib/aws-logs';
 import { DefinitionBody, StateMachine, StateMachineType } from 'aws-cdk-lib/aws-stepfunctions';
@@ -33,6 +33,7 @@ export class FixCheck extends Construct {
     this.stepFunction = new NodejsFunction(this, 'StepFunction', {
       entry: fixCheckEntry,
       runtime: Runtime.NODEJS_22_X,
+      architecture: Architecture.ARM_64,
       // X-Ray: every call to AWS from this function shows up in the service map.
       tracing: Tracing.ACTIVE,
       memorySize: 256,

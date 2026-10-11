@@ -12,7 +12,7 @@ export interface FireReportDraft {
 }
 
 export const FIRE_REPORT_WORDS =
-  'We keep each report so a person can check it. It is not sent to any agency.';
+  'We keep each report so a person can check it. It is not sent to any agency. If a fire is burning now, call 112 or the fire service on 101.';
 
 export type FireReportSent = 'sent' | 'saved';
 
@@ -74,7 +74,7 @@ export async function submitFireReport(
 }
 
 export const FIRE_REPORT_WORDS_HINDI =
-  'हम हर रिपोर्ट इसलिए रखते हैं कि कोई व्यक्ति उसे जाँच सके। यह किसी एजेंसी को नहीं भेजी जाती।';
+  'हम हर रिपोर्ट इसलिए रखते हैं कि कोई व्यक्ति उसे जाँच सके। यह किसी एजेंसी को नहीं भेजी जाती। अगर आग अभी लगी है, तो 112 या फ़ायर सर्विस 101 पर कॉल करें।';
 
 /** The words for a report that went through, with what it does and does not do, in English or in Hindi. */
 export const sentWords = (how: FireReportSent, lang: 'en' | 'hi' = 'en'): string =>

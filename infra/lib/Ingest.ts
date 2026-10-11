@@ -3,7 +3,7 @@ import { Duration, RemovalPolicy, Stack } from 'aws-cdk-lib';
 import type { Table } from 'aws-cdk-lib/aws-dynamodb';
 import { CfnDeliveryStream } from 'aws-cdk-lib/aws-kinesisfirehose';
 import { CfnPolicy, CfnTopicRule } from 'aws-cdk-lib/aws-iot';
-import { Runtime, Tracing } from 'aws-cdk-lib/aws-lambda';
+import { Architecture, Runtime, Tracing } from 'aws-cdk-lib/aws-lambda';
 import { NodejsFunction } from 'aws-cdk-lib/aws-lambda-nodejs';
 import { LogGroup, RetentionDays } from 'aws-cdk-lib/aws-logs';
 import { Effect, PolicyStatement, Role, ServicePrincipal } from 'aws-cdk-lib/aws-iam';
@@ -41,6 +41,7 @@ export class Ingest extends Construct {
     this.ingestFunction = new NodejsFunction(this, 'IngestFunction', {
       entry: ingestEntry,
       runtime: Runtime.NODEJS_22_X,
+      architecture: Architecture.ARM_64,
       // X-Ray: every call to AWS from this function shows up in the service map.
       tracing: Tracing.ACTIVE,
       memorySize: 256,

@@ -66,11 +66,9 @@ export function AqiScale({
           </span>
         ))}
       </div>
-      {smoke && (
-        <p className="aqi-scale-unit" aria-hidden="true">
-          cigarettes a day
-        </p>
-      )}
+      <p className="aqi-scale-unit" aria-hidden="true">
+        {smoke ? 'cigarettes a day' : 'US AQI scale. GRAP stages use India’s own scale.'}
+      </p>
     </div>
   );
 }

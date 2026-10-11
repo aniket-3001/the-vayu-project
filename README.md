@@ -35,7 +35,7 @@ AWS Air track submission, 8 to 11 October 2026. Built alone.
 | **My Air**            | Alerts for the next three days (GRAP stages, smog, stubble burning, rain, wind) and small tasks for today, then your cards: **Your room** (when a unit is added), then your places, each in the colour of its air.                  |
 | **Your room**         | The unit's live reading against the air outside at your place, the gap between them, a test that marks "purifier on" or "window opened" and shows how far the air moved, the room's day by hour, and a few plain insights.          |
 | **Exposure**          | A 24-hour dial of the air a person breathed: at home, at work or school, and outdoors. Add the people in a family, with school or work hours. Log outdoor time. Hours the unit measured replace the outside reading at the address. |
-| **Map**               | The air across the world: every monitor, wind, fires, and the colour between.                                                                                                                                                       |
+| **Map**               | Every monitor the app can read, wind, fires, and the colour between. Advice is given only for Delhi and north India.                                                                                                                                                       |
 | **AIR Lens**          | Point a phone camera and see the air as particles, with a scene for each place; an eye button makes the card see-through.                                                                                                           |
 | **Assistant**         | Ask a question or tell it something ("Asha walked in the park for 40 minutes"), in English or Hindi, read aloud in either.                                                                                                          |
 | **The recorded days** | The whole app on seven real past days, labelled recorded.                                                                                                                                                                           |
@@ -60,7 +60,7 @@ The only made-up days in the repository are in the separate prototype build (`np
 
 ## Where AWS fits
 
-Each service is in `infra/` as CDK (TypeScript); one `cdk deploy` makes the stack.
+Each service is in `infra/` as CDK (TypeScript); `cdk deploy` makes the stack and `make deploy-site` uploads the app. Every Lambda runs on Graviton (arm64).
 
 | Service                                | Role                                                                                                            | Where                                              |
 | -------------------------------------- | --------------------------------------------------------------------------------------------------------------- | -------------------------------------------------- |
@@ -131,7 +131,7 @@ make local     # in another: the app on your machine, reading it
 | `npm run build:demo -w @vayu/web` | The separate prototype build (made-up days, device frames). Never uploaded. |
 | `node scripts/record-week.mjs`    | Remake the recorded days from the public archives (needs a NASA FIRMS key). |
 
-The stack deploys with `cd infra && npx cdk deploy`. It needs three secrets made by hand first: `vayu/openaq-api-key`, `vayu/firms-map-key` and `vayu/telegram-bot-token`.
+The stack deploys with `cd infra && npx cdk deploy`. It needs three secrets made by hand first: `vayu/openaq-api-key`, `vayu/firms-map-key` and `vayu/telegram-bot-token` (the stack makes the other two, a webhook secret and a request salt). `make deploy-site` uploads the app; the two budgets in my account were made by hand.
 
 ## Repository map
 

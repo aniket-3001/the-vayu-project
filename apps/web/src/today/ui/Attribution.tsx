@@ -50,7 +50,7 @@ export function Attribution({ data }: { readonly data: TodayData }): React.JSX.E
       {p.mode === 'live' && (
         <p className="muted">
           {recorded
-            ? 'Real monitor readings from the archive; the hours after this moment are what was recorded next, shown as a forecast would be.'
+            ? 'Real monitor readings from the archive; the hours after this moment are what was recorded next, so they are hindsight, not a forecast made at the time.'
             : 'Real monitor readings; the forecast hours are a model.'}
         </p>
       )}

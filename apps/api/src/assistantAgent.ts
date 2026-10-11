@@ -56,8 +56,14 @@ function maskNames(text: string, context: AssistantContext): { masked: string; n
   return { masked, names };
 }
 
+const escapeRegExp = (text: string): string => text.replace(/[.*+?^${}()|[\]\\]/gu, '\\$&');
+
+/** Puts the names back. A model may change a placeholder's case ("[Place]" at the start of a sentence). */
 const unmask = (text: string, names: Names): string =>
-  names.reduce((out, { token, name }) => out.replaceAll(token, name), text);
+  names.reduce(
+    (out, { token, name }) => out.replace(new RegExp(escapeRegExp(token), 'giu'), () => name),
+    text,
+  );
 
 /** What an answer must never contain, whoever wrote it. */
 const FORBIDDEN: readonly RegExp[] = [
@@ -70,13 +76,23 @@ const FORBIDDEN: readonly RegExp[] = [
   /\bschools?\b[^.]{0,40}\b(?:is|are|will be|has been|have been)\s+(?:closed|shut)\b/iu,
 ];
 
-function usable(text: string, names: Names): boolean {
+/**
+ * A number check cannot catch a wrong word. When the level is not Good, an answer may not call the air good, clean or
+ * safe: that would contradict the figure beside it.
+ */
+const CALLS_AIR_GOOD =
+  /\b(?:good|clean|excellent|healthy|safe)\s+air\b|\bair(?:\s+quality)?\b[^.]{0,30}\b(?:is|are|looks?)\s+(?:good|clean|excellent|healthy|safe)\b|\b(?:good|excellent)\s+air\s+quality\b/iu;
+const contradictsLevel = (text: string, level: string): boolean =>
+  level.toLowerCase() !== 'good' && CALLS_AIR_GOOD.test(text);
+
+function usable(text: string, names: Names, level: string): boolean {
+  if (contradictsLevel(text, level)) return false;
   if (text.length === 0 || text.length > ASSISTANT_LIMITS.maxAnswerChars) return false;
   if (FORBIDDEN.some((pattern) => pattern.test(text))) return false;
   // Every placeholder we sent must come back, and none we did not send may appear.
-  const sent = new Set(names.map((n) => n.token));
-  const back = text.match(/\[(?:place|person \d+)\]/gu) ?? [];
-  if (back.some((token) => !sent.has(token))) return false;
+  const sent = new Set(names.map((n) => n.token.toLowerCase()));
+  const back = text.match(/\[(?:place|person \d+)\]/giu) ?? [];
+  if (back.some((token) => !sent.has(token.toLowerCase()))) return false;
   return true;
 }
 
@@ -158,7 +174,7 @@ export async function answer(input: AnswerInput): Promise<AssistantReply> {
     const text = unmask(phrased.text, names);
     if (
       phrased.source === 'model' &&
-      usable(phrased.text, names) &&
+      usable(phrased.text, names, context.level) &&
       keepsSafety(rule.text, phrased.text)
     )
       return {
@@ -210,7 +226,7 @@ export async function answer(input: AnswerInput): Promise<AssistantReply> {
     ),
   );
   const numbersOk = numbersIn(generated).every((n) => allowed.has(n));
-  if (generated !== '' && numbersOk && usable(generated, names)) {
+  if (generated !== '' && numbersOk && usable(generated, names, context.level)) {
     const grap = /grap/iu.test(generated) && !/unofficial|estimate/iu.test(generated);
     return {
       text: `${unmask(generated, names)}${grap ? unofficialNote : ''}`,

@@ -2,7 +2,7 @@ import { fileURLToPath } from 'node:url';
 import { Duration, RemovalPolicy } from 'aws-cdk-lib';
 import type { Table } from 'aws-cdk-lib/aws-dynamodb';
 import { Role, ServicePrincipal } from 'aws-cdk-lib/aws-iam';
-import { Runtime, Tracing } from 'aws-cdk-lib/aws-lambda';
+import { Architecture, Runtime, Tracing } from 'aws-cdk-lib/aws-lambda';
 import { NodejsFunction } from 'aws-cdk-lib/aws-lambda-nodejs';
 import { LogGroup, RetentionDays } from 'aws-cdk-lib/aws-logs';
 import { CfnSchedule } from 'aws-cdk-lib/aws-scheduler';
@@ -37,6 +37,7 @@ export class Stations extends Construct {
     this.stationsFunction = new NodejsFunction(this, 'StationsFunction', {
       entry: stationsEntry,
       runtime: Runtime.NODEJS_22_X,
+      architecture: Architecture.ARM_64,
       tracing: Tracing.ACTIVE,
       memorySize: 256,
       // Every wait has a limit (rule I9). Up to 75 monitors a second apiece is about 85 seconds.
