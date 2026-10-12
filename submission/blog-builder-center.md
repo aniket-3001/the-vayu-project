@@ -159,7 +159,7 @@ The serial log showed good readings, then nothing the moment the app connected. 
 
 ## What is next
 
-Next: the smoke-decay test (raise a room's PM2.5, log how fast it falls with the cleaner off and then on, and fit the curve, accepting it only above R² 0.95). Then the unit beside a monitor for a few days, with the difference published. Then one school, for one term.
+I want to take it into a school for a term and see what changes.
 
 ## What I learned
 

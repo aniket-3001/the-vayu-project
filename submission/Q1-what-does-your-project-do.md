@@ -17,5 +17,3 @@
 - On 31 Oct, the app counted 85 satellite fire detections near Home or upwind within 300 km, and warned that smoke could arrive.
 
 "Try without login" plays seven real recorded days, from the public archives, as if it were 8 am on each: https://d3lmq1mze2gup3.cloudfront.net/#/week. The hours after 8 am are what was recorded next, so the days show the features, not forecast skill.
-
-Next: one school for one term.
