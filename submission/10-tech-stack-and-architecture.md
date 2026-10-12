@@ -10,7 +10,7 @@
 
 - **Amazon CloudFront** serves the app from a private **Amazon S3** bucket and passes `/v1/*` to **Amazon API Gateway** (HTTP API: 25 requests a second, burst 50; 3 a second for the assistant; 1 for the form). A JWT authorizer guards the one account route.
 - **One AWS Lambda** (Node 22, Graviton, 256 MB, 10 s) serves every route, with **Powertools** logging and tracing.
-- **Amazon EventBridge Scheduler** runs two jobs with retries off: every 15 minutes it refreshes four reference places; every 30 it reads about 7,260 monitors for the map. **Amazon DynamoDB** (on-demand, TTL) holds the cache, accounts, quotas and cached speech.
+- **Amazon EventBridge Scheduler** runs two jobs with retries off: every 15 minutes it refreshes four reference places; every 30 it reads about 7,200 monitors for the map. **Amazon DynamoDB** (on-demand, TTL) holds the cache, accounts, quotas and cached speech.
 - **Amazon Bedrock** (Nova Micro through the `apac.` inference profile, with a Guardrail) may reword the rules' answer; **Amazon Polly** (Kajal) reads it aloud; **Amazon Cognito** holds optional accounts; **Secrets Manager** holds keys; one **Systems Manager** parameter switches the model off.
 - **CloudWatch** (8 alarms and a dashboard), **SNS**, **X-Ray**. **AWS Step Functions** holds an alert loop that is deployed, tested and switched off.
 

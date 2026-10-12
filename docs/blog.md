@@ -24,7 +24,7 @@ _Top row: My Air, the recorded morning after Diwali, the map with satellite fire
 
 ## What you get
 
-You add the places you care about. Each card shows the colour of the air, the AQI, the weather, the cleanest hour, the next two days, and the monitor's name, distance and age. Alerts cover the GRAP band, smog, stubble burning, rain and wind. Around the cards sit a map of every monitor the app can read (7,258 on 12 October), an Exposure view of a person's day, AIR Lens, which draws the air as particles in front of your camera, and an assistant in English and Hindi, by text or voice.
+You add the places you care about. Each card shows the colour of the air, the AQI, the weather, the cleanest hour, the next two days, and the monitor's name, distance and age. Alerts cover the GRAP band, smog, stubble burning, rain and wind. Around the cards sit a map of every monitor the app can read (more than 7,000 at any time), an Exposure view of a person's day, AIR Lens, which draws the air as particles in front of your camera, and an assistant in English and Hindi, by text or voice.
 
 Three trust rules sit under every screen:
 
@@ -80,7 +80,7 @@ _Scene 2 of the animated architecture: a person asks for the air at a place._
 | Amazon API Gateway (HTTP API)                            | A proxy, a throttle and a JWT authorizer, cheaper per request than a REST API. 25 requests a second (burst 50); 3 for the assistant and speech; 1 for forms.                                                                |
 | AWS Lambda                                               | One function for every route (Node 22, Graviton, 256 MB, 10-second limit). It checks each request and answer against a schema, so a bad answer is an error, never a number.                                                 |
 | Amazon DynamoDB                                          | On-demand, with TTL. The cache, saved accounts, cached speech and the daily caps. Each cap is one conditional `UpdateItem`: add one only if there is room, so two requests at once cannot both take the last slot. No lock. |
-| Amazon EventBridge Scheduler                             | Every 15 minutes, four reference places kept warm. Every 30, about 7,260 monitors read for the map. Retries are zero, and an alarm fires if a job stops: after 45 minutes for the first, 90 for the second.                 |
+| Amazon EventBridge Scheduler                             | Every 15 minutes, four reference places kept warm. Every 30, about 7,200 monitors read for the map. Retries are zero, and an alarm fires if a job stops: after 45 minutes for the first, 90 for the second.                 |
 | Amazon Bedrock with Guardrails                           | Nova Micro rewords; it never decides. One Converse call, temperature 0.2, 220 tokens at most, raced against a 6-second timer.                                                                                               |
 | Amazon Polly                                             | Answers read aloud, cached by their text.                                                                                                                                                                                   |
 | Amazon Cognito                                           | Optional accounts. A JWT authorizer guards the one account route, and saved data is keyed by the user id inside the verified token.                                                                                         |
