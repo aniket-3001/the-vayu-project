@@ -80,7 +80,7 @@ export class VayuStack extends Stack {
       autoDeleteObjects: true,
     });
 
-    // The bot token was created once, by hand, via BotFather, and stored out of band (tracker/TODO.md).
+    // The bot token was created once, by hand, via BotFather, and stored out of band.
     const telegramBotToken = Secret.fromSecretNameV2(
       this,
       'TelegramBotToken',

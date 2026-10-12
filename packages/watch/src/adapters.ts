@@ -54,8 +54,7 @@ export function inAppAdapter(clock: Clock): RecordingAdapter {
 }
 
 /**
- * Stands in for the real Telegram adapter (needs a bot token — not yet available, see
- * tracker/IMPLEMENTATION-PLAN.md "Open blockers"). Same interface, so the real one swaps in
+ * Stands in for the real Telegram adapter (live sends are off; it needs a bot token). Same interface, so the real one swaps in
  * behind `ChannelAdapter` without touching the loop.
  */
 export function telegramTestAdapter(clock: Clock): RecordingAdapter {

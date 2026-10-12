@@ -144,13 +144,13 @@ make local-api # in one terminal: the API on your machine (real monitors need OP
 make local     # in another: the app on your machine, reading it
 ```
 
-| Command                           | What                                                                        |
-| --------------------------------- | --------------------------------------------------------------------------- |
-| `make prove`                      | Everything above; fails closed.                                             |
-| `make deploy-diff`                | What a deploy would change, read-only.                                      |
-| `make deploy-site`                | Build the app for the live address and upload it.                           |
-| `make smoke LIVE_URL=https://…`   | Check the data, the rules and the headers on a live address.                |
-| `node scripts/record-week.mjs`    | Remake the recorded days from the public archives (needs a NASA FIRMS key). |
+| Command                         | What                                                                        |
+| ------------------------------- | --------------------------------------------------------------------------- |
+| `make prove`                    | Everything above; fails closed.                                             |
+| `make deploy-diff`              | What a deploy would change, read-only.                                      |
+| `make deploy-site`              | Build the app for the live address and upload it.                           |
+| `make smoke LIVE_URL=https://…` | Check the data, the rules and the headers on a live address.                |
+| `node scripts/record-week.mjs`  | Remake the recorded days from the public archives (needs a NASA FIRMS key). |
 
 The stack deploys with `cd infra && npx cdk deploy`. It needs three secrets made by hand first: `vayu/openaq-api-key`, `vayu/firms-map-key` and `vayu/telegram-bot-token` (the stack makes the other two, a webhook secret and a request salt). `make deploy-site` uploads the app; the two budgets in my account were made by hand.
 
@@ -188,7 +188,6 @@ The stack deploys with `cd infra && npx cdk deploy`. It needs three secrets made
 | `docs/VIDEO.md`                   | The video: what to open, show and say                                    |
 | `submission/`                     | Every answer to the submission form, in one folder                       |
 | `docs/learning-log.md`            | What broke and how it was fixed                                          |
-| `docs/IMPLEMENTATION-PLAN.md`     | The plan the deployed app was first built to (historical)                |
 | `CONTRIBUTIONS.md`                | What I built and delivered                                               |
 | `DESIGN.md`                       | The visual design brief                                                  |
 

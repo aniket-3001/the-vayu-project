@@ -1,5 +1,5 @@
 {
-  "note": "CPCB National AQI breakpoints on 24-hour means, written as contiguous intervals [bpLo, bpHi) so the sub-index is continuous. PM2.5 confirmed with CPCB sources; PM10 bounds MUST be checked against the CPCB document (see tracker/TODO.md).",
+  "note": "CPCB National AQI breakpoints on 24-hour means, written as contiguous intervals [bpLo, bpHi) so the sub-index is continuous. PM2.5 confirmed with CPCB sources; PM10 bounds were checked only against monitors' own PM10 index on 24 station-days, not line by line against the CPCB document.",
   "minValidHours": 16,
   "pm25": [
     { "bpLo": 0, "bpHi": 30, "iLo": 0, "iHi": 50, "band": "good" },

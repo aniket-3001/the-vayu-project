@@ -82,7 +82,7 @@ describe('CADR from decay (rule I13)', () => {
   });
 
   it('cannot fit a slow baseline in 30 minutes, which is why the baseline run lasts 60', () => {
-    // A roadblock found by this test; see tracker/JOURNAL.md.
+    // A roadblock found by this test.
     const thirty = fitDecay(syntheticRun(0.4, { noise: 0.03, seed: 3 }), 20, { maxMinutes: 30 });
     const sixty = fitDecay(syntheticRun(0.4, { noise: 0.01, seed: 3 }), 20, { maxMinutes: 60 });
     expect(thirty.kind).toBe('invalid');
