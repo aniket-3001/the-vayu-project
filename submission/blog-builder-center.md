@@ -163,6 +163,8 @@ I want to take it into a school for a term and see what changes.
 
 ## What I learned
 
-Keep the model's job small: every failure I had with it sat where that line was loose. Read your own screenshots as a stranger would: a number can be right and the sentence beside it wrong. And say plainly what you did not measure. It changed what I let the app claim.
+About AWS: Bedrock in Mumbai needs an inference profile and a two-ARN policy, and its Guardrail reads the user turn for attacks, so instructions go in the system prompt. A DynamoDB conditional write is a race-free quota with no lock. CloudFront cache policies let the API set each answer's lifetime, and the origin request policy decides what API Gateway sees. CDK assertion tests turn safety rules into failing builds, but only a real deploy shows what CloudFormation can order and roll back. EventBridge retries are a setting, a silent schedule needs its own alarm, a Systems Manager parameter makes a fail-closed kill switch, and the Price List API showed me where the money goes, so the caps went there.
+
+Beyond AWS: keep the model's job small, and read your own screenshots as a stranger would. A number can be right and the sentence beside it wrong.
 
 Try it: https://d3lmq1mze2gup3.cloudfront.net · Seven recorded days: https://d3lmq1mze2gup3.cloudfront.net/#/week · Code: https://github.com/hrsh-kr/the-vayu-project
