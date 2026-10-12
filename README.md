@@ -46,7 +46,7 @@ Every number says whether it is **Live** (a named monitor, how far, how old), an
 
 A measuring unit for a room, and a cleaner for it to watch. Both are mine, wired, flashed and built by hand.
 
-![The measuring unit: an ESP32-S3 board wired to the SPS30 particle sensor on a breadboard](docs/images/build/measuring-unit.jpg)
+<img src="docs/images/build/measuring-unit-square.jpg" alt="The measuring unit: an ESP32-S3 board wired to the SPS30 particle sensor on a breadboard" width="200" height="200" />
 
 ![The cleaner in five steps: the box, the fan inside it, the pleated filter, the foam pre-filter, assembled](docs/images/collage-build.jpg)
 
