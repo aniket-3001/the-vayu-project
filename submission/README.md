@@ -19,7 +19,7 @@ Everything to paste, in the order of the form. Paste the whole file, except wher
 ## Before sending
 
 - Record and upload the video (3 minutes at most, unlisted). Put its link in `01-links.md`, the README and the form.
-- Publish the blog on AWS Builder Center. Upload the five images from `images/` (the blog uses `images/02b-…`, `collage-features`, `build/measuring-unit`, `collage-build`, `build/purifier-6-airflow-191cfm`; the 5-second video is `build/airflow-proof.mp4`). Put the link in the README.
+- Publish the blog on AWS Builder Center. Upload the eight images from `images/` that the blog names, in the order they appear (the 5-second video is `build/airflow-proof.mp4`). Put the link in the README.
 - Open every link signed out, on a phone.
 - If a box is shorter than an answer, cut from the bottom: the cost line in 3, the "Not done yet" paragraph last in 2.
 
