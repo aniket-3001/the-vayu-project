@@ -1,11 +1,11 @@
 # Links
 
-| Form field                                               | Paste                                                                    |
-| -------------------------------------------------------- | ------------------------------------------------------------------------ |
-| GitHub link to project (public, with README and history) | https://github.com/hrsh-kr/the-vayu-project                              |
-| Deployed link to project                                 | https://d3lmq1mze2gup3.cloudfront.net                                    |
-| The recorded days (a demo of seven real past days)       | https://d3lmq1mze2gup3.cloudfront.net/#/week                             |
-| YouTube video demo link (3 minutes at most, unlisted)    | https://youtu.be/lTXWbqgYA50                                             |
-| Blog link (AWS Builder Center)                           | https://builder.aws.com/content/3KYY1aP4fPvrOlrqlV4OyLOzbpU/vayu-project |
+| Form field                                               | Paste                                                                                                                                      |
+| -------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
+| GitHub link to project (public, with README and history) | https://github.com/hrsh-kr/the-vayu-project                                                                                                |
+| Deployed link to project                                 | https://d3lmq1mze2gup3.cloudfront.net                                                                                                      |
+| The recorded days (a demo of seven real past days)       | https://d3lmq1mze2gup3.cloudfront.net/#/week                                                                                               |
+| YouTube video demo link (3 minutes at most, unlisted)    | https://youtu.be/Pz4peN0KGp4                                                                                                               |
+| Blog link (AWS Builder Center)                           | https://builder.aws.com/content/3KZptnsls9p0kveqVHy6FGCWdWP/do-we-walk-to-school-today-one-answer-for-one-place-in-delhis-air-built-on-aws |
 
 Before pasting: open the deployed link and the video link signed out, on a phone.

@@ -6,7 +6,7 @@ It is 8 am, the morning after Diwali, in Delhi. The city app says "bad". A paren
 
 The Vayu Project answers for _one place_. Home, near R K Puram: **US AQI 500** (the top of that scale), from the Lodhi Road monitor **3.8 km** away, as recorded (the recording uses four Delhi monitors; the live app chooses from about 7,000). The air at this monitor is **in the GRAP Stage IV band** (our estimate; the official order that morning was Stage II for all of NCR, from a city average of 351, and this one monitor was far above it). Stay in; if you must go out, 4 to 5 pm is the cleanest hour (known only in hindsight, because this is a recorded day).
 
-Live: **https://d3lmq1mze2gup3.cloudfront.net** (a phone or a laptop; create an account to save your places, or **Try without login** to see the recorded days) · See it on seven real past days: **https://d3lmq1mze2gup3.cloudfront.net/#/week** · Blog text: [`docs/blog.md`](docs/blog.md) · Video: https://youtu.be/lTXWbqgYA50 · AWS blog: https://builder.aws.com/content/3KYY1aP4fPvrOlrqlV4OyLOzbpU/vayu-project
+Live: **https://d3lmq1mze2gup3.cloudfront.net** (a phone or a laptop; create an account to save your places, or **Try without login** to see the recorded days) · See it on seven real past days: **https://d3lmq1mze2gup3.cloudfront.net/#/week** · Blog text: [`docs/blog.md`](docs/blog.md) · Video: https://youtu.be/Pz4peN0KGp4 · AWS blog: https://builder.aws.com/content/3KZptnsls9p0kveqVHy6FGCWdWP/do-we-walk-to-school-today-one-answer-for-one-place-in-delhis-air-built-on-aws
 
 ![The Vayu Project: My Air on live data, the recorded days, the map with satellite fires, AIR Lens, the assistant and Exposure](docs/images/collage-features.jpg)
 
