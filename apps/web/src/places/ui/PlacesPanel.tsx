@@ -399,8 +399,8 @@ export function PlacesPanel({
           <>
             <Pill>{weekActive() ? 'Recorded' : 'Live'}</Pill>{' '}
             {weekActive()
-              ? 'Each reading is the nearest recorded monitor within 40 km, with how far. Where there is none, there is no reading.'
-              : 'Each reading is the nearest monitor within 25 km, with how far and how old. Where there is none, it is a regional estimate.'}{' '}
+              ? 'Each reading comes from the nearest recorded monitor within 40 km, and we show how far. With none in range, there is no reading.'
+              : 'Each reading comes from the nearest monitor within 25 km, and we show how far and how old. With none in range, you get a regional estimate.'}{' '}
           </>
         )}
         {account.enabled

@@ -147,7 +147,7 @@ export function MapScreen(): React.JSX.Element {
                             : 'No monitor has reported in the last six hours, so none are shown.'
                           : recorded
                             ? `${String(monitors.length)} Delhi monitors with a PM2.5 reading in the six hours before this recorded moment (OpenAQ archive). Each is a dot; zoom in for its number.`
-                            : `${String(monitors.length)} monitors worldwide with a PM2.5 reading in the last six hours (OpenAQ). Each is a dot; zoom in for its number.`}
+                            : `${monitors.length.toLocaleString('en-IN')} monitors worldwide with a PM2.5 reading in the last six hours (OpenAQ). Each is a dot; zoom in for its number.`}
                     </span>
                   )}
                   {shown.gradient && (
@@ -169,7 +169,7 @@ export function MapScreen(): React.JSX.Element {
                       {recorded
                         ? 'Wind: what was recorded at central Delhi that hour (Open-Meteo archive), drawn the same across the map.'
                         : data.windLive
-                          ? 'Wind: ICON and GFS models via Open-Meteo, right now: close detail over south Asia, coarser elsewhere.'
+                          ? 'Wind right now, from weather models (Open-Meteo): finer detail over south Asia, coarser elsewhere.'
                           : sample
                             ? 'Wind is a sample flow.'
                             : 'The wind could not be loaded just now, so none is shown.'}

@@ -71,7 +71,7 @@ Headless Chrome is not a phone. A pass here means the page did the right thing i
 
 These need a real phone, a real person or the unit, and were not done:
 
-- [ ] AIR Lens on a phone, with the camera, location and microphone permission prompts
+- [ ] AIR Lens on a phone, with the real permission prompts. Done only with Chrome's test camera (`tests/live-check/lens-camera.mjs`, 12 October): the camera opens and plays, and nothing scrolls sideways. A real phone camera was not tried
 - [ ] The microphone: it listens, shows the words and sends them (English and Hindi)
 - [ ] The voice heard by ear on a phone (the audio is checked, not the listening)
 - [ ] Sending a real request through the request form, and reading it in the table (the smoke test only checks that a bad form is refused and nothing is stored)

@@ -9,6 +9,7 @@ node tests/live-check/screens.mjs 1280 800     # laptop
 node tests/live-check/fire-report.mjs          # a recorded day's fire: popup, then the report sheet
 node tests/live-check/assistant.mjs            # logging a walk, then Hindi
 node tests/live-check/offline.mjs              # readings stay when the network goes
+node tests/live-check/lens-camera.mjs          # the Lens with Chrome's test camera
 CHROME_ARGS="--autoplay-policy=no-user-gesture-required" node tests/live-check/screens.mjs 390 844   # lets the voice play in headless Chrome
 LIVE_URL=https://... node tests/live-check/screens.mjs 390 844   # another address
 ```

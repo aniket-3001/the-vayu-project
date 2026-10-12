@@ -184,7 +184,7 @@ describe('what the map says about its data', () => {
     ).toBeInTheDocument();
     expect(screen.getByText('Live')).toBeInTheDocument();
     expect(screen.getByText(/Colour between monitors is an estimate/u)).toBeInTheDocument();
-    expect(screen.getByText(/ICON and GFS models via Open-Meteo/u)).toBeInTheDocument();
+    expect(screen.getByText(/from weather models \(Open-Meteo\)/u)).toBeInTheDocument();
     expect(screen.queryByText(/sample flow/u)).not.toBeInTheDocument();
   });
 

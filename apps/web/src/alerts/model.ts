@@ -159,7 +159,7 @@ export function alertsFor(
       aqi: data.aqi,
       day: 0,
       title: `Air here is in the GRAP Stage ${ROMAN[stage]} band today`,
-      body: `${guide.short} The last 24 hours at this monitor average AQI ${String(average)} on India’s scale. GRAP itself is one order for all of Delhi-NCR: read it at caqm.nic.in.${worse}`,
+      body: `${guide.short} The last 24 hours at this monitor average AQI ${String(average)} on India’s scale. GRAP, the Graded Response Action Plan, is one order for all of Delhi-NCR: read it at caqm.nic.in.${worse}`,
       reason: `The last 24 hours average about ${String(average)} on India’s own scale (CPCB). That is in the band where GRAP Stage ${ROMAN[stage]} applies.${worse} GRAP follows the 24-hour average, not the hour. This is our estimate from the monitor nearest this place. The official stage is set once for the whole of Delhi-NCR, so a place nearby can read a different stage here, and only the official order counts.`,
       avoid: guide.avoid,
       todo: ['Read today’s official GRAP order at caqm.nic.in.', ...guide.todo],
