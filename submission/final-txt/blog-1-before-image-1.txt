@@ -1,0 +1,19 @@
+-- NOTE FOR ME, DO NOT PASTE THIS BLOCK --
+Paste this FIRST into the Body. It is the opening, up to the first image. Then upload IMAGE 1: collage-features.jpg.
+-- PASTE FROM THE NEXT LINE DOWN --
+
+It is 8 am on 21 October 2025, the morning after Diwali, in South Delhi. A school bag sits by the door. A parent opens a phone and finds one air-quality number for the whole city. The question is small and urgent: do we walk to school?
+
+The parent is a sketch. The morning is real. The nearest monitor with a fresh reading, Lodhi Road, 3.8 km from a home near R K Puram, read PM2.5 at 980 µg/m³. On the US Air Quality Index (AQI) that is 500, the top of the scale. The official pollution stage for all of Delhi-NCR that morning was GRAP Stage II, set from a city-wide average of 351. GRAP is Delhi's Graded Response Action Plan.
+
+Replayed at 8 am, The Vayu Project says: avoid going out, and wear a well-fitted N95 if you must. It names the monitor, its distance and the reading's age.
+
+It is free and live: https://d3lmq1mze2gup3.cloudfront.net. Press **Try without login** to play that morning yourself.
+
+## The idea
+
+Delhi has many air-quality numbers and none of them says what to do. A city figure cannot see one street. The nearest monitor may be kilometres away and its reading hours old.
+
+The Vayu Project turns public air data into a decision for one named place: a home, a school, a park. Walk or stay in. Mask or not. Windows shut or open. School assembly inside or on the ground. Every number says which monitor it came from, how far away it is and how old the reading is.
+
+I built it solo for the AWS Environmental Hacks Air track, with Claude as a coding assistant. I chose the problem and the rules, read and ran every change, built the hardware, and deployed everything to my own AWS account.

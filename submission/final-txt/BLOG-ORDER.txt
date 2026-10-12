@@ -1,0 +1,13 @@
+BLOG ORDER (for me, not for pasting)
+
+1. blog-0-title-description-banner.txt : Title, Description, and banner image (images/banner-1200x630.png)
+2. blog-1-before-image-1.txt            : paste into Body
+3. IMAGE 1                              : images/collage-features.jpg
+4. blog-2-after-image-1-before-image-2.txt
+5. IMAGE 2                              : images/08-architecture-scene-2.png
+6. blog-3-after-image-2-before-image-3.txt
+7. IMAGE 3                              : images/collage-build.jpg
+8. blog-4-after-image-3-to-end.txt
+
+The blog files are Markdown: the editor's Markdown mode, or the toolbar, renders the headings, lists and the one table.
+Each part file begins with a NOTE block; do not paste that block.

@@ -1,0 +1,49 @@
+-- NOTE FOR ME, DO NOT PASTE THIS BLOCK --
+Paste this SECOND, right AFTER you have inserted IMAGE 1 (collage-features.jpg). It starts with IMAGE 1's caption line. This part ends where IMAGE 2 goes: after pasting it, upload IMAGE 2: 08-architecture-scene-2.png.
+-- PASTE FROM THE NEXT LINE DOWN --
+
+_Six screens of the app: My Air, the recorded days, the map, AIR Lens, the assistant and Exposure_
+
+## What you get
+
+You add the places you care about. Each card shows the colour of the air, the AQI, the weather, the cleanest hour, the next two days, and the monitor's name, distance and age. Alerts cover the GRAP band, smog, stubble burning, rain and wind. Around the cards sit a map of every monitor the app can read (more than 7,000 at any time), an Exposure view of a person's day, AIR Lens, which draws the air as particles in front of your camera, and an assistant in English and Hindi, by text or voice.
+
+Three trust rules sit under every screen:
+
+- **Old readings give no advice.** A reading more than six hours old is dropped, and the card shows an estimate from a regional model and says so.
+- **Every number is labelled** Live, Estimate or Measured.
+- **A GRAP stage is my estimate, never an order.** The card says "the air here is in the Stage X band", and the official order comes first. A school is only ever "likely" closed.
+
+The third rule matters because places differ. On 9 November 2025, two places 4 km apart averaged 434 and 319 on India's scale over the previous 24 hours: two different GRAP bands. One city number hides that gap.
+
+### Seven real days, no waiting for a bad one
+
+**Try without login** plays seven real past days through the same app, as if it were 8 am on each:
+
+- **7 Oct 2025:** rain, and the cleanest of the seven.
+- **21 Oct:** the morning after Diwali, AQI 500 at the nearest monitor.
+- **31 Oct:** the stubble-burning peak, with satellite fires upwind.
+- **9 Nov and 22 Dec:** two smog days.
+- **23 Jan 2026:** heavy rain clears the smog overnight.
+- **30 Mar 2026:** a windy day.
+
+The air comes from four Delhi monitors in OpenAQ's public archive, the weather from Open-Meteo's archive and the fires from NASA FIRMS. Two written rules clean it: impossible values are dropped, and so is one monitor's hour that reads over three times the median of the others. The 86 hours dropped as lone-monitor spikes are counted in the file. The hours after 8 am are what was recorded next, so the days show the features, not forecast accuracy.
+
+## Code decides, AI only words
+
+An air app can do harm in its assistant, so it follows one rule: fixed rules decide the advice, and the model may only word it.
+
+Amazon Bedrock runs Amazon Nova Micro behind a Guardrail. It gets the rules' answer and the facts behind it. It may reword the answer, or answer a question the rules do not cover from those facts. Then code checks the wording:
+
+- every number must be one of the facts;
+- it may not spell numbers out or add reassurance the rules did not write;
+- it may not call the air good unless the level is Good;
+- masked names such as `[place]` are put back, in any case.
+
+On any doubt, the rules' own text goes out. Hindi answers never reach the model: they are wording a person wrote, with the facts slotted in. Amazon Polly, with the neural voice Kajal, reads answers aloud in both languages.
+
+One honest gap: the number check is a set check. It proves each number came from the facts, not that it sits in the right place. That is why a reworded answer may only use the numbers in its own rule's answer.
+
+## How it runs on AWS
+
+The app and API are one AWS CDK stack in TypeScript, in Mumbai (ap-south-1). The browser never calls an air-data provider: readings, forecasts and fires come through my API. Only place search, map tiles and Cognito sign-in are called directly. The API reads public data (OpenAQ, Open-Meteo, NASA FIRMS), applies the rules and returns one answer with its source and age.

@@ -1,0 +1,9 @@
+-- NOTE FOR ME, DO NOT PASTE THIS BLOCK --
+Fill the Title and Description boxes with the two texts below, and upload banner-1200x630.png as the banner image.
+-- PASTE FROM THE NEXT LINE DOWN --
+
+TITLE:
+Do we walk to school today? One answer for one place in Delhi's air, built on AWS
+
+DESCRIPTION:
+On the morning after Diwali, one Delhi monitor read AQI 500 while the city's official pollution stage was II. This is how I built, on AWS, an app that gives one answer for one place, and keeps its AI from ever inventing a number.
