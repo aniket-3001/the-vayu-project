@@ -335,7 +335,7 @@
       const SCENES = [
         {
           title: '1. The app opens',
-          text: 'The page and the API share one address. CloudFront serves the app from a private S3 bucket, and adds the security headers. There is no login: what a person saves stays on their phone.',
+          text: 'The page and the API share one address. CloudFront serves the app from a private S3 bucket, and adds the security headers. Sign-in is optional: without it, what a person saves stays on their phone; with it, it follows them.',
           nodes: ['phone', 'cf', 's3'],
           flows: [
             ['phoneCf', 0],

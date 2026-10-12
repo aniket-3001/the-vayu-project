@@ -1,0 +1,631 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>The Vayu Project on AWS in 30 seconds</title>
+    <!--
+      The 30-second version of the architecture, for the video. One file, no libraries: open it in a browser,
+      press Space (or click) to start, and it plays six beats once, 30 seconds in all, then holds the last one.
+      R restarts it. #auto in the address starts it by itself. Everything drawn here is in docs/architecture.md and
+      infra/lib; if the stack changes, change the beats below. The words to say are in docs/VIDEO.md.
+    -->
+    <style>
+      :root {
+        --page: #f4f7fb;
+        --card: #ffffff;
+        --text: #3d4a5c;
+        --muted: #5f6e82;
+        --line: #dfe6ef;
+        --ink: #334155;
+        --blue: #4a90d9;
+        --green: #4caf7d;
+        --amber: #f0a64a;
+        --rose: #e57a7a;
+        --violet: #8f7ad9;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        background: var(--page);
+        color: var(--text);
+        font-family:
+          'Hanken Grotesk',
+          system-ui,
+          -apple-system,
+          'Segoe UI',
+          Roboto,
+          sans-serif;
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+      }
+      header {
+        padding: 18px 28px 0;
+      }
+      h1 {
+        margin: 0;
+        font-size: 26px;
+        letter-spacing: -0.01em;
+        color: var(--ink);
+      }
+      header p {
+        margin: 4px 0 0;
+        color: var(--muted);
+        font-size: 15px;
+      }
+      main {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        padding: 8px 16px 0;
+        min-height: 0;
+      }
+      svg {
+        width: 100%;
+        max-width: 1280px;
+        /* Always leave room for the caption and controls under it, whatever the window. */
+        height: calc(100vh - 330px);
+        min-height: 260px;
+        flex: 0 1 auto;
+      }
+      .node rect {
+        fill: var(--card);
+        stroke: var(--line);
+        stroke-width: 2;
+        rx: 16;
+        transition:
+          stroke 0.4s,
+          fill 0.4s;
+      }
+      .node {
+        opacity: 0.4;
+        transition: opacity 0.4s;
+      }
+      .node.on {
+        opacity: 1;
+      }
+      .node.on rect {
+        stroke: var(--c, var(--blue));
+        stroke-width: 3;
+        fill: color-mix(in srgb, var(--c, var(--blue)) 9%, white);
+      }
+      .node .name {
+        font-size: 18px;
+        font-weight: 700;
+        fill: var(--ink);
+      }
+      .node .sub {
+        font-size: 13.5px;
+        fill: var(--muted);
+      }
+      .edge {
+        fill: none;
+        stroke: var(--line);
+        stroke-width: 3;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+        transition: stroke 0.4s;
+      }
+      .edge.on {
+        stroke: color-mix(in srgb, var(--blue) 45%, white);
+      }
+      .edge.dash {
+        stroke-dasharray: 2 9;
+      }
+      .req {
+        fill: var(--blue);
+      }
+      .res {
+        fill: var(--green);
+      }
+      .badge {
+        opacity: 0;
+        transition: opacity 0.5s;
+      }
+      .badge.on {
+        opacity: 1;
+      }
+      .badge rect {
+        fill: #fff7e8;
+        stroke: var(--amber);
+        stroke-width: 2;
+        rx: 12;
+      }
+      .badge text {
+        font-size: 14px;
+        font-weight: 600;
+        fill: var(--ink);
+      }
+      footer {
+        padding: 6px 28px 20px;
+        max-width: 1280px;
+        width: 100%;
+        margin: 0 auto;
+      }
+      .caption {
+        background: var(--card);
+        border: 1px solid var(--line);
+        border-radius: 16px;
+        padding: 14px 20px;
+        min-height: 118px;
+      }
+      .caption h2 {
+        margin: 0 0 4px;
+        font-size: 20px;
+        color: var(--ink);
+      }
+      .caption p {
+        margin: 0;
+        font-size: 17px;
+        line-height: 1.45;
+      }
+      .controls {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-top: 12px;
+      }
+      .controls button {
+        font: inherit;
+        font-size: 15px;
+        min-height: 40px;
+        padding: 0 16px;
+        border-radius: 999px;
+        border: 1px solid var(--line);
+        background: var(--card);
+        color: var(--text);
+        cursor: pointer;
+      }
+      .dots {
+        display: flex;
+        gap: 8px;
+        margin-left: auto;
+      }
+      .dots button {
+        width: 14px;
+        height: 14px;
+        min-height: 0;
+        padding: 0;
+        border-radius: 50%;
+        background: var(--line);
+        border: 0;
+      }
+      .dots button[aria-current='true'] {
+        background: var(--blue);
+      }
+      @media (max-width: 640px) {
+        h1 {
+          font-size: 21px;
+        }
+        .caption p {
+          font-size: 15px;
+        }
+      }
+
+      .stage {
+        position: relative;
+        width: 100%;
+        max-width: 1280px;
+      }
+      .say {
+        background: var(--card);
+        border: 1px solid var(--line);
+        border-radius: 16px;
+        padding: 14px 22px;
+        max-width: 1280px;
+        width: calc(100% - 56px);
+        margin: 0 auto 8px;
+        min-height: 92px;
+      }
+      .say h2 {
+        margin: 0 0 2px;
+        font-size: 22px;
+        color: var(--ink);
+      }
+      .say p {
+        margin: 0;
+        font-size: 19px;
+        line-height: 1.4;
+      }
+      .bar {
+        height: 6px;
+        background: var(--line);
+        max-width: 1280px;
+        width: calc(100% - 56px);
+        margin: 0 auto 6px;
+        border-radius: 3px;
+        overflow: hidden;
+      }
+      .bar i {
+        display: block;
+        height: 100%;
+        width: 0;
+        background: var(--blue);
+      }
+      .clock {
+        max-width: 1280px;
+        width: calc(100% - 56px);
+        margin: 0 auto 14px;
+        display: flex;
+        justify-content: space-between;
+        font-size: 14px;
+        color: var(--muted);
+      }
+      .ready {
+        position: fixed;
+        inset: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: color-mix(in srgb, var(--page) 88%, transparent);
+        font-size: 26px;
+        font-weight: 700;
+        color: var(--ink);
+        text-align: center;
+        cursor: pointer;
+        z-index: 5;
+        padding: 24px;
+      }
+      .ready small {
+        display: block;
+        font-size: 16px;
+        font-weight: 400;
+        color: var(--muted);
+        margin-top: 8px;
+      }
+      .ready.hide {
+        display: none;
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <h1>The Vayu Project on AWS</h1>
+      <p>One CDK stack in <strong>ap-south-1</strong>. Serverless. About $4.50 a month idle.</p>
+    </header>
+    <main>
+      <svg id="art" viewBox="0 0 1280 700" role="img" aria-label="Architecture diagram"></svg>
+    </main>
+    <footer>
+      <div class="say" aria-live="polite">
+        <h2 id="title"></h2>
+        <p id="text"></p>
+      </div>
+      <div class="bar"><i id="fill"></i></div>
+      <div class="clock"><span id="t">0:00</span><span>0:30</span></div>
+    </footer>
+    <div class="ready" id="ready">
+      <div>Press Space or click to start<small>30 seconds, plays once. R restarts.</small></div>
+    </div>
+    <script>
+      const NS = 'http://www.w3.org/2000/svg';
+      const W = 190;
+      const H = 86;
+
+      // Where each part sits (top-left), what it is called and a few honest words about it.
+      const NODES = {
+        phone: { x: 40, y: 330, name: 'Phone', sub: 'The app, on the device', c: '--blue' },
+        cf: { x: 290, y: 330, name: 'CloudFront', sub: 'One address, HTTPS, cache', c: '--blue' },
+        s3: { x: 290, y: 140, name: 'S3', sub: 'The app, private bucket', c: '--blue' },
+        gw: { x: 540, y: 330, name: 'API Gateway', sub: 'Throttles every route', c: '--blue' },
+        api: { x: 790, y: 330, name: 'API Lambda', sub: 'Checks every request', c: '--blue' },
+        ddb: { x: 1040, y: 330, name: 'DynamoDB', sub: 'Cache, quotas, expiring', c: '--blue' },
+        ssm: { x: 540, y: 110, name: 'SSM switch', sub: 'Kill switch, one command', c: '--rose' },
+        bedrock: { x: 790, y: 110, name: 'Bedrock', sub: 'Nova Micro + guardrail', c: '--violet' },
+        polly: { x: 1040, y: 110, name: 'Polly', sub: 'Reads answers aloud', c: '--violet' },
+        sched: { x: 290, y: 560, name: 'EventBridge', sub: 'Every 15 and 30 min', c: '--green' },
+        jobs: {
+          x: 790,
+          y: 560,
+          name: 'Harvest + Stations',
+          sub: 'Two small Lambdas',
+          c: '--green',
+        },
+        src: {
+          x: 1040,
+          y: 560,
+          name: 'Data sources',
+          sub: 'OpenAQ, Open-Meteo, NASA',
+          c: '--amber',
+        },
+        cog: { x: 40, y: 140, name: 'Cognito', sub: 'Optional sign-in', c: '--violet' },
+        sec: { x: 540, y: 560, name: 'Secrets Manager', sub: 'Keys, never in code', c: '--rose' },
+      };
+
+      // Straight or bent lines between parts, as points.
+      const EDGES = {
+        phoneCog: [
+          [135, 330],
+          [135, 226],
+        ],
+        phoneCf: [
+          [230, 373],
+          [290, 373],
+        ],
+        cfS3: [
+          [385, 330],
+          [385, 226],
+        ],
+        cfGw: [
+          [480, 373],
+          [540, 373],
+        ],
+        gwApi: [
+          [730, 373],
+          [790, 373],
+        ],
+        apiDdb: [
+          [980, 373],
+          [1040, 373],
+        ],
+        apiSsm: [
+          [835, 330],
+          [835, 270],
+          [635, 270],
+          [635, 196],
+        ],
+        apiBedrock: [
+          [885, 330],
+          [885, 196],
+        ],
+        apiPolly: [
+          [935, 330],
+          [935, 270],
+          [1135, 270],
+          [1135, 196],
+        ],
+        schedJobs: [
+          [385, 646],
+          [385, 672],
+          [885, 672],
+          [885, 646],
+        ],
+        jobsSrc: [
+          [980, 603],
+          [1040, 603],
+        ],
+        jobsDdb: [
+          [935, 560],
+          [935, 480],
+          [1135, 480],
+          [1135, 416],
+        ],
+        secJobs: [
+          [730, 603],
+          [790, 603],
+        ],
+      };
+
+      const BADGES = [
+        { id: 'throttle', x: 290, y: 436, text: 'Throttled: 25 a second; assistant 3' },
+        { id: 'contract', x: 680, y: 436, text: 'Every request and answer checked' },
+        { id: 'caps', x: 985, y: 436, text: 'Daily caps: 40 a person, 500 a day' },
+        { id: 'iam', x: 985, y: 492, text: 'Least-privilege roles' },
+        { id: 'secrets', x: 540, y: 492, text: 'Keys in Secrets Manager' },
+        { id: 'guard', x: 540, y: 20, text: 'Guardrail on every call' },
+        { id: 'numbers', x: 920, y: 20, text: 'Every number in its words is checked' },
+        { id: 'alarms', x: 290, y: 20, text: '8 CloudWatch alarms, X-Ray traces' },
+        { id: 'cost', x: 40, y: 492, text: 'About $4.50 a month idle' },
+      ];
+
+      // Six beats, 30 seconds. "at" is when the beat starts, in seconds.
+      const BEATS = [
+        {
+          at: 0,
+          title: 'The app',
+          text: 'CloudFront serves the app from a private S3 bucket. Sign-in is optional, with Cognito.',
+          nodes: ['phone', 'cf', 's3', 'cog'],
+          flows: [
+            ['phoneCf', 0],
+            ['cfS3', 0.6],
+            ['phoneCog', 1.8],
+          ],
+          badges: [],
+        },
+        {
+          at: 5,
+          title: 'A question about the air',
+          text: 'CloudFront cache, API Gateway, one Lambda, DynamoDB. The answer names its monitor and its age.',
+          nodes: ['phone', 'cf', 'gw', 'api', 'ddb'],
+          flows: [
+            ['phoneCf', 0],
+            ['cfGw', 0.4],
+            ['gwApi', 0.8],
+            ['apiDdb', 1.2],
+          ],
+          badges: ['throttle', 'contract'],
+        },
+        {
+          at: 10,
+          title: 'Kept fresh without a visitor',
+          text: 'EventBridge Scheduler refreshes monitors, forecast and fires, so visitors never call a data provider.',
+          nodes: ['sched', 'jobs', 'src', 'ddb', 'sec'],
+          flows: [
+            ['schedJobs', 0],
+            ['secJobs', 0],
+            ['jobsSrc', 0.5],
+            ['jobsDdb', 1],
+          ],
+          badges: ['secrets'],
+        },
+        {
+          at: 15,
+          title: 'The assistant',
+          text: 'Rules decide. Bedrock, behind a guardrail, only words it. Every number is checked. Polly speaks.',
+          nodes: ['api', 'ssm', 'bedrock', 'polly'],
+          flows: [
+            ['apiSsm', 0],
+            ['apiBedrock', 0.6],
+            ['apiPolly', 1.4],
+          ],
+          badges: ['guard', 'numbers'],
+        },
+        {
+          at: 22,
+          title: 'Safe and cheap',
+          text: 'Throttles, daily caps, a kill switch, least-privilege roles and eight alarms.',
+          nodes: ['gw', 'api', 'ssm', 'bedrock', 'sec', 'ddb'],
+          flows: [],
+          badges: ['throttle', 'caps', 'iam', 'secrets', 'alarms', 'cost'],
+        },
+        {
+          at: 27,
+          title: 'One CDK stack, in Mumbai',
+          text: 'The whole thing is code: AWS CDK, deployed to ap-south-1.',
+          nodes: [
+            'phone',
+            'cf',
+            's3',
+            'cog',
+            'gw',
+            'api',
+            'ddb',
+            'ssm',
+            'bedrock',
+            'polly',
+            'sched',
+            'jobs',
+            'src',
+            'sec',
+          ],
+          flows: [],
+          badges: ['alarms', 'cost'],
+        },
+      ];
+      const TOTAL = 30;
+
+      const svg = document.getElementById('art');
+      const el = (name, attrs = {}, parent = svg) => {
+        const node = document.createElementNS(NS, name);
+        for (const [k, v] of Object.entries(attrs)) node.setAttribute(k, String(v));
+        parent.appendChild(node);
+        return node;
+      };
+      const pathOf = (points) =>
+        points.map(([x, y], i) => `${i === 0 ? 'M' : 'L'}${x} ${y}`).join(' ');
+
+      // Lines first, so parts sit on top.
+      const edgeEls = {};
+      for (const [id, pts] of Object.entries(EDGES)) {
+        edgeEls[id] = el('path', { d: pathOf(pts), class: 'edge' });
+      }
+      const nodeEls = {};
+      for (const [id, n] of Object.entries(NODES)) {
+        const g = el('g', { class: 'node', transform: `translate(${n.x} ${n.y})` });
+        g.style.setProperty('--c', `var(${n.c})`);
+        el('rect', { width: W, height: H }, g);
+        const name = el('text', { x: W / 2, y: 36, 'text-anchor': 'middle', class: 'name' }, g);
+        name.textContent = n.name;
+        const sub = el('text', { x: W / 2, y: 60, 'text-anchor': 'middle', class: 'sub' }, g);
+        sub.textContent = n.sub;
+        nodeEls[id] = g;
+      }
+      const badgeEls = {};
+      for (const b of BADGES) {
+        const g = el('g', { class: 'badge', transform: `translate(${b.x} ${b.y})` });
+        const text = el('text', { x: 14, y: 24 }, g);
+        text.textContent = b.text;
+        const width = Math.ceil(b.text.length * 7.7 + 28);
+        el('rect', { width, height: 38 }, g);
+        g.insertBefore(g.lastChild, text);
+        badgeEls[b.id] = g;
+      }
+      const packets = el('g');
+
+      const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      let timers = [];
+      let tick = 0;
+
+      function showBeat(s) {
+        document.getElementById('title').textContent = s.title;
+        document.getElementById('text').textContent = s.text;
+        for (const [id, g] of Object.entries(nodeEls))
+          g.classList.toggle('on', s.nodes.includes(id));
+        for (const [id, b] of Object.entries(badgeEls))
+          b.classList.toggle('on', s.badges.includes(id));
+        const flowing = new Set(s.flows.map(([id]) => id));
+        for (const [id, p] of Object.entries(edgeEls)) p.classList.toggle('on', flowing.has(id));
+        packets.replaceChildren();
+        if (reduce) return;
+        // A request goes out along the line in blue and the answer comes back in green.
+        for (const [id, delay] of s.flows) {
+          const d = pathOf(EDGES[id]);
+          for (const [cls, back, extra] of [
+            ['req', false, 0],
+            ['res', true, 1.2],
+          ]) {
+            const dot = el('circle', { r: 7, class: cls, visibility: 'hidden' }, packets);
+            el(
+              'set',
+              { attributeName: 'visibility', to: 'visible', begin: `${delay + extra}s` },
+              dot,
+            );
+            el(
+              'animateMotion',
+              {
+                dur: '1.6s',
+                begin: `${delay + extra}s`,
+                repeatCount: '1',
+                fill: 'freeze',
+                path: d,
+                ...(back ? { keyPoints: '1;0', keyTimes: '0;1', calcMode: 'linear' } : {}),
+              },
+              dot,
+            );
+          }
+        }
+      }
+
+      function stop() {
+        timers.forEach((t) => window.clearTimeout(t));
+        window.clearInterval(tick);
+        timers = [];
+      }
+
+      function start() {
+        stop();
+        document.getElementById('ready').classList.add('hide');
+        const t0 = performance.now();
+        BEATS.forEach((b) => timers.push(window.setTimeout(() => showBeat(b), b.at * 1000)));
+        tick = window.setInterval(() => {
+          const s = Math.min(TOTAL, (performance.now() - t0) / 1000);
+          document.getElementById('fill').style.width = `${(s / TOTAL) * 100}%`;
+          document.getElementById('t').textContent = `0:${String(Math.floor(s)).padStart(2, '0')}`;
+          if (s >= TOTAL) window.clearInterval(tick);
+        }, 100);
+      }
+
+      function reset() {
+        stop();
+        document.getElementById('ready').classList.remove('hide');
+        document.getElementById('fill').style.width = '0';
+        document.getElementById('t').textContent = '0:00';
+        showBeat({ ...BEATS[0], flows: [], nodes: [], badges: [] });
+        document.getElementById('title').textContent = '';
+        document.getElementById('text').textContent = '';
+      }
+
+      document.getElementById('ready').addEventListener('click', start);
+      window.addEventListener('keydown', (e) => {
+        if (e.key === ' ') {
+          e.preventDefault();
+          start();
+        } else if (e.key === 'r' || e.key === 'R') {
+          reset();
+        }
+      });
+
+      // #beat=3 holds a beat (1 to 6) for a still picture.
+      const held = /beat=(\d)/.exec(window.location.hash);
+      if (held) {
+        document.getElementById('ready').classList.add('hide');
+        showBeat(BEATS[Number(held[1]) - 1]);
+      } else if (/auto/.test(window.location.hash)) start();
+      else reset();
+    </script>
+  </body>
+</html>
