@@ -108,7 +108,7 @@ A handheld vane anemometer at the outlet read about 191 cfm, roughly 325 m³ an 
 
 That is airflow, not CADR. CADR also depends on how much each pass removes, and is measured by watching a room's particles fall with the cleaner off and then on. I have not run that test, or measured noise or power. It runs on mains power and has had no electrical safety review.
 
-## What fought back
+## What went wrong, and what it taught me
 
 ### My own screenshot was wrong
 
@@ -116,30 +116,38 @@ Writing this post, I looked at my screenshot of the morning after Diwali: AQI 50
 
 Now it uses the last 24 hours only, needs 16 of them, caps the ratio at 2, and treats a missing PM10 as a floor. I checked it against the monitors' own PM10 on 24 station-days: 22 landed in the same stage and 2 gave no estimate because too few recent hours were there.
 
+**What I learned:** a number can be right while the sentence beside it is wrong. Read your own screenshots as a stranger would.
+
 ### The model never answered
 
 My first live questions came back in the rules' plain wording, never the model's. The Guardrail's prompt-attack filter was blocking my own rewording instruction, because it sat in the user turn. With the trace off, the response said only that the guardrail had stepped in, not which filter. Moving the instruction to the system prompt fixed it.
+
+**What I learned:** put instructions where the model expects them, and turn the guardrail trace on from the first call.
 
 ### "Good air quality" at AQI 61
 
 A script that drives the live site caught a model answer calling Moderate air "good", and a masked place name that was never put back. Both are now refused or restored, and each is a test. Earlier, my number check had let "[person 1]" through as the number 1.
 
+**What I learned:** a number check is not a claim check. Now the wording is checked for what it claims, too.
+
 ### A 403 from CloudFront, and a deploy that could not roll back
 
 CloudFront forwarded the viewer's Host header and API Gateway answered 403. An origin request policy that forwards only the viewer address fixed it. My first deploy failed and its rollback failed too: an API stage setting named a route that did not exist yet. It had passed `cdk synth` and every test.
 
+**What I learned:** a green `cdk synth` proves the template is valid, not that CloudFormation can order it. I test the live path early, and I deploy to see the order.
+
 ### The sensor went quiet when Bluetooth connected
 
 The serial log showed good readings, then nothing the moment the app connected. The sensor had stopped measuring, most likely from a power dip. The firmware now restarts it on connect and after three failed reads.
+
+**What I learned:** hardware fails on power, not on logic. I now read the serial log first, and the firmware assumes the sensor can drop out.
 
 ## Numbers
 
 - **Cost:** about $4.50 a month idle, worked out from AWS list prices, not read from a bill. An assistant question costs $0.0008, and 98% of that is the guardrail, so the caps sit on the assistant. Everything at its cap comes to about $46 a month. A flood against CloudFront itself is not capped; there is no WAF.
 - **Speed:** over 24 hours the API's Lambda took a median 1.5 s and 5.2 s at p99 (a place it has not seen is fetched live from OpenAQ). I saw 1.6 to 7.3 s end to end on a fresh lookup, including one cold start. A repeat comes back from CloudFront in about 0.15 s.
 
-## What is not done, and what is next
-
-No pilot and no users yet, so I claim nothing about health. The GRAP band is my estimate, checked against monitors, not against official orders. The unit's accuracy is untested and the cleaner's CADR is unmeasured.
+## What is next
 
 Next: the smoke-decay test (raise a room's PM2.5, log how fast it falls with the cleaner off and then on, and fit the curve, accepting it only above R² 0.95). Then the unit beside a monitor for a few days, with the difference published. Then one school, for one term.
 
