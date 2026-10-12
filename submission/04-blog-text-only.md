@@ -34,7 +34,16 @@ The third rule matters because places differ. On 9 November 2025, two places 4 k
 
 ### Seven real days, no waiting for a bad one
 
-**Try without login** plays seven real past days through the same app, as if it were 8 am on each: rain, the day after Diwali, stubble fires, two smog days, a downpour that cleared the smog, and a windy day. The air comes from four Delhi monitors in OpenAQ's public archive, cleaned by two written rules, with the 86 hours dropped as lone-monitor spikes counted. The hours after 8 am are what was recorded next, so these days show the features, not forecast accuracy.
+**Try without login** plays seven real past days through the same app, as if it were 8 am on each:
+
+- **7 Oct 2025:** rain, and the cleanest of the seven.
+- **21 Oct:** the morning after Diwali, AQI 500 at the nearest monitor.
+- **31 Oct:** the stubble-burning peak, with satellite fires upwind.
+- **9 Nov and 22 Dec:** two smog days.
+- **23 Jan 2026:** heavy rain clears the smog overnight.
+- **30 Mar 2026:** a windy day.
+
+The air comes from four Delhi monitors in OpenAQ's public archive, the weather from Open-Meteo's archive and the fires from NASA FIRMS. Two written rules clean it: impossible values are dropped, and so is one monitor's hour that reads over three times the median of the others. The 86 hours dropped as lone-monitor spikes are counted in the file. The hours after 8 am are what was recorded next, so the days show the features, not forecast accuracy.
 
 _(Image: The map on 31 October 2025: NASA satellite fire detections over Punjab and Haryana, with wind arrows)_
 
@@ -128,7 +137,7 @@ The serial log showed good readings, then nothing the moment the app connected. 
 
 No pilot and no users yet, so I claim nothing about health. The GRAP band is my estimate, checked against monitors, not against official orders. The unit's accuracy is untested and the cleaner's CADR is unmeasured.
 
-Next: the smoke-decay test (raise a room's PM2.5, log how fast it falls with the cleaner off and then on, and fit the curve). Then the unit beside a monitor for a few days, with the difference published. Then one school, for one term.
+Next: the smoke-decay test (raise a room's PM2.5, log how fast it falls with the cleaner off and then on, and fit the curve, accepting it only above R² 0.95). Then the unit beside a monitor for a few days, with the difference published. Then one school, for one term.
 
 ## What I learned
 
