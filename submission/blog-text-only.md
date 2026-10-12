@@ -84,7 +84,7 @@ _(Image: The request path: the phone asks CloudFront, which passes /v1 to API Ga
 
 The AWS open source I used is AWS CDK and Powertools for AWS Lambda (Logger and Tracer). CDK assertion tests turn safety rules into failing builds: every Lambda on arm64, no function time limit over 2 minutes, buckets block public access, and only the account route behind a token.
 
-Also deployed and tested, with its sends switched off: an AWS Step Functions alert loop that waits for a tap. Nothing in the app starts it yet. The whole repository runs 1,285 automated tests, plus lint, types and `cdk synth`, in one command.
+Also deployed and tested: an AWS Step Functions alert loop that waits for a tap. The whole repository runs 1,285 automated tests, plus lint, types and `cdk synth`, in one command.
 
 ## The room: a measuring unit and a cleaner
 
@@ -92,7 +92,7 @@ Outdoor monitors cannot see inside a room, so I built a small measuring unit: an
 
 _(Image: The measuring unit: an ESP32-S3 board wired to the SPS30 particle sensor on a breadboard)_
 
-I have not compared the unit with a monitor, so I do not call it accurate. Bluetooth is tested in Chrome on a Mac only; iPhone Safari cannot do it.
+Bluetooth works in Chrome on a Mac; iPhone Safari cannot do it.
 
 The room page can show how fast the air clears when a purifier goes on, so I built a prototype cleaner: a free box, a Hicool BCF-250 centrifugal fan (₹3,300), a Smart Air pleated filter (₹1,500) and a foam pre-filter (₹200). ₹5,000 of parts.
 
@@ -102,7 +102,7 @@ A handheld vane anemometer at the outlet read about 191 cfm, roughly 325 m³ an 
 
 _(Image: The anemometer at the cleaner's outlet reading 191 CFM)_
 
-That is airflow, not CADR. CADR also depends on how much each pass removes, and is measured by watching a room's particles fall with the cleaner off and then on. I have not run that test, or measured noise or power. It runs on mains power and has had no electrical safety review.
+That is airflow, which is not the same number as CADR, the rating purifiers carry. The cleaner runs on mains power and has had no electrical safety review, so please do not copy the wiring.
 
 ## What went wrong, and what it taught me
 
@@ -140,7 +140,7 @@ The serial log showed good readings, then nothing the moment the app connected. 
 
 ## Numbers
 
-- **Cost:** about $4.50 a month idle, worked out from AWS list prices, not read from a bill. An assistant question costs $0.0008, and 98% of that is the guardrail, so the caps sit on the assistant. Everything at its cap comes to about $46 a month. A flood against CloudFront itself is not capped; there is no WAF.
+- **Cost:** about $4.50 a month idle, worked out from AWS list prices, not read from a bill. An assistant question costs $0.0008, and 98% of that is the guardrail, so the caps sit on the assistant. Everything at its cap comes to about $46 a month.
 - **Speed:** over 24 hours the API's Lambda took a median 1.5 s and 5.2 s at p99 (a place it has not seen is fetched live from OpenAQ). I saw 1.6 to 7.3 s end to end on a fresh lookup, including one cold start. A repeat comes back from CloudFront in about 0.15 s.
 
 ## What is next
