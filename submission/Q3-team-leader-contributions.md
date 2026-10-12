@@ -1,4 +1,4 @@
-I built The Vayu Project solo, with Claude (Anthropic's AI coding assistant) writing much of the code and text from my instructions. I chose the problem, wrote the rules, read and ran every change, built the hardware, and deployed and checked everything on AWS myself.
+I built The Vayu Project solo, and used Claude (Anthropic's AI coding assistant) as a pair programmer, the way many engineers now work. I set the problem, the architecture and the rules, directed every change, and read, ran, tested and deployed all of it on AWS myself. The hardware I built by hand.
 
 **Product decisions.** I decided what the app may and may not say, and wrote those decisions as sixteen rules, each with a place in the code that enforces it and an automated test that fails if it breaks. The main one: code decides the advice, and the model may only word it, checked in code. A reading older than six hours gives no advice. A GRAP band is always my estimate, and a school is only ever "likely" closed. Every public claim sits in a ledger with what supports it.
 

@@ -4,7 +4,7 @@ I built the Vayu Project solo, with Claude (Anthropic's AI coding assistant, thr
 
 ## AI assistance
 
-Claude wrote much of the code and documentation from my instructions. Many commits carry its co-author line. It had no access to my AWS account: I ran every deploy and put the keys in Secrets Manager myself. I decided what the app may say, and no change was accepted until `make prove` passed. It was wrong in ways I caught (see "Faults I caught"). The app itself uses Amazon Bedrock (Nova Micro) and Amazon Polly at run time, described in `docs/AGENT-BOUNDARIES.md`.
+I directed Claude to write code and documentation, and every change was mine to accept or send back. Many commits carry its co-author line. It had no access to my AWS account: I ran every deploy and put the keys in Secrets Manager myself. I decided what the app may say, and no change was accepted until `make prove` passed. It was wrong in ways I caught (see "Faults I caught"). The app itself uses Amazon Bedrock (Nova Micro) and Amazon Polly at run time, described in `docs/AGENT-BOUNDARIES.md`.
 
 ## What I did
 
