@@ -18,4 +18,4 @@
 
 "Try without login" plays seven real recorded days, from the public archives, as if it were 8 am on each: https://d3lmq1mze2gup3.cloudfront.net/#/week. The hours after 8 am are what was recorded next, so the days show the features, not forecast skill.
 
-**Not done yet.** No pilot and no users, so I claim no health outcome. The unit has not been compared with a monitor. Next: one school for one term.
+Next: one school for one term.

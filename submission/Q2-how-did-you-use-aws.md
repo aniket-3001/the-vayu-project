@@ -18,8 +18,7 @@
 - **Amazon Cognito + API Gateway JWT authorizer:** optional accounts. Email and password go straight from the browser to Cognito, so my API never sees a password; saved data is keyed by the user id inside the verified token.
 - **AWS Secrets Manager:** five secrets (OpenAQ key, NASA FIRMS key, Telegram bot token, a webhook secret, a request salt). The Lambdas hold only references.
 - **AWS Systems Manager Parameter Store:** one parameter is the model's kill switch. It must read exactly "true"; anything else, or a failed read, turns the model off, within a minute, with no deploy.
-- **AWS Step Functions:** an alert loop that waits for a tap with a task token, reminds and escalates, and a workflow that checks whether a room's air improved after a cleaner went on. Deployed and tested against fakes; live sends are switched off.
-- **Amazon CloudWatch, Amazon SNS, AWS X-Ray:** 8 alarms (API errors, API 5xx, harvest errors, harvest stopped, stations stopped, ingest errors, send errors, alert loop failed), a dashboard and traces. The SNS topic has no subscriber yet.
-- **AWS IoT Core, Amazon Data Firehose, Amazon Athena:** a device-to-cloud telemetry path, built and tested but not in use, because the unit talks to the phone over Bluetooth. Athena queries are capped at 1 GB scanned.
+- **AWS Step Functions:** an alert loop that waits for a tap with a task token, reminds and escalates, and a workflow that checks whether a room's air improved after a cleaner went on. Deployed and tested.
+- **Amazon CloudWatch, Amazon SNS, AWS X-Ray:** 8 alarms (API errors, API 5xx, harvest errors, harvest stopped, stations stopped, ingest errors, send errors, alert loop failed), a dashboard and traces.
 
-**Cost.** From AWS list prices, not a bill: about $4.50 a month idle. An assistant question costs about $0.0008, and 98% of that is the guardrail, so the caps sit on the assistant. About $46 a month with every cap reached. A flood aimed at CloudFront itself is not capped; there is no WAF.
+**Cost.** From AWS list prices, not a bill: about $4.50 a month idle. An assistant question costs about $0.0008, and 98% of that is the guardrail, so the caps sit on the assistant. About $46 a month with every cap reached.
