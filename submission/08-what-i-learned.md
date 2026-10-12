@@ -1,13 +1,9 @@
-For any "what did you learn" box, and for the last 20 seconds of the video.
+**Give the model the smallest job, then check it in code.** Fixed rules choose the advice; the model may reword it, and any number it writes must be one of the facts. Every failure I had with the model sat where that line was loose. The guardrail blocked my own instruction. My number check read a masked name, "[person 1]", as the number 1. A live answer called AQI 61 "good". Each is now a test.
 
-**Keep the model's job small.** The model only words an answer; fixed rules decide it, and every number in its wording is checked against the facts. I learned where that line was loose by failing: the guardrail blocked my own rewording instruction, and my number check let a masked name, `[person 1]`, through as the number 1. Both are fixed, and a test holds each.
+**Read your own screenshots as a stranger would.** Mine showed AQI 500 beside "GRAP Stage II". The estimate had averaged the last 24 hours the monitor had, not the last 24 hours. The number was right and the sentence beside it was wrong.
 
-**Read your own screenshots as a stranger would.** On 11 October my own screenshot showed AQI 500 beside "GRAP Stage II". The estimate had used the last 24 hours the monitor _had_, not the last 24 hours, and stretched one hour's PM10-to-PM2.5 ratio over the whole day. I fixed it, and checked it against the monitors' own PM10 on 24 station-days: 22 landed in the same stage as the monitor's own index and 2 had no estimate (too few recent hours). A number can be right and the sentence beside it wrong.
+**Real AWS finds what tests do not.** A forwarded Host header gave a 403. A deploy failed and its rollback failed too. Both passed every test.
 
-**Real AWS finds what tests do not.** A 403 from a forwarded Host header. A deploy that failed with a rollback that failed too. A bare Bedrock model id refused in ap-south-1. A schedule that stops without raising an error, so it now has an alarm on missing invocations.
+**Price it before you cap it.** The guardrail is 98% of a $0.0008 question, so the caps went on the assistant.
 
-**Price a thing before you cap it.** The guardrail is 98% of an assistant question's cost ($0.0008), so that is where the caps went: 40 questions a caller, 500 a day, and a switch that turns the model off.
-
-**Hardware has its own bugs.** My sensor read fine until Bluetooth connected, then stopped measuring, most likely from a power dip. The firmware now restarts it on connect and after three failed reads.
-
-**Say what you did not measure.** I measured the cleaner's airflow, 191 cfm, and not its CADR; I have not compared the unit with a monitor. So I keep a written list of what I do not claim, and why.
+**Say what you did not measure.** I measured the cleaner's airflow, not its CADR, and I have not compared my unit with a monitor. Writing that down changed what I let the app claim.

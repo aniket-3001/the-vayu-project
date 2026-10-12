@@ -1,21 +1,18 @@
-**What it does:** the Vayu Project turns public air data into a daily decision for a Delhi family. It runs as one CDK stack in Mumbai (ap-south-1). Browsers call my API, not the air providers; only place search, map tiles, a wind fallback and the sign-in to Cognito go direct.
+The whole product runs as one AWS CDK stack in Mumbai (ap-south-1). Browsers call my API, never the air-data providers, so keys, caching and spending limits sit in one place. The API fetches public air data, applies fixed rules and returns one answer with its source and age.
 
 **AWS open source**
+- **AWS CDK (TypeScript):** the entire stack. CDK assertion tests turn safety rules into failing builds: every Lambda on arm64 with a time limit of 2 minutes or less, every bucket blocks public access, only the account route needs a token.
+- **Powertools for AWS Lambda (Logger, Tracer):** structured logs and an X-Ray trace of each AWS call.
 
-- **AWS CDK:** the whole stack, in TypeScript. Assertion tests turn safety rules into failing builds: function time limits, public access blocked on buckets, one callable model, caps.
-- **Powertools for AWS Lambda (Logger, Tracer):** structured logs, and X-Ray traces of each AWS call.
+**AWS services, and why each**
+- **Amazon CloudFront + Amazon S3 (private bucket):** one address for the app and the API, so no CORS. The API says how long an answer may be kept, up to 15 minutes. A repeat lookup returns in about 0.15 s; a fresh one takes a median 1.5 s.
+- **Amazon API Gateway (HTTP API) + AWS Lambda** (Node 22, Graviton): one function for every route. Each request and answer is checked against a schema, so a bad answer becomes an error, never a number. Throttle: 25 requests a second, 3 for the assistant.
+- **Amazon DynamoDB** (on-demand, TTL): the cache, saved accounts, and the daily quotas. A quota is one conditional UpdateItem, so two requests cannot both take the last slot. No lock.
+- **Amazon EventBridge Scheduler:** every 15 minutes it refreshes four reference places; every 30 it reads about 7,260 monitors for the map. Retries are off, so a bad run cannot pile up.
+- **Amazon Bedrock (Nova Micro) with Guardrails:** rules decide, the model only rewords. A number not in the facts, and the rules' own text goes out. 220 tokens at most, 6-second timeout.
+- **Amazon Polly (voice Kajal):** answers read aloud in English and Hindi.
+- **Amazon Cognito + JWT authorizer:** optional accounts; saved data is keyed by the user id in the verified token.
+- **AWS Secrets Manager** (keys), **Systems Manager Parameter Store** (a switch that turns the model off without a deploy), **Amazon CloudWatch** (8 alarms) with **Amazon SNS**, **AWS X-Ray**.
+- **AWS Step Functions:** an alert loop that waits for a tap. Built and tested, not live.
 
-**AWS services, and why each is there**
-
-- **CloudFront and S3:** one address for the app and the API, and a private bucket. CloudFront keeps an answer as the API says, up to 15 minutes.
-- **API Gateway and Lambda:** every `/v1` route in one function; all functions on Graviton (arm64). 25 requests a second, and 3 a second for the assistant and speech.
-- **DynamoDB:** cache, daily quotas and alert records. On-demand, so nothing to size; TTL expires counters. The 500-a-day assistant cap is one conditional write.
-- **EventBridge Scheduler:** a 15-minute job keeps four reference Delhi places warm in DynamoDB; your own places are fetched by the API when you ask, and cached by CloudFront. A 30-minute job reads 7,268 monitors for the map. Retries are off, so a bad run cannot pile up.
-- **Bedrock:** Nova Micro through the `apac.amazon.nova-micro-v1:0` inference profile, behind a Guardrail. The model rewords an answer the rules decided, or answers from the facts given. Code rejects an answer with a number that is not among the facts. If the model is slow, capped or off, the rules' own text goes out.
-- **Amazon Cognito and an API Gateway JWT authorizer:** optional accounts. Email and password, with codes sent by email to confirm and to reset. API Gateway checks the token on `/v1/me`, where one saved copy of a person's places, family and settings lives in the existing DynamoDB table, keyed by the user id in the verified token and nothing else.
-- **Step Functions:** one flow sends an alert, waits for a tap and reminds (built and tested; live Telegram sends are off); another checks a room again after advice to see if it helped. Neither runs live yet.
-- **Polly** reads answers aloud in English and Hindi. **Secrets Manager** holds the keys and tokens. An **SSM parameter** switches the assistant off without a deploy. **CloudWatch** alarms (a harvest that stops, API 5xx, a failed send) publish to an **SNS** topic, which has no email subscriber yet; **X-Ray** holds the traces.
-
-**Cost and limits:** idle about $4.50 a month at list prices; an assistant question $0.0008, 98% of it the guardrail, so the caps go on the assistant: 40 questions a caller, 500 a day.
-
-**Built but not used by the unit yet:** IoT Core, Firehose, Glue, Athena and the Rooms table.
+**Cost.** About $4.50 a month idle, from AWS list prices. An assistant question costs about $0.0008, 98% of it the guardrail, so the caps sit there: 40 a day per caller, 500 a day in all.

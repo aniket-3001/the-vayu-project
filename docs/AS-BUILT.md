@@ -2,7 +2,7 @@
 
 What the app is today, what is built but switched off, what is not built, and where it is known to be weak. This is a current-state document: it says what is true now and has no history. The history is in `learning-log.md`. What was checked by hand on the live address, and what was not, is in `LIVE-CHECKLIST.md`.
 
-Everything the live app and the recorded days show is real data. The only made-up days are in a separate prototype build (`npm run build:demo`), which is never uploaded.
+Everything the live app and the recorded days show is real data. Made-up numbers exist only in test fixtures, and `make prove` fails if one reaches the deployed bundle.
 
 ## Live at https://d3lmq1mze2gup3.cloudfront.net
 

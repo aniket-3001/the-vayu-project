@@ -87,7 +87,7 @@ The app labels each number as **Live** (a named monitor, its distance and its ag
 
 | Path                 | What                                                                                                                                                                                                                |
 | -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `apps/web`           | The app (React, MapLibre). `src/air` is where real data enters; `src/week` is the recorded days; `src/devices` is the measuring unit; `src/demo` is the separate prototype build and is not in the deployed bundle. |
+| `apps/web`           | The app (React, MapLibre). `src/air` is where real data enters; `src/week` is the recorded days; `src/devices` is the measuring unit. |
 | `apps/api`           | The API Lambda, the stations Lambda and the routes.                                                                                                                                                                 |
 | `packages/contracts` | The shape of every request and answer (zod).                                                                                                                                                                        |
 | `packages/core`      | The rules: air bands, timeline, windows, verdicts, the assistant's fixed answers. No network, no clock.                                                                                                             |
