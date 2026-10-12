@@ -4,7 +4,7 @@ It is 8 am on 21 October 2025, the morning after Diwali, in South Delhi. A child
 
 The parent is a sketch. The morning is real. The nearest monitor with a fresh reading, Lodhi Road, 3.8 km from a home near R K Puram, read PM2.5 at 980 µg/m³. On the US AQI scale that is 500, the top of the scale. The official pollution stage for all of Delhi-NCR that morning was GRAP Stage II, set from a city-wide average of 351.
 
-The Vayu Project gave that parent one answer: avoid going out. If you must, 4 to 5 pm is the cleanest daylight hour. Wear a well-fitted N95.
+Replayed at 8 am, The Vayu Project gives that parent one answer: avoid going out, and wear a well-fitted N95 if you must. The cleanest daylight hour is 4 to 5 pm. On a recorded day that hour is known in hindsight; live, it is a forecast.
 
 ![Home on the recorded morning after Diwali: AQI 500, the monitor's name and distance, and advice for this place](images/02b-place-insights-desktop.png)
 _The recorded morning after Diwali, 21 Oct 2025, 8 am. The card names the monitor (Lodhi Road, 3.8 km away) and says "as recorded"._
@@ -15,7 +15,7 @@ Delhi has many air-quality numbers and none of them says what to do. A city figu
 
 The Vayu Project is a free web app that turns public air data into a decision for one named place: a home, a school, a park. Walk or stay in. Mask or not. Windows shut or open. Morning assembly inside or on the ground. Every number says which monitor it came from, how far away that monitor is, and how old the reading is.
 
-You can try it now without an account. "Try without login" on https://d3lmq1mze2gup3.cloudfront.net opens seven real past days, played through the same app as if it were 8 am on each: rain, the day after Diwali, stubble fires, two smog days, a downpour that cleared the smog, and a windy day. The air comes from four Delhi monitors in OpenAQ's public archive, cleaned by two written rules that dropped 86 bad hours. The hours after 8 am are what was recorded next, so these days show the features, not forecast accuracy.
+You can try it now without an account. "Try without login" on https://d3lmq1mze2gup3.cloudfront.net opens seven real past days, played through the same app as if it were 8 am on each: rain, the day after Diwali, stubble fires, two smog days, a downpour that cleared the smog, and a windy day. The air comes from four Delhi monitors in OpenAQ's public archive, cleaned by two written rules, with the 86 hours dropped as lone-monitor spikes counted. The hours after 8 am are what was recorded next, so these days show the features, not forecast accuracy.
 
 I built it solo, for the AWS Environmental Hacks Air track, with Claude as a coding assistant. I chose the problem and the rules, read and ran every change, built the hardware, and deployed it to my own AWS account.
 
@@ -70,24 +70,24 @@ That is airflow, not CADR. CADR also depends on how much each pass removes, and 
 
 ## How it runs on AWS
 
-The app and API are one AWS CDK stack in TypeScript, in Mumbai (ap-south-1). The browser talks only to my API. The API reads public air data (OpenAQ, Open-Meteo, NASA FIRMS), applies the rules and returns one answer with its source and age.
+The app and API are one AWS CDK stack in TypeScript, in Mumbai (ap-south-1). The browser never calls an air-data provider: readings, forecasts and fires come through my API. Only place search, map tiles and Cognito sign-in are called directly. The API reads public air data (OpenAQ, Open-Meteo, NASA FIRMS), applies the rules and returns one answer with its source and age.
 
-| Service | What it does here, and why |
-| --- | --- |
-| Amazon CloudFront + Amazon S3 | One address for the app and the API, so no CORS. Private bucket. API answers cached up to 15 minutes. |
-| Amazon API Gateway (HTTP API) + AWS Lambda | All routes in one Node 22 function on Graviton. Request and answer checked against a schema, so a bad answer is an error, never a number. 25 requests a second; 3 for the assistant. |
-| Amazon DynamoDB | On-demand, with TTL. The cache, saved accounts, cached Polly audio, and the daily quotas. |
-| Amazon EventBridge Scheduler | Every 15 minutes, four reference places kept warm. Every 30 minutes, about 7,260 monitors read for the map. Retries off. |
-| Amazon Bedrock with Guardrails | Nova Micro rewords; it never decides. One call, 220 tokens at most, 6-second timeout. |
-| Amazon Polly | Answers read aloud in English and Hindi. |
-| Amazon Cognito | Optional accounts. An API Gateway JWT authorizer guards the one account route. |
-| Secrets Manager, Parameter Store, CloudWatch, SNS, X-Ray | Keys out of code; a switch that turns the model off without a deploy; 8 alarms; traces. |
+| Service                                                  | What it does here, and why                                                                                                                                                           |
+| -------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Amazon CloudFront + Amazon S3                            | One address for the app and the API, so no CORS. Private bucket. API answers cached up to 15 minutes.                                                                                |
+| Amazon API Gateway (HTTP API) + AWS Lambda               | All routes in one Node 22 function on Graviton. Request and answer checked against a schema, so a bad answer is an error, never a number. 25 requests a second; 3 for the assistant. |
+| Amazon DynamoDB                                          | On-demand, with TTL. The cache, saved accounts, cached Polly audio, and the daily quotas.                                                                                            |
+| Amazon EventBridge Scheduler                             | Every 15 minutes, four reference places kept warm. Every 30 minutes, about 7,260 monitors read for the map. Retries off.                                                             |
+| Amazon Bedrock with Guardrails                           | Nova Micro rewords; it never decides. One call, 220 tokens at most, 6-second timeout.                                                                                                |
+| Amazon Polly                                             | Answers read aloud in English and Hindi.                                                                                                                                             |
+| Amazon Cognito                                           | Optional accounts. An API Gateway JWT authorizer guards the one account route.                                                                                                       |
+| Secrets Manager, Parameter Store, CloudWatch, SNS, X-Ray | Keys out of code; a switch that turns the model off without a deploy; 8 alarms; traces.                                                                                              |
 
 The AWS open source I used is AWS CDK and Powertools for AWS Lambda (Logger and Tracer). CDK assertion tests turn safety rules into failing builds: every Lambda on arm64, no function time limit over 2 minutes, buckets block public access, only the account route behind a token.
 
 One detail I am glad of: the assistant's 500-a-day cap is a single conditional UpdateItem in DynamoDB. It adds one only if there is room, so two requests at the same moment cannot both take the last slot. No lock.
 
-Built and tested but not live: an AWS Step Functions alert loop that waits for a tap, reminds and escalates. Telegram sends are switched off.
+Deployed and tested, but with its sends switched off: an AWS Step Functions alert loop that waits for a tap, reminds and escalates. Nothing in the app starts it yet, and Telegram sends are off.
 
 ### One request, start to finish
 
@@ -98,11 +98,11 @@ Built and tested but not live: an AWS Step Functions alert loop that waits for a
 
 ### Why these services, and not the obvious alternative
 
-- **CloudFront in front of both.** One origin for page and API removes CORS, and the cache turns 1.5 s into 0.15 s. The cost is that if CloudFront fails, nothing loads.
+- **CloudFront in front of both.** One origin for page and API removes CORS, and the cache turns a 1.5 s lookup into a 0.15 s repeat. The cost is that if CloudFront fails, nothing loads.
 - **HTTP API, not REST API.** I needed a proxy, a throttle and a JWT authorizer, at a lower price per request.
 - **One Lambda, not many.** One cold start, one schema contract, one place to test. 256 MB, 10-second limit.
 - **DynamoDB, not a cache server.** Nothing to run, and conditional writes give race-free caps.
-- **EventBridge Scheduler, not a cron inside Lambda.** The retry policy lives on the schedule. I set it to zero, and an alarm fires after 45 minutes with no runs.
+- **EventBridge Scheduler, not a cron inside Lambda.** The retry policy lives on the schedule. I set it to zero, and an alarm fires after 45 minutes with no runs (90 for the map job).
 - **Nova Micro, the smallest model.** The job is rewording three sentences. If it fails, the rules answer.
 - **Cognito without a hosted page.** Accounts with no auth code of mine in the API.
 
@@ -118,7 +118,7 @@ One honest gap: the number check is a set check. It proves each number came from
 
 ### My own screenshot was wrong
 
-Writing this post, I looked at my own screenshot of the morning after Diwali: AQI 500, beside "GRAP Stage II". Those do not go together. The estimate had averaged the last 24 hours the monitor *had*, so gaps pulled in older, cleaner hours. It also stretched one hour's PM10-to-PM2.5 ratio over the whole day.
+Writing this post, I looked at my own screenshot of the morning after Diwali: AQI 500, beside "GRAP Stage II". Those do not go together. The estimate had averaged the last 24 hours the monitor _had_, so gaps pulled in older, cleaner hours. It also stretched one hour's PM10-to-PM2.5 ratio over the whole day.
 
 Now it uses the last 24 hours only, needs 16 of them, caps the ratio at 2, and treats a missing PM10 as a floor. I checked it against the monitors' own PM10 on 24 station-days: 22 landed in the same stage and 2 gave no estimate because too few recent hours were there. The same check found a rain alert that promised clean air when the forecast showed none.
 
@@ -141,7 +141,7 @@ The serial log showed good readings, then nothing the moment the app connected. 
 ## Numbers
 
 - **Cost:** about $4.50 a month idle, worked out from AWS list prices, not read from a bill. An assistant question costs $0.0008, and 98% of that is the guardrail, so the caps sit on the assistant: 40 questions per caller, 500 a day. Everything at its cap, short of a flood, comes to about $46 a month. A flood against CloudFront itself is not capped; there is no WAF.
-- **Speed:** a fresh lookup takes a median 1.5 s in Lambda (it fetches live from OpenAQ); a repeat within the cache window comes back from CloudFront in about 0.15 s.
+- **Speed:** over 24 hours the API's Lambda took a median 1.5 s and 5.2 s at p99 (a place it has not seen fetches live from OpenAQ). I saw 1.6 to 7.3 s end to end on a fresh lookup, including one cold start. A repeat comes back from CloudFront in about 0.15 s.
 - **Quality:** 1,285 automated tests, plus lint, strict types, `cdk synth` and a bundle check, in one command.
 
 ## What is not done
