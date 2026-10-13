@@ -1,0 +1,30 @@
+name: android-debug
+# Builds the Android debug APK on request (Actions tab, "Run workflow"). It never runs by itself, so it costs nothing
+# until it is started. It touches no AWS account: the app is built from this repository alone.
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+      - run: npm ci
+      - run: npm run mobile:sync
+      - run: chmod +x apps/mobile/android/gradlew
+      - run: ./gradlew assembleDebug
+        working-directory: apps/mobile/android
+      - uses: actions/upload-artifact@v4
+        with:
+          name: vayu-debug-apk
+          path: apps/mobile/android/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error

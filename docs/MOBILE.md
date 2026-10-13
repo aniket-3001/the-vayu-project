@@ -28,6 +28,8 @@ cd apps/mobile/android && ./gradlew assembleDebug
 # the APK is at apps/mobile/android/app/build/outputs/apk/debug/app-debug.apk
 ```
 
+Or, with nothing installed here, run the **android-debug** workflow from the repository's Actions tab (Run workflow) and download the `vayu-debug-apk` file it produces.
+
 ### iOS (on a Mac)
 
 Needs Xcode. A free Apple ID installs for seven days on your own phone; TestFlight needs the paid programme.
