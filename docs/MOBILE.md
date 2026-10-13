@@ -1,5 +1,7 @@
 # The Android and iOS apps
 
+The steps to deploy the CORS change, build and install the apps, test them on a phone and fit the tag reader are in [`SETUP-GUIDE.md`](SETUP-GUIDE.md).
+
 The apps are the website inside a native shell (Capacitor). They read the same live data from the same address. Nothing about the website or its AWS stack changes when you build them.
 
 ## Before the apps can load data

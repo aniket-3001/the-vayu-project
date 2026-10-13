@@ -175,22 +175,23 @@ The stack deploys with `cd infra && npx cdk deploy`. It needs three secrets made
 
 ## Documents
 
-|                                   |                                                                          |
-| --------------------------------- | ------------------------------------------------------------------------ |
-| `docs/AS-BUILT.md`                | What is live, what is not                                                |
-| `docs/architecture.md`            | The parts, the data, and the AWS pillars                                 |
-| `docs/architecture-animated.html` | An animated diagram of the same, for the video (open it in a browser)    |
-| `docs/safety.md`                  | Every rule, how it is enforced, the test that proves it                  |
-| `docs/AGENT-BOUNDARIES.md`        | What the app's assistant may and may not do                              |
-| `docs/claims.md`                  | Every public claim, and what supports it                                 |
-| `docs/cost.md`                    | What it costs, per unit and at each limit                                |
-| `docs/PURIFIER.md`                | The cleaner prototype: the build, the airflow measured, what that is not |
-| `docs/COMPARISON.md`              | The Dyson HushJet figures and what can honestly be said beside ours      |
-| `docs/UNIT.md`                    | The measuring unit: parts, wiring, protocol, what may be said            |
-| `docs/MOBILE.md`                  | The Android and iOS apps: build, install, what to check                  |
-| `docs/LIVE-CHECKLIST.md`          | What was checked on the live address, and what was found                 |
-| `docs/learning-log.md`            | What broke and how it was fixed                                          |
-| `DESIGN.md`                       | The visual design brief                                                  |
+|                                   |                                                                                            |
+| --------------------------------- | ------------------------------------------------------------------------------------------ |
+| `docs/AS-BUILT.md`                | What is live, what is not                                                                  |
+| `docs/architecture.md`            | The parts, the data, and the AWS pillars                                                   |
+| `docs/architecture-animated.html` | An animated diagram of the same, for the video (open it in a browser)                      |
+| `docs/safety.md`                  | Every rule, how it is enforced, the test that proves it                                    |
+| `docs/AGENT-BOUNDARIES.md`        | What the app's assistant may and may not do                                                |
+| `docs/claims.md`                  | Every public claim, and what supports it                                                   |
+| `docs/cost.md`                    | What it costs, per unit and at each limit                                                  |
+| `docs/PURIFIER.md`                | The cleaner prototype: the build, the airflow measured, what that is not                   |
+| `docs/COMPARISON.md`              | The Dyson HushJet figures and what can honestly be said beside ours                        |
+| `docs/UNIT.md`                    | The measuring unit: parts, wiring, protocol, what may be said                              |
+| `docs/MOBILE.md`                  | The Android and iOS apps: build, install, what to check                                    |
+| `docs/SETUP-GUIDE.md`             | Step by step: deploy the CORS change, build and install the apps, test, fit the tag reader |
+| `docs/LIVE-CHECKLIST.md`          | What was checked on the live address, and what was found                                   |
+| `docs/learning-log.md`            | What broke and how it was fixed                                                            |
+| `DESIGN.md`                       | The visual design brief                                                                    |
 
 ## AI in the app
 
