@@ -72,12 +72,20 @@ afterEach(() => {
 
 const Probe = (): React.JSX.Element => {
   const account = useAccount();
-  return <p>{account.enabled ? `in as ${account.email ?? ''}` : 'no accounts'}</p>;
+  return (
+    <p>
+      {account.enabled
+        ? `in as ${account.email ?? ''}`
+        : account.guest
+          ? 'as a guest'
+          : 'no accounts'}
+    </p>
+  );
 };
 
 const open = (
   fetchImpl: typeof fetch,
-  extra: { reload?: () => void; onTry?: () => void } = {},
+  extra: { reload?: () => void; onTry?: () => void; guestAllowed?: boolean } = {},
 ): void => {
   render(
     <MemoryRouter>
@@ -234,5 +242,69 @@ describe('the account page', () => {
     await userEvent.click(await screen.findByRole('button', { name: 'Delete my account' }));
     await userEvent.click(screen.getByRole('button', { name: 'Keep it' }));
     expect(screen.getByRole('button', { name: 'Delete my account' })).toBeInTheDocument();
+  });
+});
+
+describe('using the app as a guest', () => {
+  const GUEST_KEY = 'vayu.guest.v1';
+
+  it('offers it only where it is allowed, never in the website', async () => {
+    const { fetchImpl } = world();
+    open(fetchImpl);
+    expect(await screen.findByRole('button', { name: 'Sign in' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Continue as guest' })).not.toBeInTheDocument();
+  });
+
+  it('opens the live app with nothing saved to an account, and remembers the choice', async () => {
+    const { w, fetchImpl } = world();
+    open(fetchImpl, { guestAllowed: true });
+    await userEvent.click(await screen.findByRole('button', { name: 'Continue as guest' }));
+    expect(await screen.findByText('as a guest')).toBeInTheDocument();
+    expect(window.localStorage.getItem(GUEST_KEY)).toBe('1');
+    expect(w.api).toEqual([]);
+    expect(w.cognito).toEqual([]);
+  });
+
+  it('goes straight to the app next time, without the welcome screen', async () => {
+    const { fetchImpl } = world();
+    window.localStorage.setItem(GUEST_KEY, '1');
+    open(fetchImpl, { guestAllowed: true });
+    expect(await screen.findByText('as a guest')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Sign in' })).not.toBeInTheDocument();
+  });
+
+  it('ignores a remembered guest choice where guests are not allowed', async () => {
+    const { fetchImpl } = world();
+    window.localStorage.setItem(GUEST_KEY, '1');
+    open(fetchImpl);
+    expect(await screen.findByRole('button', { name: 'Sign in' })).toBeInTheDocument();
+    expect(screen.queryByText('as a guest')).not.toBeInTheDocument();
+  });
+
+  it('says on the account page that places stay on the phone, and lets the guest sign in or create an account', async () => {
+    const { fetchImpl } = world();
+    window.localStorage.setItem(GUEST_KEY, '1');
+    open(fetchImpl, { guestAllowed: true });
+    expect(await screen.findByText(/using Vayu as a guest/u)).toBeInTheDocument();
+    expect(screen.getByText(/stay on this phone/u)).toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: 'Sign in or create an account' }));
+    expect(await screen.findByRole('button', { name: 'Create an account' })).toBeInTheDocument();
+    expect(window.localStorage.getItem(GUEST_KEY)).toBeNull();
+  });
+
+  it('stops being a guest once signed in, so signing out later shows the welcome screen', async () => {
+    const { w, fetchImpl } = world();
+    w.cognitoReplies.InitiateAuth = { ok: true, body: TOKENS };
+    window.localStorage.setItem(GUEST_KEY, '1');
+    open(fetchImpl, { guestAllowed: true });
+    await userEvent.click(
+      await screen.findByRole('button', { name: 'Sign in or create an account' }),
+    );
+    await userEvent.click(await screen.findByRole('button', { name: 'Sign in' }));
+    await userEvent.type(screen.getByLabelText('Email'), 'asha@example.org');
+    await userEvent.type(screen.getByLabelText('Password'), 'secret123');
+    await userEvent.click(screen.getByRole('button', { name: 'Sign in' }));
+    expect(await screen.findByText('in as asha@example.org')).toBeInTheDocument();
+    expect(window.localStorage.getItem(GUEST_KEY)).toBeNull();
   });
 });

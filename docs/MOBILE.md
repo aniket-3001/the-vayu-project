@@ -64,3 +64,7 @@ npm run assets -w @vayu/mobile   # redraws apps/mobile/assets/*.png and writes e
 ```
 
 The startup screen stays up until the app has drawn, and for at least about a second so it never flashes, then fades out (`apps/web/src/native/splash.ts`). In the website nothing of this is loaded.
+
+## Signing in, and guests
+
+The welcome screen offers **Sign in**, **Create an account** (an emailed code confirms it), **Continue as guest** and **Try without login**. A guest uses the live app with places kept on the phone only; it is offered in the phone apps and not on the website. **Try without login** opens the seven recorded past days and saves nothing. A guest can sign in or create an account later from the Account page; the welcome screen then says what that does to places already on the phone.
