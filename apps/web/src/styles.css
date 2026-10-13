@@ -6715,8 +6715,27 @@ table.hourly .row-label {
     justify-content: flex-end;
     padding-bottom: 0;
   }
+  /* The three round buttons make one short row just above the tab bar, not a tall column down the right edge, so they
+     cover a strip of the page, not a block of its words. */
+  .dock {
+    right: 12px;
+    bottom: 84px;
+  }
+  .dock .dock-buttons.column {
+    flex-direction: row;
+  }
+  .dock .assistant-fab,
+  .dock .smoke-toggle {
+    width: 44px;
+    height: 44px;
+  }
   .page {
-    padding-bottom: 230px;
+    padding-bottom: 168px;
+  }
+  /* Eight hour labels do not fit across a phone; every other one is enough. */
+  .dl-ticks span:nth-child(even),
+  .tl-ticks span:nth-child(even) {
+    display: none;
   }
 }
 
