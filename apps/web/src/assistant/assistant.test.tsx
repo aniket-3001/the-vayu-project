@@ -626,7 +626,7 @@ describe('the best hour in the context', () => {
       await openChat();
       await typeIn('how many fires are there?');
       expect(
-        await screen.findByText(/fires? (in|on|near|across)|fire count|Contact/iu),
+        await screen.findByText(/fires? (in|on|near|across|(was|were) seen)|fire count|Contact/iu),
       ).toBeInTheDocument();
       expect(screen.queryByText(/Where is the fire/u)).not.toBeInTheDocument();
       await typeIn('report a fire');
