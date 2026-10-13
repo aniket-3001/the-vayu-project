@@ -185,6 +185,7 @@ The stack deploys with `cd infra && npx cdk deploy`. It needs three secrets made
 | `docs/PURIFIER.md`                | The cleaner prototype: the build, the airflow measured, what that is not |
 | `docs/COMPARISON.md`              | The Dyson HushJet figures and what can honestly be said beside ours      |
 | `docs/UNIT.md`                    | The measuring unit: parts, wiring, protocol, what may be said            |
+| `docs/MOBILE.md`                  | The Android and iOS apps: build, install, what to check                  |
 | `docs/LIVE-CHECKLIST.md`          | What was checked on the live address, and what was found                 |
 | `docs/learning-log.md`            | What broke and how it was fixed                                          |
 | `DESIGN.md`                       | The visual design brief                                                  |
