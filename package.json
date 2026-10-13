@@ -13,6 +13,7 @@
     "packages/watch",
     "apps/api",
     "apps/web",
+    "apps/mobile",
     "infra"
   ],
   "scripts": {
@@ -22,7 +23,10 @@
     "typecheck": "npm run typecheck --workspaces --if-present",
     "test": "vitest run",
     "test:watch": "vitest",
-    "dev": "npm run dev -w @vayu/web"
+    "dev": "npm run dev -w @vayu/web",
+    "mobile:sync": "npm run sync -w @vayu/mobile",
+    "mobile:android": "npm run mobile:sync && npm exec -w @vayu/mobile cap -- open android",
+    "mobile:ios": "npm run mobile:sync && npm exec -w @vayu/mobile cap -- open ios"
   },
   "devDependencies": {
     "@eslint/js": "^9.12.0",
