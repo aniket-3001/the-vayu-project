@@ -11,6 +11,10 @@ export interface UnitState {
   /** The app's device id the readings are kept under. */
   readonly deviceId?: string;
   readonly latest?: { readonly reading: UnitReading; readonly atMs: number };
+  /** The last reading taken while the unit sat on the purifier. Never part of `latest` or `recent`: it is not the room. */
+  readonly purified?: { readonly reading: UnitReading; readonly atMs: number };
+  /** True while the unit's latest reading was taken on the purifier. */
+  readonly onPurifier: boolean;
   /** The last few minutes of PM2.5, for the live chart. */
   readonly recent: readonly { readonly atMs: number; readonly pm25: number }[];
   /** Words for the person when it could not connect or a packet was refused. */
@@ -34,7 +38,7 @@ const PROBLEMS: Readonly<Record<string, string>> = {
  * the sensor is still warming up is shown but never kept.
  */
 export class UnitController {
-  private state: UnitState = { status: 'idle', recent: [] };
+  private state: UnitState = { status: 'idle', recent: [], onPurifier: false };
   private readonly listeners = new Set<() => void>();
   private link: UnitLink | undefined;
   private deviceId: string | undefined;
@@ -67,7 +71,7 @@ export class UnitController {
     this.link?.disconnect();
     this.link = undefined;
     this.deviceId = undefined;
-    this.set({ status: 'idle', recent: [] });
+    this.set({ status: 'idle', recent: [], onPurifier: false });
   };
 
   disconnect = (): void => {
@@ -83,7 +87,7 @@ export class UnitController {
     this.link = undefined;
     const session = ++this.session;
     const now = this.options.now ?? Date.now;
-    this.set({ status: 'connecting', recent: [] });
+    this.set({ status: 'connecting', recent: [], onPurifier: false });
     try {
       const opened = await transport.connect({
         onPacket: (bytes) => {
@@ -94,6 +98,16 @@ export class UnitController {
             return;
           }
           const atMs = now();
+          if (parsed.context === 'purifier') {
+            // The air at the purifier's output is not the room's: kept apart, never charted or counted in the hours.
+            this.set({
+              ...this.state,
+              status: 'connected',
+              onPurifier: true,
+              purified: { reading: parsed, atMs },
+            });
+            return;
+          }
           if (!parsed.warming && this.deviceId !== undefined) {
             const storage = this.options.storage?.() ?? window.localStorage;
             recordReading(storage, this.deviceId, atMs, parsed.pm25);
@@ -102,7 +116,9 @@ export class UnitController {
           this.set({
             ...(s.name === undefined ? {} : { name: s.name }),
             ...(s.deviceId === undefined ? {} : { deviceId: s.deviceId }),
+            ...(s.purified === undefined ? {} : { purified: s.purified }),
             status: 'connected',
+            onPurifier: false,
             latest: { reading: parsed, atMs },
             recent: parsed.warming
               ? s.recent
@@ -134,6 +150,7 @@ export class UnitController {
       this.set({
         status: declined ? 'idle' : 'failed',
         recent: [],
+        onPurifier: false,
         ...(declined
           ? {}
           : {
