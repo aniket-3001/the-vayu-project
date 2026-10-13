@@ -8,11 +8,13 @@ import { liveAirSource } from './air/liveSource';
 import { API_URL } from './config';
 import { setStarterPins } from './data/pins';
 import { setOwnerStartsWithSamples } from './exposure/spots';
+import { installPhoneGeolocation } from './native/geolocation';
 import { hideSplash, isNative } from './native/splash';
 import { liveLocation } from './places/liveLocation';
 import './styles.css';
 
 if (isNative()) document.documentElement.classList.add('native');
+installPhoneGeolocation();
 const root = document.getElementById('root');
 if (root === null) throw new Error('index.html needs a #root');
 

@@ -24,8 +24,26 @@ export interface SpeechPlugin {
 const loadPlugin = async (): Promise<SpeechPlugin> => {
   if (import.meta.env.VITE_NATIVE !== 'true') throw new Error('Not the phone app.');
   const { SpeechRecognition } = await import('@capacitor-community/speech-recognition');
-  return SpeechRecognition;
+  // A plain object, not the plugin itself: a promise that resolves with the plugin would call its `then`, which a
+  // plugin answers with "not implemented", and the microphone would never start.
+  return {
+    requestPermissions: () => SpeechRecognition.requestPermissions(),
+    available: () => SpeechRecognition.available(),
+    start: (options) => SpeechRecognition.start(options),
+    stop: () => SpeechRecognition.stop(),
+    addListener: (event, handler) =>
+      event === 'partialResults'
+        ? SpeechRecognition.addListener('partialResults', (data) => {
+            handler(data);
+          })
+        : SpeechRecognition.addListener('listeningState', (data) => {
+            handler(data);
+          }),
+  };
 };
+
+/** How long after the phone says speech has ended to wait for the final words. */
+const FINAL_WORDS_MS = 1200;
 
 /** The same shape as the browser's recogniser, which is what the assistant's listening is written against. */
 export class NativeRecognition {
@@ -52,7 +70,7 @@ export class NativeRecognition {
   stop(): void {
     void this.plugin?.stop().catch(() => undefined);
     // The phone says it has stopped; if it never does, this ends it all the same.
-    window.setTimeout(() => {
+    setTimeout(() => {
       this.finish(false);
     }, 1500);
   }
@@ -90,7 +108,11 @@ export class NativeRecognition {
           this.onresult?.({ results: [{ length: 1, 0: { transcript } }] });
         }),
         await plugin.addListener('listeningState', (data) => {
-          if (data.status === 'stopped') this.finish(false);
+          // The phone says speech has ended a moment before it sends the final words, so wait for them.
+          if (data.status === 'stopped')
+            setTimeout(() => {
+              this.finish(false);
+            }, FINAL_WORDS_MS);
         }),
       );
       await plugin.start({

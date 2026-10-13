@@ -54,7 +54,23 @@ describe('NativeRecognition', () => {
     await settle();
     fire('listeningState', { status: 'stopped' });
     fire('listeningState', { status: 'stopped' });
+    expect(ended).not.toHaveBeenCalled();
+    await new Promise((resolve) => setTimeout(resolve, 1400));
     expect(ended).toHaveBeenCalledTimes(1);
+  });
+
+  it('still hears the final words that arrive just after the phone says speech has ended', async () => {
+    const { plugin, fire } = fakePlugin();
+    const r = new NativeRecognition(() => Promise.resolve(plugin));
+    const heard: string[] = [];
+    r.onresult = (e) => {
+      heard.push(e.results[0]?.[0]?.transcript ?? '');
+    };
+    r.start();
+    await settle();
+    fire('listeningState', { status: 'stopped' });
+    fire('partialResults', { matches: ['do I need a mask today'] });
+    expect(heard).toEqual(['do I need a mask today']);
   });
 
   it('reports an error when the microphone is refused, and never starts', async () => {
@@ -85,5 +101,38 @@ describe('NativeRecognition', () => {
     b.start();
     await settle();
     expect(failedB).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('the real loader', () => {
+  it('starts through a plugin that, like Capacitor, refuses to be treated as a promise', async () => {
+    const start = vi.fn(() => Promise.resolve({}));
+    vi.resetModules();
+    vi.stubEnv('VITE_NATIVE', 'true');
+    vi.doMock('@capacitor-community/speech-recognition', () => ({
+      SpeechRecognition: {
+        requestPermissions: () => Promise.resolve({ speechRecognition: 'granted' }),
+        available: () => Promise.resolve({ available: true }),
+        start,
+        stop: () => Promise.resolve(),
+        addListener: () => Promise.resolve({ remove: () => Promise.resolve() }),
+        then: () => {
+          throw new Error('"SpeechRecognition.then()" is not implemented on web');
+        },
+      },
+    }));
+    try {
+      const { NativeRecognition: Fresh } = await import('./nativeSpeech');
+      const r = new Fresh();
+      const failed = vi.fn();
+      r.onerror = failed;
+      r.start();
+      await settle();
+      expect(failed).not.toHaveBeenCalled();
+      expect(start).toHaveBeenCalledTimes(1);
+    } finally {
+      vi.doUnmock('@capacitor-community/speech-recognition');
+      vi.unstubAllEnvs();
+    }
   });
 });

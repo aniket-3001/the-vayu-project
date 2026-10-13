@@ -48,7 +48,9 @@ const PLAIN: StyleSpecification = {
 };
 
 /** Where the map opens: south Asia at country level. Zoom out and it turns into a globe by itself. */
-const START = { center: [79, 23] as [number, number], zoom: 3.9 };
+const START = isNative()
+  ? { center: [78, 26] as [number, number], zoom: 4.6 }
+  : { center: [79, 23] as [number, number], zoom: 3.9 };
 
 /** The AQI colour for a number, as a map expression over the level starts. */
 const aqiColour = (value: unknown): unknown => [
@@ -336,7 +338,22 @@ export function MapView({
       if (m.getSource('field-0') !== undefined) return;
       const { layers: on } = latest.current;
       // A globe at country level looks flat, and MapLibre flattens it again as you zoom right in.
-      m.setProjection({ type: 'globe' });
+      // On a phone the curved edge and the white sky round it take a third of a small screen, so it stays a flat map
+      // there, with each place named once, in Latin letters, instead of twice (the second in a script few can read).
+      if (isNative()) {
+        m.setProjection({ type: 'mercator' });
+        for (const layer of m.getStyle().layers) {
+          if (layer.type !== 'symbol') continue;
+          const field = m.getLayoutProperty(layer.id, 'text-field') as unknown;
+          if (JSON.stringify(field).includes('name:nonlatin'))
+            m.setLayoutProperty(layer.id, 'text-field', [
+              'coalesce',
+              ['get', 'name:latin'],
+              ['get', 'name_en'],
+              ['get', 'name'],
+            ]);
+        }
+      } else m.setProjection({ type: 'globe' });
       FIELD_TILES.forEach((tile, i) => {
         const id = FIELD_IDS[i] ?? `field-${String(i)}`;
         m.addSource(id, {
