@@ -1,4 +1,4 @@
-import { Camera, CameraOff, ChevronDown, type LucideIcon } from 'lucide-react';
+import { Camera, CameraOff, ChevronDown, SwitchCamera, type LucideIcon } from 'lucide-react';
 import type { Pin } from '../data/pins';
 import { walkAdviceFor } from '@vayu/core';
 import { levelForAqi } from '../design/levels';
@@ -39,7 +39,13 @@ export function LensCard({
   readonly best: LensHour | undefined;
   /** For the live place: the saved place it is the same as, if it is at one. */
   readonly sameAs?: string | undefined;
-  readonly camera: { readonly on: boolean; readonly toggle: () => void };
+  readonly camera: {
+    readonly on: boolean;
+    readonly toggle: () => void;
+    /** Present only while the camera is on and the device has a second one. */
+    readonly flip?: () => void;
+    readonly facing?: 'environment' | 'user';
+  };
   readonly places: {
     readonly options: readonly { readonly id: string; readonly name: string }[];
     readonly activeId: string;
@@ -87,6 +93,21 @@ export function LensCard({
             )}
             <span>{camera.on ? 'Stop camera' : 'Experience on camera'}</span>
           </button>
+          {camera.flip !== undefined && (
+            <button
+              type="button"
+              className="lens-tool lens-flip"
+              aria-label={
+                camera.facing === 'user'
+                  ? 'Switch to the back camera'
+                  : 'Switch to the front camera'
+              }
+              onClick={camera.flip}
+            >
+              <SwitchCamera size={18} strokeWidth={2} aria-hidden="true" />
+              <span>{camera.facing === 'user' ? 'Back' : 'Front'}</span>
+            </button>
+          )}
           <label className="lens-tool lens-switch" title="Place to look at">
             <PlaceIcon size={18} strokeWidth={2} aria-hidden="true" />
             <span className="lens-switch-name">{active?.name ?? name}</span>

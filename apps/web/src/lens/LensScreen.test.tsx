@@ -175,6 +175,51 @@ describe('the AIR Lens', () => {
     expect(screen.getByRole('button', { name: /Experience on camera/u })).toBeInTheDocument();
   });
 
+  it('turns between the back and the front camera when the phone has both', async () => {
+    const stop = vi.fn();
+    const stream = { getTracks: () => [{ stop }] } as unknown as MediaStream;
+    const getUserMedia = vi.fn().mockResolvedValue(stream);
+    Object.defineProperty(navigator, 'mediaDevices', {
+      configurable: true,
+      value: {
+        getUserMedia,
+        enumerateDevices: vi
+          .fn()
+          .mockResolvedValue([{ kind: 'videoinput' }, { kind: 'videoinput' }]),
+      },
+    });
+    open();
+    await userEvent.click(screen.getByRole('button', { name: /Experience on camera/u }));
+    await userEvent.click(
+      await screen.findByRole('button', { name: 'Switch to the front camera' }),
+    );
+    expect(getUserMedia).toHaveBeenLastCalledWith({
+      video: { facingMode: { ideal: 'user' } },
+      audio: false,
+    });
+    expect(stop).toHaveBeenCalled();
+    await userEvent.click(await screen.findByRole('button', { name: 'Switch to the back camera' }));
+    expect(getUserMedia).toHaveBeenLastCalledWith({
+      video: { facingMode: { ideal: 'environment' } },
+      audio: false,
+    });
+  });
+
+  it('offers no flip when the device has one camera', async () => {
+    const stream = { getTracks: () => [{ stop: vi.fn() }] } as unknown as MediaStream;
+    Object.defineProperty(navigator, 'mediaDevices', {
+      configurable: true,
+      value: {
+        getUserMedia: vi.fn().mockResolvedValue(stream),
+        enumerateDevices: vi.fn().mockResolvedValue([{ kind: 'videoinput' }]),
+      },
+    });
+    open();
+    await userEvent.click(screen.getByRole('button', { name: /Experience on camera/u }));
+    await screen.findByRole('button', { name: /Stop camera/u });
+    expect(screen.queryByRole('button', { name: /Switch to the/u })).not.toBeInTheDocument();
+  });
+
   it('carries on with an illustration when the camera is refused or missing', async () => {
     Object.defineProperty(navigator, 'mediaDevices', {
       configurable: true,

@@ -6744,3 +6744,107 @@ table.hourly .row-label {
   -webkit-backdrop-filter: none !important;
   backdrop-filter: none !important;
 }
+
+/* Phone spacing: what was laid out for a wide screen gets room to breathe on a narrow one. */
+@media (max-width: 520px) {
+  /* AIR Lens with nothing pinned: two full-width buttons of the same size, the second a plain outlined one. */
+  .lens-empty {
+    gap: 16px;
+    padding: 20px 16px;
+  }
+  .lens-empty-actions {
+    display: grid;
+    gap: 10px;
+  }
+  .lens-empty .primary,
+  .lens-empty .plain {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    min-height: 48px;
+    text-align: center;
+    text-decoration: none;
+  }
+  .lens-empty .plain {
+    border: 1px solid var(--line);
+    background: var(--card);
+    color: var(--text);
+    font-weight: 700;
+  }
+
+  /* The assistant's heading: the title, then the live note as a tag over its sentence, then the language switch, each
+     with room, and the speaker and close buttons at the top right instead of squeezing the words. */
+  .sheet-head {
+    align-items: flex-start;
+    gap: 12px;
+  }
+  .sheet-head > div:first-child {
+    flex: 1 1 0;
+    min-width: 0;
+  }
+  .sheet-head > div:first-child > p {
+    display: grid;
+    justify-items: start;
+    gap: 6px;
+    margin: 6px 0 12px;
+    line-height: 1.45;
+  }
+  .sheet-head .lang-row {
+    margin-top: 2px;
+  }
+
+  /* The Add a device sheet: the three places side by side and the same width, and the connect button clear of them. */
+  .sheet fieldset.field {
+    display: grid;
+    gap: 10px;
+    margin: 16px 0 0;
+    padding: 0;
+    border: 0;
+  }
+  .sheet fieldset.field .choice-row {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 10px;
+  }
+  .sheet fieldset.field .choice {
+    padding: 0 8px;
+  }
+  .sheet fieldset.field + .primary {
+    width: 100%;
+    margin-top: 20px;
+  }
+
+  /* The AIR Lens's four round buttons: one even row across the card, with room between them. */
+  .lens-unit-time .dock-buttons {
+    justify-content: space-between;
+    gap: 0;
+    padding: 6px 4px 0;
+  }
+  .lens-unit-time .dock-stack {
+    flex-direction: row;
+    gap: 10px;
+  }
+  .lens-unit-time .dock-buttons.row {
+    gap: 10px;
+  }
+  .lens-unit-time .dock-buttons .assistant-fab,
+  .lens-unit-time .dock-buttons .smoke-toggle {
+    width: 48px;
+    height: 48px;
+  }
+}
+
+/* The front camera is shown as a mirror, the way a phone's own camera app shows it. */
+.lens-view .scene.mirrored {
+  transform: scaleX(-1);
+}
+@media (max-width: 520px) {
+  /* With the camera on there are three tools: the camera, the flip, and the place. */
+  .lens-tools {
+    flex-wrap: wrap;
+  }
+  .lens-tool.lens-flip {
+    flex: 0 0 auto;
+  }
+}

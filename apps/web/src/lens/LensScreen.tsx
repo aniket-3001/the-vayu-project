@@ -168,7 +168,13 @@ export function LensScreen(): React.JSX.Element {
     <div className="lens-screen">
       <div className="lens-view">
         {camera.state === 'on' ? (
-          <video ref={camera.video} className="scene" playsInline muted aria-hidden="true" />
+          <video
+            ref={camera.video}
+            className={`scene${camera.facing === 'user' ? ' mirrored' : ''}`}
+            playsInline
+            muted
+            aria-hidden="true"
+          />
         ) : (
           <SampleScene night={isNight(hour)} place={sceneFor(pin.name)} />
         )}
@@ -194,6 +200,9 @@ export function LensScreen(): React.JSX.Element {
             camera={{
               on: camera.state === 'on',
               toggle: camera.state === 'on' ? camera.stop : camera.start,
+              ...(camera.state === 'on' && camera.canFlip
+                ? { flip: camera.flip, facing: camera.facing }
+                : {}),
             }}
             places={{
               options: placeOptions,
