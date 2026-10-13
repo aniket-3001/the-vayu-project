@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useSyncExternalStore } from 'react';
-import { webBluetooth, type UnitTransport } from './ble';
+import type { UnitTransport } from './ble';
+import { defaultTransport } from './transport';
 import { UnitController, sharedUnit, type UnitState } from './unitController';
 
 export type { UnitState, UnitStatus } from './unitController';
@@ -29,7 +30,7 @@ export function useUnit(
   readonly connect: (named: (bleName: string) => string) => Promise<void>;
   readonly disconnect: () => void;
 } {
-  const transport = options.transport ?? webBluetooth;
+  const transport = options.transport ?? defaultTransport;
   const separate =
     options.own === true || options.storage !== undefined || options.now !== undefined;
   const { storage, now } = options;
