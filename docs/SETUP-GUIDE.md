@@ -20,6 +20,8 @@ Parts 1, 2, 3 and 5 do not depend on each other. Part 4 needs Part 1, because un
 
 ## Part 1. Let the apps call the API (Harsh)
 
+> **Status: done on 13 October 2026.** The CORS-only route (commit `761f1a0` plus `b39ae39`) was deployed to the live stack from `aniket-vayu` with Harsh's agreement. Checked afterwards: the website's page, headers and the API's answers are identical to the saved baseline; both app origins get `204` on a preflight (including the `PUT` with `authorization`); another site gets no allow header. The six Lambda functions were **not** redeployed. The steps below are kept for reference, and to repeat the checks (1.14 to 1.17) at any time.
+
 **What this does.** The apps run from the addresses `https://localhost` (Android) and `capacitor://localhost` (iPhone). The API's CloudFront address refuses calls from other sites, so the apps would get no data. This change tells CloudFront to allow those two addresses, and only those. It adds one rule set and one small function to the stack. It does not touch the website files, the tables, the functions or the secrets.
 
 **What you need.**
