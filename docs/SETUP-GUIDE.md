@@ -107,7 +107,7 @@ Parts 1, 2, 3 and 5 do not depend on each other. Part 4 needs Part 1, because un
     cd infra
     npx cdk diff
     ```
-    Expected now: **only group A**. If the six function lines are gone, the live functions match this commit, and you can deploy from here with step 1.11. If they are still listed, **STOP** and send the output to Aniket: it means the live code came from somewhere else.
+    Expected now: **only group A**. (This was tried against the live stack on 13 October from commit `761f1a0` plus `b39ae39`: the diff showed exactly the three group A items and no function changes. It only compared and deployed nothing.) If the six function lines are gone, the live functions match this commit, and you can deploy from here with step 1.11. If they are still listed, **STOP** and send the output to Aniket: it means the live code came from somewhere else.
 
 ### Deploy
 
