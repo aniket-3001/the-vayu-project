@@ -1,9 +1,8 @@
 import { useEffect, useMemo, useSyncExternalStore } from 'react';
-import type { UnitTransport } from './ble';
+import { type UnitTransport, UnitController, sharedUnit, type UnitState } from '@vayu/unit';
 import { defaultTransport } from './transport';
-import { UnitController, sharedUnit, type UnitState } from './unitController';
 
-export type { UnitState, UnitStatus } from './unitController';
+export type { UnitState, UnitStatus } from '@vayu/unit';
 
 /** The state of the app's one measuring unit, for any screen that shows it. It never connects or disconnects. */
 export function useUnitState(): UnitState {

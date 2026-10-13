@@ -9,7 +9,7 @@ import { INDOOR_SHARE, TREE_SHARE } from './assumptions';
 import { AT_PLACE_KM, distanceKm } from './geo';
 import type { Outing } from './outings';
 import { SPOT_KINDS, isThere, runsOn, type Spot, type SpotKind, type Spots } from './spots';
-import { measuredHourly } from '../devices/measured';
+import { measuredHourly } from '@vayu/unit';
 import { isRoomPin, unitNear, type Unit } from './units';
 
 /** An India calendar date, "2026-10-10". */

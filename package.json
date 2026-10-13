@@ -11,6 +11,7 @@
     "packages/core",
     "packages/data",
     "packages/watch",
+    "packages/unit",
     "apps/api",
     "apps/web",
     "apps/mobile",

@@ -1,6 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { webBluetooth } from './ble';
-import { nativeBle } from './nativeBle';
+import { webBluetooth, nativeBle } from '@vayu/unit';
 import { defaultTransport, pickTransport } from './transport';
 
 describe('choosing how to reach a unit', () => {

@@ -3,10 +3,8 @@ import { act, cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { PlacesPanel } from '../../places/ui/PlacesPanel';
-import type { UnitHandlers, UnitTransport } from '../ble';
+import { type UnitHandlers, type UnitTransport, sharedUnit, encodePacket } from '@vayu/unit';
 import { DEVICES_STORAGE_KEY, addMeasuredDevice } from '../devices';
-import { sharedUnit } from '../unitController';
-import { encodePacket } from '../unitProtocol';
 import { AddDeviceSheet } from './AddDeviceSheet';
 import { RoomScreen } from './RoomScreen';
 

@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { beforeEach, describe, expect, it } from 'vitest';
-import { recordReading } from '../devices/measured';
+import { recordReading } from '@vayu/unit';
 import { INDOOR_SHARE } from './assumptions';
 import { dayCells, openAt, today } from './model';
 import { sampleSpotsFor } from './spots';

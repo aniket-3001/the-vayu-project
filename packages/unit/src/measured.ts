@@ -1,4 +1,4 @@
-import { hourOfDay, isoDate } from '../today/time';
+import { localDate, localHour } from '@vayu/core';
 
 /**
  * What a measuring unit has actually measured, kept on this device as the mean PM2.5 of each hour of each day, so
@@ -47,8 +47,8 @@ export function recordReading(
 ): void {
   if (!Number.isFinite(pm25) || pm25 < 0) return;
   const iso = new Date(atMs).toISOString();
-  const date = isoDate(iso);
-  const hour = Math.floor(hourOfDay(iso));
+  const date = localDate(iso);
+  const hour = localHour(iso);
   const store = load(storage);
   const day: (HourSum | null)[] = [
     ...(store[deviceId]?.[date] ?? Array.from({ length: 24 }, () => null)),

@@ -1,5 +1,4 @@
-import { webBluetooth, type UnitTransport } from './ble';
-import { nativeBle } from './nativeBle';
+import { webBluetooth, type UnitTransport, nativeBle } from '@vayu/unit';
 
 /** Native inside the phone app, the browser's own Bluetooth everywhere else. */
 export const pickTransport = (native: boolean): UnitTransport =>

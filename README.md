@@ -166,6 +166,7 @@ The stack deploys with `cd infra && npx cdk deploy`. It needs three secrets made
 | `packages/core`      | The rules: air bands, timeline, windows, verdicts, the assistant's fixed answers (English and Hindi)                                 |
 | `packages/data`      | Clients for OpenAQ, Open-Meteo, MET Norway and FIRMS, and the cache                                                                  |
 | `packages/watch`     | The alert loop, Telegram, Bedrock wording, the number check                                                                          |
+| `packages/unit`      | The measuring unit: packet protocol, Bluetooth transports, controller, measured hours                                                |
 | `infra`              | The CDK stack and its tests                                                                                                          |
 | `firmware/vayu-unit` | The ESP32-S3 sketch for the measuring unit                                                                                           |
 | `scripts`            | Build, deploy, check and recording scripts                                                                                           |
