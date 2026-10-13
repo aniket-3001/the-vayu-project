@@ -1,6 +1,6 @@
 # Claims ledger
 
-Every claim the README, the video and the blog make, with what supports it. Where there is no support yet, it says so and
+Every claim the README makes, with what supports it. Where there is no support yet, it says so and
 the claim is not to be made. Checked against the repository and the live address on 11 October 2026.
 
 ## Claims we make

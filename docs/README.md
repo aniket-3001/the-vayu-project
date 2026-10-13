@@ -13,7 +13,5 @@ There are many documents, and the same facts could drift if they were kept in se
 | What the assistant may and may not do                                       | [`AGENT-BOUNDARIES.md`](AGENT-BOUNDARIES.md)                                                                                                       |
 | The measuring unit and the cleaner prototype                                | [`UNIT.md`](UNIT.md), [`PURIFIER.md`](PURIFIER.md), [`COMPARISON.md`](COMPARISON.md)                                                               |
 | What broke and how it was fixed                                             | [`learning-log.md`](learning-log.md)                                                                                                               |
-| The write-up and the video plan                                             | [`blog.md`](blog.md), [`VIDEO.md`](VIDEO.md)                                                                                                       |
-| The words for the submission form                                           | [`../submission/`](../submission/)                                                                                                                 |
 
 If a status fact appears in two places and they disagree, `AS-BUILT.md` is right and the other is a bug.

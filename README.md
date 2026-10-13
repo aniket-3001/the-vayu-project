@@ -6,7 +6,7 @@ It is 8 am, the morning after Diwali, in Delhi. The city app says "bad". A paren
 
 The Vayu Project answers for _one place_. Home, near R K Puram: **US AQI 500** (the top of that scale), from the Lodhi Road monitor **3.8 km** away, as recorded (the recording uses four Delhi monitors; the live app chooses from about 7,000). The air at this monitor is **in the GRAP Stage IV band** (our estimate; the official order that morning was Stage II for all of NCR, from a city average of 351, and this one monitor was far above it). Stay in; if you must go out, 4 to 5 pm is the cleanest hour (known only in hindsight, because this is a recorded day).
 
-Live: **https://d3lmq1mze2gup3.cloudfront.net** (a phone or a laptop; create an account to save your places, or **Try without login** to see the recorded days) · See it on seven real past days: **https://d3lmq1mze2gup3.cloudfront.net/#/week** · Blog text: [`docs/blog.md`](docs/blog.md) · Video: https://youtu.be/Pz4peN0KGp4 · AWS blog: https://builder.aws.com/content/3KZptnsls9p0kveqVHy6FGCWdWP/do-we-walk-to-school-today-one-answer-for-one-place-in-delhis-air-built-on-aws
+Live: **https://d3lmq1mze2gup3.cloudfront.net** (a phone or a laptop; create an account to save your places, or **Try without login** to see the recorded days) · See it on seven real past days: **https://d3lmq1mze2gup3.cloudfront.net/#/week**
 
 ![The Vayu Project: My Air on live data, the recorded days, the map with satellite fires, AIR Lens, the assistant and Exposure](docs/images/collage-features.jpg)
 
@@ -17,7 +17,7 @@ Live: **https://d3lmq1mze2gup3.cloudfront.net** (a phone or a laptop; create an 
 - **Code decides, AI only words.** Fixed rules decide the advice. The model may reword it, and every number in its wording is checked against the facts, or the plain text goes out.
 - **It reaches into your room.** A small measuring unit (an ESP32-S3 and a laser particle sensor, over Bluetooth) puts your room's air beside the air outside.
 
-AWS Air track submission, 8 to 11 October 2026. Built solo, with Claude as a coding assistant (see [`CONTRIBUTIONS.md`](CONTRIBUTIONS.md)).
+Built with Claude as a coding assistant.
 
 ## Try it in two minutes
 
@@ -176,7 +176,7 @@ The stack deploys with `cd infra && npx cdk deploy`. It needs three secrets made
 |                                   |                                                                          |
 | --------------------------------- | ------------------------------------------------------------------------ |
 | `docs/AS-BUILT.md`                | What is live, what is not                                                |
-| `docs/architecture.md`            | The parts, the data, and the Well-Architected pillars                    |
+| `docs/architecture.md`            | The parts, the data, and the AWS pillars                                 |
 | `docs/architecture-animated.html` | An animated diagram of the same, for the video (open it in a browser)    |
 | `docs/safety.md`                  | Every rule, how it is enforced, the test that proves it                  |
 | `docs/AGENT-BOUNDARIES.md`        | What the app's assistant may and may not do                              |
@@ -186,16 +186,12 @@ The stack deploys with `cd infra && npx cdk deploy`. It needs three secrets made
 | `docs/COMPARISON.md`              | The Dyson HushJet figures and what can honestly be said beside ours      |
 | `docs/UNIT.md`                    | The measuring unit: parts, wiring, protocol, what may be said            |
 | `docs/LIVE-CHECKLIST.md`          | What was checked on the live address, and what was found                 |
-| `docs/blog.md`                    | The write-up                                                             |
-| `docs/VIDEO.md`                   | The video: what to open, show and say                                    |
-| `submission/`                     | Every answer to the submission form, in one folder                       |
 | `docs/learning-log.md`            | What broke and how it was fixed                                          |
-| `CONTRIBUTIONS.md`                | What I built and delivered                                               |
 | `DESIGN.md`                       | The visual design brief                                                  |
 
 ## AI in the app
 
-At run time, Amazon Bedrock (Nova Micro, behind a guardrail) rewords the assistant's answers, or answers from the facts it is given, and cannot act ([`docs/AGENT-BOUNDARIES.md`](docs/AGENT-BOUNDARIES.md)). At build time I used Claude (through Claude Code) as a coding assistant; I directed and reviewed every change ([`CONTRIBUTIONS.md`](CONTRIBUTIONS.md)).
+At run time, Amazon Bedrock (Nova Micro, behind a guardrail) rewords the assistant's answers, or answers from the facts it is given, and cannot act ([`docs/AGENT-BOUNDARIES.md`](docs/AGENT-BOUNDARIES.md)). At build time I used Claude (through Claude Code) as a coding assistant.
 
 ## Licence
 

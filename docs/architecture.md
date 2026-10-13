@@ -72,7 +72,7 @@ The app labels each number as **Live** (a named monitor, its distance and its ag
   OpenAQ and Open-Meteo archives and NASA FIRMS, and plays the app on it. It asks our API for no air, wind or fires; it still
   uses the real assistant and voice. See `AS-BUILT.md`.
 
-## Well-Architected, honestly
+## AWS pillars, honestly
 
 | Pillar                     | What is done                                                                                                                                                                                                                                                                                                                                                                                                     | What is not                                                                                                                 |
 | -------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
@@ -85,15 +85,15 @@ The app labels each number as **Live** (a named monitor, its distance and its ag
 
 ## Where things are in the code
 
-| Path                 | What                                                                                                                                                                                                                |
-| -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Path                 | What                                                                                                                                  |
+| -------------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
 | `apps/web`           | The app (React, MapLibre). `src/air` is where real data enters; `src/week` is the recorded days; `src/devices` is the measuring unit. |
-| `apps/api`           | The API Lambda, the stations Lambda and the routes.                                                                                                                                                                 |
-| `packages/contracts` | The shape of every request and answer (zod).                                                                                                                                                                        |
-| `packages/core`      | The rules: air bands, timeline, windows, verdicts, the assistant's fixed answers. No network, no clock.                                                                                                             |
-| `packages/data`      | Clients for OpenAQ, Open-Meteo and FIRMS, and the cache.                                                                                                                                                            |
-| `packages/watch`     | The alert loop, Telegram, Bedrock wording, the number check.                                                                                                                                                        |
-| `infra`              | The CDK stack and its tests.                                                                                                                                                                                        |
-| `firmware/vayu-unit` | The ESP32-S3 sketch for the measuring unit.                                                                                                                                                                         |
-| `tests/smoke`        | The live check.                                                                                                                                                                                                     |
-| `scripts`            | Build, deploy and check scripts.                                                                                                                                                                                    |
+| `apps/api`           | The API Lambda, the stations Lambda and the routes.                                                                                   |
+| `packages/contracts` | The shape of every request and answer (zod).                                                                                          |
+| `packages/core`      | The rules: air bands, timeline, windows, verdicts, the assistant's fixed answers. No network, no clock.                               |
+| `packages/data`      | Clients for OpenAQ, Open-Meteo and FIRMS, and the cache.                                                                              |
+| `packages/watch`     | The alert loop, Telegram, Bedrock wording, the number check.                                                                          |
+| `infra`              | The CDK stack and its tests.                                                                                                          |
+| `firmware/vayu-unit` | The ESP32-S3 sketch for the measuring unit.                                                                                           |
+| `tests/smoke`        | The live check.                                                                                                                       |
+| `scripts`            | Build, deploy and check scripts.                                                                                                      |
