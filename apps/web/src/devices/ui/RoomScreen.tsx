@@ -6,14 +6,14 @@ import { LEVELS, levelForAqi } from '../../design/levels';
 import { today } from '../../exposure/model';
 import { SPOT_LABELS } from '../../exposure/spots';
 import { concentration, levelVars } from '../../today/ui/format';
-import type { UnitTransport } from '../ble';
-import { measuredHourly } from '../measured';
+import { type UnitTransport, measuredHourly } from '@vayu/unit';
 import { roomAdvice } from '../roomAdvice';
 import { defaultTransport } from '../transport';
 import { useDevices } from '../useDevices';
 import { useRoom } from '../useRoom';
 import { useUnit } from '../useUnit';
 import { LiveChart, windowMs, type LiveMark } from './LiveChart';
+import { PurifierPanel } from './PurifierPanel';
 
 const aqiOf = (pm25: number): number => usAqi(pm25)?.value ?? 0;
 const STALE_S = 10;
@@ -145,6 +145,8 @@ export function RoomScreen({
           </button>
         </div>
       </header>
+
+      <PurifierPanel nowMs={nowMs} />
 
       {reading === undefined || aqi === undefined || level === undefined ? (
         <main className="room-grid">

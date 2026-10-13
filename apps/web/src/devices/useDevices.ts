@@ -10,7 +10,7 @@ import {
   type DeviceMode,
 } from './devices';
 import type { SpotKind } from '../exposure/spots';
-import { forgetMeasured } from './measured';
+import { forgetMeasured } from '@vayu/unit';
 
 /** Dispatched on the window when the devices change, so every screen that shows them reads them again. */
 export const DEVICES_CHANGED = 'vayu:devices';

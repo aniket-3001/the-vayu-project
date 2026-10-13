@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { beforeEach, describe, expect, it } from 'vitest';
 import type { Device } from '../devices/devices';
-import { recordReading } from '../devices/measured';
+import { recordReading } from '@vayu/unit';
 import { addDays, countedCells, dayCells, daySummary, today } from './model';
 import { sampleSpotsFor } from './spots';
 import { allUnits, isRoomPin, withRooms } from './units';

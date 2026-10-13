@@ -1,7 +1,7 @@
 import { Bluetooth, X } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { SPOT_KINDS, SPOT_LABELS, type SpotKind } from '../../exposure/spots';
-import type { UnitTransport } from '../ble';
+import { type UnitTransport } from '@vayu/unit';
 import { defaultTransport } from '../transport';
 import { useDevices } from '../useDevices';
 import { useUnit } from '../useUnit';

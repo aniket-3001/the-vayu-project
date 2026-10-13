@@ -6,7 +6,7 @@ import { useHousehold, useSpots } from '../exposure/useExposure';
 import { usePins } from '../places/usePins';
 import type { TodayData } from '../today/types';
 import type { Device } from './devices';
-import type { UnitReading } from './unitProtocol';
+import { type UnitReading } from '@vayu/unit';
 import { useDevices } from './useDevices';
 import { useUnitState, type UnitState } from './useUnit';
 

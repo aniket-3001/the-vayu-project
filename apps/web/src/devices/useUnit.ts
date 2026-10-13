@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useSyncExternalStore } from 'react';
-import { webBluetooth, type UnitTransport } from './ble';
-import { UnitController, sharedUnit, type UnitState } from './unitController';
+import { type UnitTransport, UnitController, sharedUnit, type UnitState } from '@vayu/unit';
+import { defaultTransport } from './transport';
 
-export type { UnitState, UnitStatus } from './unitController';
+export type { UnitState, UnitStatus } from '@vayu/unit';
 
 /** The state of the app's one measuring unit, for any screen that shows it. It never connects or disconnects. */
 export function useUnitState(): UnitState {
@@ -29,7 +29,7 @@ export function useUnit(
   readonly connect: (named: (bleName: string) => string) => Promise<void>;
   readonly disconnect: () => void;
 } {
-  const transport = options.transport ?? webBluetooth;
+  const transport = options.transport ?? defaultTransport;
   const separate =
     options.own === true || options.storage !== undefined || options.now !== undefined;
   const { storage, now } = options;

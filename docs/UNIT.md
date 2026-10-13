@@ -24,13 +24,15 @@ Wiring is in the header of the firmware file: SPS30 pin 2 (RX) to GPIO17, pin 3 
 ## How it reaches the app
 
 The unit advertises as `Vayu-XXXX` (the last four digits of its address) and offers one service with one notify
-characteristic. About every two seconds it sends an 18-byte packet (layout in `apps/web/src/devices/unitProtocol.ts`):
-the four particle sizes, temperature and humidity if fitted, and how long it has been on. A packet that is short, from
+characteristic. About every two seconds it sends a 20-byte packet (layout in `packages/unit/src/unitProtocol.ts`):
+the four particle sizes, temperature and humidity if fitted, how long it has been on, and whether it sits on the purifier.
+An older unit sends 18 bytes, without the last part, and is read as not on a purifier. A packet that is short, from
 another version, flagged as having no reading, or physically impossible (PM2.5 above PM10, or above 1,000 µg/m³) is
 refused and never shown as air. The first ten seconds after power-on are flagged as warming: shown, never kept.
 
-The app connects with Web Bluetooth, so it works in **Chrome on Android and on a computer**, over HTTPS (the live site
-is). It does not work in Safari on an iPhone. The person picks the unit from the browser's own list.
+The website connects with Web Bluetooth, so it works in **Chrome on Android and on a computer**, over HTTPS (the live site
+is). It does not work in Safari on an iPhone. The person picks the unit from the browser's own list. The Android and iOS
+apps connect through a native Bluetooth plugin instead, so the unit also works on an iPhone there (see `MOBILE.md`).
 
 ## What the app does with a reading
 
@@ -80,3 +82,24 @@ The cleaner prototype is described in `PURIFIER.md`: what was built, the one air
    seconds. PM2.5 of 0.0 for a few seconds is normal while the fan settles.
 4. On the phone, open the live site in Chrome, press **Add device** at the top right of My Air, choose where the unit is, press **Connect
    over Bluetooth**, and pick `Vayu-XXXX`.
+
+## Telling when the unit is on the purifier
+
+The unit code lives in its own package, `packages/unit`, so the unit is an independent device: the protocol, both
+Bluetooth transports, the live link, the measured hours and the purifier logic import nothing from the app.
+
+A tag (NFC or RFID) fixed to the top of the purifier lets the unit know it is measuring the purifier's output. When a
+reader on the unit sees the tag, the packet's flags byte has bit 3 set and bytes 18 and 19 hold a 16-bit short id of the
+tag (never 0). The tag counts as present for 3 seconds after its last read, so one missed read does not flip it.
+
+In the app a reading taken on the purifier is shown as **Purified air** and is kept apart from the room: it is never in
+the room's reading, the room's chart or the measured hours that Exposure counts. When the unit has read both the room and
+the purifier's output in the last ten minutes, the app says how much cleaner the output is, as a percentage (never below
+0); otherwise it says it cannot compare, and shows no number. The first time a tag is seen the app asks which purifier it
+is, and remembers the name on the device. Whether the unit is in a room or outdoors is set by the person in the app; the
+unit never guesses.
+
+**What has not been done:** no reader module is chosen or fitted. `firmware/vayu-unit/TagReader.h` is an interface with
+a stub that sees no tag, so a unit built from this firmware never reports that it is on a purifier until a driver for the
+chosen module (a PN532 over I2C or an RC522 over SPI, for example) replaces the stub. The packet and the app are tested
+against made-up packets only; none of it has run on a real unit, and the sketch itself has not been compiled here.
