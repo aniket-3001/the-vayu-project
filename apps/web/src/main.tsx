@@ -8,10 +8,11 @@ import { liveAirSource } from './air/liveSource';
 import { API_URL } from './config';
 import { setStarterPins } from './data/pins';
 import { setOwnerStartsWithSamples } from './exposure/spots';
-import { hideSplash } from './native/splash';
+import { hideSplash, isNative } from './native/splash';
 import { liveLocation } from './places/liveLocation';
 import './styles.css';
 
+if (isNative()) document.documentElement.classList.add('native');
 const root = document.getElementById('root');
 if (root === null) throw new Error('index.html needs a #root');
 

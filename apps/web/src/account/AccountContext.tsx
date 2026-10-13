@@ -35,6 +35,10 @@ export const useAccount = (): AccountState => useContext(Context);
 /** Remembers on this device that the person chose to use the app as a guest. */
 export const GUEST_KEY = 'vayu.guest.v1';
 
+/** How many times the phone app asks for the account settings before it goes on without them, and the pause between. */
+const CONFIG_TRIES = 4;
+const CONFIG_RETRY_MS = 700;
+
 /** How often a change on this device is sent to the account. */
 const SAVE_EVERY_MS = 5_000;
 
@@ -71,8 +75,23 @@ export function AccountGate({
 
   useEffect(() => {
     let current = true;
-    fetchImpl(`${apiUrl.replace(/\/$/u, '')}/v1/auth-config`)
-      .then((res) => res.json() as Promise<Partial<AuthConfig> & { enabled?: boolean }>)
+    const url = `${apiUrl.replace(/\/$/u, '')}/v1/auth-config`;
+    // A phone can start with its network not quite up. Giving up on the first miss would drop the person into the app
+    // with no sign in at all, so the phone app asks a few times, a little apart, before it goes on without.
+    const tries = guestAllowed ? CONFIG_TRIES : 1;
+    const ask = async (attempt: number): Promise<Partial<AuthConfig> & { enabled?: boolean }> => {
+      try {
+        const res = await fetchImpl(url);
+        return (await res.json()) as Partial<AuthConfig> & { enabled?: boolean };
+      } catch (error) {
+        if (attempt + 1 >= tries || !current) throw error;
+        await new Promise<void>((resolve) => {
+          window.setTimeout(resolve, CONFIG_RETRY_MS * (attempt + 1));
+        });
+        return ask(attempt + 1);
+      }
+    };
+    ask(0)
       .then((body) => {
         if (!current) return;
         if (body.enabled === true && body.userPoolId && body.clientId && body.region)
@@ -85,7 +104,7 @@ export function AccountGate({
     return () => {
       current = false;
     };
-  }, [apiUrl, fetchImpl]);
+  }, [apiUrl, fetchImpl, guestAllowed]);
 
   const client: CognitoClient | undefined = useMemo(
     () => (typeof config === 'object' ? cognito(config, fetchImpl) : undefined),

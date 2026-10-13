@@ -273,6 +273,19 @@ describe('using the app as a guest', () => {
     expect(screen.queryByRole('button', { name: 'Sign in' })).not.toBeInTheDocument();
   });
 
+  it('asks again when the phone had no network the first time, rather than skipping the welcome screen', async () => {
+    const { fetchImpl: inner } = world();
+    let misses = 2;
+    const flaky = ((url: string, init?: RequestInit) =>
+      url.endsWith('/v1/auth-config') && misses-- > 0
+        ? Promise.reject(new TypeError('Failed to fetch'))
+        : inner(url, init)) as typeof fetch;
+    open(flaky, { guestAllowed: true });
+    expect(
+      await screen.findByRole('button', { name: 'Sign in' }, { timeout: 5000 }),
+    ).toBeInTheDocument();
+  });
+
   it('ignores a remembered guest choice where guests are not allowed', async () => {
     const { fetchImpl } = world();
     window.localStorage.setItem(GUEST_KEY, '1');

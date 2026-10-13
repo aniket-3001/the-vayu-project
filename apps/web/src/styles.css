@@ -6670,3 +6670,58 @@ table.hourly .row-label {
   flex: none;
   margin-top: 2px;
 }
+
+/* Narrow phones. The AIR Lens card's title and two actions get a row each, so the place name is never squeezed to
+   nothing; the time slider takes the full width with its buttons under it; and the pages leave room at the bottom to
+   scroll the last card clear of the round buttons. */
+@media (max-width: 420px) {
+  .lens-head {
+    flex-wrap: wrap;
+  }
+  .lens-title {
+    flex-basis: 100%;
+  }
+  .lens-tools {
+    flex: 1 1 100%;
+    min-width: 0;
+    padding-right: 8px;
+  }
+  .lens-tool {
+    flex: 1 1 0;
+    justify-content: center;
+    min-width: 0;
+    max-width: none;
+    padding: 0 8px;
+    overflow: hidden;
+  }
+  .lens-tool .lens-switch-name {
+    min-width: 0;
+    max-width: none;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .lens-tool span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .lens-unit-time {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0;
+  }
+  .lens-unit-time .dock-buttons {
+    justify-content: flex-end;
+    padding-bottom: 0;
+  }
+  .page {
+    padding-bottom: 300px;
+  }
+}
+
+/* The phone app: no blurring of what is behind a surface, which a phone's graphics chip pays for on every frame. */
+.native * {
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+}

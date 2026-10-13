@@ -10,6 +10,7 @@ import {
 import workerUrl from 'maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import { useEffect, useRef } from 'react';
+import { isNative } from '../native/splash';
 import { LEVELS } from '../design/levels';
 import type { Monitor } from './monitors';
 import { cigarettesPerDay, describeCigarettes } from '../units/smoke';
@@ -250,7 +251,10 @@ export function MapView({
       // Down to a street: the base map has detail that far. Readings are the nearest monitor's, and say how far.
       maxZoom: 18,
       attributionControl: { compact: true },
-      canvasContextAttributes: { antialias: true },
+      // Smoothing the edges costs a phone a good part of its frame time, and at its pixel density it shows little.
+      canvasContextAttributes: { antialias: !isNative() },
+      // A phone screen has three times the dots in each direction; drawing nine times the pixels is what makes it slow.
+      ...(isNative() ? { pixelRatio: Math.min(window.devicePixelRatio, 1.5) } : {}),
     });
     map.current = m;
     if (import.meta.env.DEV) Object.assign(window, { __vayuMap: m });

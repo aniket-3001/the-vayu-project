@@ -1,4 +1,5 @@
 import { SpeechReply } from '@vayu/contracts';
+import { NativeRecognition, nativeListening } from './nativeSpeech';
 import { SPEECH_TAG, type Lang } from './lang';
 
 /** The most that is read aloud in one go: the voice service takes 400 characters at a time. */
@@ -215,6 +216,7 @@ interface Recognition {
 type RecognitionConstructor = new () => Recognition;
 
 const recognitionClass = (): RecognitionConstructor | undefined => {
+  if (nativeListening()) return NativeRecognition as unknown as RecognitionConstructor;
   const w = window as unknown as {
     SpeechRecognition?: RecognitionConstructor;
     webkitSpeechRecognition?: RecognitionConstructor;

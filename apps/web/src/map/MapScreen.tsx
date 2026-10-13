@@ -8,6 +8,7 @@ import { inCoverage } from '../data/geocode';
 import { AqiScale } from '../components/AqiScale';
 import { useLiveLocation } from '../places/liveLocation';
 import { Pill } from '../today/ui/Chip';
+import { isNative } from '../native/splash';
 import { useAirUnits } from '../units/AirUnits';
 import { DetectLocation } from '../nav/DetectLocation';
 import { DockButtons } from '../nav/Dock';
@@ -84,8 +85,11 @@ export function MapScreen(): React.JSX.Element {
     }
     marker.current.setLngLat([liveLng, liveLat]).addTo(map);
     // Fly in once, when the position first arrives, unless a link opened the map somewhere on purpose.
-    if (!flown.current && start === undefined)
-      void map.flyTo({ center: [liveLng, liveLat], zoom: 9.5, duration: 1800 });
+    if (!flown.current && start === undefined) {
+      // A phone is too slow for the arc of a fly-to (it zooms right out and back in), so it eases straight there.
+      if (isNative()) map.easeTo({ center: [liveLng, liveLat], zoom: 9.5, duration: 700 });
+      else void map.flyTo({ center: [liveLng, liveLat], zoom: 9.5, duration: 1800 });
+    }
     flown.current = true;
   }, [map, liveLat, liveLng, start]);
   useEffect(

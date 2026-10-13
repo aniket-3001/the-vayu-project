@@ -1,16 +1,22 @@
 import type { Map as MapLibreMap } from 'maplibre-gl';
 import { useEffect, useRef } from 'react';
+import { isNative } from '../native/splash';
 import { WORLD } from './live';
 import { angleBetween, HORIZON_DEG } from './sphere';
 import { advectWith, speedOf, type Wind } from './wind';
 
-/** Roughly one star for each this many square pixels of map. */
-const PIXELS_PER_STAR = 520;
-const MAX_STARS = 1100;
+/**
+ * Roughly one star for each this many square pixels of map. A phone does the same drawing with a fraction of the
+ * power of a laptop, so in the phone app there are fewer stars with shorter tails, drawn at about 30 frames a second.
+ */
+const PIXELS_PER_STAR = isNative() ? 2000 : 520;
+const MAX_STARS = isNative() ? 160 : 1100;
 /** How many frames a star lives, how long its tail is, in positions kept. */
 const LIFE_MIN = 90;
 const LIFE_MAX = 170;
-const TAIL = 80;
+const TAIL = isNative() ? 36 : 80;
+/** The least time between two drawn frames: none on the website, so it is unchanged there. */
+const MIN_FRAME_MS = isNative() ? 33 : 0;
 /** The side of the square at a star's head, in pixels; the ones behind it are smaller. */
 const SQUARE = 3;
 
@@ -57,7 +63,7 @@ export function WindStars({
 
     const resize = (): void => {
       const box = map.getContainer().getBoundingClientRect();
-      const dpr = window.devicePixelRatio || 1;
+      const dpr = isNative() ? 1 : window.devicePixelRatio || 1;
       el.width = Math.max(1, Math.round(box.width * dpr));
       el.height = Math.max(1, Math.round(box.height * dpr));
       el.style.width = `${String(box.width)}px`;
@@ -120,6 +126,37 @@ export function WindStars({
       s.age += 1;
     };
 
+    // In the phone app the squares are gathered by colour and filled together, so a frame costs a few dozen fills, not
+    // thousands of colour strings to parse. The colours are rounded to a few steps, which the eye cannot tell apart.
+    const batches = new Map<string, { style: string; rects: number[] }>();
+    const flush = (): void => {
+      for (const { style, rects } of batches.values()) {
+        ctx.fillStyle = style;
+        ctx.beginPath();
+        for (let i = 0; i < rects.length; i += 3)
+          ctx.rect(rects[i] ?? 0, rects[i + 1] ?? 0, rects[i + 2] ?? 1, rects[i + 2] ?? 1);
+        ctx.fill();
+      }
+      batches.clear();
+    };
+    const gather = (x: number, y: number, size: number, along: number, alpha: number): void => {
+      const step = Math.round(along * 6);
+      const level = Math.round(alpha * 14);
+      if (level <= 0) return;
+      const key = `${String(step)}:${String(level)}`;
+      let batch = batches.get(key);
+      if (batch === undefined) {
+        const r = Math.round(248 - (step / 6) * 96);
+        const g = Math.round(252 - (step / 6) * 52);
+        batch = {
+          style: `rgba(${String(r)}, ${String(g)}, 255, ${(level / 14).toFixed(3)})`,
+          rects: [],
+        };
+        batches.set(key, batch);
+      }
+      batch.rects.push(x, y, size);
+    };
+
     const draw = (s: Star): void => {
       // Fade in as it is born and out as it ends; a sine over its life does both.
       const envelope = Math.sin(Math.PI * Math.min(1, s.age / s.life));
@@ -140,6 +177,10 @@ export function WindStars({
         if (alpha < 0.04) continue;
         const x = Math.round(p.x - size / 2);
         const y = Math.round(p.y - size / 2);
+        if (isNative()) {
+          gather(x, y, size, along, alpha);
+          continue;
+        }
         const r = Math.round(248 - along * 96);
         const g = Math.round(252 - along * 52);
         ctx.fillStyle = `rgba(${String(r)}, ${String(g)}, 255, ${alpha.toFixed(3)})`;
@@ -147,8 +188,14 @@ export function WindStars({
       }
     };
 
-    const tick = (): void => {
+    let lastDrawn = 0;
+    const tick = (now = 0): void => {
       if (stopped) return;
+      if (now - lastDrawn < MIN_FRAME_MS) {
+        frame = window.requestAnimationFrame(tick);
+        return;
+      }
+      lastDrawn = now;
       if (!document.hidden) {
         ctx.clearRect(0, 0, el.clientWidth, el.clientHeight);
         // Wind is a weather-scale thing: past city level its grid says nothing about a street, so it is not drawn.
@@ -175,6 +222,7 @@ export function WindStars({
           if (gone) stars[i] = born();
           else draw(s);
         }
+        flush();
       }
       frame = window.requestAnimationFrame(tick);
     };
@@ -249,6 +297,7 @@ export function WindStars({
         s.age = s.life / 2;
         draw(s);
       }
+      flush();
     } else {
       frame = window.requestAnimationFrame(tick);
     }
