@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   encodePacket,
+  LEGACY_PACKET_BYTES,
   isReading,
   PACKET_BYTES,
   parsePacket,
@@ -17,10 +18,11 @@ const reading: UnitReading = {
   humidityPct: 52.3,
   uptimeS: 98_765,
   warming: false,
+  context: 'free',
 };
 
 describe('a unit’s Bluetooth packet', () => {
-  it('is 18 bytes, which fits in one default Bluetooth packet', () => {
+  it('is 20 bytes, which fits in one default Bluetooth packet', () => {
     expect(encodePacket(reading)).toHaveLength(PACKET_BYTES);
     expect(PACKET_BYTES).toBeLessThanOrEqual(20);
   });
@@ -47,6 +49,7 @@ describe('a unit’s Bluetooth packet', () => {
         pm10: reading.pm10,
         uptimeS: reading.uptimeS,
         warming: true,
+        context: 'free',
       }),
     );
     expect(isReading(got)).toBe(true);
@@ -76,5 +79,39 @@ describe('a unit’s Bluetooth packet', () => {
 
   it('advertises a name every unit shares, so the app can find them', () => {
     expect(UNIT_NAME_PREFIX).toBe('Vayu-');
+  });
+});
+
+describe('the purifier tag in the packet', () => {
+  const base = { pm1: 20, pm25: 30, pm4: 33, pm10: 36, uptimeS: 100, warming: false } as const;
+
+  it('writes the context and the tag back as it was', () => {
+    const got = parsePacket(encodePacket({ ...base, context: 'purifier', purifierTag: 0xbeef }));
+    expect(isReading(got) && got.context).toBe('purifier');
+    expect(isReading(got) && got.purifierTag).toBe(0xbeef);
+  });
+
+  it('reads a reading with no tag as free', () => {
+    const got = parsePacket(encodePacket({ ...base, context: 'free' }));
+    expect(isReading(got) && got.context).toBe('free');
+    expect(isReading(got) && got.purifierTag).toBeUndefined();
+  });
+
+  it('still reads the 18-byte packet of an older unit, as free', () => {
+    const bytes = encodePacket({ ...base, context: 'free' }).slice(0, LEGACY_PACKET_BYTES);
+    const got = parsePacket(bytes);
+    expect(isReading(got) && got.context).toBe('free');
+  });
+
+  it('refuses the purifier flag with no tag id, rather than call it a purifier reading', () => {
+    const bytes = encodePacket({ ...base, context: 'purifier', purifierTag: 0xbeef });
+    bytes[18] = 0;
+    bytes[19] = 0;
+    expect(parsePacket(bytes)).toBe('out_of_range');
+  });
+
+  it('refuses the purifier flag on an old 18-byte packet, which has no tag id', () => {
+    const bytes = encodePacket({ ...base, context: 'purifier', purifierTag: 0xbeef }).slice(0, 18);
+    expect(parsePacket(bytes)).toBe('out_of_range');
   });
 });

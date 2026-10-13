@@ -33,6 +33,7 @@ function unitTransport(): { transport: UnitTransport; send: (pm25: number) => vo
           pm10: pm25 * 1.1,
           uptimeS: 100,
           warming: false,
+          context: 'free',
         }),
       );
     },

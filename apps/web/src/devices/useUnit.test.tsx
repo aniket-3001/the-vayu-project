@@ -25,6 +25,7 @@ const base: UnitReading = {
   humidityPct: 50,
   uptimeS: 100,
   warming: false,
+  context: 'free',
 };
 
 /** A transport the test drives by hand. */
