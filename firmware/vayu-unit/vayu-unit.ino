@@ -1,6 +1,6 @@
 /*
  * Vayu measuring unit: an ESP32-S3 reading a Sensirion SPS30 particle sensor over UART, and sending each reading to
- * the Vayu app over Bluetooth Low Energy. One 18-byte packet about every two seconds, on one notify characteristic.
+ * the Vayu app over Bluetooth Low Energy. One 20-byte packet about every two seconds, on one notify characteristic.
  *
  * Board:     ESP32S3 Dev Module, "USB CDC On Boot: Enabled" (so Serial is the USB port)
  * Libraries: "Sensirion UART SPS30" (Library Manager; it brings "Sensirion Core"). Bluetooth is the ESP32 core's own
@@ -11,11 +11,14 @@
  *   SPS30 pin 3 TX  -> GPIO 18 (ESP32 RX)           SPS30 pin 4 SEL -> not connected
  *   SPS30 pin 5 GND -> GND
  *
- * The packet layout is the one in apps/web/src/devices/unitProtocol.ts (little-endian):
- *   0 u8 version=1 | 1 u8 flags (bit0 particles valid, bit1 climate valid, bit2 warming)
+ * The packet layout is the one in packages/unit/src/unitProtocol.ts (little-endian):
+ *   0 u8 version=1 | 1 u8 flags (bit0 particles valid, bit1 climate valid, bit2 warming, bit3 on the purifier)
  *   2 u16 PM1.0 x10 | 4 u16 PM2.5 x10 | 6 u16 PM4.0 x10 | 8 u16 PM10 x10
  *  10 i16 temperature x100 | 12 u16 humidity x100 | 14 u32 uptime seconds
+ *  18 u16 short id of the tag on the purifier (0 when none)
  * This unit has no temperature or humidity sensor yet, so bit1 stays 0 and those bytes are 0.
+ * Bit 3 and bytes 18-19 are set while a tag reader sees the tag on the purifier (see TagReader.h; with no reader fitted
+ * they stay 0). The tag counts as present for a few seconds after its last read, so one missed read does not flip it.
  */
 #include <Arduino.h>
 #include <BLEDevice.h>
@@ -23,6 +26,7 @@
 #include <BLEUtils.h>
 #include <HardwareSerial.h>
 #include <SensirionUartSps30.h>
+#include "TagReader.h"
 
 // The same identifiers the app looks for (apps/web/src/devices/unitProtocol.ts).
 static const char* SERVICE_UUID = "b7c5a1f0-6a7e-4c1b-9b6d-5a1d76617975";
@@ -31,10 +35,13 @@ static const char* READING_UUID = "b7c5a1f1-6a7e-4c1b-9b6d-5a1d76617975";
 static const int SENSOR_RX_PIN = 18;  // ESP32 RX  <- SPS30 pin 3 (TX)
 static const int SENSOR_TX_PIN = 17;  // ESP32 TX  -> SPS30 pin 2 (RX)
 
-static const uint8_t PACKET_BYTES = 18;
+static const uint8_t PACKET_BYTES = 20;
 static const uint32_t SEND_EVERY_MS = 2000;
 // The SPS30's fan needs a few seconds to settle before its numbers are used.
 static const uint32_t WARMUP_MS = 10000;
+// The tag reader is asked once a second, and the tag counts as present for 3 seconds after it was last read.
+static const uint32_t TAG_POLL_MS = 1000;
+static const uint32_t TAG_HOLD_MS = 3000;
 
 HardwareSerial SensorSerial(1);
 SensirionUartSps30 sensor;
@@ -48,6 +55,9 @@ uint8_t failedReads = 0;
 uint32_t startedAt = 0;
 uint32_t lastSent = 0;
 uint32_t lastTry = 0;
+uint32_t lastTagPoll = 0;
+uint32_t lastTagSeen = 0;
+uint16_t lastTag = 0;  // short id of the tag last read; 0 when none yet
 
 class Callbacks : public BLEServerCallbacks {
   void onConnect(BLEServer*) override {
@@ -143,6 +153,15 @@ void loop() {
     sensorRunning = startSensor();
     failedReads = 0;
   }
+  if (now - lastTagPoll >= TAG_POLL_MS) {
+    lastTagPoll = now;
+    uint8_t id[10];
+    uint8_t length = readTag(id, sizeof(id));
+    if (length > 0) {
+      lastTag = tagShortId(id, length);
+      lastTagSeen = now;
+    }
+  }
   if (now - lastSent < SEND_EVERY_MS) return;
   lastSent = now;
 
@@ -171,6 +190,11 @@ void loop() {
     }
   }
   if (now - startedAt < WARMUP_MS) flags |= 0b0100;
+  bool onPurifier = lastTag != 0 && now - lastTagSeen < TAG_HOLD_MS;
+  if (onPurifier) {
+    flags |= 0b1000;
+    putU16(packet + 18, lastTag);
+  }
   packet[1] = flags;
   uint32_t uptime = (now - startedAt) / 1000;
   packet[14] = uptime & 0xFF;
