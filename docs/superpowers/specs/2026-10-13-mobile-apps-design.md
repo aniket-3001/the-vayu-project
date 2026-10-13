@@ -43,7 +43,7 @@ Installable test builds of the existing web app on Android (a debug APK) and iOS
 ### 3. API, CORS and sign-in
 
 - `API_URL` already reads `VITE_API_URL`, so the mobile build needs no code change there.
-- **CORS change (for Harsh, as a small PR to `infra/`):** allow the origins `https://localhost` (Android) and `capacitor://localhost` (iOS), methods GET, POST and OPTIONS, and the headers the app sends, including `authorization` for `/v1/me`. `infra/lib/VayuStack.ts` currently says "No CORS" on purpose; that comment and the infra assertion tests change with it.
+- **CORS change (for Harsh, as a pull request on its own branch `infra/mobile-cors`):** done in CloudFront, not in API Gateway. CloudFront forwards no `Origin` header to the API, so API Gateway's own CORS could never answer. The change adds a response-headers policy that allows the origins `https://localhost` (Android) and `capacitor://localhost` (iOS) on the two API behaviors (keeping the existing security headers), and a viewer-request CloudFront Function that answers the browser's `OPTIONS` check with a 204 for those origins only. `infra/lib/VayuStack.ts` currently says "No CORS" on purpose; that comment and the infra assertion tests change with it. Nothing is deployed from here.
 - Cognito calls go directly to `cognito-idp.ap-south-1.amazonaws.com`, which allows cross-origin requests, so sign-in should work unchanged. Sessions are kept in localStorage, which persists in the webview.
 - The CloudFront content-security policy does not apply inside the native shell.
 
@@ -53,7 +53,8 @@ Installable test builds of the existing web app on Android (a debug APK) and iOS
 - Hindi speech depends on the voices installed on the phone; the app already falls back to Polly audio.
 - Map tiles, Open-Meteo and Photon are called from the webview and allow cross-origin requests.
 - Routing is `HashRouter`, so no server rewrites are needed.
-- Add an app icon, a splash screen, and safe-area padding for notches and the status bar. This is the part most likely to need visual adjustment on a real phone.
+- Safe areas: the iOS shell is configured with `contentInset: 'always'`, so the page stays clear of the notch and home bar with no change to the web styles. Android relies on Capacitor's default window handling. This is the part most likely to need visual adjustment on a real phone.
+- App icon and splash screen: deferred. The repo has no source artwork, so the Capacitor defaults ship in test builds.
 
 ### 5. Build and testing
 
@@ -61,6 +62,7 @@ Installable test builds of the existing web app on Android (a debug APK) and iOS
 - New unit tests: transport selection by `isNative()`, and the native BLE adapter against a fake plugin (connect, packet delivery, disconnect, rejection when the person declines).
 - Android: needs Android Studio (or the SDK) and JDK 17. The debug APK is built with Gradle.
 - iOS: needs a Mac with Xcode, and an Apple ID for installing on a device (a free account allows 7-day installs; TestFlight needs the paid programme).
+- This Windows machine has JDK 24 and no Android SDK, so the debug APK cannot be built here; it needs Android Studio (JDK 17 or 21).
 - The Bluetooth hardware path cannot be verified without a unit and a phone; only the plugin wiring is tested in code.
 
 ## Known risks
@@ -72,5 +74,8 @@ Installable test builds of the existing web app on Android (a debug APK) and iOS
 
 ## Open questions
 
-- Does the user have a Mac for iOS builds? If not, iOS builds need a cloud Mac service or a borrowed machine.
-- Final app id and display name (proposed: `com.vayu.app`, "Vayu").
+- None. Harsh has a Mac for iOS builds, and the app id and name are `com.vayu.app` and "Vayu".
+
+## Guarantee for the existing deployment
+
+Nothing here changes Harsh's deployed AWS resources or website. No AWS command is run; the web changes sit behind `VITE_NATIVE`, which only the mobile build sets, so the website's bundle is unchanged (checked by `make prove` and a search of `apps/web/dist`); mobile builds write to `apps/mobile/www`, never `apps/web/dist`; and the CORS change is a branch for Harsh to review and deploy himself.
