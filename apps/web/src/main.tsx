@@ -8,6 +8,7 @@ import { liveAirSource } from './air/liveSource';
 import { API_URL } from './config';
 import { setStarterPins } from './data/pins';
 import { setOwnerStartsWithSamples } from './exposure/spots';
+import { hideSplash } from './native/splash';
 import { liveLocation } from './places/liveLocation';
 import './styles.css';
 
@@ -16,7 +17,7 @@ if (root === null) throw new Error('index.html needs a #root');
 
 if (window.location.hash.startsWith('#/week')) {
   // The recorded days: seven real days played through the same app, opened by an unlisted address.
-  void import('./week/entry').then(({ startWeek }) => startWeek(root));
+  void import('./week/entry').then(({ startWeek }) => startWeek(root)).then(() => hideSplash());
 } else {
   // The deployed app reads the real air from our API on AWS.
   setAirStoreFactory(() => new AirStore(liveAirSource(API_URL)));
@@ -32,4 +33,6 @@ if (window.location.hash.startsWith('#/week')) {
       </AccountGate>
     </StrictMode>,
   );
+  // In the phone app the startup screen is still up; take it down now the app is drawn.
+  void hideSplash();
 }
