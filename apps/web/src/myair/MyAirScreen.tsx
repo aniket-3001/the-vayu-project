@@ -12,6 +12,7 @@ import { alertsFor, type Alert } from '../alerts/model';
 import { useFires } from '../alerts/useFires';
 import { TipsCard } from '../tasks/ui/TipsCard';
 import { AddDeviceSheet } from '../devices/ui/AddDeviceSheet';
+import { isNative } from '../native/splash';
 import { PlacesPanel } from '../places/ui/PlacesPanel';
 import { RecordingNotice } from '../week/RecordingNotice';
 import type { PlaceMatch } from '../data/geocode';
@@ -136,11 +137,23 @@ export function MyAirScreen({ search, locate, address }: Props): React.JSX.Eleme
         <RecordingNotice />
         {pins.length === 0 && (
           <p className="demo-line">
-            <a href="#/week" target="_blank" rel="noopener" className="demo-button">
+            <a
+              href="#/week"
+              {...(isNative() ? {} : { target: '_blank', rel: 'noopener' })}
+              className="demo-button"
+              onClick={(event) => {
+                if (!isNative()) return;
+                // An app has no tabs: go to the recorded days here (the bar there has a way back).
+                event.preventDefault();
+                window.location.hash = '#/week';
+                window.location.reload();
+              }}
+            >
               <ExternalLink size={16} strokeWidth={2.25} aria-hidden="true" /> See the recorded days
             </a>
             <span className="muted small">
-              Seven real days from the archive, played through this app, in a new tab.
+              Seven real days from the archive, played through this app
+              {isNative() ? '.' : ', in a new tab.'}
             </span>
           </p>
         )}

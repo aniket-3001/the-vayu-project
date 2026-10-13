@@ -67,7 +67,9 @@ export function AqiScale({
         ))}
       </div>
       <p className="aqi-scale-unit" aria-hidden="true">
-        {smoke ? 'cigarettes a day' : 'Air Quality Index (AQI), US scale. GRAP, Delhi’s pollution action plan, uses India’s scale.'}
+        {smoke
+          ? 'cigarettes a day'
+          : 'Air Quality Index (AQI), US scale. GRAP, Delhi’s pollution action plan, uses India’s scale.'}
       </p>
     </div>
   );

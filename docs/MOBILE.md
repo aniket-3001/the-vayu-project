@@ -52,6 +52,15 @@ In Xcode: select the App target, Signing and Capabilities, choose your team, pic
 ## Limits
 
 - The Bluetooth path has not been tried against the real unit; only the adapter is tested, against a fake.
-- No custom icon or splash screen yet; the Capacitor defaults are used.
 - The APK and the iOS app have not been built or run yet; the native projects are generated and committed.
 - Test builds only: no store listing, push notifications or release signing.
+
+## Icon and startup screen
+
+The app icon is a "V" in the colours of the AQI bands, and the startup screen is the same mark on the page colour (light, and a dark one for phones in dark mode). Both are drawn by `apps/mobile/scripts/make-assets.mjs`, with no outside artwork, so they can be changed in one place:
+
+```bash
+npm run assets -w @vayu/mobile   # redraws apps/mobile/assets/*.png and writes every Android and iOS size
+```
+
+The startup screen stays up until the app has drawn, and for at least about a second so it never flashes, then fades out (`apps/web/src/native/splash.ts`). In the website nothing of this is loaded.

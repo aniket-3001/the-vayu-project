@@ -6,15 +6,18 @@
   "scripts": {
     "build:web": "node scripts/build-web.mjs",
     "sync": "npm run build:web && cap sync",
-    "typecheck": "tsc -p ."
+    "typecheck": "tsc -p .",
+    "assets": "node scripts/make-assets.mjs && capacitor-assets generate --android --ios --assetPath assets --iconBackgroundColor #F4F6F8 --iconBackgroundColorDark #101820 --splashBackgroundColor #F4F6F8 --splashBackgroundColorDark #101820"
   },
   "devDependencies": {
+    "@capacitor/assets": "^3.0.5",
     "@capacitor/cli": "^8.5.3"
   },
   "dependencies": {
     "@capacitor-community/bluetooth-le": "^8.3.0",
     "@capacitor/android": "^8.5.3",
     "@capacitor/core": "^8.5.3",
-    "@capacitor/ios": "^8.5.3"
+    "@capacitor/ios": "^8.5.3",
+    "@capacitor/splash-screen": "^8.0.2"
   }
 }
