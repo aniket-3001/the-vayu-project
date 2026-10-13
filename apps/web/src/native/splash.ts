@@ -11,11 +11,14 @@ interface SplashPlugin {
 
 /**
  * The plugin is imported only behind the build flag, which the website's build replaces with a constant, so the website
- * ships none of it.
+ * ships none of it. It is wrapped in a plain object because a promise that resolves with the plugin itself would call
+ * its `then`, which a plugin answers with "not implemented", and the startup screen would never come down.
  */
 const loadPlugin = (): Promise<SplashPlugin> =>
   import.meta.env.VITE_NATIVE === 'true'
-    ? import('@capacitor/splash-screen').then((module) => module.SplashScreen)
+    ? import('@capacitor/splash-screen').then(({ SplashScreen }) => ({
+        hide: (options) => SplashScreen.hide(options),
+      }))
     : Promise.reject(new Error('Not the phone app.'));
 
 /**

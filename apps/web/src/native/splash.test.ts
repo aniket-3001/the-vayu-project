@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { SPLASH_MIN_MS, hideSplash } from './splash';
 
 function fake(): {
@@ -47,6 +47,28 @@ describe('the startup screen of the phone app', () => {
     await hideSplash({ ...f.options, native: true, sinceStartMs: SPLASH_MIN_MS + 500 });
     expect(f.waits).toEqual([]);
     expect(f.hidden).toHaveLength(1);
+  });
+
+  it('hides through the real plugin, which, like Capacitor, refuses to be treated as a promise', async () => {
+    const hide = vi.fn(() => Promise.resolve());
+    vi.resetModules();
+    vi.stubEnv('VITE_NATIVE', 'true');
+    vi.doMock('@capacitor/splash-screen', () => ({
+      SplashScreen: {
+        hide,
+        then: () => {
+          throw new Error('"SplashScreen.then()" is not implemented on web');
+        },
+      },
+    }));
+    try {
+      const { hideSplash: fresh } = await import('./splash');
+      await fresh({ native: true, sinceStartMs: SPLASH_MIN_MS });
+      expect(hide).toHaveBeenCalledWith({ fadeOutDuration: 300 });
+    } finally {
+      vi.doUnmock('@capacitor/splash-screen');
+      vi.unstubAllEnvs();
+    }
   });
 
   it('never throws when the plugin is missing', async () => {
