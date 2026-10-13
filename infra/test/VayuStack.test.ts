@@ -354,7 +354,7 @@ describe('the public site', () => {
       };
       const withCors = corsPolicies();
       expect(withCors).toHaveLength(1);
-      const id = (withCors[0] as [string, unknown])[0];
+      const id = withCors[0]?.[0];
       const corsRef = JSON.stringify({ Ref: id });
       for (const behavior of config.CacheBehaviors)
         expect(JSON.stringify(behavior.ResponseHeadersPolicyId)).toBe(corsRef);
