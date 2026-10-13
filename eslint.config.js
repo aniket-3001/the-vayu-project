@@ -13,6 +13,10 @@ export default tseslint.config(
       // Hand-run browser checks against the live site, not part of the build.
       'tests/live-check/**',
       '**/coverage/**',
+      // The web app built for the phone shell, and the generated native projects (their web copy and plugins).
+      'apps/mobile/www/**',
+      'apps/mobile/android/**',
+      'apps/mobile/ios/**',
       'docs/**',
     ],
   },

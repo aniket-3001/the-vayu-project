@@ -1,3 +1,6 @@
 dist
 DESIGN.md
 apps/web/src/week/recorded.json
+apps/mobile/www
+apps/mobile/android
+apps/mobile/ios
