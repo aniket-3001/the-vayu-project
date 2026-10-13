@@ -40,6 +40,34 @@ function handler(event) {
 }
 `;
 
+/** The origins the Android and iOS apps run from. They are the only sites other than this one that may call the API. */
+export const MOBILE_ORIGINS = ['https://localhost', 'capacitor://localhost'] as const;
+
+/**
+ * The browser asks "may I?" with an OPTIONS request before it sends a POST or a request with a token. The API has no
+ * route for that, so CloudFront answers it for the app origins and passes everything else through untouched.
+ */
+export const API_PREFLIGHT_FUNCTION = `
+var ALLOWED = ${JSON.stringify(MOBILE_ORIGINS)};
+function handler(event) {
+  var request = event.request;
+  if (request.method !== 'OPTIONS') return request;
+  var origin = request.headers.origin ? request.headers.origin.value : '';
+  if (ALLOWED.indexOf(origin) === -1) return request;
+  return {
+    statusCode: 204,
+    statusDescription: 'No Content',
+    headers: {
+      'access-control-allow-origin': { value: origin },
+      'access-control-allow-methods': { value: 'GET, POST, PUT, DELETE, OPTIONS' },
+      'access-control-allow-headers': { value: 'content-type, authorization' },
+      'access-control-max-age': { value: '86400' },
+      vary: { value: 'Origin' }
+    }
+  };
+}
+`;
+
 /**
  * What the page may load and call. The app's own files, its fonts, images and workers; the map's tiles; the free
  * weather and place-search services it asks; and our own API, which is the same address. Nothing else, and no
@@ -116,6 +144,47 @@ export class Site extends Construct {
       },
     });
 
+    // The same headers for the API's answers, plus permission for the phone apps to read them.
+    const apiHeaders = new ResponseHeadersPolicy(this, 'ApiHeaders', {
+      securityHeadersBehavior: {
+        strictTransportSecurity: {
+          accessControlMaxAge: Duration.days(365),
+          includeSubdomains: true,
+          override: true,
+        },
+        contentTypeOptions: { override: true },
+        frameOptions: { frameOption: HeadersFrameOption.DENY, override: true },
+        referrerPolicy: {
+          referrerPolicy: HeadersReferrerPolicy.STRICT_ORIGIN_WHEN_CROSS_ORIGIN,
+          override: true,
+        },
+        contentSecurityPolicy: { contentSecurityPolicy: CONTENT_SECURITY_POLICY, override: true },
+      },
+      customHeadersBehavior: {
+        // The camera and the location are asked for by the page itself; nothing else may use them.
+        customHeaders: [
+          {
+            header: 'Permissions-Policy',
+            value: 'camera=(self), geolocation=(self), microphone=(self), payment=(), usb=()',
+            override: true,
+          },
+        ],
+      },
+      corsBehavior: {
+        accessControlAllowOrigins: [...MOBILE_ORIGINS],
+        accessControlAllowMethods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+        accessControlAllowHeaders: ['content-type', 'authorization'],
+        accessControlAllowCredentials: false,
+        accessControlMaxAge: Duration.days(1),
+        originOverride: true,
+      },
+    });
+
+    const apiPreflight = new CloudFrontFunction(this, 'ApiPreflight', {
+      runtime: FunctionRuntime.JS_2_0,
+      code: FunctionCode.fromInline(API_PREFLIGHT_FUNCTION),
+    });
+
     // The API's answers say how long they may be kept (`cache-control`); this lets that be at most fifteen
     // minutes, keyed on the whole address, and compresses what it sends.
     const apiCache = new CachePolicy(this, 'ApiCache', {
@@ -156,7 +225,10 @@ export class Site extends Construct {
           allowedMethods: AllowedMethods.ALLOW_ALL,
           cachePolicy: CachePolicy.CACHING_DISABLED,
           originRequestPolicy: OriginRequestPolicy.ALL_VIEWER_EXCEPT_HOST_HEADER,
-          responseHeadersPolicy: securityHeaders,
+          responseHeadersPolicy: apiHeaders,
+          functionAssociations: [
+            { function: apiPreflight, eventType: FunctionEventType.VIEWER_REQUEST },
+          ],
         },
         '/v1/*': {
           origin: new HttpOrigin(Fn.parseDomainName(props.api.apiEndpoint)),
@@ -164,7 +236,10 @@ export class Site extends Construct {
           allowedMethods: AllowedMethods.ALLOW_ALL,
           cachePolicy: apiCache,
           originRequestPolicy: apiOrigin,
-          responseHeadersPolicy: securityHeaders,
+          responseHeadersPolicy: apiHeaders,
+          functionAssociations: [
+            { function: apiPreflight, eventType: FunctionEventType.VIEWER_REQUEST },
+          ],
           compress: true,
         },
       },

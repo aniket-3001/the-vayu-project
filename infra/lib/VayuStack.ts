@@ -196,8 +196,8 @@ export class VayuStack extends Stack {
 
     const api = new HttpApi(this, 'Api', {
       createDefaultStage: false,
-      // No CORS: the app is served from the same address as the API (CloudFront), so no other site needs to read it
-      // from a browser. A page on another origin is refused by the browser, not by us.
+      // No CORS on the HTTP API itself: CloudFront forwards no Origin header to it, so it could never answer one.
+      // CloudFront adds CORS for the phone apps' origins (see Site.ts); any other origin is refused by the browser.
     });
     // The routes that cost something or take a person's words get their own, tighter, throttle below.
     const limitedRoutes = [];
