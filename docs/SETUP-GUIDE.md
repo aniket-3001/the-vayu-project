@@ -85,12 +85,29 @@ Parts 1, 2, 3 and 5 do not depend on each other. Part 4 needs Part 1, because un
   cd infra
   npx cdk diff
   ```
-- [ ] 1.10 Compare the result with this list. It should show **only**:
+- [ ] 1.10 Compare the result with this list. It shows **two kinds** of change:
+
+  **A. The change for the phone apps (wanted):**
   - a new `AWS::CloudFront::ResponseHeadersPolicy` (named something like `SiteApiHeaders…`),
   - a new `AWS::CloudFront::Function` (named something like `SiteApiPreflight…`),
-  - a changed `AWS::CloudFront::Distribution`, where the two API cache behaviours (`/v1/*` and `/v1/me`) get the new headers policy and the function.
+  - a changed `AWS::CloudFront::Distribution`, where **only** the two API cache behaviours (`/v1/*` and `/v1/me`) get the new headers policy and the function. The website's own behaviour and its files are not listed.
 
-  **STOP** and send the whole output to Aniket if you see any of: a line starting `[-]` (something deleted), the word `replace` or `replacement`, anything about `DynamoDB`, `S3 Bucket`, `Lambda`, `Cognito`, `Secret`, `Step Functions`, or `IAM` that is not one of the three items above. That would mean your deployed stack differs from this code, and it should be looked at first.
+  **B. New code for six functions (not part of this job):** six `AWS::Lambda::Function` lines with a changed `Code` / `S3Key`: `ApiFunction`, `HarvestFunction`, `StationsFunction`, `FixCheck/StepFunction`, `IngestFunction` and `AlertLoop/SendFunction`. These appear because the repository has three commits made after the stack was last deployed (11 Oct, 21:11 UTC) that changed code those functions use: `0e4c194` (Remove the prototype build), `f4785f6` and `2ea4399` (Remove unused files). Deploying everything would put that newer code live.
+
+  **STOP** and send the whole output to Aniket if you see anything else: a line starting `[-]` (something deleted) other than the single `[-] "Ref": "SiteSecurityHeaders…"` line inside the distribution, the word `replace` or `replacement`, or anything about `DynamoDB`, `S3 Bucket`, `Cognito`, `Secret`, `Step Functions` or `IAM`.
+
+- [ ] 1.10b **Decide** (this is Harsh's call, because it is his live site and his bill). Either:
+  - **Option 1: deploy everything shown.** Go on to step 1.11. The live API then runs the three newer commits too. Choose this only if you want that.
+  - **Option 2: deploy only the phone-app change (recommended).** Build from the commit that matches what is live, with only the change added:
+    ```bash
+    cd ..    # back to the repository folder
+    git switch -c cors-only $(git rev-list -1 --before="2026-10-11T21:11:37Z" origin/main)
+    git cherry-pick b39ae39
+    npm ci
+    cd infra
+    npx cdk diff
+    ```
+    Expected now: **only group A**. If the six function lines are gone, the live functions match this commit, and you can deploy from here with step 1.11. If they are still listed, **STOP** and send the output to Aniket: it means the live code came from somewhere else.
 
 ### Deploy
 
