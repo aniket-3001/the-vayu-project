@@ -8,7 +8,12 @@ import {
   FORECAST_ERROR_SQL,
   HARVEST_COVERAGE_SQL,
 } from '../lib/queries';
-import { APP_INDEX_FUNCTION, CONTENT_SECURITY_POLICY } from '../lib/Site';
+import {
+  API_PREFLIGHT_FUNCTION,
+  APP_INDEX_FUNCTION,
+  CONTENT_SECURITY_POLICY,
+  MOBILE_ORIGINS,
+} from '../lib/Site';
 import { VayuStack, type VayuStackProps } from '../lib/VayuStack';
 
 const synth = (alertEmail?: string): Template =>
@@ -299,6 +304,76 @@ describe('the public site', () => {
     expect(me?.AllowedMethods).toEqual(expect.arrayContaining(['GET', 'PUT', 'DELETE']));
     // The managed "CachingDisabled" policy.
     expect(me?.CachePolicyId).toBe('4135ea2d-6df8-44a3-9df3-4b5a84be39ad');
+  });
+
+  describe('letting the phone apps call the API', () => {
+    interface Reply {
+      statusCode?: number;
+      headers?: Record<string, { value: string }>;
+    }
+    const preflight = runInNewContext(`${API_PREFLIGHT_FUNCTION}; handler`) as (
+      e: unknown,
+    ) => Reply;
+    const ask = (method: string, origin?: string): Reply =>
+      preflight({
+        request: {
+          method,
+          uri: '/v1/today',
+          headers: origin === undefined ? {} : { origin: { value: origin } },
+        },
+      });
+
+    it('allows exactly the two origins the apps run from', () => {
+      expect(MOBILE_ORIGINS).toEqual(['https://localhost', 'capacitor://localhost']);
+    });
+
+    it("answers the browser's OPTIONS check itself for an app origin, naming only that origin", () => {
+      for (const origin of MOBILE_ORIGINS) {
+        const reply = ask('OPTIONS', origin);
+        expect(reply.statusCode).toBe(204);
+        expect(reply.headers?.['access-control-allow-origin']?.value).toBe(origin);
+        expect(reply.headers?.['access-control-allow-headers']?.value).toContain('authorization');
+      }
+    });
+
+    it('does not answer OPTIONS for any other origin, and leaves every other request alone', () => {
+      expect(ask('OPTIONS', 'https://evil.example').statusCode).toBeUndefined();
+      expect(ask('OPTIONS').statusCode).toBeUndefined();
+      expect(ask('GET', 'https://localhost').statusCode).toBeUndefined();
+    });
+
+    const corsPolicies = (): [string, unknown][] =>
+      Object.entries(template.findResources('AWS::CloudFront::ResponseHeadersPolicy')).filter(
+        ([, policy]) => JSON.stringify(policy).includes('"CorsConfig"'),
+      );
+
+    it('adds CORS headers to the API behaviors only, not to the website', () => {
+      const config = distribution().DistributionConfig as {
+        CacheBehaviors: { PathPattern: string; ResponseHeadersPolicyId: unknown }[];
+        DefaultCacheBehavior: { ResponseHeadersPolicyId: unknown };
+      };
+      const withCors = corsPolicies();
+      expect(withCors).toHaveLength(1);
+      const id = (withCors[0] as [string, unknown])[0];
+      const corsRef = JSON.stringify({ Ref: id });
+      for (const behavior of config.CacheBehaviors)
+        expect(JSON.stringify(behavior.ResponseHeadersPolicyId)).toBe(corsRef);
+      expect(JSON.stringify(config.DefaultCacheBehavior.ResponseHeadersPolicyId)).not.toBe(corsRef);
+      template.hasResourceProperties('AWS::CloudFront::ResponseHeadersPolicy', {
+        ResponseHeadersPolicyConfig: Match.objectLike({
+          CorsConfig: Match.objectLike({
+            AccessControlAllowOrigins: { Items: ['https://localhost', 'capacitor://localhost'] },
+            OriginOverride: true,
+          }),
+        }),
+      });
+    });
+
+    it('keeps the security headers on the API answers', () => {
+      const text = JSON.stringify(corsPolicies());
+      expect(text).toContain('StrictTransportSecurity');
+      expect(text).toContain('ContentSecurityPolicy');
+    });
   });
 
   it('lets the page talk to the sign-in service, and no other new host', () => {
