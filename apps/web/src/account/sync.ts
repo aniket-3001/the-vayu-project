@@ -34,8 +34,21 @@ export function applyProfile(storage: Storage, profile: Profile): void {
   }
 }
 
+/**
+ * Where a person has been, kept on the device but never sent to the account: the switch that follows the device, and
+ * the log of its positions. They belong to whoever held the phone, so they end with a visit: signing in, signing out,
+ * deleting an account and leaving guest mode all forget them. Otherwise the next person, guest or new account, would
+ * open the app already on the last person's location.
+ */
+export const LOCATION_KEYS: readonly string[] = ['vayu.liveLocation.v1', 'vayu.live.v1'];
+
+export function forgetLocation(storage: Storage): void {
+  for (const key of LOCATION_KEYS) storage.removeItem(key);
+}
+
 export function clearProfile(storage: Storage): void {
   for (const key of SYNC_KEYS) storage.removeItem(key);
+  forgetLocation(storage);
 }
 
 const text = (profile: Profile): string => JSON.stringify(Object.entries(profile).sort());

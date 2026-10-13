@@ -85,7 +85,8 @@ describe('which items are copied to an account', () => {
     expect(storage.getItem('vayu.live.v1')).toBe('keep');
     clearProfile(storage);
     expect(storage.getItem('vayu.pins.v1')).toBeNull();
-    expect(storage.getItem('vayu.live.v1')).toBe('keep');
+    // Where the device has been is not the account's, but it goes with the visit: see forgetLocation.
+    expect(storage.getItem('vayu.live.v1')).toBeNull();
   });
 });
 

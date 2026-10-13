@@ -4,7 +4,8 @@ import { isNative } from '../native/splash';
 import { AuthError, cognito, type AuthConfig, type CognitoClient, type Fetch } from './cognito';
 import { Welcome } from './Welcome';
 import { clearSession, freshIdToken, loadSession, saveSession, type Session } from './session';
-import { accountSync, clearProfile, httpSyncApi, type SyncStatus } from './sync';
+import { liveLocation } from '../places/liveLocation';
+import { accountSync, clearProfile, forgetLocation, httpSyncApi, type SyncStatus } from './sync';
 
 export interface AccountState {
   /** Whether this deployment has accounts at all. Where it does not, the app needs no sign-in. */
@@ -207,6 +208,7 @@ export function AccountGate({
       ...OFF,
       guest: true,
       leaveGuest: () => {
+        stopFollowing(storage);
         storage.removeItem(GUEST_KEY);
         setGuest(false);
       },
@@ -218,6 +220,8 @@ export function AccountGate({
       <Welcome
         client={client}
         onSignedIn={(next) => {
+          // A new visit starts with the device not following anyone: a guest's location is not the account's.
+          stopFollowing(storage);
           saveSession(storage, next);
           storage.removeItem(GUEST_KEY);
           setGuest(false);
@@ -239,6 +243,16 @@ export function AccountGate({
   if (!ready) return <p className="gate-note">Getting your places…</p>;
   return <Context.Provider value={value}>{children}</Context.Provider>;
 }
+
+/** Switches off the device following, and forgets where it has been. */
+const stopFollowing = (storage: Storage): void => {
+  try {
+    liveLocation().set(false);
+  } catch {
+    // Nothing was following.
+  }
+  forgetLocation(storage);
+};
 
 const localDataKeys = (storage: Storage): Record<string, true> => {
   const out: Record<string, true> = {};

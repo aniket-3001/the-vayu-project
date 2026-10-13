@@ -321,3 +321,45 @@ describe('using the app as a guest', () => {
     expect(window.localStorage.getItem(GUEST_KEY)).toBeNull();
   });
 });
+
+describe('where the device has been', () => {
+  it('is forgotten on sign-out, so the next visit does not open on the last one’s location', async () => {
+    const { w, fetchImpl } = world();
+    w.saved = { profile: { 'vayu.pins.v1': 'x' }, updatedAt: 't1' };
+    window.localStorage.setItem('vayu.pins.v1', 'x');
+    window.localStorage.setItem('vayu.liveLocation.v1', 'on');
+    window.localStorage.setItem('vayu.live.v1', '[{"lat":28.6,"lng":77.2}]');
+    window.localStorage.setItem(
+      SESSION_KEY,
+      JSON.stringify({
+        email: 'asha@example.org',
+        tokens: {
+          idToken: 'id',
+          accessToken: 'ac',
+          refreshToken: 'rf',
+          expiresAt: Date.now() + 3_600_000,
+        },
+      }),
+    );
+    open(fetchImpl, { reload: vi.fn() });
+    await userEvent.click(await screen.findByRole('button', { name: 'Sign out' }));
+    await waitFor(() => {
+      expect(window.localStorage.getItem(SESSION_KEY)).toBeNull();
+    });
+    expect(window.localStorage.getItem('vayu.liveLocation.v1')).toBeNull();
+    expect(window.localStorage.getItem('vayu.live.v1')).toBeNull();
+  });
+
+  it('is not carried from a guest visit into a new sign-in', async () => {
+    const { fetchImpl } = world();
+    window.localStorage.setItem('vayu.guest.v1', '1');
+    window.localStorage.setItem('vayu.liveLocation.v1', 'on');
+    window.localStorage.setItem('vayu.live.v1', '[{"lat":28.6,"lng":77.2}]');
+    open(fetchImpl, { guestAllowed: true });
+    await userEvent.click(
+      await screen.findByRole('button', { name: 'Sign in or create an account' }),
+    );
+    expect(window.localStorage.getItem('vayu.liveLocation.v1')).toBeNull();
+    expect(window.localStorage.getItem('vayu.live.v1')).toBeNull();
+  });
+});
