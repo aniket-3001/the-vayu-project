@@ -66,15 +66,26 @@ describe('the purified air on the room screen', () => {
     expect(screen.getByText(/10/)).toBeTruthy();
   });
 
-  it('asks which purifier it is once, then shows the name', async () => {
+  it('asks which purifier it is once, offers the usual names, then shows the name', async () => {
     const send = await connect();
     send(onPurifier(10));
     render(<PurifierPanel nowMs={Date.now()} />);
-    fireEvent.change(screen.getByLabelText('Which purifier is this?'), {
+    expect(screen.getByText('Which purifier is this?')).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: 'Bedroom' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Save' }));
+    expect(screen.queryByText('Which purifier is this?')).toBeNull();
+    expect(screen.getByText(/Bedroom/)).toBeTruthy();
+  });
+
+  it('takes a name of your own, and will not save an empty one', async () => {
+    const send = await connect();
+    send(onPurifier(10));
+    render(<PurifierPanel nowMs={Date.now()} />);
+    expect(screen.getByRole('button', { name: 'Save' })).toBeDisabled();
+    fireEvent.change(screen.getByLabelText('Name for this purifier'), {
       target: { value: 'Living room' },
     });
     fireEvent.click(screen.getByRole('button', { name: 'Save' }));
-    expect(screen.queryByLabelText('Which purifier is this?')).toBeNull();
     expect(screen.getByText(/Living room/)).toBeTruthy();
   });
 
@@ -83,7 +94,7 @@ describe('the purified air on the room screen', () => {
     const send = await connect();
     send(onPurifier(10));
     render(<PurifierPanel nowMs={Date.now()} />);
-    expect(screen.queryByLabelText('Which purifier is this?')).toBeNull();
+    expect(screen.queryByText('Which purifier is this?')).toBeNull();
     expect(screen.getByText(/Study/)).toBeTruthy();
   });
 

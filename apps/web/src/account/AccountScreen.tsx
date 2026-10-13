@@ -40,7 +40,20 @@ export function AccountScreen(): React.JSX.Element {
         <h1>Account</h1>
       </header>
       <main className="layout account-page">
-        {!account.enabled ? (
+        {account.guest ? (
+          <section className="card account-card" aria-label="Guest">
+            <p>You’re using Vayu as a guest.</p>
+            <p className="muted small">
+              Your places, family and outdoor time stay on this phone and are never sent anywhere.
+              If you delete the app or clear its data, they are gone.
+            </p>
+            <div className="account-actions">
+              <button type="button" className="primary" onClick={account.leaveGuest}>
+                Sign in or create an account
+              </button>
+            </div>
+          </section>
+        ) : !account.enabled ? (
           <p className="empty">Accounts are not switched on here.</p>
         ) : (
           <section className="card account-card" aria-label="Your account">

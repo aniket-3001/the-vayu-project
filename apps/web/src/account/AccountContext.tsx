@@ -1,5 +1,6 @@
 import { createContext, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { API_URL } from '../config';
+import { isNative } from '../native/splash';
 import { AuthError, cognito, type AuthConfig, type CognitoClient, type Fetch } from './cognito';
 import { Welcome } from './Welcome';
 import { clearSession, freshIdToken, loadSession, saveSession, type Session } from './session';
@@ -9,6 +10,10 @@ export interface AccountState {
   /** Whether this deployment has accounts at all. Where it does not, the app needs no sign-in. */
   readonly enabled: boolean;
   readonly email?: string;
+  /** True for someone using the app without an account: their places stay on this device and are never sent. */
+  readonly guest: boolean;
+  /** Ends the guest visit and shows the welcome screen, to sign in or create an account. */
+  readonly leaveGuest: () => void;
   readonly status: SyncStatus;
   readonly signOut: () => Promise<void>;
   /** Deletes what the account saved, then the account itself. */
@@ -17,6 +22,8 @@ export interface AccountState {
 
 const OFF: AccountState = {
   enabled: false,
+  guest: false,
+  leaveGuest: () => undefined,
   status: { state: 'idle' },
   signOut: () => Promise.resolve(),
   deleteAccount: () => Promise.resolve(),
@@ -24,6 +31,9 @@ const OFF: AccountState = {
 
 const Context = createContext<AccountState>(OFF);
 export const useAccount = (): AccountState => useContext(Context);
+
+/** Remembers on this device that the person chose to use the app as a guest. */
+export const GUEST_KEY = 'vayu.guest.v1';
 
 /** How often a change on this device is sent to the account. */
 const SAVE_EVERY_MS = 5_000;
@@ -42,6 +52,7 @@ export function AccountGate({
     window.location.reload();
   },
   onTry,
+  guestAllowed = isNative(),
 }: {
   readonly children: React.ReactNode;
   readonly fetchImpl?: Fetch;
@@ -49,10 +60,13 @@ export function AccountGate({
   readonly apiUrl?: string;
   readonly reload?: () => void;
   readonly onTry?: () => void;
+  /** Whether "Continue as guest" is offered. Only the phone app offers it for now. */
+  readonly guestAllowed?: boolean;
 }): React.JSX.Element {
   const [config, setConfig] = useState<AuthConfig | 'off' | undefined>(undefined);
   const [session, setSession] = useState<Session | undefined>(() => loadSession(storage));
   const [ready, setReady] = useState(false);
+  const [guest, setGuest] = useState(() => guestAllowed && storage.getItem(GUEST_KEY) === '1');
   const [status, setStatus] = useState<SyncStatus>({ state: 'idle' });
 
   useEffect(() => {
@@ -145,6 +159,8 @@ export function AccountGate({
     };
     return {
       enabled: true,
+      guest: false,
+      leaveGuest: () => undefined,
       email: session.email,
       status,
       signOut: async () => {
@@ -167,17 +183,38 @@ export function AccountGate({
 
   if (config === undefined) return <p className="gate-note">Loading…</p>;
   if (config === 'off' || client === undefined) return <>{children}</>;
+  if (session === undefined && guest) {
+    const asGuest: AccountState = {
+      ...OFF,
+      guest: true,
+      leaveGuest: () => {
+        storage.removeItem(GUEST_KEY);
+        setGuest(false);
+      },
+    };
+    return <Context.Provider value={asGuest}>{children}</Context.Provider>;
+  }
   if (session === undefined)
     return (
       <Welcome
         client={client}
         onSignedIn={(next) => {
           saveSession(storage, next);
+          storage.removeItem(GUEST_KEY);
+          setGuest(false);
           setReady(false);
           setSession(next);
         }}
         holdsData={Object.keys(localDataKeys(storage)).length > 0}
         {...(onTry === undefined ? {} : { onTry })}
+        {...(guestAllowed
+          ? {
+              onGuest: () => {
+                storage.setItem(GUEST_KEY, '1');
+                setGuest(true);
+              },
+            }
+          : {})}
       />
     );
   if (!ready) return <p className="gate-note">Getting your places…</p>;

@@ -6601,10 +6601,14 @@ table.hourly .row-label {
 }
 .welcome-guest {
   display: grid;
-  gap: 8px;
+  gap: 18px;
   margin-top: 14px;
   padding-top: 18px;
   border-top: 1px solid var(--line);
+}
+.welcome-option {
+  display: grid;
+  gap: 8px;
 }
 .welcome-guest .guest {
   border-color: #bcd3ee;

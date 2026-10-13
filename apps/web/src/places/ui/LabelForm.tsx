@@ -13,6 +13,8 @@ export function LabelForm({
   submit = 'Pin it',
   choices = LABEL_SUGGESTIONS,
   custom = true,
+  inputLabel = 'Name for this place',
+  placeholder = 'Or type a name, like Gym',
 }: {
   readonly onSave: (label: string) => void;
   readonly submit?: string;
@@ -20,6 +22,9 @@ export function LabelForm({
   readonly choices?: readonly string[];
   /** Whether a name of your own may be typed too. */
   readonly custom?: boolean;
+  /** What a screen reader calls the text box. */
+  readonly inputLabel?: string;
+  readonly placeholder?: string;
 }): React.JSX.Element {
   const [label, setLabel] = useState('');
   const clean = label.trim();
@@ -49,13 +54,13 @@ export function LabelForm({
         {custom && (
           <>
             <label className="sr-only" htmlFor="place-label">
-              Name for this place
+              {inputLabel}
             </label>
             <input
               id="place-label"
               value={label}
               maxLength={40}
-              placeholder="Or type a name, like Gym"
+              placeholder={placeholder}
               autoComplete="off"
               onChange={(event) => {
                 setLabel(event.target.value);

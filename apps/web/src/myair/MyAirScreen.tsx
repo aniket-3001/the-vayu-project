@@ -1,4 +1,4 @@
-import { ExternalLink, Plus, UserRound } from 'lucide-react';
+import { CalendarDays, ExternalLink, Plus, UserRound } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { useAccount } from '../account/AccountContext';
@@ -119,7 +119,7 @@ export function MyAirScreen({ search, locate, address }: Props): React.JSX.Eleme
       <header className="place">
         <div className="my-air-title">
           <h1>My Air</h1>
-          {account.enabled && (
+          {(account.enabled || account.guest) && (
             <Link to="/account" className="account-link" aria-label="Account" title={account.email}>
               <UserRound size={20} strokeWidth={2} aria-hidden="true" />
             </Link>
@@ -149,7 +149,12 @@ export function MyAirScreen({ search, locate, address }: Props): React.JSX.Eleme
                 window.location.reload();
               }}
             >
-              <ExternalLink size={16} strokeWidth={2.25} aria-hidden="true" /> See the recorded days
+              {isNative() ? (
+                <CalendarDays size={16} strokeWidth={2.25} aria-hidden="true" />
+              ) : (
+                <ExternalLink size={16} strokeWidth={2.25} aria-hidden="true" />
+              )}{' '}
+              See the recorded days
             </a>
             <span className="muted small">
               Seven real days from the archive, played through this app

@@ -19,6 +19,7 @@ export function Welcome({
   onSignedIn,
   holdsData,
   onTry = tryWithoutLogin,
+  onGuest,
 }: {
   readonly client: CognitoClient;
   readonly onSignedIn: (session: Session) => void;
@@ -26,6 +27,8 @@ export function Welcome({
   readonly holdsData: boolean;
   /** Opens the recorded days. Loading the page at that address is the default. */
   readonly onTry?: () => void;
+  /** Opens the live app with no account, places kept on this device. Absent where guests are not offered. */
+  readonly onGuest?: () => void;
 }): React.JSX.Element {
   const [view, setView] = useState<View>('start');
   const [email, setEmail] = useState('');
@@ -304,13 +307,26 @@ export function Welcome({
       )}
 
       <div className="welcome-guest">
-        <button type="button" className="plain guest" onClick={onTry}>
-          Try without login
-        </button>
-        <p className="muted small">
-          Seven real past days from the public archives, played through the same app. Nothing is
-          saved.
-        </p>
+        {onGuest !== undefined && (
+          <div className="welcome-option">
+            <button type="button" className="plain guest" onClick={onGuest}>
+              Continue as guest
+            </button>
+            <p className="muted small">
+              Use the live app with your places kept on this phone only. Nothing is saved to an
+              account.
+            </p>
+          </div>
+        )}
+        <div className="welcome-option">
+          <button type="button" className="plain guest" onClick={onTry}>
+            Try without login
+          </button>
+          <p className="muted small">
+            Seven real past days from the public archives, played through the same app. Nothing is
+            saved.
+          </p>
+        </div>
       </div>
     </main>
   );

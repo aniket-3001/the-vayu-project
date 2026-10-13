@@ -1,6 +1,10 @@
 import { linkPurifier, purifierName, purifierPerformance } from '@vayu/unit';
 import { useState } from 'react';
+import { LabelForm } from '../../places/ui/LabelForm';
 import { useUnitState } from '../useUnit';
+
+/** The names most people give a purifier; anything else may be typed. */
+const PURIFIER_NAMES = ['Living room', 'Bedroom', 'Study', 'Office'] as const;
 
 /**
  * What the unit reads while it sits on the purifier: the air at the purifier's output, kept apart from the room's. It
@@ -9,7 +13,6 @@ import { useUnitState } from '../useUnit';
  */
 export function PurifierPanel({ nowMs }: { readonly nowMs: number }): React.JSX.Element | null {
   const unit = useUnitState();
-  const [typed, setTyped] = useState('');
   // Bumped after a name is saved, so the saved name is read again.
   const [, setSaved] = useState(0);
   const purified = unit.purified;
@@ -36,29 +39,19 @@ export function PurifierPanel({ nowMs }: { readonly nowMs: number }): React.JSX.
             : `The purifier makes the air ${String(result.cleanerPct)}% cleaner than the room.`}
         </p>
         {name === undefined && tag !== undefined && (
-          <form
-            onSubmit={(event) => {
-              event.preventDefault();
-              linkPurifier(window.localStorage, tag, typed);
-              setTyped('');
-              setSaved((n) => n + 1);
-            }}
-          >
-            <label className="field">
-              Which purifier is this?
-              <input
-                type="text"
-                value={typed}
-                maxLength={40}
-                onChange={(event) => {
-                  setTyped(event.target.value);
-                }}
-              />
-            </label>
-            <button type="submit" className="primary">
-              Save
-            </button>
-          </form>
+          <>
+            <p>Which purifier is this?</p>
+            <LabelForm
+              choices={PURIFIER_NAMES}
+              submit="Save"
+              inputLabel="Name for this purifier"
+              placeholder="Or type a name"
+              onSave={(label) => {
+                linkPurifier(window.localStorage, tag, label);
+                setSaved((n) => n + 1);
+              }}
+            />
+          </>
         )}
       </section>
     </div>
