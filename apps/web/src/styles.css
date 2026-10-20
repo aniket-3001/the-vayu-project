@@ -6822,8 +6822,7 @@ table.hourly .row-label {
     padding: 6px 4px 0;
   }
   .lens-unit-time .dock-stack {
-    flex-direction: row;
-    gap: 10px;
+    display: contents;
   }
   .lens-unit-time .dock-buttons.row {
     gap: 10px;
@@ -6846,5 +6845,143 @@ table.hourly .row-label {
   }
   .lens-tool.lens-flip {
     flex: 0 0 auto;
+  }
+}
+
+/* =====================================================================================================================
+   The phone layout. Last in the file on purpose: it says what a narrow screen does, whatever the rules above (written
+   for wide screens) say. Three promises:
+   1. Words are never cut off with "…". Everything wraps and its box grows to hold it.
+   2. The colour scale reads in full: whole names, and its numbers, in a grid, never squeezed into six narrow columns.
+   3. The three round buttons look and sit the same on every screen: one row, right-aligned, just above what is below.
+   ===================================================================================================================== */
+@media (max-width: 520px) {
+  /* 1. Words in full. */
+  .slot-hint,
+  .pc-name,
+  .pc-detail,
+  .place-card .pc-source,
+  .tip-card .task-words .muted,
+  .tip-card .task-words strong,
+  .tip-open .task-words strong,
+  .pc-assembly-words,
+  .place-card .pc-note,
+  .place-card .pc-note span,
+  .week-when,
+  .lens-switch-name,
+  .lens-tool,
+  .lens-tool span {
+    display: block;
+    height: auto;
+    max-height: none;
+    overflow: visible;
+    text-overflow: clip;
+    white-space: normal;
+    overflow-wrap: anywhere;
+    -webkit-line-clamp: unset;
+    line-clamp: none;
+  }
+  .place-card .pc-note {
+    display: flex;
+    align-items: flex-start;
+    gap: 6px;
+  }
+  .lens-tool {
+    display: inline-flex;
+    align-items: center;
+    height: auto;
+    min-height: 38px;
+    padding-top: 6px;
+    padding-bottom: 6px;
+  }
+  .lens-tool .lens-switch-name {
+    max-width: none;
+  }
+
+  /* 2. The colour scale: a bar, then six labelled colour chips in two rows of three. */
+  .aqi-scale-names {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 6px 8px;
+    margin-top: 6px;
+  }
+  .aqi-scale-names > span {
+    display: grid;
+    grid-template-columns: 10px minmax(0, 1fr);
+    column-gap: 6px;
+    align-items: center;
+    justify-items: start;
+    white-space: normal;
+    text-align: left;
+  }
+  .aqi-scale-names > span::before {
+    content: '';
+    grid-row: 1 / span 2;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: var(--chip, #ccc);
+  }
+  /* Whole names always: the short forms are for the website's cramped bar. */
+  .aqi-scale-names b .full {
+    display: inline !important;
+  }
+  .aqi-scale-names b .abbr {
+    display: none !important;
+  }
+  .aqi-scale-names b {
+    font-size: 13px;
+    line-height: 1.2;
+  }
+  .aqi-scale-names small {
+    font-size: 12px;
+    line-height: 1.2;
+  }
+  .aqi-scale-unit {
+    font-size: 12px;
+    line-height: 1.4;
+  }
+
+  /* 3. One row of round buttons, on every screen. */
+  .dock,
+  .dock-buttons {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 8px;
+  }
+  .dock .dock-buttons.column,
+  .dock-buttons.column,
+  .dock-buttons.row {
+    flex-direction: row;
+  }
+  .dock .assistant-fab,
+  .dock .smoke-toggle,
+  .dock-buttons .assistant-fab,
+  .dock-buttons .smoke-toggle,
+  .dock-buttons .lens-eye {
+    width: 44px;
+    height: 44px;
+  }
+  .dock-stack {
+    flex-direction: row;
+    gap: 8px;
+  }
+  /* On My Air and Exposure the row floats just above the tab bar. */
+  .dock {
+    right: 12px;
+    bottom: 84px;
+  }
+  /* On the Map and the AIR Lens the same row sits just above the card, at its right edge, so it covers none of it. */
+  .map-legend {
+    position: relative;
+  }
+  .map-legend > .dock-buttons {
+    position: absolute;
+    right: 0;
+    bottom: calc(100% + 8px);
+    padding: 0;
+    width: auto;
   }
 }

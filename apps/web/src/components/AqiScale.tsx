@@ -54,7 +54,7 @@ export function AqiScale({
       </div>
       <div className="aqi-scale-names" aria-hidden="true">
         {LEVELS.map((level, i) => (
-          <span key={level.name}>
+          <span key={level.name} style={{ '--chip': level.solid } as React.CSSProperties}>
             <b>
               <span className="full">{level.short}</span>
               <span className="abbr">{ABBR[level.name] ?? level.short}</span>

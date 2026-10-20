@@ -61,7 +61,13 @@ const aqiColour = (value: unknown): unknown => [
 ];
 
 /** The longest side of the fog picture, in pixels. */
-const MAX_SIDE = 1400;
+const MAX_SIDE = isNative() ? 640 : 1400;
+/**
+ * How far past the screen the colour wash is drawn, as a share of the screen's size on each side. A phone redraws it
+ * slowly, so it is drawn well past the edges: zooming out then shows colour at once instead of a blank patch that fills
+ * in a moment later.
+ */
+const WASH_PAD = isNative() ? 1.2 : 0.15;
 
 /**
  * How big the picture of a window of the world should be: about a pixel for each screen pixel, so the grain is as fine
@@ -250,6 +256,8 @@ export function MapView({
       center: latest.current.start?.center ?? START.center,
       zoom: latest.current.start?.zoom ?? START.zoom,
       minZoom: 0.4,
+      // Keep more of what was loaded, and show a tile the moment it arrives, so zooming back out does not blank the map.
+      ...(isNative() ? { maxTileCacheSize: 400, fadeDuration: 0 } : {}),
       // Down to a street: the base map has detail that far. Readings are the nearest monitor's, and say how far.
       maxZoom: 18,
       attributionControl: { compact: true },
@@ -303,7 +311,7 @@ export function MapView({
         const source = m.getSource(id) as unknown as CanvasPlacer | undefined;
         if (fogTile === undefined || source === undefined || !('setCoordinates' in source)) return;
         // Zoomed right out, the whole tile; otherwise only the part of it that is in view.
-        const window = zoom < 2.5 ? tile : visibleWindow(tile, view);
+        const window = zoom < 2.5 ? tile : visibleWindow(tile, view, WASH_PAD);
         if (m.getLayer(id) === undefined) return;
         if (window === undefined || monitorsForField.length === 0 || fogTile.ctx === null) {
           fogTile.fog = undefined;
