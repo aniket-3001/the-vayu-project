@@ -6817,20 +6817,17 @@ table.hourly .row-label {
 
   /* The AIR Lens's four round buttons: one even row across the card, with room between them. */
   .lens-unit-time .dock-buttons {
-    justify-content: space-between;
-    gap: 0;
-    padding: 6px 4px 0;
+    justify-content: flex-end;
+    gap: 8px;
+    padding: 6px 0 0;
   }
   .lens-unit-time .dock-stack {
     display: contents;
   }
-  .lens-unit-time .dock-buttons.row {
-    gap: 10px;
-  }
   .lens-unit-time .dock-buttons .assistant-fab,
   .lens-unit-time .dock-buttons .smoke-toggle {
-    width: 48px;
-    height: 48px;
+    width: 44px;
+    height: 44px;
   }
 }
 
@@ -6984,4 +6981,35 @@ table.hourly .row-label {
     padding: 0;
     width: auto;
   }
+}
+
+/* A saved place on the phone's map: a pin with its name above the spot. */
+.place-marker {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  pointer-events: none;
+}
+.place-marker span {
+  max-width: 160px;
+  padding: 3px 9px;
+  border: 1px solid var(--line, #d7dee8);
+  border-radius: 999px;
+  background: #fff;
+  box-shadow: 0 2px 8px rgb(61 74 92 / 0.25);
+  color: var(--ink, #1f2a3a);
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.2;
+  text-align: center;
+}
+.place-marker::after {
+  content: '';
+  width: 12px;
+  height: 12px;
+  margin-top: 3px;
+  border: 3px solid #fff;
+  border-radius: 50%;
+  background: #d9503f;
+  box-shadow: 0 2px 6px rgb(61 74 92 / 0.4);
 }

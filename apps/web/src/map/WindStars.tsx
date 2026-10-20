@@ -20,10 +20,10 @@ import {
  * Roughly one streak for each this many square pixels of map. A phone does the same drawing with a fraction of the
  * power of a laptop, so in the phone app there are fewer, drawn at about 30 frames a second.
  */
-const PIXELS_PER_STREAK = isNative() ? 420 : 340;
-const MAX_STREAKS = isNative() ? 900 : 3200;
+const PIXELS_PER_STREAK = isNative() ? 600 : 340;
+const MAX_STREAKS = isNative() ? 600 : 3200;
 /** The least time between two drawn frames: none on the website, so it is as fast as the screen. */
-const MIN_FRAME_MS = isNative() ? 33 : 0;
+const MIN_FRAME_MS = isNative() ? 40 : 0;
 /** What is left of the picture after each frame: the trail is what has not yet faded. */
 const KEEP = 0.94;
 

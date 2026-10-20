@@ -61,13 +61,13 @@ const aqiColour = (value: unknown): unknown => [
 ];
 
 /** The longest side of the fog picture, in pixels. */
-const MAX_SIDE = isNative() ? 640 : 1400;
+const MAX_SIDE = isNative() ? 256 : 1400;
 /**
  * How far past the screen the colour wash is drawn, as a share of the screen's size on each side. A phone redraws it
  * slowly, so it is drawn well past the edges: zooming out then shows colour at once instead of a blank patch that fills
  * in a moment later.
  */
-const WASH_PAD = isNative() ? 1.2 : 0.15;
+const WASH_PAD = isNative() ? 1 : 0.15;
 
 /**
  * How big the picture of a window of the world should be: about a pixel for each screen pixel, so the grain is as fine

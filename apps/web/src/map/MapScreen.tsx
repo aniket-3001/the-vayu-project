@@ -6,6 +6,7 @@ import { airStore, useStations } from '../air/store';
 import { nowIso } from '../clock';
 import { inCoverage } from '../data/geocode';
 import { AqiScale } from '../components/AqiScale';
+import { usePins } from '../places/usePins';
 import { useLiveLocation } from '../places/liveLocation';
 import { Pill } from '../today/ui/Chip';
 import { isNative } from '../native/splash';
@@ -63,6 +64,23 @@ export function MapScreen(): React.JSX.Element {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   const marker = useRef<Marker>();
+
+  // In the phone app the person's own places are on the map, each named, so their address is found where it is.
+  const { pins } = usePins();
+  useEffect(() => {
+    if (map === undefined || !isNative()) return undefined;
+    const placed = pins.map((pin) => {
+      const el = document.createElement('div');
+      el.className = 'place-marker';
+      const label = document.createElement('span');
+      label.textContent = pin.name;
+      el.append(label);
+      return new Marker({ element: el, anchor: 'bottom' }).setLngLat([pin.lng, pin.lat]).addTo(map);
+    });
+    return () => {
+      for (const m of placed) m.remove();
+    };
+  }, [map, pins]);
   const windField = useMemo(() => makeWindField(data.wind), [data.wind]);
 
   // The live location switch is on every screen. Here, on, it puts a blue dot where the device is and flies there.
@@ -87,7 +105,7 @@ export function MapScreen(): React.JSX.Element {
     // Fly in once, when the position first arrives, unless a link opened the map somewhere on purpose.
     if (!flown.current && start === undefined) {
       // A phone is too slow for the arc of a fly-to (it zooms right out and back in), so it eases straight there.
-      if (isNative()) map.easeTo({ center: [liveLng, liveLat], zoom: 9.5, duration: 700 });
+      if (isNative()) map.easeTo({ center: [liveLng, liveLat], zoom: 12.5, duration: 700 });
       else void map.flyTo({ center: [liveLng, liveLat], zoom: 9.5, duration: 1800 });
     }
     flown.current = true;
