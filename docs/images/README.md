@@ -1,6 +1,6 @@
 # Screenshots
 
-All taken from the live site (https://d3lmq1mze2gup3.cloudfront.net) on 11 October 2026 at a phone's width (390 px) or a laptop's (1280 px). Every one shows real data. The ones from the recorded days (`/#/week`) are real archived days, played through the same app and labelled "recorded" on screen.
+All taken on 22 October 2026 from the current app build, at a phone's width (390 px) or, for the two desktop ones, a laptop's (1280 px, taken 11 October). Every one shows real data. The ones from the recorded days (`/#/week`) are real archived days, played through the same app and labelled "recorded" on screen.
 
 | File                                      | What it shows                                                                                                                                                         |
 | ----------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
