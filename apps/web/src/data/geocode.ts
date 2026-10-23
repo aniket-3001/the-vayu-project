@@ -80,6 +80,20 @@ async function photonSearch(text: string, fetchImpl: typeof fetch): Promise<read
   return matches;
 }
 
+const SMALL_WORDS = new Set(['of', 'the', 'and', 'for', 'in', 'at', 'a']);
+
+/** The capital letters of a name's words (“Indraprastha Institute of Information Technology Delhi” is IIITD). */
+const acronymOf = (text: string): string | undefined => {
+  const words = text
+    .split(/[\s,.\-/]+/u)
+    .filter((word) => word !== '' && !SMALL_WORDS.has(word.toLowerCase()) && /^\p{L}/u.test(word));
+  if (words.length < 4 || words.length > 8) return undefined;
+  return words.map((word) => (word[0] ?? '').toUpperCase()).join('');
+};
+
+/** A name's letters only, in capitals: “IIIT-Delhi” is IIITDELHI. */
+const lettersOf = (name: string): string => name.replace(/[^\p{L}]/gu, '').toUpperCase();
+
 /** Open-Meteo's town list: a fallback when Photon cannot be reached or finds nothing. */
 async function openMeteoSearch(
   text: string,
@@ -118,10 +132,19 @@ export async function searchPlaces(
   if (text.length < 2) return [];
   let found: readonly PlaceMatch[] = [];
   let failure: unknown;
-  try {
-    found = await photonSearch(text, fetchImpl);
-  } catch (error) {
-    failure = error;
+  const short = acronymOf(text);
+  const [direct, byAcronym] = await Promise.allSettled([
+    photonSearch(text, fetchImpl),
+    short === undefined ? Promise.resolve([]) : photonSearch(short, fetchImpl),
+  ]);
+  if (direct.status === 'fulfilled') found = direct.value;
+  else failure = direct.reason;
+  if (short !== undefined && byAcronym.status === 'fulfilled') {
+    // A long name (“Indraprastha Institute of Information Technology Delhi”) is often stored by its short one
+    // (“IIIT-Delhi”). Only a place whose name really holds the initials counts, so a stray result is not let in.
+    const named = byAcronym.value.filter((m) => lettersOf(m.name).includes(short));
+    const seen = new Set(named.map((m) => `${String(m.lat)},${String(m.lng)}`));
+    found = [...named, ...found.filter((m) => !seen.has(`${String(m.lat)},${String(m.lng)}`))];
   }
   if (found.length === 0) {
     try {

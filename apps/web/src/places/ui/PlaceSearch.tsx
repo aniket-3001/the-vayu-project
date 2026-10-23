@@ -1,5 +1,5 @@
-import { Plus, Search } from 'lucide-react';
-import { useState } from 'react';
+import { MapPin, Search } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
 import { searchPlaces, type PlaceMatch } from '../../data/geocode';
 
 type State =
@@ -9,7 +9,15 @@ type State =
   | { readonly kind: 'none' }
   | { readonly kind: 'failed' };
 
-/** Looks a place up by name, a school or an office as well as a town, and pins it. Only the name typed is sent. */
+/** How long the person stops typing before the search starts, so each letter does not send a request. */
+const TYPING_PAUSE_MS = 300;
+/** The fewest letters worth looking for. */
+const MIN_LETTERS = 2;
+
+/**
+ * Looks a place up by name, a school or an office as well as a town, and pins it. Only the name typed is sent. Results
+ * appear as the person types, and tapping one picks it.
+ */
 export function PlaceSearch({
   onPick,
   search = searchPlaces,
@@ -22,19 +30,54 @@ export function PlaceSearch({
 }): React.JSX.Element {
   const [query, setQuery] = useState('');
   const [state, setState] = useState<State>({ kind: 'idle' });
+  const pause = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  /** Counts the searches started, so an answer that arrives after a newer one began is ignored. */
+  const latest = useRef(0);
 
-  const run = (event: React.FormEvent): void => {
-    event.preventDefault();
-    if (query.trim().length < 2) return;
+  useEffect(
+    () => () => {
+      if (pause.current !== undefined) clearTimeout(pause.current);
+      latest.current += 1;
+    },
+    [],
+  );
+
+  const look = (text: string): void => {
+    if (pause.current !== undefined) clearTimeout(pause.current);
+    const mine = ++latest.current;
+    if (text.trim().length < MIN_LETTERS) {
+      setState({ kind: 'idle' });
+      return;
+    }
     setState({ kind: 'loading' });
-    search(query).then(
+    search(text).then(
       (matches) => {
+        if (mine !== latest.current) return;
         setState(matches.length === 0 ? { kind: 'none' } : { kind: 'found', matches });
       },
       () => {
+        if (mine !== latest.current) return;
         setState({ kind: 'failed' });
       },
     );
+  };
+
+  const run = (event: React.FormEvent): void => {
+    event.preventDefault();
+    look(query);
+  };
+
+  const typed = (text: string): void => {
+    setQuery(text);
+    if (pause.current !== undefined) clearTimeout(pause.current);
+    if (text.trim().length < MIN_LETTERS) {
+      latest.current += 1;
+      setState({ kind: 'idle' });
+      return;
+    }
+    pause.current = setTimeout(() => {
+      look(text);
+    }, TYPING_PAUSE_MS);
   };
 
   return (
@@ -50,11 +93,14 @@ export function PlaceSearch({
           value={query}
           placeholder="Search for a place"
           autoComplete="off"
+          enterKeyHint="search"
           onChange={(event) => {
-            setQuery(event.target.value);
+            typed(event.target.value);
           }}
         />
-        <button type="submit">Search</button>
+        <button type="submit" className="search-go">
+          Search
+        </button>
         {trailing}
       </form>
       <div aria-live="polite" className="search-status">
@@ -72,20 +118,23 @@ export function PlaceSearch({
           <ul className="matches">
             {state.matches.map((match) => (
               <li key={`${String(match.lat)},${String(match.lng)}`}>
-                <span>
-                  <strong>{match.name}</strong>
-                  {match.detail !== '' && <span className="muted"> · {match.detail}</span>}
-                </span>
                 <button
                   type="button"
+                  className="match"
                   aria-label={`Add ${match.name}`}
                   onClick={() => {
+                    if (pause.current !== undefined) clearTimeout(pause.current);
+                    latest.current += 1;
                     onPick(match);
                     setState({ kind: 'idle' });
                     setQuery('');
                   }}
                 >
-                  <Plus size={18} strokeWidth={2} aria-hidden="true" /> Add
+                  <MapPin size={20} strokeWidth={1.75} aria-hidden="true" className="match-pin" />
+                  <span className="match-text">
+                    <strong>{match.name}</strong>
+                    {match.detail !== '' && <span className="muted small">{match.detail}</span>}
+                  </span>
                 </button>
               </li>
             ))}

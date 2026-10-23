@@ -7013,3 +7013,51 @@ table.hourly .row-label {
   background: #d9503f;
   box-shadow: 0 2px 6px rgb(61 74 92 / 0.4);
 }
+
+/* Search results: one tappable row for each place, the way a map app lists them. */
+.matches {
+  max-height: min(46dvh, 420px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+.matches li {
+  display: block;
+  padding: 0;
+}
+.matches button.match {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  width: 100%;
+  min-height: 56px;
+  padding: 12px 16px;
+  border-radius: 0;
+  background: transparent;
+  color: var(--text);
+  font-weight: 400;
+  text-align: left;
+}
+.matches button.match:hover,
+.matches button.match:active {
+  background: rgb(61 74 92 / 0.06);
+}
+.match-pin {
+  flex: none;
+  margin-top: 2px;
+  color: var(--muted);
+}
+.match-text {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+.match-text strong {
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+.match-text .muted {
+  overflow-wrap: anywhere;
+}
+.search-status > p {
+  margin: 8px 4px 0;
+}

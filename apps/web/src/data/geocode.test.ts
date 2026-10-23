@@ -87,3 +87,27 @@ describe('searchPlaces', () => {
     await expect(searchPlaces('Dwarka', services({}))).rejects.toThrow();
   });
 });
+
+describe('searchPlaces by short name', () => {
+  const place = (name: string, lng: number): unknown => ({
+    geometry: { coordinates: [lng, 28.54] },
+    properties: { name, countrycode: 'IN', city: 'New Delhi' },
+  });
+  it('finds IIIT-Delhi from the long name, and keeps the long name results too', async () => {
+    const fetchImpl = vi.fn((url: string) => {
+      const features = url.includes('q=IIITD')
+        ? [place('IIIT-Delhi', 77.27), place('IIIT Delhi Library', 77.272), place('Unrelated', 77.3)]
+        : [place('Indraprastha Institute of Science and Technology', 77.26)];
+      return Promise.resolve({ ok: true, status: 200, json: () => Promise.resolve({ features }) });
+    }) as unknown as typeof fetch;
+    const results = await searchPlaces(
+      'Indraprastha Institute of Information Technology Delhi',
+      fetchImpl,
+    );
+    expect(results.map((r) => r.name)).toEqual([
+      'IIIT-Delhi',
+      'IIIT Delhi Library',
+      'Indraprastha Institute of Science and Technology',
+    ]);
+  });
+});
