@@ -77,7 +77,7 @@ export function todayDataFromApi(pin: Pin, today: Today): TodayData {
   const hourly: HourlyPoint[] = [
     { at: today.asOf, aqi, pm25, ...(nowWeather === undefined ? {} : { weather: nowWeather }) },
     ...measured
-      .filter((h) => Date.parse(h.t) >= asOfMs && h.kind !== 'observed')
+      .filter((h) => Date.parse(h.t) > asOfMs && h.kind !== 'observed')
       .slice(0, 47)
       .map((h): HourlyPoint => {
         const weather = weatherAt(Date.parse(h.t));

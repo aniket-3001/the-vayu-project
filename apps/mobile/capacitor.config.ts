@@ -12,8 +12,10 @@ const config: CapacitorConfig = {
     SplashScreen: {
       // The app takes the startup screen down itself, once it has drawn (see apps/web/src/native/splash.ts).
       launchAutoHide: false,
-      backgroundColor: '#F4F6F8',
-      androidScaleType: 'CENTER_INSIDE',
+      // The artwork is a small mark in the middle of a square, drawn in light and in dark (apps/mobile/assets). Cropping
+      // it to fill the screen leaves no border, so there is no fixed colour to clash with the dark one, and the plugin's
+      // own backgroundColor is left unset.
+      androidScaleType: 'CENTER_CROP',
       showSpinner: false,
     },
   },

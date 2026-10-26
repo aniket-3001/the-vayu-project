@@ -113,6 +113,14 @@ describe('the API’s Today as the app’s TodayData', () => {
     expect(data.place).toEqual({ name: 'Home', region: 'Delhi NCR' });
   });
 
+  it('lists each hour once, even when a forecast hour falls exactly on the moment of the reading', () => {
+    const base = fixture({ mode: 'model' });
+    const onTheHour = { ...base, asOf: base.hours[60]?.t ?? AS_OF };
+    const times = todayDataFromApi(pin, onTheHour).hourly.map((h) => h.at);
+    expect(new Set(times).size).toBe(times.length);
+    expect(times[0]).toBe(onTheHour.asOf);
+  });
+
   it('says where it came from and how old it is (rule I2)', () => {
     const live = todayDataFromApi(pin, fixture()).provenance;
     expect(live).toEqual({

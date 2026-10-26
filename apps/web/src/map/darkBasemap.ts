@@ -4,19 +4,19 @@ import type { Map as MapLibreMap } from 'maplibre-gl';
 type PaintName = Parameters<MapLibreMap['setPaintProperty']>[1];
 
 /** What a colour is used for decides how it is turned over: ground goes dark, writing goes light. */
-export type Role = 'surface' | 'text' | 'halo';
+export type Role = 'surface' | 'line' | 'text' | 'halo';
 
-/** The paint properties of the base map that hold a colour, and what each is for. */
-const COLOUR_PROPS: Readonly<Record<string, Role>> = {
-  'background-color': 'surface',
-  'fill-color': 'surface',
-  'fill-outline-color': 'surface',
-  'line-color': 'surface',
-  'fill-extrusion-color': 'surface',
-  'text-color': 'text',
-  'icon-color': 'text',
-  'text-halo-color': 'halo',
-  'icon-halo-color': 'halo',
+/**
+ * The paint properties of the base map that hold a colour, by the kind of layer that has them, and what each is for.
+ * MapLibre throws when asked for a property the layer's kind does not have, so each kind is asked only for its own.
+ */
+const COLOUR_PROPS: Readonly<Record<string, Readonly<Record<string, Role>>>> = {
+  background: { 'background-color': 'surface' },
+  fill: { 'fill-color': 'surface', 'fill-outline-color': 'surface' },
+  line: { 'line-color': 'line' },
+  'fill-extrusion': { 'fill-extrusion-color': 'surface' },
+  circle: { 'circle-color': 'surface', 'circle-stroke-color': 'surface' },
+  symbol: { 'text-color': 'text', 'icon-color': 'text', 'text-halo-color': 'halo', 'icon-halo-color': 'halo' },
 };
 
 interface Hsla {
@@ -67,8 +67,16 @@ export function darkenColour(text: string, role: Role): string | undefined {
   const c = parseColour(text);
   if (c === undefined) return undefined;
   const flipped = 1 - c.l;
+  // Ground is turned over so the page stays dark; lines keep their order, so a road that was paler than the ground is
+  // still paler than it, and stands out.
   const l =
-    role === 'text' ? clamp(0.5 + flipped * 0.45, 0.55, 0.92) : role === 'halo' ? 0.09 : 0.07 + flipped * 0.2;
+    role === 'text'
+      ? clamp(0.5 + flipped * 0.45, 0.55, 0.92)
+      : role === 'halo'
+        ? 0.09
+        : role === 'line'
+          ? 0.1 + c.l * 0.24
+          : 0.07 + flipped * 0.35;
   const s = c.s * 0.75;
   return `hsla(${c.h.toFixed(0)}, ${(s * 100).toFixed(0)}%, ${(l * 100).toFixed(1)}%, ${c.a.toFixed(3)})`;
 }
@@ -98,10 +106,16 @@ export function applyBasemapTheme(map: MapLibreMap, baseLayerIds: ReadonlySet<st
   }
   for (const layer of map.getStyle().layers) {
     if (!baseLayerIds.has(layer.id)) continue;
-    for (const [prop, role] of Object.entries(COLOUR_PROPS)) {
+    for (const [prop, role] of Object.entries(COLOUR_PROPS[layer.type] ?? {})) {
       const name = prop as PaintName;
       const key = `${layer.id}|${prop}`;
-      if (!saved.has(key)) saved.set(key, map.getPaintProperty(layer.id, name));
+      if (!saved.has(key)) {
+        try {
+          saved.set(key, map.getPaintProperty(layer.id, name));
+        } catch {
+          saved.set(key, undefined);
+        }
+      }
       const original = saved.get(key);
       if (original === undefined) continue;
       try {

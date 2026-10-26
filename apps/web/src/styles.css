@@ -699,6 +699,14 @@ h2 {
 .back:hover {
   text-decoration: underline;
 }
+/* Where it is a button (the admin panel's way back to the list), not a link. */
+button.back {
+  border: 0;
+  background: none;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
 
 /* Places */
 
