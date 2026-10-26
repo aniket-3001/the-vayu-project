@@ -22,9 +22,10 @@ fi
 VITE_API_URL= npm run build -w @vayu/web
 node scripts/check-bundle.mjs
 
+# (MSYS_NO_PATHCONV stops Git Bash on Windows turning "/index.html" into a Windows path.)
 # Files with a hash in their name never change, so they are kept for a year; the page itself is always asked for.
 aws s3 sync apps/web/dist/assets "s3://$BUCKET/assets" --delete --cache-control "public,max-age=31536000,immutable"
 aws s3 sync apps/web/dist "s3://$BUCKET" --delete --exclude "assets/*" --exclude "index.html" --cache-control "public,max-age=3600"
 aws s3 cp apps/web/dist/index.html "s3://$BUCKET/index.html" --cache-control "no-cache" --content-type "text/html; charset=utf-8"
-aws cloudfront create-invalidation --distribution-id "$DIST" --paths "/" "/index.html" >/dev/null
+MSYS_NO_PATHCONV=1 aws cloudfront create-invalidation --distribution-id "$DIST" --paths "/" "/index.html" >/dev/null
 echo "Uploaded. $URL"
