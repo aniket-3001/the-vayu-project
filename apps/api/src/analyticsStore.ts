@@ -277,7 +277,7 @@ export function createAnalyticsStore(backend: Backend): AnalyticsStore {
 
     async errors(limit, now) {
       const out: ErrorRow[] = [];
-      for (const day of lastDays(MAX_DAYS > 30 ? 30 : MAX_DAYS, now).reverse()) {
+      for (const day of lastDays(ERROR_TTL_DAYS, now).reverse()) {
         if (out.length >= limit) break;
         for (const item of await backend.query(`ERR#${day}`, { descending: true, limit: limit - out.length }))
           out.push({
@@ -303,7 +303,7 @@ export function memoryBackend(): Backend {
   const rows = new Map<string, Map<string, Item>>();
   const part = (pk: string): Map<string, Item> => {
     let p = rows.get(pk);
-    if (p === undefined) rows.set(pk, (p = new Map()));
+    if (p === undefined) rows.set(pk, (p = new Map<string, Item>()));
     return p;
   };
   return {

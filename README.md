@@ -81,6 +81,10 @@ Each service is in `infra/` as CDK (TypeScript); `cdk deploy` makes the stack an
 
 AWS open source: AWS CDK for the stack, and Powertools for AWS Lambda (Logger and Tracer) in the API. We did not use Strands or Cedar.
 
+## Admin statistics
+
+The app counts how it is used (screens opened, features used, location permission results, Bluetooth results, errors, time in the app) and what kind of device and app version it runs on. Signed-in people are counted by account; everyone else only adds to the group totals under a random id the app makes. Nothing a person types, no place name, and nothing finer than the city (from a place rounded to about 11 km) is stored. Only the two owners, whose emails are given at deploy time, can see the statistics, at `/#/admin` after signing in; the API refuses everyone else. Deleting an account deletes its timeline. Raw account events keep for 90 days; daily totals for about a year.
+
 ## The rules it holds
 
 The headline rule: **code decides and AI only words things.** The rules decide the advice. The model may reword it, or answer a question no rule covers from the facts it is given, and never supplies a number of its own: if its answer holds a number that is not in the facts, the plain wording is sent instead. A Hindi answer never touches the model. [`docs/safety.md`](docs/safety.md) lists every rule, where the code enforces it and the test that fails if it breaks. [`docs/AGENT-BOUNDARIES.md`](docs/AGENT-BOUNDARIES.md) says what the assistant may and may not do. [`docs/claims.md`](docs/claims.md) is every public claim with what supports it.

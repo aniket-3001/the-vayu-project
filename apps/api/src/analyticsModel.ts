@@ -114,7 +114,7 @@ export function parseBatch(raw: unknown): Parsed {
   for (const value of [os, model, screen, lang]) {
     if (value !== undefined && (typeof value !== 'string' || !LABEL.test(value)))
       return refuse('bad_device', 'Bad device label.');
-    labels.push(value === undefined || value === '' ? 'unknown' : (value as string));
+    labels.push(value === undefined || value === '' ? 'unknown' : (value));
   }
   let rounded: { lat: number; lng: number } | undefined;
   if (cell !== undefined) {

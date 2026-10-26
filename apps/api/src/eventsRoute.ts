@@ -59,7 +59,7 @@ export async function handleEvents(request: ApiRequest, deps: EventsDeps): Promi
     batch,
     now,
     ...(signedInOnly && signedIn
-      ? { userId: request.userId as string, ...(request.email === undefined ? {} : { email: request.email }) }
+      ? { userId: request.userId, ...(request.email === undefined ? {} : { email: request.email }) }
       : {}),
   });
   return ok({ accepted: amount });

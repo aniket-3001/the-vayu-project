@@ -120,6 +120,16 @@ Parts 1, 2, 3 and 5 do not depend on each other. Part 4 needs Part 1, because un
   It prints the changes again and asks `Do you wish to deploy these changes (y/n)?`. Type `y` and press Enter.
 - [ ] 1.12 Wait. CloudFront takes 5 to 15 minutes to roll a change out. The command ends with `✅ Vayu` and the stack outputs.
 
+### Switch on the admin statistics (the two owners)
+
+The usage statistics add three API routes, two CloudFront paths and a list of admin emails. The list is given when deploying, not kept in the code. Deploy with it:
+
+```
+npx cdk deploy -c adminEmails=aniketgupta3001@gmail.com,harsh22198@iiitd.ac.in
+```
+
+Deploying without `-c adminEmails=...` leaves the list empty, which means nobody is an admin. After deploying, sign in with one of the two emails, then open the site's address followed by `/#/admin`. The panel is not linked from any screen. Any other account is sent back to the home screen, and the API answers 403.
+
 ### Check it worked, and that the website is untouched
 
 - [ ] 1.13 Open `https://d3lmq1mze2gup3.cloudfront.net` in a browser. Expected: the site opens as before. Also open `https://d3lmq1mze2gup3.cloudfront.net/#/week`; it should play the recorded days as before.
