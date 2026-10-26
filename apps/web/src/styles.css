@@ -6158,6 +6158,18 @@ table.hourly .row-label {
   border-radius: 12px;
   background: var(--card);
 }
+/* The not-connected card has no figures or face, so its two lines each take a whole row of the card's two columns,
+   instead of one squeezing the other out (the first had collapsed to nothing, and the words ran into each other). */
+.place-card.pending.room-pc .pc-level,
+.place-card.pending.room-pc .pc-hit > .muted {
+  grid-column: 1 / -1;
+}
+.place-card.pending.room-pc .pc-level {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 6px;
+}
 .room-pc .pc-source {
   display: flex;
   align-items: center;

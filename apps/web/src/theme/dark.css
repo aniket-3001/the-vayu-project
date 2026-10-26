@@ -68,7 +68,7 @@ html[data-theme='dark'] {
  * is doing, so their colours and the dark ink on them mean the same in both. Zero specificity (:where) so anything
  * a card sets for itself still wins.
  */
-:where(html[data-theme='dark'] :is(.hero, .place-card, .dev-aqi, .room-aqi, .special-note, .scene, .alert-row, .scene-card, .scene-sheet, .alert-big-icon)) {
+:where(html[data-theme='dark'] :is(.hero, .place-card:not(.pending), .dev-aqi, .room-aqi, .special-note, .scene, .alert-row, .scene-card, .scene-sheet, .alert-big-icon)) {
   --page: #f4f7fb;
   --card: #ffffff;
   --text: #3d4a5c;
