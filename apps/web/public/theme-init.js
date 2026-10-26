@@ -5,7 +5,7 @@
     var dark = pick === 'dark' || (pick !== 'light' && matchMedia('(prefers-color-scheme: dark)').matches);
     document.documentElement.dataset.theme = dark ? 'dark' : 'light';
     document.documentElement.style.colorScheme = dark ? 'dark' : 'light';
-  } catch (e) {
+  } catch {
     // Storage or matchMedia refused: the page stays light.
   }
 })();

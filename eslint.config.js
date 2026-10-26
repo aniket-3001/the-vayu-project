@@ -73,5 +73,12 @@ export default tseslint.config(
       '@typescript-eslint/explicit-function-return-type': 'off',
     },
   },
+  {
+    // Plain browser scripts served as they are (not bundled), such as the one that sets the light or dark look.
+    files: ['apps/web/public/**/*.js'],
+    languageOptions: {
+      globals: { document: 'readonly', localStorage: 'readonly', matchMedia: 'readonly' },
+    },
+  },
   prettier,
 );
