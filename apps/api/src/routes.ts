@@ -24,6 +24,8 @@ import {
   type LinkStore,
 } from '@vayu/watch';
 import { handleAccount, type AccountDeps } from './accountRoute';
+import { handleAdmin, type AdminDeps } from './adminRoute';
+import { handleEvents, type EventsDeps } from './eventsRoute';
 import { handleFixChecks, type FixChecksDeps } from './fixChecksRoute';
 import { handleReplay } from './replayRoute';
 import type { CacheReader } from './roomStores';
@@ -68,6 +70,8 @@ function recentFires(
 }
 
 export interface RouterDeps {
+  /** Usage events in and the admin-only statistics out. Absent: /v1/events and /v1/admin are then not found. */
+  readonly analytics?: (EventsDeps & AdminDeps) | undefined;
   /** Saved places and settings for a signed-in person. Absent where no accounts are wired: /v1/me is then not found. */
   readonly account?: AccountDeps | undefined;
   /** The sign-in service's public ids, for the app to start from. Absent: accounts are off and the app needs no sign-in. */
@@ -160,6 +164,16 @@ export function createRouter(deps: RouterDeps) {
   return async function route(request: ApiRequest): Promise<ApiResponse> {
     if (request.path === '/v1/watch/telegram/webhook') {
       return handleTelegramWebhook(request, deps);
+    }
+    if (request.path === '/v1/events' || request.path === '/v1/me/events') {
+      return deps.analytics === undefined
+        ? failure(404, 'not_found', `No route ${request.path}`)
+        : handleEvents(request, deps.analytics);
+    }
+    if (request.path.startsWith('/v1/admin/')) {
+      return deps.analytics === undefined
+        ? failure(404, 'not_found', `No route ${request.path}`)
+        : handleAdmin(request, deps.analytics);
     }
     if (request.path === '/v1/me') {
       return deps.account === undefined

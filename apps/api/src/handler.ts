@@ -42,6 +42,8 @@ import { SPEECH_LIMITS } from './speechRoute';
 import { dynamoSpeechStore } from './speechStore';
 import { startFixCheck } from './fixCheck';
 import { dynamoFixCheckStore } from './fixCheckStore';
+import { parseAllowList } from './adminGuard';
+import { dynamoAnalyticsStore } from './analyticsStore';
 import { createRouter, type ApiRequest, type RouterDeps } from './routes';
 import { sfnSendTaskSuccess } from './sfnResume';
 import { annotate, traced } from './tracing';
@@ -112,6 +114,7 @@ function buildRoute(): Promise<ReturnType<typeof createRouter>> {
     };
     const fixCheckStore = dynamoFixCheckStore(mustEnv('WATCH_TABLE'));
     const sfn = traced(new SFNClient({}));
+    const analyticsStore = dynamoAnalyticsStore(mustEnv('WATCH_TABLE'), docClient);
     const deps: RouterDeps = {
       // OpenAQ allows 60 requests a minute; cache for 15 minutes so request volume cannot hit it.
       stationRepo: cachedStationRepo(openAqStationRepo({ apiKey: openAqKey }), 15 * 60_000),
@@ -168,7 +171,18 @@ function buildRoute(): Promise<ReturnType<typeof createRouter>> {
         clock: liveClock(),
         salt: requestSalt,
       },
-      account: { store: dynamoAccountStore(mustEnv('WATCH_TABLE'), docClient), clock: liveClock() },
+      account: {
+        store: dynamoAccountStore(mustEnv('WATCH_TABLE'), docClient),
+        clock: liveClock(),
+        onDelete: (userId) => analyticsStore.removeUser(userId),
+      },
+      analytics: {
+        store: analyticsStore,
+        quota: dynamoQuota(mustEnv('WATCH_TABLE'), docClient),
+        clock: liveClock(),
+        salt: requestSalt,
+        admins: parseAllowList(process.env.ADMIN_EMAILS),
+      },
       ...(process.env.USER_POOL_ID && process.env.USER_POOL_CLIENT_ID
         ? {
             authConfig: {

@@ -5,6 +5,8 @@ import { failure, ok, type ApiRequest, type ApiResponse } from './respond';
 export interface AccountDeps {
   readonly store: AccountStore;
   readonly clock: Clock;
+  /** Called after an account is deleted, to remove what else is kept about it. A failure here never undoes the delete. */
+  readonly onDelete?: (userId: string) => Promise<void>;
 }
 
 /** What the browser is allowed to keep on an account: keys the app itself writes, small values, not many. */
@@ -30,6 +32,7 @@ export async function handleAccount(request: ApiRequest, deps: AccountDeps): Pro
 
   if (request.method === 'DELETE') {
     await deps.store.remove(userId);
+    await deps.onDelete?.(userId).catch(() => undefined);
     return ok({ deleted: true });
   }
 

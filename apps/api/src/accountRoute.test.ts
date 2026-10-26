@@ -107,3 +107,18 @@ describe('the saved account', () => {
     expect((await call('POST', 'u1', { profile: {} })).statusCode).toBe(405);
   });
 });
+
+describe('account deletion hook', () => {
+  it('calls onDelete once with the user id, and a failing hook never undoes the delete', async () => {
+    const seen: string[] = [];
+    const base = memory();
+    const run = (onDelete: (id: string) => Promise<void>): ReturnType<typeof handleAccount> =>
+      handleAccount(
+        { method: 'DELETE', path: '/v1/me', query: {}, headers: {}, userId: 'u1' },
+        { store: base, clock: fixedClock('2026-10-10T12:00:00.000Z'), onDelete },
+      );
+    expect((await run((id) => (seen.push(id), Promise.resolve()))).statusCode).toBe(200);
+    expect(seen).toEqual(['u1']);
+    expect((await run(() => Promise.reject(new Error('down')))).body).toEqual({ deleted: true });
+  });
+});

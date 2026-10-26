@@ -307,3 +307,11 @@ describe('accounts on the router', () => {
     expect(signedIn.statusCode).toBe(401);
   });
 });
+
+describe('analytics routes are off unless wired', () => {
+  it('answers not_found for events and admin paths with no analytics', async () => {
+    const route = createRouter({ clock: fixedClock('2026-10-10T12:00:00.000Z'), mode: 'live' } as unknown as RouterDeps);
+    for (const path of ['/v1/events', '/v1/me/events', '/v1/admin/summary'])
+      expect((await route({ method: 'GET', path, query: {}, headers: {} })).statusCode, path).toBe(404);
+  });
+});
