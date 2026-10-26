@@ -12,11 +12,14 @@ import {
   type ErrorRow,
   type GroupBy,
   type GroupRow,
+  type JourneyCohort,
+  type Rate,
 } from './adminApi';
 
-type Tab = 'overview' | 'groups' | 'accounts' | 'errors';
+type Tab = 'overview' | 'journey' | 'groups' | 'accounts' | 'errors';
 const TABS: readonly (readonly [Tab, string])[] = [
   ['overview', 'Overview'],
+  ['journey', 'Journey'],
   ['groups', 'Groups'],
   ['accounts', 'Accounts'],
   ['errors', 'Errors'],
@@ -27,9 +30,45 @@ const GROUPS: readonly (readonly [GroupBy, string])[] = [
   ['region', 'City'],
   ['auth', 'Signed in'],
   ['visitor', 'New or returning'],
+  ['band', 'AQI band'],
+];
+/** The AQI bands in order, so their rows read from best air to worst, whatever their counts. */
+const BAND_ORDER = ['good', 'moderate', 'sensitive', 'unhealthy', 'very_bad', 'hazardous'];
+const BAND_NOTE =
+  'For AQI band, Sessions are the sessions that saw that band, and the other columns are what happened while it was showing.';
+
+/** The milestones, in the order they are shown, with short column names. */
+const MILESTONE_LABELS: readonly (readonly [string, string])[] = [
+  ['first_place', 'Added a place'],
+  ['first_search', 'Searched'],
+  ['first_detect', 'Detected location'],
+  ['first_lens', 'AIR Lens'],
+  ['first_exposure', 'Exposure'],
+  ['first_map', 'Map'],
+  ['first_assistant', 'Assistant'],
+  ['first_unit', 'Connected a unit'],
+  ['first_signed_in', 'Signed in'],
+];
+/** The welcome screen's steps, in order, and the ways around it. */
+const FUNNEL: readonly (readonly [string, string])[] = [
+  ['screen:welcome', 'Welcome screen shown'],
+  ['feature:welcome_signin_start', 'Opened sign in'],
+  ['feature:welcome_signup_start', 'Opened create account'],
+  ['feature:welcome_code_step', 'Reached the email code'],
+  ['feature:welcome_confirmed', 'Confirmed the email'],
+  ['feature:welcome_signed_in', 'Signed in'],
+];
+const AROUND: readonly (readonly [string, string])[] = [
+  ['feature:welcome_guest', 'Continued as guest'],
+  ['feature:recorded_days', 'Opened the recorded days'],
+  ['feature:welcome_failed', 'A step failed'],
 ];
 const RANGES = [7, 14, 30] as const;
 
+const featureCount = (stats: DayStats): number =>
+  Object.entries(stats.features)
+    .filter(([name]) => name.startsWith('feature:'))
+    .reduce((sum, [, n]) => sum + n, 0);
 const minutes = (seconds: number): string => (seconds / 60).toFixed(1);
 const topFeatures = (stats: DayStats, count = 5): string =>
   Object.entries(stats.features)
@@ -94,6 +133,7 @@ export function AdminScreen({ api }: { readonly api?: AdminApi }): React.JSX.Ele
           ))}
         </div>
         {tab === 'overview' && <Overview api={real} />}
+        {tab === 'journey' && <Journey api={real} />}
         {tab === 'groups' && <Groups api={real} />}
         {tab === 'accounts' && <Accounts api={real} />}
         {tab === 'errors' && <Errors api={real} />}
@@ -177,10 +217,159 @@ function Overview({ api }: { readonly api: AdminApi }): React.JSX.Element {
   );
 }
 
+/** "38% (5 of 13)", or a dash while no one in the group is old enough to say. The counts stay, because they are small. */
+const rateText = (rate: Rate): string =>
+  rate.eligible === 0
+    ? '—'
+    : `${String(Math.round((rate.returned / rate.eligible) * 100))}% (${String(rate.returned)} of ${String(rate.eligible)})`;
+
+const weekText = (week: string): string =>
+  new Date(`${week}T00:00:00Z`).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', timeZone: 'UTC' });
+
+/** Newest week first: keeps the weeks down to the oldest that has any new devices (and the newest week at least). */
+function trimEmptyWeeks(cohorts: readonly JourneyCohort[]): readonly JourneyCohort[] {
+  let last = 0;
+  cohorts.forEach((c, i) => {
+    if (c.size > 0) last = i;
+  });
+  return cohorts.slice(0, last + 1);
+}
+
+/** Adds the figures of every day into one count per name. */
+function totals(days: readonly DaySummary[]): Readonly<Record<string, number>> {
+  const out: Record<string, number> = {};
+  for (const day of days)
+    for (const [name, n] of Object.entries(day.features)) out[name] = (out[name] ?? 0) + n;
+  return out;
+}
+
+/**
+ * What happens to new people: who comes back, what they do first, and where visitors leave the welcome screen.
+ * The numbers are small, so every percentage carries the counts behind it.
+ */
+function Journey({ api }: { readonly api: AdminApi }): React.JSX.Element {
+  const loadedCohorts = useLoaded<readonly JourneyCohort[]>(() => api.journey(8), [api]);
+  // Weeks before the first one with anyone in it are all zeros, so they are left off.
+  const cohorts = Array.isArray(loadedCohorts) ? trimEmptyWeeks(loadedCohorts as readonly JourneyCohort[]) : loadedCohorts;
+  const days = useLoaded<readonly DaySummary[]>(() => api.summary(30), [api]);
+  const done = Array.isArray(days) ? totals(days as readonly DaySummary[]) : undefined;
+  const shown = done?.['screen:welcome'] ?? 0;
+  return (
+    <>
+      <section className="card" aria-label="Who comes back">
+        <h2>Who comes back</h2>
+        <p className="muted small">
+          New devices by the week they first came. A figure appears once its window has fully passed.
+        </p>
+        <Status value={cohorts} />
+        {Array.isArray(cohorts) && (
+          <div className="admin-scroll">
+            <table className="admin-table">
+              <thead>
+                <tr>
+                  <th>Week of</th>
+                  <th>New</th>
+                  <th>Next day</th>
+                  <th>Within 7 days</th>
+                  <th>Within 30 days</th>
+                </tr>
+              </thead>
+              <tbody>
+                {(cohorts as readonly JourneyCohort[]).map((c) => (
+                  <tr key={c.week}>
+                    <td>{weekText(c.week)}</td>
+                    <td>{c.size}</td>
+                    <td>{rateText(c.d1)}</td>
+                    <td>{rateText(c.d7)}</td>
+                    <td>{rateText(c.d30)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </section>
+
+      <section className="card" aria-label="What new people do first">
+        <h2>What new people do first</h2>
+        <p className="muted small">How many of each week’s new devices have ever done each thing.</p>
+        {Array.isArray(cohorts) && (
+          <div className="admin-scroll">
+            <table className="admin-table">
+              <thead>
+                <tr>
+                  <th>Week of</th>
+                  <th>New</th>
+                  {MILESTONE_LABELS.map(([id, label]) => (
+                    <th key={id}>{label}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {(cohorts as readonly JourneyCohort[]).map((c) => (
+                  <tr key={c.week}>
+                    <td>{weekText(c.week)}</td>
+                    <td>{c.size}</td>
+                    {MILESTONE_LABELS.map(([id]) => {
+                      const n = c.milestones[id] ?? 0;
+                      return (
+                        <td key={id}>
+                          {c.size === 0 ? '—' : `${String(n)} (${String(Math.round((n / c.size) * 100))}%)`}
+                        </td>
+                      );
+                    })}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </section>
+
+      <section className="card" aria-label="Sign-in funnel">
+        <h2>Sign-in funnel</h2>
+        <p className="muted small">
+          The welcome screen over the last 30 days. These count steps, so one person opening a form twice counts twice.
+        </p>
+        <Status value={days} />
+        {done !== undefined && (
+          <>
+            <ol className="admin-list">
+              {FUNNEL.map(([id, label]) => (
+                <li key={id}>
+                  <span>{label}</span>{' '}
+                  <strong>{done[id] ?? 0}</strong>
+                  {id !== 'screen:welcome' && shown > 0 && (
+                    <span className="muted small"> · {String(Math.round(((done[id] ?? 0) / shown) * 100))}% of shown</span>
+                  )}
+                </li>
+              ))}
+            </ol>
+            <h3>Other ways in, and where it went wrong</h3>
+            <ul className="admin-list">
+              {AROUND.map(([id, label]) => (
+                <li key={id}>
+                  <span>{label}</span> <strong>{done[id] ?? 0}</strong>
+                </li>
+              ))}
+            </ul>
+          </>
+        )}
+      </section>
+    </>
+  );
+}
+
 function Groups({ api }: { readonly api: AdminApi }): React.JSX.Element {
   const [by, setBy] = useState<GroupBy>('platform');
   const [range, setRange] = useState<number>(14);
-  const rows = useLoaded<readonly GroupRow[]>(() => api.groups(by, range), [api, by, range]);
+  const loaded = useLoaded<readonly GroupRow[]>(() => api.groups(by, range), [api, by, range]);
+  const rows =
+    by === 'band' && Array.isArray(loaded)
+      ? [...(loaded as readonly GroupRow[])].sort(
+          (a, b) => BAND_ORDER.indexOf(a.value) - BAND_ORDER.indexOf(b.value),
+        )
+      : loaded;
   return (
     <section className="card" aria-label="Groups">
       <h2>Groups</h2>
@@ -222,6 +411,7 @@ function Groups({ api }: { readonly api: AdminApi }): React.JSX.Element {
                 <th>Sessions</th>
                 <th>People-days</th>
                 <th>Min/session</th>
+                <th>Features/session</th>
                 <th>Errors</th>
                 <th>Top features</th>
               </tr>
@@ -233,6 +423,7 @@ function Groups({ api }: { readonly api: AdminApi }): React.JSX.Element {
                   <td>{r.sessions}</td>
                   <td>{r.users}</td>
                   <td>{r.sessions === 0 ? '—' : minutes(r.activeSeconds / r.sessions)}</td>
+                  <td>{r.sessions === 0 ? '—' : (featureCount(r) / r.sessions).toFixed(1)}</td>
                   <td>{r.errors}</td>
                   <td>{topFeatures(r, 3)}</td>
                 </tr>
@@ -243,6 +434,7 @@ function Groups({ api }: { readonly api: AdminApi }): React.JSX.Element {
       )}
       <p className="muted small">
         People-days adds up the people active each day, so one person on two days counts twice.
+        {by === 'band' ? ` ${BAND_NOTE}` : ''}
       </p>
     </section>
   );

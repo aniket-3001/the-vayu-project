@@ -36,13 +36,30 @@ export interface ErrorRow {
   readonly region: string;
 }
 
-export type GroupBy = 'platform' | 'version' | 'region' | 'auth' | 'visitor';
+/** Of the devices old enough to tell, how many came back. */
+export interface Rate {
+  readonly eligible: number;
+  readonly returned: number;
+}
+/** The devices first seen in one week, and what became of them. */
+export interface JourneyCohort {
+  readonly week: string;
+  readonly size: number;
+  readonly signedIn: number;
+  readonly milestones: Readonly<Record<string, number>>;
+  readonly d1: Rate;
+  readonly d7: Rate;
+  readonly d30: Rate;
+}
+
+export type GroupBy = 'platform' | 'version' | 'region' | 'auth' | 'visitor' | 'band';
 
 export interface AdminApi {
   /** Resolves only for an admin; rejects for anyone else, signed in or not. */
   readonly whoami: () => Promise<void>;
   readonly summary: (days: number) => Promise<readonly DaySummary[]>;
   readonly groups: (by: GroupBy, days: number) => Promise<readonly GroupRow[]>;
+  readonly journey: (weeks: number) => Promise<readonly JourneyCohort[]>;
   readonly users: () => Promise<readonly AccountRow[]>;
   readonly user: (id: string) => Promise<{ user: AccountRow; events: readonly TimelineEvent[] }>;
   readonly errors: () => Promise<readonly ErrorRow[]>;
@@ -69,6 +86,8 @@ export function createAdminApi(
     summary: async (days) => (await get<{ days: DaySummary[] }>(`summary?days=${String(days)}`)).days,
     groups: async (by, days) =>
       (await get<{ rows: GroupRow[] }>(`groups?by=${by}&days=${String(days)}`)).rows,
+    journey: async (weeks) =>
+      (await get<{ cohorts: JourneyCohort[] }>(`journey?weeks=${String(weeks)}`)).cohorts,
     users: async () => (await get<{ users: AccountRow[] }>('users')).users,
     user: (id) => get(`users/${encodeURIComponent(id)}`),
     errors: async () => (await get<{ errors: ErrorRow[] }>('errors')).errors,

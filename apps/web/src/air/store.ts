@@ -1,5 +1,6 @@
 import type { MapStation } from '@vayu/contracts';
 import { useEffect, useSyncExternalStore } from 'react';
+import { noteAir } from '../analytics';
 import { nowIso } from '../clock';
 import type { Pin } from '../data/pins';
 import { hourOfDay, isoDate } from '../today/time';
@@ -255,7 +256,13 @@ export function useToday(pin: Pin | undefined): Loaded<TodayData> | undefined {
     };
     // The pin's coordinates are its id.
   }, [id, store]);
-  return pin === undefined ? undefined : store.today(pin);
+  const loaded = pin === undefined ? undefined : store.today(pin);
+  const aqi = loaded?.status === 'ready' ? loaded.data.aqi : undefined;
+  // The air this person is looking at, so what they do can be told apart by how the air was.
+  useEffect(() => {
+    noteAir(aqi);
+  }, [aqi]);
+  return loaded;
 }
 
 /** The same for each of several places: the readings by pin id. */
@@ -273,7 +280,14 @@ export function useTodays(pins: readonly Pin[]): ReadonlyMap<string, Loaded<Toda
     };
     // The pins' coordinates are their ids.
   }, [ids, store]);
-  return new Map(pins.map((p) => [p.id, store.today(p)]));
+  const byPin = new Map(pins.map((p) => [p.id, store.today(p)]));
+  const first = pins[0] === undefined ? undefined : byPin.get(pins[0].id);
+  const aqi = first?.status === 'ready' ? first.data.aqi : undefined;
+  // On the home screen the first place is the one they see first.
+  useEffect(() => {
+    noteAir(aqi);
+  }, [aqi]);
+  return byPin;
 }
 
 /** Loads the last two weeks of hours for these places and re-renders as they arrive. */

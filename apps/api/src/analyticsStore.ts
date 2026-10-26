@@ -7,7 +7,15 @@ import {
   QueryCommand,
   UpdateCommand,
 } from '@aws-sdk/lib-dynamodb';
-import { cityOf, DIMENSIONS, type Batch, type Dimension } from './analyticsModel';
+import {
+  BATCH_DIMENSIONS,
+  cityOf,
+  MILESTONES,
+  milestoneOf,
+  type Band,
+  type Batch,
+  type Dimension,
+} from './analyticsModel';
 import { dayKey } from './quota';
 import { traced } from './tracing';
 
@@ -50,6 +58,26 @@ export interface ErrorRow {
   readonly region: string;
 }
 
+/** Of the devices old enough to tell, how many came back. */
+export interface Rate {
+  readonly eligible: number;
+  readonly returned: number;
+}
+/** The devices first seen in one week (Monday to Sunday, India time), and what became of them. */
+export interface JourneyCohort {
+  readonly week: string;
+  readonly size: number;
+  readonly signedIn: number;
+  /** How many of them reached each milestone. */
+  readonly milestones: Readonly<Record<string, number>>;
+  /** Came back the day after the first visit. */
+  readonly d1: Rate;
+  /** Came back on any of the next 7 days. */
+  readonly d7: Rate;
+  /** Came back on any of the next 30 days. */
+  readonly d30: Rate;
+}
+
 export interface AnalyticsStore {
   record(args: {
     batch: Batch;
@@ -58,7 +86,13 @@ export interface AnalyticsStore {
     now: string;
   }): Promise<void>;
   summary(days: number, now: string): Promise<DaySummary[]>;
+  /**
+   * One row per value of `by`. For `band`, `sessions` is the sessions that saw that AQI band and the other figures are
+   * what happened while it was showing, so "actions per session" can be compared between bands.
+   */
   groups(by: Dimension, days: number, now: string): Promise<GroupRow[]>;
+  /** New devices by week of first visit, newest week first: what they did first and whether they came back. */
+  journey(weeks: number, now: string): Promise<JourneyCohort[]>;
   accounts(limit: number): Promise<AccountRow[]>;
   account(
     userId: string,
@@ -85,6 +119,8 @@ const COUNTER_TTL_DAYS = 400;
 const EVENT_TTL_DAYS = 90;
 const ERROR_TTL_DAYS = 30;
 export const MAX_DAYS = 90;
+export const MAX_WEEKS = 13;
+const COHORT_DAYS_KEPT = 120;
 
 const num = (x: unknown): number => (typeof x === 'number' ? x : 0);
 const str = (x: unknown, fallback = ''): string => (typeof x === 'string' ? x : fallback);
@@ -101,6 +137,20 @@ function fold(stats: ReturnType<typeof emptyStats>, metric: string, count: numbe
   else if (metric === 'errors') stats.errors += count;
   else if (metric.includes(':')) stats.features[metric] = (stats.features[metric] ?? 0) + count;
 }
+
+/** A calendar day key moved by whole days. The keys are plain dates, so this is calendar arithmetic, not clock time. */
+function addDays(key: string, days: number): string {
+  return new Date(Date.parse(`${key}T00:00:00Z`) + days * DAY_SECONDS * 1000).toISOString().slice(0, 10);
+}
+
+/** The Monday of the week a day key falls in. */
+function mondayOf(key: string): string {
+  const weekday = new Date(`${key}T00:00:00Z`).getUTCDay(); // 0 is Sunday
+  return addDays(key, -((weekday + 6) % 7));
+}
+
+const strings = (x: unknown): string[] =>
+  Array.isArray(x) ? x.filter((v): v is string => typeof v === 'string') : [];
 
 /** Day keys, newest last, for the `days` days ending at `now` (India calendar). */
 function lastDays(days: number, now: string): string[] {
@@ -135,7 +185,7 @@ export function createAnalyticsStore(backend: Backend): AnalyticsStore {
       const profile = await backend.get(`DEV#${batch.deviceId}`, 'PROFILE');
       const firstDay = str(profile?.firstSeenDay, day);
       const region = device.cell ? cityOf(device.cell.lat, device.cell.lng) : str(profile?.region, 'Unknown');
-      const values: Record<Dimension, string> = {
+      const values: Record<(typeof BATCH_DIMENSIONS)[number], string> = {
         all: 'all',
         platform: device.platform,
         version: device.appVersion,
@@ -145,11 +195,15 @@ export function createAnalyticsStore(backend: Backend): AnalyticsStore {
       };
 
       const increments = new Map<string, number>();
-      const bump = (metric: string, by: number): void => {
-        for (const dim of DIMENSIONS) {
-          const sk = `${dim}#${values[dim]}#${metric}`;
-          increments.set(sk, (increments.get(sk) ?? 0) + by);
-        }
+      const add = (sk: string, by: number): void => {
+        increments.set(sk, (increments.get(sk) ?? 0) + by);
+      };
+      // `band` is the AQI band showing when it happened. People and sessions are not counted by it (a person is in
+      // several bands over a day); sessions get their own count from `context` events, below.
+      const bump = (metric: string, by: number, band?: Band): void => {
+        for (const dim of BATCH_DIMENSIONS) add(`${dim}#${values[dim]}#${metric}`, by);
+        if (band !== undefined && metric !== 'sessions' && metric !== 'users')
+          add(`band#${band}#${metric}`, by);
       };
 
       let sessions = 0;
@@ -159,9 +213,12 @@ export function createAnalyticsStore(backend: Backend): AnalyticsStore {
         if (event.kind === 'session_start') {
           sessions += 1;
           bump('sessions', 1);
-        } else if (event.kind === 'active') bump('active_seconds', event.n);
+        } else if (event.kind === 'context') {
+          // This session saw the air in this band.
+          add(`band#${event.detail}#sessions`, 1);
+        } else if (event.kind === 'active') bump('active_seconds', event.n, event.band);
         else if (event.kind === 'error') {
-          bump('errors', event.n);
+          bump('errors', event.n, event.band);
           seq += 1;
           await backend.put(
             `ERR#${day}`,
@@ -169,8 +226,8 @@ export function createAnalyticsStore(backend: Backend): AnalyticsStore {
             { detail: event.detail, platform: device.platform, appVersion: device.appVersion, region },
             errorTtl,
           );
-        } else if (event.kind === 'api') bump('api_issues:count', event.n);
-        else bump(`${event.kind}:${event.detail}`, event.n);
+        } else if (event.kind === 'api') bump('api_issues:count', event.n, event.band);
+        else bump(`${event.kind}:${event.detail}`, event.n, event.band);
         if (event.kind === 'feature' && event.detail === 'add_place' && firstPlaceAt === undefined)
           firstPlaceAt = event.at;
       }
@@ -196,6 +253,33 @@ export function createAnalyticsStore(backend: Backend): AnalyticsStore {
           lang: device.lang,
           region,
           ...(firstPlaceAt === undefined ? {} : { firstPlaceAt }),
+        },
+        counterTtl,
+      );
+
+      // The device's place in its first-day cohort: what it reached first, and the days it was around.
+      const cohortKey = `COHORT#${firstDay}`;
+      const seen = await backend.get(cohortKey, batch.deviceId);
+      const reached: Record<string, string> = {
+        ...(typeof seen?.m === 'object' && seen.m !== null ? (seen.m as Record<string, string>) : {}),
+      };
+      for (const event of batch.events) {
+        const milestone = milestoneOf(event.kind, event.detail);
+        if (milestone !== undefined && reached[milestone] === undefined) reached[milestone] = event.at;
+      }
+      if (userId !== undefined && reached.first_signed_in === undefined) reached.first_signed_in = now;
+      const daysAround = strings(seen?.days);
+      if (!daysAround.includes(day)) daysAround.push(day);
+      await backend.put(
+        cohortKey,
+        batch.deviceId,
+        {
+          m: reached,
+          days: daysAround.sort().slice(-COHORT_DAYS_KEPT),
+          signedIn: seen?.signedIn === true || userId !== undefined,
+          // Seen before cohorts existed: its early days are unknown, so it is left out of the journey figures.
+          legacy: seen === undefined ? profile !== undefined : seen.legacy === true,
+          platform: device.platform,
         },
         counterTtl,
       );
@@ -253,6 +337,48 @@ export function createAnalyticsStore(backend: Backend): AnalyticsStore {
           rows.set(value, stats);
         }
       return [...rows].map(([value, stats]) => ({ value, ...stats })).sort((a, b) => b.sessions - a.sessions);
+    },
+
+    async journey(weeks, now) {
+      const today = dayKey(now);
+      const count = Math.min(Math.max(Math.trunc(weeks), 1), MAX_WEEKS);
+      const thisMonday = mondayOf(today);
+      const out: JourneyCohort[] = [];
+      for (let w = 0; w < count; w += 1) {
+        const monday = addDays(thisMonday, -7 * w);
+        const reached: Record<string, number> = Object.fromEntries(MILESTONES.map((m) => [m, 0]));
+        const d1 = { eligible: 0, returned: 0 };
+        const d7 = { eligible: 0, returned: 0 };
+        const d30 = { eligible: 0, returned: 0 };
+        let size = 0;
+        let signedIn = 0;
+        for (let i = 0; i < 7; i += 1) {
+          const first = addDays(monday, i);
+          if (first > today) break;
+          for (const item of await backend.query(`COHORT#${first}`)) {
+            if (item.legacy === true) continue;
+            size += 1;
+            if (item.signedIn === true) signedIn += 1;
+            const m = typeof item.m === 'object' && item.m !== null ? (item.m as Record<string, unknown>) : {};
+            for (const name of MILESTONES) if (m[name] !== undefined) reached[name] = (reached[name] ?? 0) + 1;
+            const daysAround = strings(item.days);
+            // A window counts only once it has fully passed, so a figure never looks worse for being unfinished.
+            const within = (target: { eligible: number; returned: number }, last: number): void => {
+              if (addDays(first, last) >= today) return;
+              target.eligible += 1;
+              if (daysAround.some((d) => d > first && d <= addDays(first, last))) target.returned += 1;
+            };
+            if (addDays(first, 1) < today) {
+              d1.eligible += 1;
+              if (daysAround.includes(addDays(first, 1))) d1.returned += 1;
+            }
+            within(d7, 7);
+            within(d30, 30);
+          }
+        }
+        out.push({ week: monday, size, signedIn, milestones: reached, d1, d7, d30 });
+      }
+      return out;
     },
 
     async accounts(limit) {

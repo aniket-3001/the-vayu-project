@@ -7,13 +7,20 @@ export type Kind =
   | 'bluetooth'
   | 'error'
   | 'api'
-  | 'active';
+  | 'active'
+  | 'context';
+
+/** The AQI bands, best to worst; the same six the API knows (`apps/api/src/analyticsModel.ts`). */
+export const BANDS = ['good', 'moderate', 'sensitive', 'unhealthy', 'very_bad', 'hazardous'] as const;
+export type Band = (typeof BANDS)[number];
 
 export interface AnalyticsEvent {
   readonly kind: Kind;
   readonly detail: string;
   readonly n: number;
   readonly at: string;
+  /** The AQI band of the place the person was last looking at, when one had loaded. */
+  readonly band?: Band;
 }
 
 export interface DeviceInfo {

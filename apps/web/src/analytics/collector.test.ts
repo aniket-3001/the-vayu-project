@@ -76,3 +76,40 @@ describe('collector', () => {
     expect(all[0]?.n).toBe(51);
   });
 });
+
+describe('the air band on events', () => {
+  const band = (current: 'hazardous' | undefined): ReturnType<typeof createCollector> => {
+    const sent: Batch[] = [];
+    const collector = createCollector({
+      send: (b) => {
+        sent.push(b);
+        return Promise.resolve(true);
+      },
+      deviceId: () => 'dev-12345678',
+      sessionId: 'ses-12345678',
+      device: () => device,
+      now: () => '2026-10-26T10:00:00.000Z',
+      band: () => current,
+    });
+    (collector as unknown as { sent: Batch[] }).sent = sent;
+    return collector;
+  };
+  const sentOf = (c: ReturnType<typeof createCollector>): Batch[] => (c as unknown as { sent: Batch[] }).sent;
+
+  it('notes the band on what happens, but not on the note that a band was seen', async () => {
+    const c = band('hazardous');
+    c.track('feature', 'search');
+    c.track('context', 'hazardous');
+    await c.flush();
+    const [feature, context] = sentOf(c)[0]?.events ?? [];
+    expect(feature?.band).toBe('hazardous');
+    expect(context).not.toHaveProperty('band');
+  });
+
+  it('leaves the band off until some air has loaded', async () => {
+    const c = band(undefined);
+    c.track('screen', 'myair');
+    await c.flush();
+    expect(sentOf(c)[0]?.events[0]).not.toHaveProperty('band');
+  });
+});

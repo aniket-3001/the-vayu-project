@@ -3,6 +3,7 @@ import { loadSession } from '../account/session';
 import { createCollector, type Collector } from './collector';
 import { deviceId, deviceInfo } from './device';
 import type { Batch, Kind } from './types';
+import { createAirNote } from './band';
 
 const FLUSH_EVERY_MS = 30_000;
 const FLUSH_AT = 20;
@@ -34,6 +35,9 @@ async function send(batch: Batch): Promise<boolean> {
 }
 
 let collector: Collector | undefined;
+const air = createAirNote((band) => {
+  collector?.track('context', band);
+});
 let queued = 0;
 let visibleSince = Date.now();
 
@@ -46,6 +50,7 @@ export function startAnalytics(): void {
     sessionId: crypto.randomUUID(),
     device: () => deviceInfo(),
     now: () => new Date().toISOString(),
+    band: () => air.current(),
   });
   collector = made;
   made.track('session_start');
@@ -61,6 +66,18 @@ export function startAnalytics(): void {
     if (document.visibilityState === 'hidden') flush(true);
     else visibleSince = Date.now();
   });
+}
+
+/**
+ * Tells analytics what the air is like where the person is looking. From then on each event carries the band, and the
+ * first time a session sees a band that is said once. Safe to call as often as the air refreshes.
+ */
+export function noteAir(aqi: number | undefined): void {
+  try {
+    air.note(aqi);
+  } catch {
+    // Counting must never break the app.
+  }
 }
 
 /** Notes that something happened. Safe to call anywhere: it never throws and does nothing until analytics starts. */

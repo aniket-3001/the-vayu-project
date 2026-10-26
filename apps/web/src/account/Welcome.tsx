@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { track } from '../analytics';
 import { AuthError, type CognitoClient } from './cognito';
 import type { Session } from './session';
@@ -41,6 +41,19 @@ export function Welcome({
   const [note, setNote] = useState<string | undefined>(undefined);
   const [busy, setBusy] = useState(false);
 
+  // The sign-in funnel: this screen shown (once, even where React runs effects twice), then each form opened.
+  const counted = useRef(false);
+  useEffect(() => {
+    if (counted.current) return;
+    counted.current = true;
+    track('screen', 'welcome');
+  }, []);
+  useEffect(() => {
+    if (view === 'signin') track('feature', 'welcome_signin_start');
+    else if (view === 'signup') track('feature', 'welcome_signup_start');
+    else if (view === 'confirm') track('feature', 'welcome_code_step');
+  }, [view]);
+
   const go = (next: View): void => {
     setView(next);
     setProblem(undefined);
@@ -62,13 +75,17 @@ export function Welcome({
           error instanceof AuthError
             ? error
             : new AuthError('failed', 'Something went wrong. Try again in a moment.');
-        if (onError?.(failure) !== true) setProblem(failure.message);
+        if (onError?.(failure) !== true) {
+          track('feature', 'welcome_failed');
+          setProblem(failure.message);
+        }
       },
     );
   };
 
   const signIn = async (): Promise<void> => {
     const tokens = await client.signIn(email.trim(), password);
+    track('feature', 'welcome_signed_in');
     onSignedIn({ email: email.trim(), tokens });
   };
 
@@ -229,6 +246,7 @@ export function Welcome({
             event.preventDefault();
             run(async () => {
               await client.confirmSignUp(email.trim(), code.trim());
+              track('feature', 'welcome_confirmed');
               await signIn();
             });
           }}
@@ -312,7 +330,14 @@ export function Welcome({
       <div className="welcome-guest">
         {onGuest !== undefined && (
           <div className="welcome-option">
-            <button type="button" className="plain guest" onClick={onGuest}>
+            <button
+              type="button"
+              className="plain guest"
+              onClick={() => {
+                track('feature', 'welcome_guest');
+                onGuest();
+              }}
+            >
               Continue as guest
             </button>
             <p className="muted small">

@@ -9,6 +9,8 @@ const PATHS = [
   '/v1/admin/whoami',
   '/v1/admin/summary',
   '/v1/admin/groups?by=platform',
+  '/v1/admin/groups?by=band',
+  '/v1/admin/journey',
   '/v1/admin/users',
   '/v1/admin/users/u1',
   '/v1/admin/errors',

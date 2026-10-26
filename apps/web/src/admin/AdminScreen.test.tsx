@@ -5,7 +5,7 @@ import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { App } from '../App';
 import { AdminScreen } from './AdminScreen';
-import { createAdminApi, type AdminApi, type DaySummary } from './adminApi';
+import { createAdminApi, type AdminApi, type DaySummary, type JourneyCohort } from './adminApi';
 
 afterEach(cleanup);
 
@@ -18,9 +18,21 @@ const day = (n: number): DaySummary => ({
   features: { 'feature:search': 3 },
 });
 
+const cohort = (over: Partial<JourneyCohort> = {}): JourneyCohort => ({
+  week: '2026-10-26',
+  size: 13,
+  signedIn: 4,
+  milestones: { first_place: 5, first_search: 9 },
+  d1: { eligible: 13, returned: 5 },
+  d7: { eligible: 0, returned: 0 },
+  d30: { eligible: 0, returned: 0 },
+  ...over,
+});
+
 const stub = (over: Partial<AdminApi> = {}): AdminApi => ({
   whoami: () => Promise.resolve(),
   summary: () => Promise.resolve([day(1), day(2)]),
+  journey: vi.fn(() => Promise.resolve([cohort(), cohort({ week: '2026-10-19', size: 0, d1: { eligible: 0, returned: 0 } })])),
   groups: vi.fn(() =>
     Promise.resolve([{ value: 'android', sessions: 4, users: 2, activeSeconds: 240, errors: 1, features: {} }]),
   ),
@@ -90,6 +102,61 @@ describe('admin panel', () => {
     await waitFor(() => {
       expect(api.groups).toHaveBeenCalledWith('region', 14);
     });
+  });
+
+  it('shows who comes back with the counts behind each figure, and a dash until a window has passed', async () => {
+    mount(stub());
+    await userEvent.click(await screen.findByRole('button', { name: 'Journey' }));
+    expect(await screen.findByText('38% (5 of 13)')).toBeInTheDocument();
+    // Seven days have not passed for anyone yet: no figure, not a zero.
+    expect(screen.getAllByText('—').length).toBeGreaterThan(0);
+    expect(screen.getByText('5 (38%)')).toBeInTheDocument(); // added a place
+    expect(screen.getByText('9 (69%)')).toBeInTheDocument(); // searched
+  });
+
+  it('lays the sign-in funnel out in order, as a share of the welcome screens shown', async () => {
+    const funnelDay = (): DaySummary => ({
+      ...day(1),
+      features: {
+        'screen:welcome': 40,
+        'feature:welcome_signin_start': 10,
+        'feature:welcome_signup_start': 8,
+        'feature:welcome_code_step': 6,
+        'feature:welcome_signed_in': 5,
+        'feature:welcome_guest': 3,
+        'feature:recorded_days': 12,
+        'feature:welcome_failed': 2,
+      },
+    });
+    mount(stub({ summary: () => Promise.resolve([funnelDay()]) }));
+    await userEvent.click(await screen.findByRole('button', { name: 'Journey' }));
+    const funnel = await screen.findByRole('region', { name: 'Sign-in funnel' });
+    expect(funnel.textContent).toContain('Welcome screen shown 40');
+    expect(funnel.textContent).toContain('Signed in 5 · 13% of shown');
+    expect(funnel.textContent).toContain('Opened the recorded days 12');
+    expect(funnel.textContent).toContain('A step failed 2');
+  });
+
+  it('puts the AQI bands in order, best air first, and explains what the columns mean', async () => {
+    const api = stub({
+      groups: vi.fn(() =>
+        Promise.resolve([
+          { value: 'hazardous', sessions: 2, users: 0, activeSeconds: 120, errors: 0, features: { 'feature:search': 6 } },
+          { value: 'good', sessions: 5, users: 0, activeSeconds: 60, errors: 0, features: { 'feature:search': 5 } },
+        ]),
+      ),
+    });
+    mount(api);
+    await userEvent.click(await screen.findByRole('button', { name: 'Groups' }));
+    await userEvent.click(await screen.findByRole('button', { name: 'AQI band' }));
+    await waitFor(() => {
+      expect(api.groups).toHaveBeenCalledWith('band', 14);
+    });
+    const rows = await screen.findAllByRole('row');
+    expect(rows[1]?.textContent).toContain('good');
+    expect(rows[2]?.textContent).toContain('hazardous');
+    expect(rows[2]?.textContent).toContain('3.0'); // 6 features over 2 sessions
+    expect(screen.getByText(/Sessions are the sessions that saw that band/u)).toBeInTheDocument();
   });
 
   it('opens one account and shows its timeline, newest first', async () => {

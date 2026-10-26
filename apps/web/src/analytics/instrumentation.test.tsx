@@ -8,7 +8,7 @@ import { browserLocate } from '../places/locate';
 import { App } from '../App';
 
 const { track } = vi.hoisted(() => ({ track: vi.fn() }));
-vi.mock('./index', () => ({ track, startAnalytics: () => undefined }));
+vi.mock('./index', () => ({ track, noteAir: () => undefined, startAnalytics: () => undefined }));
 
 beforeEach(() => {
   track.mockReset();

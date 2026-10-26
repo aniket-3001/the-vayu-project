@@ -1,4 +1,4 @@
-import type { AnalyticsEvent, Batch, DeviceInfo, Kind } from './types';
+import type { AnalyticsEvent, Band, Batch, DeviceInfo, Kind } from './types';
 
 export interface Collector {
   /** Notes that something happened. Never throws and never waits. */
@@ -14,6 +14,8 @@ export interface CollectorOptions {
   readonly sessionId: string;
   readonly device: () => DeviceInfo;
   readonly now: () => string;
+  /** The AQI band showing right now, if any: noted on each event, so activity can be told apart by how the air was. */
+  readonly band?: () => Band | undefined;
   /** The most events kept while waiting; the oldest go first. */
   readonly maxQueue?: number;
   readonly batchSize?: number;
@@ -32,7 +34,11 @@ export function createCollector(options: CollectorOptions): Collector {
 
   const track = (kind: Kind, detail = '', n = 1): void => {
     try {
-      queue.push({ event: { kind, detail, n, at: options.now() }, tries: 0 });
+      const band = kind === 'context' ? undefined : options.band?.();
+      queue.push({
+        event: { kind, detail, n, at: options.now(), ...(band === undefined ? {} : { band }) },
+        tries: 0,
+      });
       if (queue.length > maxQueue) queue = queue.slice(queue.length - maxQueue);
     } catch {
       // Nothing to do: the event is lost, the app carries on.

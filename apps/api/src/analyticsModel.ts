@@ -7,17 +7,56 @@ export const KINDS = [
   'error',
   'api',
   'active',
+  'context',
 ] as const;
 export type Kind = (typeof KINDS)[number];
 
-export const DIMENSIONS = ['all', 'platform', 'version', 'region', 'auth', 'visitor'] as const;
+/** The AQI bands, best to worst: the same six as the app's air levels. */
+export const BANDS = ['good', 'moderate', 'sensitive', 'unhealthy', 'very_bad', 'hazardous'] as const;
+export type Band = (typeof BANDS)[number];
+
+/** The ways a day's figures can be split. `band` is special: see `AnalyticsStore.groups`. */
+export const DIMENSIONS = ['all', 'platform', 'version', 'region', 'auth', 'visitor', 'band'] as const;
 export type Dimension = (typeof DIMENSIONS)[number];
+/** The ones taken from the device and the visit, so they apply to every event in a batch alike. */
+export const BATCH_DIMENSIONS = DIMENSIONS.filter((d): d is Exclude<Dimension, 'band'> => d !== 'band');
+
+/** The first times worth knowing about, in the order the panel shows them. */
+export const MILESTONES = [
+  'first_place',
+  'first_search',
+  'first_detect',
+  'first_lens',
+  'first_exposure',
+  'first_map',
+  'first_assistant',
+  'first_unit',
+  'first_signed_in',
+] as const;
+export type Milestone = (typeof MILESTONES)[number];
+
+/** The milestone an event reaches, if any. Signing in is not an event: the server knows it from who sent the batch. */
+export function milestoneOf(kind: Kind, detail: string): Milestone | undefined {
+  if (kind === 'feature') {
+    if (detail === 'add_place') return 'first_place';
+    if (detail === 'search') return 'first_search';
+    if (detail === 'detect_location') return 'first_detect';
+    if (detail === 'air_lens') return 'first_lens';
+    if (detail === 'exposure') return 'first_exposure';
+    if (detail === 'assistant') return 'first_assistant';
+  }
+  if (kind === 'screen' && detail === 'map') return 'first_map';
+  if (kind === 'bluetooth' && detail === 'connect:ok') return 'first_unit';
+  return undefined;
+}
 
 export interface AnalyticsEvent {
   readonly kind: Kind;
   readonly detail: string;
   readonly n: number;
   readonly at: string;
+  /** The AQI band of the place the person was looking at, when known. */
+  readonly band?: Band;
 }
 export interface DeviceInfo {
   readonly platform: 'web' | 'android' | 'ios';
@@ -40,9 +79,9 @@ const MAX_COUNT = 3600;
 
 /** The only details an event of that kind may carry; anything else is refused, so counters cannot grow without bound. */
 export const ALLOWED: Readonly<
-  Record<'screen' | 'feature' | 'permission' | 'bluetooth', readonly string[]>
+  Record<'screen' | 'feature' | 'permission' | 'bluetooth' | 'context', readonly string[]>
 > = {
-  screen: ['myair', 'place', 'account', 'exposure', 'map', 'lens', 'room', 'week', 'admin'],
+  screen: ['myair', 'place', 'account', 'exposure', 'map', 'lens', 'room', 'week', 'admin', 'welcome'],
   feature: [
     'detect_location',
     'add_place',
@@ -53,9 +92,19 @@ export const ALLOWED: Readonly<
     'map_layer',
     'recorded_days',
     'bluetooth_connect',
+    // The welcome screen's steps, in order: opened a form, reached the email code, confirmed, signed in; or a way round it.
+    'welcome_signin_start',
+    'welcome_signup_start',
+    'welcome_code_step',
+    'welcome_confirmed',
+    'welcome_signed_in',
+    'welcome_guest',
+    'welcome_failed',
   ],
   permission: ['location:granted', 'location:denied'],
   bluetooth: ['connect:ok', 'connect:fail'],
+  // A session saw the air in this band (once per session per band).
+  context: BANDS,
 };
 
 export type Parsed =
@@ -73,11 +122,11 @@ const isRecord = (x: unknown): x is Record<string, unknown> =>
 
 function parseEvent(raw: unknown): AnalyticsEvent | undefined {
   if (!isRecord(raw)) return undefined;
-  const { kind, detail, n, at } = raw;
+  const { kind, detail, n, at, band } = raw;
   if (typeof kind !== 'string' || !(KINDS as readonly string[]).includes(kind)) return undefined;
   const k = kind as Kind;
   let text = typeof detail === 'string' ? detail : '';
-  if (k === 'screen' || k === 'feature' || k === 'permission' || k === 'bluetooth') {
+  if (k === 'screen' || k === 'feature' || k === 'permission' || k === 'bluetooth' || k === 'context') {
     if (!ALLOWED[k].includes(text)) return undefined;
   } else if (k === 'error' || k === 'api') {
     text = text
@@ -90,7 +139,15 @@ function parseEvent(raw: unknown): AnalyticsEvent | undefined {
   if (typeof count !== 'number' || !Number.isInteger(count) || count < 1 || count > MAX_COUNT)
     return undefined;
   if (typeof at !== 'string' || Number.isNaN(Date.parse(at))) return undefined;
-  return { kind: k, detail: text, n: count, at: new Date(at).toISOString() };
+  // An unknown band is dropped rather than refused, so an app a step ahead of this server still gets counted.
+  const knownBand = (BANDS as readonly unknown[]).includes(band) ? (band as Band) : undefined;
+  return {
+    kind: k,
+    detail: text,
+    n: count,
+    at: new Date(at).toISOString(),
+    ...(knownBand === undefined ? {} : { band: knownBand }),
+  };
 }
 
 /** Checks a batch the app sent. Unknown fields (including any claim about who the person is) are dropped, never kept. */
