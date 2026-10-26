@@ -15,7 +15,6 @@
     "@dnd-kit/sortable": "^8.0.0",
     "@dnd-kit/utilities": "^3.2.2",
     "@fontsource-variable/hanken-grotesk": "^5.3.0",
-    "@fontsource/instrument-serif": "^5.3.0",
     "@vayu/contracts": "*",
     "@vayu/core": "*",
     "@vayu/unit": "*",

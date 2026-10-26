@@ -7,7 +7,8 @@
     "build:web": "node scripts/build-web.mjs",
     "sync": "npm run build:web && cap sync",
     "typecheck": "tsc -p .",
-    "assets": "node scripts/make-assets.mjs && capacitor-assets generate --android --ios --assetPath assets --iconBackgroundColor #F4F6F8 --iconBackgroundColorDark #101820 --splashBackgroundColor #F4F6F8 --splashBackgroundColorDark #101820"
+    "assets": "node scripts/make-assets.mjs && capacitor-assets generate --android --ios --assetPath assets --iconBackgroundColor #F4F6F8 --iconBackgroundColorDark #101820 --splashBackgroundColor #F4F6F8 --splashBackgroundColorDark #101820 && node scripts/shrink-art.mjs",
+    "shrink-art": "node scripts/shrink-art.mjs"
   },
   "devDependencies": {
     "@capacitor/assets": "^3.0.5",

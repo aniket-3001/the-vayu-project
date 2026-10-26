@@ -16,6 +16,11 @@ android {
             ignoreAssetsPattern = '!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~'
         }
     }
+    androidResources {
+        // The app's own words live in the web app. The Android libraries ship translations into dozens of languages that
+        // nothing here uses; keeping English and Hindi leaves the app's strings table a fraction of its size.
+        localeFilters += ['en', 'hi']
+    }
     buildTypes {
         release {
             minifyEnabled false
