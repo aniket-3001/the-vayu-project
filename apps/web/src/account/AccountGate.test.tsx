@@ -23,10 +23,11 @@ interface World {
   saved: { profile: Record<string, string>; updatedAt: string } | null;
   cognitoReplies: Record<string, { ok: boolean; body?: unknown }>;
   authConfig: unknown;
+  adminOk: boolean;
 }
 
 const world = (): { w: World; fetchImpl: typeof fetch } => {
-  const w: World = { cognito: [], api: [], saved: null, cognitoReplies: {}, authConfig: CONFIG };
+  const w: World = { cognito: [], api: [], saved: null, cognitoReplies: {}, authConfig: CONFIG, adminOk: false };
   const fetchImpl = ((url: string, init?: RequestInit) => {
     const json = (ok: boolean, body: unknown): Promise<Response> =>
       Promise.resolve({
@@ -57,6 +58,7 @@ const world = (): { w: World; fetchImpl: typeof fetch } => {
       w.saved = null;
       return json(true, { deleted: true });
     }
+    if (url.endsWith('/v1/admin/whoami')) return json(w.adminOk, {});
     return json(false, {});
   }) as typeof fetch;
   return { w, fetchImpl };
@@ -361,5 +363,51 @@ describe('where the device has been', () => {
     );
     expect(window.localStorage.getItem('vayu.liveLocation.v1')).toBeNull();
     expect(window.localStorage.getItem('vayu.live.v1')).toBeNull();
+  });
+});
+
+describe('the way into the admin panel, and which build this is', () => {
+  const signedIn = async (adminOk: boolean): Promise<ReturnType<typeof vi.fn>> => {
+    const { w, fetchImpl } = world();
+    w.cognitoReplies.InitiateAuth = { ok: true, body: TOKENS };
+    w.adminOk = adminOk;
+    const spy = vi.fn(fetchImpl);
+    open(spy);
+    await userEvent.click(await screen.findByRole('button', { name: 'Sign in' }));
+    await userEvent.type(screen.getByLabelText('Email'), 'asha@example.org');
+    await userEvent.type(screen.getByLabelText('Password'), 'secret123');
+    await userEvent.click(screen.getByRole('button', { name: 'Sign in' }));
+    await screen.findByText('in as asha@example.org');
+    return spy;
+  };
+  const askedIfAdmin = (spy: ReturnType<typeof vi.fn>): boolean =>
+    spy.mock.calls.some((c) => String(c[0]).endsWith('/v1/admin/whoami'));
+
+  it('shows an admin a link to the panel, because the server said so', async () => {
+    await signedIn(true);
+    expect(await screen.findByRole('link', { name: 'Open the admin panel' })).toHaveAttribute('href', '/admin');
+  });
+
+  it('shows no link to anyone the server does not call an admin', async () => {
+    const spy = await signedIn(false);
+    await vi.waitFor(() => {
+      expect(askedIfAdmin(spy)).toBe(true);
+    });
+    expect(screen.queryByRole('link', { name: 'Open the admin panel' })).not.toBeInTheDocument();
+  });
+
+  it('never asks, and shows nothing, where no one is signed in', async () => {
+    const { w, fetchImpl } = world();
+    w.authConfig = { enabled: false };
+    const spy = vi.fn(fetchImpl);
+    open(spy);
+    await screen.findByText('no accounts');
+    expect(askedIfAdmin(spy)).toBe(false);
+    expect(screen.queryByRole('link', { name: 'Open the admin panel' })).not.toBeInTheDocument();
+  });
+
+  it('says which build is running', async () => {
+    await signedIn(false);
+    expect(await screen.findByText(/^Vayu \d+\.\d+\.\d+/u)).toBeInTheDocument();
   });
 });

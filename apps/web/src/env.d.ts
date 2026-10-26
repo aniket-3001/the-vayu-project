@@ -11,6 +11,9 @@ interface ImportMetaEnv {
   readonly DEV: boolean;
 }
 
+/** Set by vite.config.ts at build time; not defined where the app runs without Vite (some tests). */
+declare const __BUILD__: { readonly commit: string; readonly date: string } | undefined;
+
 interface ImportMeta {
   readonly env: ImportMetaEnv;
 }

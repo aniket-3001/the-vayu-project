@@ -1,6 +1,7 @@
 import { ChevronLeft } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { buildLabel } from '../build';
 import { clock12 } from '../today/time';
 import { chooseTheme, loadChoice, type ThemeChoice } from '../theme/theme';
 import { useAccount } from './AccountContext';
@@ -32,6 +33,36 @@ function Appearance(): React.JSX.Element {
           </button>
         ))}
       </div>
+    </section>
+  );
+}
+
+/**
+ * A way into the admin panel, shown only once the server says this person is an admin. The phone app has no address
+ * bar to type `/#/admin` into, and nobody else is ever shown it (the server refuses them anyway).
+ */
+function AdminLink(): React.JSX.Element | null {
+  const { isAdmin, email } = useAccount();
+  const ask = useRef(isAdmin);
+  ask.current = isAdmin;
+  const [admin, setAdmin] = useState(false);
+  useEffect(() => {
+    let current = true;
+    setAdmin(false);
+    void ask.current?.().then((yes) => {
+      if (current) setAdmin(yes);
+    });
+    return () => {
+      current = false;
+    };
+  }, [email]);
+  if (!admin) return null;
+  return (
+    <section className="card account-card" aria-label="Admin">
+      <p>Admin</p>
+      <Link to="/admin" className="primary-link">
+        Open the admin panel
+      </Link>
     </section>
   );
 }
@@ -153,7 +184,9 @@ export function AccountScreen(): React.JSX.Element {
             </div>
           </section>
         )}
+        <AdminLink />
         <Appearance />
+        <p className="muted small build-note">{buildLabel()}</p>
       </main>
     </div>
   );

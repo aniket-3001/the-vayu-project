@@ -18,6 +18,8 @@ export interface AccountState {
   readonly status: SyncStatus;
   /** A sign-in token that works now, for calls that need to say who is asking. Absent when no one is signed in. */
   readonly idToken?: () => Promise<string>;
+  /** Asks the server whether this person is an admin. The answer is the server's; false on any doubt or failure. */
+  readonly isAdmin?: () => Promise<boolean>;
   readonly signOut: () => Promise<void>;
   /** Deletes what the account saved, then the account itself. */
   readonly deleteAccount: () => Promise<void>;
@@ -185,6 +187,16 @@ export function AccountGate({
       leaveGuest: () => undefined,
       email: session.email,
       idToken: () => freshIdToken(client, storage),
+      isAdmin: async () => {
+        try {
+          const res = await fetchImpl(`${apiUrl.replace(/\/$/u, '')}/v1/admin/whoami`, {
+            headers: { authorization: `Bearer ${await freshIdToken(client, storage)}` },
+          });
+          return res.ok;
+        } catch {
+          return false;
+        }
+      },
       status,
       signOut: async () => {
         await syncRef.current?.flush();
