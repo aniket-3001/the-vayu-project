@@ -201,6 +201,16 @@ function userIdOf(event: APIGatewayProxyEventV2): string | undefined {
   return typeof sub === 'string' && sub !== '' ? sub : undefined;
 }
 
+/** The signed-in person's email and whether it is verified, from the claims API Gateway verified. */
+function emailOf(event: APIGatewayProxyEventV2): { email?: string; emailVerified?: boolean } {
+  const claims = (
+    event.requestContext as { authorizer?: { jwt?: { claims?: Record<string, unknown> } } }
+  ).authorizer?.jwt?.claims;
+  const email = claims?.email;
+  if (typeof email !== 'string' || email === '') return {};
+  return { email, emailVerified: claims?.email_verified === 'true' || claims?.email_verified === true };
+}
+
 /** The thin AWS adapter around the router. */
 export async function handler(event: APIGatewayProxyEventV2): Promise<APIGatewayProxyResultV2> {
   const route = await buildRoute();
@@ -213,6 +223,7 @@ export async function handler(event: APIGatewayProxyEventV2): Promise<APIGateway
     sourceIp: clientAddress(event.headers, event.requestContext.http.sourceIp),
     // Set only by API Gateway's JWT authorizer, on the routes that have one.
     ...(userId === undefined ? {} : { userId }),
+    ...(userId === undefined ? {} : emailOf(event)),
     ...(event.body === undefined ? {} : { body: event.body }),
   };
   const response = await route(request);

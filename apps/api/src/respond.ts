@@ -8,6 +8,9 @@ export interface ApiRequest {
   readonly sourceIp?: string;
   /** Who is signed in, when API Gateway's JWT authorizer checked a token for this route. Never taken from the request. */
   readonly userId?: string;
+  /** The signed-in person's email and whether the sign-in service verified it, from the same checked token. */
+  readonly email?: string;
+  readonly emailVerified?: boolean;
 }
 
 export interface ApiResponse {
