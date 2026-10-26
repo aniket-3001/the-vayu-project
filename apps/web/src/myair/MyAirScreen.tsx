@@ -1,6 +1,7 @@
 import { CalendarDays, ExternalLink, Plus, UserRound } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
+import { track } from '../analytics';
 import { useAccount } from '../account/AccountContext';
 import { useTodays } from '../air/store';
 import { usePins } from '../places/usePins';
@@ -142,6 +143,7 @@ export function MyAirScreen({ search, locate, address }: Props): React.JSX.Eleme
               {...(isNative() ? {} : { target: '_blank', rel: 'noopener' })}
               className="demo-button"
               onClick={(event) => {
+                track('feature', 'recorded_days');
                 if (!isNative()) return;
                 // An app has no tabs: go to the recorded days here (the bar there has a way back).
                 event.preventDefault();

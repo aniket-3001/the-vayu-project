@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { track } from '../analytics';
 import { AuthError, type CognitoClient } from './cognito';
 import type { Session } from './session';
 
@@ -6,6 +7,8 @@ type View = 'start' | 'signin' | 'signup' | 'confirm' | 'forgot' | 'reset';
 
 /** The recorded days start from their own address, so they are reached by loading the page there. */
 const tryWithoutLogin = (): void => {
+  // Counted here, on the page that is leaving: the recorded days themselves send nothing.
+  track('feature', 'recorded_days');
   window.location.hash = '#/week';
   window.location.reload();
 };
