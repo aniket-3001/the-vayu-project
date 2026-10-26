@@ -7099,6 +7099,12 @@ table.hourly .row-label {
   gap: 2px 8px;
   align-items: center;
 }
+.admin-bars li > :first-child {
+  grid-area: day;
+}
+.admin-bars li > :last-child {
+  grid-area: text;
+}
 .admin-bar {
   grid-area: bar;
   height: 10px;

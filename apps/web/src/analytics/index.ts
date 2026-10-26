@@ -49,16 +49,16 @@ export function startAnalytics(): void {
   });
   collector = made;
   made.track('session_start');
-  const flush = (): void => {
+  const flush = (wasVisible = document.visibilityState === 'visible'): void => {
     const seconds = Math.round((Date.now() - visibleSince) / 1000);
-    if (document.visibilityState === 'visible' && seconds >= 1) made.track('active', '', Math.min(seconds, 3600));
+    if (wasVisible && seconds >= 1) made.track('active', '', Math.min(seconds, 3600));
     visibleSince = Date.now();
     queued = 0;
     void made.flush();
   };
-  setInterval(flush, FLUSH_EVERY_MS);
+  setInterval(() => { flush(); }, FLUSH_EVERY_MS);
   document.addEventListener('visibilitychange', () => {
-    if (document.visibilityState === 'hidden') flush();
+    if (document.visibilityState === 'hidden') flush(true);
     else visibleSince = Date.now();
   });
 }
