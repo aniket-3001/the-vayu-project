@@ -7061,3 +7061,63 @@ table.hourly .row-label {
 .search-status > p {
   margin: 8px 4px 0;
 }
+
+/* Admin panel (the two owners only) */
+
+.admin .segmented {
+  flex-wrap: wrap;
+  max-width: 100%;
+}
+.admin-stats dl {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin: 0;
+}
+.admin-stats dt {
+  color: var(--muted);
+  font-size: 13px;
+}
+.admin-stats dd {
+  margin: 0;
+  font-size: 26px;
+  font-weight: 700;
+}
+.admin-bars,
+.admin-list,
+.admin-timeline {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 8px;
+}
+.admin-bars li {
+  display: grid;
+  grid-template-columns: 44px minmax(0, 1fr);
+  grid-template-areas: 'day bar' '. text';
+  gap: 2px 8px;
+  align-items: center;
+}
+.admin-bar {
+  grid-area: bar;
+  height: 10px;
+  min-width: 2px;
+  border-radius: 999px;
+  background: var(--text);
+}
+.admin-scroll {
+  overflow-x: auto;
+}
+.admin-table {
+  border-collapse: collapse;
+  width: 100%;
+  font-size: 14px;
+}
+.admin-table th,
+.admin-table td {
+  text-align: left;
+  padding: 8px 10px 8px 0;
+  border-bottom: 1px solid var(--line);
+  white-space: nowrap;
+}

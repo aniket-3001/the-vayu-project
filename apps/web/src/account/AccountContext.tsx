@@ -16,6 +16,8 @@ export interface AccountState {
   /** Ends the guest visit and shows the welcome screen, to sign in or create an account. */
   readonly leaveGuest: () => void;
   readonly status: SyncStatus;
+  /** A sign-in token that works now, for calls that need to say who is asking. Absent when no one is signed in. */
+  readonly idToken?: () => Promise<string>;
   readonly signOut: () => Promise<void>;
   /** Deletes what the account saved, then the account itself. */
   readonly deleteAccount: () => Promise<void>;
@@ -182,6 +184,7 @@ export function AccountGate({
       guest: false,
       leaveGuest: () => undefined,
       email: session.email,
+      idToken: () => freshIdToken(client, storage),
       status,
       signOut: async () => {
         await syncRef.current?.flush();

@@ -1,5 +1,5 @@
 import { ChevronLeft } from 'lucide-react';
-import { useEffect } from 'react';
+import { lazy, Suspense, useEffect } from 'react';
 import { HashRouter, Link, Route, Routes, useLocation, useParams } from 'react-router-dom';
 import { track } from './analytics';
 import { AccountScreen } from './account/AccountScreen';
@@ -73,6 +73,9 @@ function PlaceRoute(): React.JSX.Element {
 }
 
 /** The frame around every screen: the pinned bar, the screen, the tab bar and the assistant that stays put. */
+// A separate chunk, so the page everyone downloads carries none of the admin screen.
+const AdminScreen = lazy(() => import('./admin/AdminScreen').then((m) => ({ default: m.AdminScreen })));
+
 /** The screens whose visits are counted; any other address is not. */
 const SCREENS = new Set(['myair', 'place', 'account', 'exposure', 'map', 'lens', 'room', 'week', 'admin']);
 
@@ -94,10 +97,18 @@ function Frame(): React.JSX.Element {
         <Route path="/exposure" element={<ExposureScreen />} />
         <Route path="/map" element={<MapScreen />} />
         <Route path="/lens" element={<LensScreen />} />
+        <Route
+          path="/admin"
+          element={
+            <Suspense fallback={null}>
+              <AdminScreen />
+            </Suspense>
+          }
+        />
         <Route path="/room" element={<RoomScreen />} />
         <Route path="*" element={<MyAirScreen />} />
       </Routes>
-      {route !== 'map' && route !== 'lens' && (
+      {route !== 'map' && route !== 'lens' && route !== 'admin' && (
         <div className="dock">
           <DockButtons />
         </div>
