@@ -67,6 +67,22 @@ export class Accounts extends Construct {
       integration,
       authorizer,
     });
+    // The same sign-in check guards the signed-in usage events and the admin statistics. Who counts as an admin is
+    // decided in the function, from the verified email and a list given at deploy time; this only requires a sign-in.
+    this.routes.push(
+      ...props.api.addRoutes({
+        path: '/v1/me/events',
+        methods: [HttpMethod.POST],
+        integration,
+        authorizer,
+      }),
+      ...props.api.addRoutes({
+        path: '/v1/admin/{proxy+}',
+        methods: [HttpMethod.GET],
+        integration,
+        authorizer,
+      }),
+    );
 
     // The API may tell the app which pool to use: these two ids are public, not secrets.
     props.apiFunction.addEnvironment('USER_POOL_ID', this.userPool.userPoolId);

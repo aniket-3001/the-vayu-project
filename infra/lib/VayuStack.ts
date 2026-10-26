@@ -122,6 +122,8 @@ export class VayuStack extends Stack {
         CACHE_TABLE: cache.tableName,
         ROOMS_TABLE: rooms.tableName,
         WATCH_TABLE: watch.tableName,
+        // Who may open the admin statistics: a comma-separated list given at deploy time (`-c adminEmails=...`). Empty means nobody.
+        ADMIN_EMAILS: String(this.node.tryGetContext('adminEmails') ?? ''),
         DATA_BUCKET: dataBucket.bucketName,
         TELEGRAM_BOT_TOKEN_ARN: telegramBotToken.secretArn,
         TELEGRAM_WEBHOOK_SECRET_ARN: telegramWebhookSecret.secretArn,
@@ -201,7 +203,7 @@ export class VayuStack extends Stack {
     });
     // The routes that cost something or take a person's words get their own, tighter, throttle below.
     const limitedRoutes = [];
-    for (const path of ['/v1/assistant', '/v1/speech', '/v1/requests', '/v1/fire-reports']) {
+    for (const path of ['/v1/assistant', '/v1/speech', '/v1/requests', '/v1/fire-reports', '/v1/events']) {
       limitedRoutes.push(
         ...api.addRoutes({
           path,
@@ -237,7 +239,10 @@ export class VayuStack extends Stack {
       'POST /v1/speech': { ThrottlingRateLimit: 3, ThrottlingBurstLimit: 6 },
       'POST /v1/requests': { ThrottlingRateLimit: 1, ThrottlingBurstLimit: 3 },
       'POST /v1/fire-reports': { ThrottlingRateLimit: 1, ThrottlingBurstLimit: 3 },
-      'GET /v1/me': { ThrottlingRateLimit: 3, ThrottlingBurstLimit: 6 },
+      'POST /v1/events': { ThrottlingRateLimit: 5, ThrottlingBurstLimit: 10 },
+    'POST /v1/me/events': { ThrottlingRateLimit: 3, ThrottlingBurstLimit: 6 },
+    'GET /v1/admin/{proxy+}': { ThrottlingRateLimit: 3, ThrottlingBurstLimit: 6 },
+    'GET /v1/me': { ThrottlingRateLimit: 3, ThrottlingBurstLimit: 6 },
       'PUT /v1/me': { ThrottlingRateLimit: 2, ThrottlingBurstLimit: 4 },
       'DELETE /v1/me': { ThrottlingRateLimit: 1, ThrottlingBurstLimit: 2 },
     };

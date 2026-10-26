@@ -289,7 +289,7 @@ describe('the public site', () => {
       }[];
     };
     // Two behaviors: /v1/me, a person's own data (never cached, token passed through), and the rest of /v1.
-    expect(config.CacheBehaviors).toHaveLength(2);
+    expect(config.CacheBehaviors).toHaveLength(4);
     const rest = config.CacheBehaviors.find((b) => b.PathPattern === '/v1/*');
     expect(rest).toMatchObject({ ViewerProtocolPolicy: 'https-only' });
     expect(rest?.AllowedMethods).toContain('POST');
@@ -1041,9 +1041,42 @@ describe('accounts', () => {
     const guarded = routes.filter((r) => r.Properties.AuthorizationType === 'JWT');
     expect(guarded.map((r) => r.Properties.RouteKey).sort()).toEqual([
       'DELETE /v1/me',
+      'GET /v1/admin/{proxy+}',
       'GET /v1/me',
+      'POST /v1/me/events',
       'PUT /v1/me',
     ]);
+    // The public event route has no sign-in check: anonymous devices use it.
+    const events = routes.find((r) => r.Properties.RouteKey === 'POST /v1/events');
+    expect(events?.Properties.AuthorizationType).not.toBe('JWT');
+  });
+
+  it('gives the admin list to the API function from deploy config, and nothing by default', () => {
+    const fns = Object.values(template.findResources('AWS::Lambda::Function')) as {
+      Properties: { Environment?: { Variables?: Record<string, unknown> } };
+    }[];
+    const api = fns.find((f) => f.Properties.Environment?.Variables?.USER_POOL_ID !== undefined);
+    expect(api?.Properties.Environment?.Variables?.ADMIN_EMAILS).toBe('');
+  });
+
+  it('throttles the usage-event and admin routes', () => {
+    const stage = Object.values(template.findResources('AWS::ApiGatewayV2::Stage'))[0] as {
+      Properties: { RouteSettings: Record<string, unknown> };
+    };
+    for (const key of ['POST /v1/events', 'POST /v1/me/events', 'GET /v1/admin/{proxy+}'])
+      expect(stage.Properties.RouteSettings[key]).toBeDefined();
+  });
+
+  it('passes the token through uncached on the signed-in event and admin paths', () => {
+    const config = (
+      Object.values(template.findResources('AWS::CloudFront::Distribution'))[0] as {
+        Properties: { DistributionConfig: { CacheBehaviors: { PathPattern: string; CachePolicyId: string }[] } };
+      }
+    ).Properties.DistributionConfig;
+    for (const path of ['/v1/me/events', '/v1/admin/*'])
+      expect(config.CacheBehaviors.find((b) => b.PathPattern === path)?.CachePolicyId).toBe(
+        '4135ea2d-6df8-44a3-9df3-4b5a84be39ad',
+      );
   });
 
   it('gives the API function the two public ids and no secret for it', () => {

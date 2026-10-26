@@ -2,6 +2,7 @@ import { Duration, Fn, RemovalPolicy } from 'aws-cdk-lib';
 import type { HttpApi } from 'aws-cdk-lib/aws-apigatewayv2';
 import {
   AllowedMethods,
+  type BehaviorOptions,
   CacheCookieBehavior,
   CacheHeaderBehavior,
   CachePolicy,
@@ -206,6 +207,16 @@ export class Site extends Construct {
       cookieBehavior: OriginRequestCookieBehavior.none(),
     });
 
+    const signedInBehavior: BehaviorOptions = {
+      origin: new HttpOrigin(Fn.parseDomainName(props.api.apiEndpoint)),
+      viewerProtocolPolicy: ViewerProtocolPolicy.HTTPS_ONLY,
+      allowedMethods: AllowedMethods.ALLOW_ALL,
+      cachePolicy: CachePolicy.CACHING_DISABLED,
+      originRequestPolicy: OriginRequestPolicy.ALL_VIEWER_EXCEPT_HOST_HEADER,
+      responseHeadersPolicy: apiHeaders,
+      functionAssociations: [{ function: apiPreflight, eventType: FunctionEventType.VIEWER_REQUEST }],
+    };
+
     this.distribution = new Distribution(this, 'Distribution', {
       defaultRootObject: 'index.html',
       priceClass: PriceClass.PRICE_CLASS_200,
@@ -219,17 +230,10 @@ export class Site extends Construct {
       additionalBehaviors: {
         // A signed-in person's own data: never cached, and the viewer's Authorization header goes through to the API,
         // which API Gateway checks before anything runs. (The Host header still does not go, as for the rest.)
-        '/v1/me': {
-          origin: new HttpOrigin(Fn.parseDomainName(props.api.apiEndpoint)),
-          viewerProtocolPolicy: ViewerProtocolPolicy.HTTPS_ONLY,
-          allowedMethods: AllowedMethods.ALLOW_ALL,
-          cachePolicy: CachePolicy.CACHING_DISABLED,
-          originRequestPolicy: OriginRequestPolicy.ALL_VIEWER_EXCEPT_HOST_HEADER,
-          responseHeadersPolicy: apiHeaders,
-          functionAssociations: [
-            { function: apiPreflight, eventType: FunctionEventType.VIEWER_REQUEST },
-          ],
-        },
+        '/v1/me': signedInBehavior,
+        // The signed-in usage events and the admin statistics need the token passed through too.
+        '/v1/me/events': signedInBehavior,
+        '/v1/admin/*': signedInBehavior,
         '/v1/*': {
           origin: new HttpOrigin(Fn.parseDomainName(props.api.apiEndpoint)),
           viewerProtocolPolicy: ViewerProtocolPolicy.HTTPS_ONLY,
