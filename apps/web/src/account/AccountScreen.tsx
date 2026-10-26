@@ -7,7 +7,7 @@ import { chooseTheme, loadChoice, type ThemeChoice } from '../theme/theme';
 import { useAccount } from './AccountContext';
 
 const LOOKS: readonly { readonly choice: ThemeChoice; readonly label: string }[] = [
-  { choice: 'system', label: 'Match my phone' },
+  { choice: 'system', label: 'Auto' },
   { choice: 'light', label: 'Light' },
   { choice: 'dark', label: 'Dark' },
 ];
@@ -17,8 +17,8 @@ function Appearance(): React.JSX.Element {
   const [look, setLook] = useState<ThemeChoice>(() => loadChoice());
   return (
     <section className="card account-card" aria-label="Appearance">
-      <p>Appearance</p>
-      <div className="segmented" role="group" aria-label="Appearance">
+      <h2 className="account-title">Appearance</h2>
+      <div className="segmented wide" role="group" aria-label="Appearance">
         {LOOKS.map((item) => (
           <button
             key={item.choice}
@@ -33,6 +33,7 @@ function Appearance(): React.JSX.Element {
           </button>
         ))}
       </div>
+      <p className="muted small">Auto follows your phone’s setting. This device only.</p>
     </section>
   );
 }
@@ -59,7 +60,8 @@ function AdminLink(): React.JSX.Element | null {
   if (!admin) return null;
   return (
     <section className="card account-card" aria-label="Admin">
-      <p>Admin</p>
+      <h2 className="account-title">Admin</h2>
+      <p className="muted small">Usage statistics for the owners.</p>
       <Link to="/admin" className="primary-link">
         Open the admin panel
       </Link>

@@ -6711,6 +6711,16 @@ table.hourly .row-label {
 .account-card p {
   margin: 0;
 }
+.account-title {
+  font-size: 18px;
+}
+.account-card .primary-link {
+  justify-content: center;
+  width: 100%;
+}
+.account-card .segmented.wide {
+  margin-top: 0;
+}
 .account-actions {
   display: grid;
   gap: 10px;
@@ -7136,66 +7146,366 @@ table.hourly .row-label {
 
 /* Admin panel (the two owners only) */
 
-.admin .segmented {
-  flex-wrap: wrap;
-  max-width: 100%;
+.admin {
+  align-content: start;
 }
-.admin-stats dl {
+
+/* Sections: one row of pills that scrolls sideways if the screen is narrow, never wrapping into a second row. */
+.admin-tabs {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(max-content, 1fr);
+  gap: 5px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.admin-tabs::-webkit-scrollbar {
+  display: none;
+}
+.admin-tabs button,
+.admin-picks button {
+  flex: none;
+  min-height: 40px;
+  padding: 0 16px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--card);
+  color: var(--text);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.admin-tabs button[aria-pressed='true'],
+.admin-picks button[aria-pressed='true'] {
+  border-color: var(--text);
+  background: var(--text);
+  color: var(--page);
+}
+/* Five tabs share one row, so each is a little tighter than the other pills. */
+.admin-tabs button {
+  padding: 0 8px;
+  font-size: 13px;
+}
+
+/* A choice among a few: pills that wrap onto more rows as whole pills. */
+.admin-picks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.admin-picks button {
+  min-height: 36px;
+  padding: 0 14px;
+  font-size: 13.5px;
+}
+
+.admin h2 {
+  font-size: 20px;
+}
+.admin h3 {
+  margin: 4px 0 -6px;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.admin-hint {
+  margin: 0;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.35;
+}
+.admin-big {
+  margin: 0;
+  font-size: 16px;
+}
+.admin-big strong {
+  font-size: 30px;
+  line-height: 1;
+}
+
+/* Small pills: a feature and how often it was used, or a plain tag. */
+.admin-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.admin-chips li {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--text) 7%, var(--card));
+  font-size: 13px;
+}
+.admin-chips li b {
+  font-weight: 700;
+}
+
+/* Today's four figures, as tiles. */
+.admin-tiles {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 10px;
   margin: 0;
 }
-.admin-stats dt {
+.admin-tiles > div {
+  display: grid;
+  gap: 2px;
+  align-content: start;
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--text) 5%, var(--card));
+}
+.admin-tiles dt {
   color: var(--muted);
   font-size: 13px;
+  font-weight: 600;
 }
-.admin-stats dd {
+.admin-tiles dd {
   margin: 0;
-  font-size: 26px;
+  font-size: 28px;
   font-weight: 700;
+  line-height: 1.1;
 }
-.admin-bars,
-.admin-list,
-.admin-timeline {
-  list-style: none;
-  margin: 0;
-  padding: 0;
+.admin-tiles dd.admin-hint {
+  font-size: 12px;
+  font-weight: 400;
+}
+
+/* Sessions per day: columns, with the number above and the day below. */
+.admin-chart {
   display: grid;
-  gap: 8px;
+  align-items: stretch;
+  gap: 4px;
+  height: 170px;
 }
-.admin-bars li {
+.admin-col {
   display: grid;
-  grid-template-columns: 44px minmax(0, 1fr);
-  grid-template-areas: 'day bar' '. text';
-  gap: 2px 8px;
-  align-items: center;
+  grid-template-rows: 14px minmax(0, 1fr) 14px 12px;
+  justify-items: center;
+  min-width: 0;
 }
-.admin-bars li > :first-child {
-  grid-area: day;
+.admin-col-n,
+.admin-col-d,
+.admin-col-m {
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 14px;
 }
-.admin-bars li > :last-child {
-  grid-area: text;
+.admin-col-m {
+  line-height: 12px;
 }
-.admin-bar {
-  grid-area: bar;
-  height: 10px;
-  min-width: 2px;
-  border-radius: 999px;
-  background: var(--text);
-}
-.admin-scroll {
-  overflow-x: auto;
-}
-.admin-table {
-  border-collapse: collapse;
+.admin-col-track {
+  display: flex;
+  align-items: flex-end;
   width: 100%;
+  height: 100%;
+}
+.admin-col-bar {
+  display: block;
+  width: 100%;
+  min-height: 3px;
+  border-radius: 6px 6px 2px 2px;
+  background: color-mix(in srgb, var(--ink-blue-3) 60%, transparent);
+}
+.admin-col-bar.today {
+  background: var(--ink-blue-3);
+}
+.admin-col-bar.zero {
+  height: 3px;
+  background: var(--line);
+}
+
+/* A labelled bar: how much of a whole. */
+.admin-rate {
+  display: grid;
+  gap: 6px;
+}
+.admin-rate-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
   font-size: 14px;
 }
-.admin-table th,
-.admin-table td {
-  text-align: left;
-  padding: 8px 10px 8px 0;
+.admin-rate-value {
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+.admin-meter {
+  height: 10px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--text) 9%, var(--card));
+}
+.admin-meter > span {
+  display: block;
+  height: 100%;
+  min-width: 0;
+  border-radius: inherit;
+  background: var(--ink-blue-3);
+}
+
+/* Weeks side by side: five short columns that fit a phone without sideways scrolling. */
+.admin-mini {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+.admin-mini th,
+.admin-mini td {
+  padding: 9px 6px 9px 0;
   border-bottom: 1px solid var(--line);
-  white-space: nowrap;
+  text-align: left;
+}
+.admin-mini th {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 600;
+}
+.admin-mini tr:last-child td {
+  border-bottom: 0;
+}
+
+/* One card per group, in place of a wide table. */
+.admin-groups,
+.admin-rows {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.admin-group {
+  display: grid;
+  gap: 10px;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--text) 3%, var(--card));
+}
+.admin-group-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+.admin-group-head strong {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 17px;
+}
+.admin-dot {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+}
+.admin-group-big {
+  font-size: 24px;
+  font-weight: 700;
+  line-height: 1;
+}
+.admin-group-big small {
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 400;
+}
+.admin-facts {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px 12px;
+  margin: 0;
+}
+.admin-facts dt {
+  color: var(--muted);
+  font-size: 12.5px;
+  line-height: 1.2;
+}
+.admin-facts dd {
+  margin: 2px 0 0;
+  font-size: 16px;
+  font-weight: 700;
+}
+
+/* A person: a row you can press. */
+.admin-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--card);
+  color: var(--text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.admin-row:hover {
+  background: color-mix(in srgb, var(--text) 4%, var(--card));
+}
+.admin-row-text {
+  display: grid;
+  flex: 1;
+  gap: 2px;
+  min-width: 0;
+}
+.admin-row-text strong {
+  overflow-wrap: anywhere;
+  font-size: 15px;
+}
+.admin-avatar {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--ink-blue-3) 18%, var(--card));
+  color: var(--ink-blue-3);
+  font-weight: 700;
+}
+.admin-who {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.admin-who h2 {
+  overflow-wrap: anywhere;
+  font-size: 18px;
+}
+.admin-timeline {
+  display: grid;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.admin-timeline li {
+  display: grid;
+  grid-template-columns: 96px minmax(0, 1fr);
+  gap: 10px;
+  padding: 9px 0;
+  border-bottom: 1px solid var(--line);
+  font-size: 14px;
+}
+.admin-timeline li:last-child {
+  border-bottom: 0;
+}
+.admin-error {
+  display: grid;
+  gap: 2px;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  overflow-wrap: anywhere;
 }

@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { cleanup, render, screen, waitFor } from '@testing-library/react';
+import { cleanup, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { afterEach, describe, expect, it, vi } from 'vitest';
@@ -104,14 +104,45 @@ describe('admin panel', () => {
     });
   });
 
-  it('shows who comes back with the counts behind each figure, and a dash until a window has passed', async () => {
+  it('shows who comes back with the counts behind each figure, and says when it is too early', async () => {
     mount(stub());
     await userEvent.click(await screen.findByRole('button', { name: 'Journey' }));
-    expect(await screen.findByText('38% (5 of 13)')).toBeInTheDocument();
-    // Seven days have not passed for anyone yet: no figure, not a zero.
-    expect(screen.getAllByText('—').length).toBeGreaterThan(0);
-    expect(screen.getByText('5 (38%)')).toBeInTheDocument(); // added a place
-    expect(screen.getByText('9 (69%)')).toBeInTheDocument(); // searched
+    expect(await screen.findByText('38% · 5 of 13')).toBeInTheDocument();
+    // Seven and thirty days have not passed for anyone yet: words, not a zero.
+    expect(screen.getAllByText('Too early to tell')).toHaveLength(2);
+    expect(screen.getByText('5 of 13')).toBeInTheDocument(); // added a place
+    expect(screen.getByText('9 of 13')).toBeInTheDocument(); // searched
+  });
+
+  it('opens on the newest week that has devices, offers only weeks that have some, and lets you pick another', async () => {
+    const api = stub({
+      journey: () =>
+        Promise.resolve([
+          cohort({ week: '2026-11-02', size: 0, signedIn: 0, milestones: {} }), // this week: nobody new yet
+          cohort({ week: '2026-10-26', size: 13 }),
+          cohort({ week: '2026-10-19', size: 0, signedIn: 0, milestones: {} }), // a quiet week in between
+          cohort({ week: '2026-10-12', size: 4, milestones: { first_place: 1 } }),
+          cohort({ week: '2026-10-05', size: 0, signedIn: 0, milestones: {} }),
+        ]),
+    });
+    mount(api);
+    await userEvent.click(await screen.findByRole('button', { name: 'Journey' }));
+    const weeks = within(await screen.findByRole('group', { name: 'Week' }));
+    expect(weeks.getAllByRole('button').map((b) => b.textContent)).toEqual(['26 Oct', '12 Oct']);
+    expect(weeks.getByRole('button', { name: '26 Oct' })).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.getByText('5 of 13')).toBeInTheDocument();
+    await userEvent.click(weeks.getByRole('button', { name: '12 Oct' }));
+    expect(await screen.findByText('1 of 4')).toBeInTheDocument();
+    // The comparison runs from the newest week with devices to the oldest, keeping the quiet week between them.
+    const compared = within(screen.getByRole('region', { name: 'Weeks compared' }));
+    expect(compared.getAllByRole('row')).toHaveLength(1 + 3);
+  });
+
+  it('says so, instead of showing zeros, when no device has been seen yet', async () => {
+    mount(stub({ journey: () => Promise.resolve([cohort({ size: 0, signedIn: 0, milestones: {} })]) }));
+    await userEvent.click(await screen.findByRole('button', { name: 'Journey' }));
+    expect(await screen.findByText('No new devices seen yet.')).toBeInTheDocument();
+    expect(screen.queryByText('0 of 0')).not.toBeInTheDocument();
   });
 
   it('lays the sign-in funnel out in order, as a share of the welcome screens shown', async () => {
@@ -131,13 +162,13 @@ describe('admin panel', () => {
     mount(stub({ summary: () => Promise.resolve([funnelDay()]) }));
     await userEvent.click(await screen.findByRole('button', { name: 'Journey' }));
     const funnel = await screen.findByRole('region', { name: 'Sign-in funnel' });
-    expect(funnel.textContent).toContain('Welcome screen shown 40');
-    expect(funnel.textContent).toContain('Signed in 5 · 13% of shown');
+    expect(funnel.textContent).toContain('Welcome screen shown40');
+    expect(funnel.textContent).toContain('Signed in5 · 13%');
     expect(funnel.textContent).toContain('Opened the recorded days 12');
     expect(funnel.textContent).toContain('A step failed 2');
   });
 
-  it('puts the AQI bands in order, best air first, and explains what the columns mean', async () => {
+  it('puts the AQI bands in order, best air first, and says what the figures mean', async () => {
     const api = stub({
       groups: vi.fn(() =>
         Promise.resolve([
@@ -152,21 +183,80 @@ describe('admin panel', () => {
     await waitFor(() => {
       expect(api.groups).toHaveBeenCalledWith('band', 14);
     });
-    const rows = await screen.findAllByRole('row');
-    expect(rows[1]?.textContent).toContain('good');
-    expect(rows[2]?.textContent).toContain('hazardous');
-    expect(rows[2]?.textContent).toContain('3.0'); // 6 features over 2 sessions
-    expect(screen.getByText(/Sessions are the sessions that saw that band/u)).toBeInTheDocument();
+    const groups = within(await screen.findByRole('region', { name: 'Groups' }));
+    const cards = await groups.findAllByRole('listitem');
+    const bands = cards.filter((c) => c.className.includes('admin-group'));
+    expect(bands[0]?.textContent).toContain('Good');
+    expect(bands[1]?.textContent).toContain('Hazardous');
+    expect(bands[1]?.textContent).toContain('3.0'); // 6 features over 2 sessions
+    expect(screen.getByText(/Sessions that saw each band/u)).toBeInTheDocument();
   });
 
-  it('opens one account and shows its timeline, newest first', async () => {
+  it('leaves the sign-in steps out of the features, which are what the app does for people', async () => {
+    const api = stub({
+      groups: vi.fn(() =>
+        Promise.resolve([
+          {
+            value: 'android',
+            sessions: 1,
+            users: 1,
+            activeSeconds: 60,
+            errors: 0,
+            features: { 'feature:search': 2, 'feature:welcome_signed_in': 5, 'feature:welcome_code_step': 4 },
+          },
+        ]),
+      ),
+    });
+    mount(api);
+    await userEvent.click(await screen.findByRole('button', { name: 'Groups' }));
+    const card = await screen.findByText('session', { selector: 'small' }); // 1 session, not 1 sessions
+    const group = card.closest('li');
+    expect(group?.textContent).toContain('Search 2');
+    expect(group?.textContent).not.toContain('Signed in');
+    expect(group?.textContent).toContain('2.0'); // two features in one session, not seven
+  });
+
+  it('names a platform and a feature in words, not as stored', async () => {
+    mount(stub());
+    await userEvent.click(await screen.findByRole('button', { name: 'Groups' }));
+    expect(await screen.findByText('Android')).toBeInTheDocument();
+  });
+
+  it('opens one account and shows its timeline in words, newest first', async () => {
     const api = stub();
     mount(api);
-    await userEvent.click(await screen.findByRole('button', { name: 'Accounts' }));
+    await userEvent.click(await screen.findByRole('button', { name: 'People' }));
     await userEvent.click(await screen.findByRole('button', { name: /a@b\.com/u }));
-    const items = await screen.findAllByRole('listitem');
     expect(api.user).toHaveBeenCalledWith('u1');
-    expect(items[0]?.textContent).toContain('add_place');
+    const steps = await screen.findAllByText(/^(Added a place|Opened the app)$/u);
+    expect(steps.map((e) => e.textContent)).toEqual(['Added a place', 'Opened the app']);
+  });
+
+  it('shows opening a screen once, not once as a screen and again as a feature', async () => {
+    const api = stub({
+      user: vi.fn(() =>
+        Promise.resolve({
+          user: {
+            userId: 'u1',
+            email: 'a@b.com',
+            firstSeen: '2026-10-10T00:00:00.000Z',
+            lastSeen: '2026-10-12T00:00:00.000Z',
+            sessions: 1,
+            platform: 'android',
+            appVersion: '0.1.0',
+            region: 'Delhi',
+          },
+          events: [
+            { at: '2026-10-12T10:02:00.000Z', kind: 'feature', detail: 'air_lens', n: 1 },
+            { at: '2026-10-12T10:02:00.000Z', kind: 'screen', detail: 'lens', n: 1 },
+          ],
+        }),
+      ),
+    });
+    mount(api);
+    await userEvent.click(await screen.findByRole('button', { name: 'People' }));
+    await userEvent.click(await screen.findByRole('button', { name: /a@b\.com/u }));
+    expect(await screen.findAllByText('Opened AIR Lens')).toHaveLength(1);
   });
 
   it('is not linked from anywhere in the normal app', () => {
