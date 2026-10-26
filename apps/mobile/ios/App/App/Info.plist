@@ -72,5 +72,9 @@
 	<string>Vayu uses your location to show the air where you are.</string>
 	<key>NSCameraUsageDescription</key>
 	<string>Vayu uses the camera for AIR Lens, which draws the air over what you see. Nothing is recorded or sent.</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>Vayu listens when you tap the microphone button, so you can ask the assistant out loud.</string>
+	<key>NSSpeechRecognitionUsageDescription</key>
+	<string>Vayu uses Apple’s speech recognition to turn what you say into words for the assistant.</string>
 </dict>
 </plist>
