@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 import { cleanup, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { StrictMode } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { PlaceSearch } from '../places/ui/PlaceSearch';
 import { browserLocate } from '../places/locate';
@@ -30,6 +31,16 @@ describe('usage events', () => {
     render(<App />);
     expect(track).toHaveBeenCalledWith('screen', 'lens');
     expect(track).toHaveBeenCalledWith('feature', 'air_lens');
+  });
+
+  it('counts one visit once, even where React runs effects twice (development)', () => {
+    window.location.hash = '#/account';
+    render(
+      <StrictMode>
+        <App />
+      </StrictMode>,
+    );
+    expect(track.mock.calls.filter((c) => c[0] === 'screen' && c[1] === 'account')).toHaveLength(1);
   });
 
   it('counts a refused location permission', () => {

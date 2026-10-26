@@ -1,5 +1,5 @@
 import { ChevronLeft } from 'lucide-react';
-import { lazy, Suspense, useEffect } from 'react';
+import { lazy, Suspense, useEffect, useRef } from 'react';
 import { HashRouter, Link, Route, Routes, useLocation, useParams } from 'react-router-dom';
 import { track } from './analytics';
 import { AccountScreen } from './account/AccountScreen';
@@ -81,9 +81,12 @@ const SCREENS = new Set(['myair', 'place', 'account', 'exposure', 'map', 'lens',
 
 function Frame(): React.JSX.Element {
   const route = useLocation().pathname.split('/')[1] ?? '';
+  // Remembered across the double run React makes in development, so one visit is one count.
+  const counted = useRef<string | undefined>(undefined);
   useEffect(() => {
     const screen = route === '' ? 'myair' : route;
-    if (!SCREENS.has(screen)) return;
+    if (!SCREENS.has(screen) || counted.current === screen) return;
+    counted.current = screen;
     track('screen', screen);
     if (screen === 'lens') track('feature', 'air_lens');
     if (screen === 'exposure') track('feature', 'exposure');

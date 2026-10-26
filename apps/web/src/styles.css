@@ -14,6 +14,8 @@
 :root {
   --page: #f4f7fb;
   --card: #ffffff;
+  /* The channels of the glass laid over pictures and pastel cards; the dark look swaps them. */
+  --glass: 255 255 255;
   --text: #3d4a5c;
   --muted: #5f6e82;
   --line: #dfe6ef;
@@ -23,6 +25,56 @@
   --gutter: 16px;
   --bar-h: 0px;
   color-scheme: light;
+  /* Colours the dark look changes (src/theme/dark.css); a few are put back to these inside the pastel level and scene cards. */
+  --tint-blue-1: #eef5fc;
+  --tint-blue-2: #e6f1fb;
+  --tint-blue-3: #dcebfa;
+  --tint-blue-2-b: #e8f1fb;
+  --tint-blue-4: #e3effb;
+  --tint-blue-5: #eef3f9;
+  --ink-blue-1: #2f6aa3;
+  --ink-blue-2: #1f4f8f;
+  --ink-blue-3: #2f5fb3;
+  --tint-green-1: #d9f2e0;
+  --tint-green-2: #e8f6ed;
+  --tint-green-2-b: #e8f7ee;
+  --tint-green-3: #bfe8cc;
+  --ink-green-1: #2e9d57;
+  --ink-green-2: #1f6e3d;
+  --ink-green-2-b: #1f7a42;
+  --tint-amber-1: #fdf1de;
+  --tint-amber-2: #fde2c6;
+  --tint-amber-1-b: #fdf6dd;
+  --tint-amber-3: #fff6ec;
+  --tint-amber-3-b: #fff7ef;
+  --tint-amber-2-b: #fde7c8;
+  --ink-amber-1: #9a4c1b;
+  --ink-amber-2: #7a3f14;
+  --ink-amber-3: #6b3a12;
+  --tint-red-1: #fdeceb;
+  --tint-red-2: #fddcd1;
+  --tint-red-3: #fbe6d9;
+  --ink-red-1: #7a2b25;
+  --ink-red-2: #b3261e;
+  --tint-purple: #e9e4fa;
+  --edge-blue-1: #b7c9e2;
+  --edge-amber-1: #e3c98b;
+  --edge-blue-2: #8fbbe6;
+  --edge-amber-2: #e8c9ad;
+  --edge-amber-3: #e8b48c;
+  --edge-yellow: #efe09a;
+  --edge-green: #8fd0a4;
+  --edge-red-1: #e3b0ab;
+  --edge-blue-3: #bcd3ee;
+  --edge-red-2: #e6b3b3;
+  --track-1: #e6ecf4;
+  --track-2: #cbd5e3;
+  --track-3: #e3e9f1;
+  --track-4: #edf1f7;
+  --track-3-b: #e8eef5;
+  --well-1: #eef2f7;
+  --well-2: #dfe8f2;
+  --well-3: #f2f6fb;
 }
 
 * {
@@ -275,7 +327,7 @@ h2 {
   width: 108px;
   height: 108px;
   border-radius: 14px;
-  background: rgb(255 255 255 / 0.62);
+  background: rgb(var(--glass) / 0.62);
   color: var(--ink);
   line-height: 1;
 }
@@ -892,7 +944,7 @@ h2 {
   width: 44px;
   height: 44px;
   border-radius: 12px;
-  background: rgb(255 255 255 / 0.6);
+  background: rgb(var(--glass) / 0.6);
 }
 .icon-button {
   display: grid;
@@ -906,7 +958,7 @@ h2 {
   cursor: pointer;
 }
 .icon-button:hover {
-  background: rgb(255 255 255 / 0.6);
+  background: rgb(var(--glass) / 0.6);
 }
 .dc-readings {
   display: grid;
@@ -936,10 +988,10 @@ h2 {
   gap: 10px;
   min-height: 150px;
   align-content: center;
-  border: 1.5px dashed #b7c9e2;
+  border: 1.5px dashed var(--edge-blue-1);
   border-radius: var(--radius);
   background: color-mix(in srgb, #5b8def 6%, var(--card));
-  color: #2f5fb3;
+  color: var(--ink-blue-3);
   font: inherit;
   font-weight: 700;
   cursor: pointer;
@@ -1075,7 +1127,7 @@ h2 {
   cursor: pointer;
 }
 .dial .cell.empty {
-  fill: #e6ecf4;
+  fill: var(--track-1);
 }
 .dial .ring {
   transition: opacity 180ms ease;
@@ -1132,7 +1184,7 @@ h2 {
 }
 .ring-key li.on {
   border-left-color: var(--text);
-  background: #eef3f9;
+  background: var(--tint-blue-5);
 }
 .dial-tick {
   stroke: #9fb0c6;
@@ -1148,7 +1200,7 @@ h2 {
   font-variant-numeric: tabular-nums;
 }
 .dial-label.strong {
-  fill: #2f6aa3;
+  fill: var(--ink-blue-1);
   font-weight: 700;
 }
 .picked {
@@ -1163,7 +1215,7 @@ h2 {
 }
 .dial-centre {
   fill: var(--card);
-  stroke: #e6ecf4;
+  stroke: var(--track-1);
   stroke-width: 6;
 }
 .dial-person {
@@ -1225,7 +1277,7 @@ h2 {
   height: 14px;
   overflow: hidden;
   border-radius: 7px;
-  background: #e6ecf4;
+  background: var(--track-1);
 }
 .level-bar span {
   display: block;
@@ -1263,7 +1315,7 @@ h2 {
 }
 .spot-set .dc-icon {
   background: color-mix(in srgb, #3b82c4 12%, var(--card));
-  color: #2f6aa3;
+  color: var(--ink-blue-1);
 }
 .hours-row {
   display: flex;
@@ -1295,7 +1347,7 @@ h2 {
   position: relative;
   height: calc(100dvh - var(--bar-h));
   overflow: hidden;
-  background: #eef2f7;
+  background: var(--well-1);
 }
 .map-view,
 .wind-canvas {
@@ -1379,7 +1431,7 @@ h2 {
   position: relative;
   height: calc(100dvh - var(--bar-h));
   overflow: hidden;
-  background: #dfe8f2;
+  background: var(--well-2);
 }
 .lens-view,
 .lens-view .scene,
@@ -1451,7 +1503,7 @@ h2 {
   padding: 6px 8px 5px;
   border: 1px solid var(--line);
   border-radius: 12px;
-  background: rgb(255 255 255 / 0.9);
+  background: rgb(var(--glass) / 0.9);
 }
 .aqi-scale-bar {
   position: relative;
@@ -1501,7 +1553,7 @@ h2 {
   padding: 12px 14px;
   border: 1px solid var(--line);
   border-radius: var(--radius);
-  background: rgb(255 255 255 / 0.93);
+  background: rgb(var(--glass) / 0.93);
 }
 
 .lens-row {
@@ -1554,7 +1606,7 @@ h2 {
   padding: 0;
   border: 0;
   background: transparent;
-  color: #2f5fb3;
+  color: var(--ink-blue-3);
   font: inherit;
   font-weight: 700;
   text-decoration: underline;
@@ -1714,9 +1766,9 @@ h2 {
 }
 .banner {
   padding: 14px 16px;
-  border: 1px solid #e3c98b;
+  border: 1px solid var(--edge-amber-1);
   border-radius: var(--radius);
-  background: #fdf6dd;
+  background: var(--tint-amber-1-b);
   font-weight: 600;
 }
 .week-bars {
@@ -1755,7 +1807,7 @@ h2 {
   max-width: 34px;
   height: 120px;
   border-radius: 8px;
-  background: #e6ecf4;
+  background: var(--track-1);
   overflow: hidden;
 }
 .week-fill {
@@ -1794,7 +1846,7 @@ h2 {
 }
 .ring-bg {
   fill: none;
-  stroke: #e6ecf4;
+  stroke: var(--track-1);
   stroke-width: 5;
 }
 .ring-fg {
@@ -1853,7 +1905,7 @@ h2 {
   height: 40px;
   border-radius: 12px;
   background: var(--card);
-  color: #2f6aa3;
+  color: var(--ink-blue-1);
 }
 .task-words {
   display: grid;
@@ -1919,8 +1971,8 @@ h2 {
   width: 36px;
   height: 36px;
   border-radius: 12px;
-  background: #fde2c6;
-  color: #9a4c1b;
+  background: var(--tint-amber-2);
+  color: var(--ink-amber-1);
 }
 .alert-words {
   display: grid;
@@ -1938,7 +1990,7 @@ h2 {
   padding: 0 12px;
   border: 0;
   border-radius: 999px;
-  background: #9a4c1b;
+  background: var(--ink-amber-1);
   color: #fff;
   font: inherit;
   font-size: 13px;
@@ -2024,7 +2076,7 @@ h2 {
   align-items: center;
   gap: 8px;
   min-height: 44px;
-  color: #2f5fb3;
+  color: var(--ink-blue-3);
   font-weight: 700;
 }
 .sheet-call {
@@ -2077,7 +2129,7 @@ h2 {
 }
 .person.add {
   border-style: dashed;
-  color: #2f5fb3;
+  color: var(--ink-blue-3);
 }
 .avatar {
   display: grid;
@@ -2086,7 +2138,7 @@ h2 {
   height: 36px;
   border-radius: 50%;
   background: color-mix(in srgb, #3b82c4 18%, var(--card));
-  color: #2f5fb3;
+  color: var(--ink-blue-3);
   font-weight: 800;
   font-size: 14px;
 }
@@ -2227,7 +2279,7 @@ h2 {
   height: 84px;
   border-radius: 50%;
   background: radial-gradient(circle at 30% 25%, #fff3e4, #fbd9b5);
-  color: #9a4c1b;
+  color: var(--ink-amber-1);
   box-shadow: 0 10px 28px -10px rgb(201 110 50 / 0.6);
   animation: card-pop 460ms cubic-bezier(0.2, 1.4, 0.4, 1) both;
 }
@@ -2285,7 +2337,7 @@ h2 {
   height: 28px;
   margin: 0;
   border-radius: 999px;
-  background: #cbd5e3;
+  background: var(--track-2);
   cursor: pointer;
   transition: background 160ms ease;
 }
@@ -2397,7 +2449,7 @@ h2 {
   cursor: pointer;
   font-size: 13px;
   font-weight: 700;
-  color: #2f5fb3;
+  color: var(--ink-blue-3);
 }
 .legend-about[open] {
   max-height: 34dvh;
@@ -2410,7 +2462,7 @@ h2 {
   fill: color-mix(in srgb, #e8603c 22%, transparent);
 }
 .adv-walk {
-  color: #2e9d57;
+  color: var(--ink-green-1);
 }
 .adv-open-windows {
   color: #2f7fd0;
@@ -2431,7 +2483,7 @@ h2 {
   color: #d6568a;
 }
 .task-walk {
-  color: #2e9d57;
+  color: var(--ink-green-1);
 }
 .task-stay-in {
   color: #c76a3b;
@@ -2455,22 +2507,22 @@ h2 {
   color: #7a6bc4;
 }
 .alert-walk {
-  color: #2e9d57;
+  color: var(--ink-green-1);
 }
 .alert-stubble {
   color: #e8603c;
 }
 .alert-icon.alert-grap {
-  background: #fde7c8;
+  background: var(--tint-amber-2-b);
 }
 .alert-icon.alert-smog {
-  background: #e9e4fa;
+  background: var(--tint-purple);
 }
 .alert-icon.alert-walk {
-  background: #d9f2e0;
+  background: var(--tint-green-1);
 }
 .alert-icon.alert-stubble {
-  background: #fddcd1;
+  background: var(--tint-red-2);
 }
 .alert-big-icon.alert-grap {
   background: radial-gradient(circle at 30% 25%, #fff4e0, #fbd9a3);
@@ -2479,7 +2531,7 @@ h2 {
   background: radial-gradient(circle at 30% 25%, #f3f0ff, #d8d0f5);
 }
 .alert-big-icon.alert-walk {
-  background: radial-gradient(circle at 30% 25%, #ecfaf0, #bfe8cc);
+  background: radial-gradient(circle at 30% 25%, #ecfaf0, var(--tint-green-3));
 }
 .alert-big-icon.alert-stubble {
   background: radial-gradient(circle at 30% 25%, #fff0ea, #f9c4b2);
@@ -2494,19 +2546,19 @@ h2 {
   color: #7a6bc4;
 }
 .dc-icon.spot-outdoor {
-  color: #2e9d57;
+  color: var(--ink-green-1);
 }
 .spot-set .dc-icon.spot-home {
-  background: #fbe6d9;
+  background: var(--tint-red-3);
 }
 .spot-set .dc-icon.spot-work {
-  background: #dcebfa;
+  background: var(--tint-blue-3);
 }
 .spot-set .dc-icon.spot-school {
-  background: #e9e4fa;
+  background: var(--tint-purple);
 }
 .spot-set .dc-icon.spot-outdoor {
-  background: #d9f2e0;
+  background: var(--tint-green-1);
 }
 .ic-flame {
   color: #e8603c;
@@ -2525,7 +2577,7 @@ h2 {
   display: inline-flex;
   align-items: center;
   gap: 3px;
-  color: #2e9d57;
+  color: var(--ink-green-1);
   font-weight: 700;
 }
 .dev-now {
@@ -2590,8 +2642,8 @@ h2 {
   color: var(--text);
 }
 .dev-fan-state.on {
-  background: #d9f2e0;
-  color: #2e9d57;
+  background: var(--tint-green-1);
+  color: var(--ink-green-1);
 }
 .dev-fan-state.on svg {
   animation: dev-spin 1.6s linear infinite;
@@ -2618,7 +2670,7 @@ h2 {
   height: auto;
 }
 .dev-fan {
-  fill: #bfe8cc;
+  fill: var(--tint-green-3);
   opacity: 0.55;
 }
 .dev-grid {
@@ -2666,7 +2718,7 @@ h2 {
 }
 .k-fan {
   height: 10px !important;
-  background: #bfe8cc;
+  background: var(--tint-green-3);
 }
 .dev-stats {
   display: grid;
@@ -2720,8 +2772,8 @@ h2 {
   margin: 8px 0;
   padding: 10px 12px;
   border-radius: 14px;
-  background: #fdf1de;
-  color: #9a4c1b;
+  background: var(--tint-amber-1);
+  color: var(--ink-amber-1);
 }
 .ask-cta > span {
   display: grid;
@@ -2765,8 +2817,8 @@ h2 {
   width: 56px;
   height: 56px;
   border-radius: 50%;
-  background: #d9f2e0;
-  color: #2e9d57;
+  background: var(--tint-green-1);
+  color: var(--ink-green-1);
 }
 
 /* Days of the week, and outdoor time. */
@@ -2799,9 +2851,9 @@ h2 {
   cursor: pointer;
 }
 .days-row button[aria-pressed='true'] {
-  border-color: #2e9d57;
-  background: #d9f2e0;
-  color: #1f6e3d;
+  border-color: var(--ink-green-1);
+  background: var(--tint-green-1);
+  color: var(--ink-green-2);
 }
 .choice.with-icon {
   display: inline-flex;
@@ -2827,8 +2879,8 @@ h2 {
   width: 36px;
   height: 36px;
   border-radius: 12px;
-  background: #d9f2e0;
-  color: #2e9d57;
+  background: var(--tint-green-1);
+  color: var(--ink-green-1);
 }
 .outing-words {
   display: grid;
@@ -2869,7 +2921,7 @@ h2 {
   padding: 0;
   border: 0;
   background: none;
-  color: #1f6e3d;
+  color: var(--ink-green-2);
   font: inherit;
   font-size: 12px;
   font-weight: 700;
@@ -2881,7 +2933,7 @@ h2 {
   box-sizing: content-box;
   padding: 11px;
   border-radius: 50%;
-  background: #2e9d57;
+  background: var(--ink-green-1);
   color: #ffffff;
   box-shadow: 0 6px 14px -6px rgb(46 157 87 / 0.7);
 }
@@ -2901,12 +2953,12 @@ h2 {
   border: 1px solid var(--line);
   border-radius: 50%;
   background: var(--card);
-  color: #2f6aa3;
+  color: var(--ink-blue-1);
   box-shadow: 0 4px 14px -6px rgb(61 74 92 / 0.45);
   cursor: pointer;
 }
 .lens-round[aria-pressed='true'] {
-  background: #dcebfa;
+  background: var(--tint-blue-3);
 }
 .lens-place select {
   position: absolute;
@@ -2929,8 +2981,8 @@ h2 {
   padding: 10px 14px;
   border: 1px dashed #e0953f;
   border-radius: 14px;
-  background: #fdf1de;
-  color: #6b3a12;
+  background: var(--tint-amber-1);
+  color: var(--ink-amber-3);
   font-size: 14px;
   line-height: 1.35;
 }
@@ -2953,8 +3005,8 @@ h2 {
   flex-wrap: wrap;
   padding: 12px 14px;
   border-radius: 14px;
-  background: #fdeceb;
-  color: #7a2b25;
+  background: var(--tint-red-1);
+  color: var(--ink-red-1);
 }
 .air-error p {
   margin: 0;
@@ -2984,7 +3036,7 @@ h2 {
   margin-left: 6px;
   padding: 1px 7px;
   border-radius: 999px;
-  background: rgb(255 255 255 / 0.75);
+  background: rgb(var(--glass) / 0.75);
   color: #2f6a3c;
   font-size: 11px;
   font-weight: 800;
@@ -2998,10 +3050,10 @@ h2 {
   align-items: center;
   gap: 12px;
   padding: 12px 14px;
-  border: 1px solid #8fbbe6;
+  border: 1px solid var(--edge-blue-2);
   border-radius: 14px;
-  background: #e6f1fb;
-  color: #2f6aa3;
+  background: var(--tint-blue-2);
+  color: var(--ink-blue-1);
   font: inherit;
   text-align: left;
   cursor: pointer;
@@ -3038,7 +3090,7 @@ h2 {
 }
 .here-chips button[aria-pressed='true'] {
   border-color: #3b82c4;
-  background: #dcebfa;
+  background: var(--tint-blue-3);
 }
 .here-name {
   display: flex;
@@ -3091,9 +3143,9 @@ h2 {
   align-items: center;
   gap: 12px;
   padding: 10px 12px;
-  border: 1px solid #8fbbe6;
+  border: 1px solid var(--edge-blue-2);
   border-radius: 14px;
-  background: #eef5fc;
+  background: var(--tint-blue-1);
 }
 .listen-bars {
   display: flex;
@@ -3218,8 +3270,8 @@ h2 {
   background: transparent;
 }
 .slot.set {
-  border-color: #8fbbe6;
-  background: #eef5fc;
+  border-color: var(--edge-blue-2);
+  background: var(--tint-blue-1);
 }
 .slot.active {
   border-color: #3b82c4;
@@ -3231,8 +3283,8 @@ h2 {
   width: 44px;
   height: 44px;
   border-radius: 12px;
-  background: #fff;
-  color: #2f6aa3;
+  background: var(--card);
+  color: var(--ink-blue-1);
 }
 .slot-hint {
   display: inline-flex;
@@ -3256,8 +3308,8 @@ h2 {
   padding: 0 !important;
   border: 1px solid var(--line) !important;
   border-radius: 50% !important;
-  background: #e6f1fb !important;
-  color: #2f6aa3 !important;
+  background: var(--tint-blue-2) !important;
+  color: var(--ink-blue-1) !important;
 }
 .places .tasks-wrap {
   gap: 4px;
@@ -3365,10 +3417,10 @@ h2 {
 }
 .slots.blue .slot {
   border: 2.5px dashed #3b82c4;
-  background: #eef5fc;
+  background: var(--tint-blue-1);
 }
 .slots.blue .slot-hint {
-  color: #2f5fb3;
+  color: var(--ink-blue-3);
   font-size: 13px;
   font-weight: 700;
 }
@@ -3390,7 +3442,7 @@ h2 {
   padding: 10px;
   border: 2.5px dashed #3b82c4;
   border-radius: var(--radius);
-  background: #eef5fc;
+  background: var(--tint-blue-1);
   color: var(--text);
   font: inherit;
   text-align: center;
@@ -3398,7 +3450,7 @@ h2 {
 }
 .add-place button:hover,
 .add-place button:focus-visible {
-  background: #e3effb;
+  background: var(--tint-blue-4);
 }
 .add-place-plus {
   display: grid;
@@ -3406,8 +3458,8 @@ h2 {
   width: 56px;
   height: 56px;
   border-radius: 50%;
-  background: #dcebfa;
-  color: #2f6aa3;
+  background: var(--tint-blue-3);
+  color: var(--ink-blue-1);
 }
 .add-place strong {
   font-size: 17px;
@@ -3427,15 +3479,15 @@ h2 {
 /* Every empty place to fill in is the same dotted blue, wherever it is */
 .slot.empty {
   border-color: #3b82c4;
-  background: #eef5fc;
+  background: var(--tint-blue-1);
 }
 .slot.empty .slot-hint {
-  color: #2f5fb3;
+  color: var(--ink-blue-3);
   font-weight: 700;
 }
 .dashed {
   border: 2px dashed #3b82c4;
-  background: #eef5fc;
+  background: var(--tint-blue-1);
 }
 
 /* A place still to set, inside a person's day: a wide dotted row, not a big square */
@@ -3487,7 +3539,7 @@ h2 {
   border: 1px solid var(--line);
   border-radius: 50%;
   background: var(--card);
-  color: #2f6aa3;
+  color: var(--ink-blue-1);
   box-shadow: 0 6px 16px -8px rgb(61 74 92 / 0.5);
   cursor: pointer;
 }
@@ -3636,11 +3688,11 @@ h2 {
   padding: 6px 10px;
 }
 .pc-aqi.pair .fig {
-  background: rgb(255 255 255 / 0.55);
+  background: rgb(var(--glass) / 0.55);
 }
 .pc-aqi.pair .smoke-fig {
-  background: #fff6ec;
-  color: #7a3f14;
+  background: var(--tint-amber-3);
+  color: var(--ink-amber-2);
 }
 .pc-aqi.pair.row {
   flex-direction: row;
@@ -3703,7 +3755,7 @@ h2 {
   width: 28px;
   height: 28px;
   border-radius: 50%;
-  background: rgb(255 255 255 / 0.78);
+  background: rgb(var(--glass) / 0.78);
 }
 /* The face keeps its size whatever else is on the card, at the right of the figures. */
 .pc-face {
@@ -3736,7 +3788,7 @@ h2 {
   cursor: pointer;
 }
 .pc-icon-button:hover {
-  background: rgb(255 255 255 / 0.4);
+  background: rgb(var(--glass) / 0.4);
 }
 .pc-icon-button .flip {
   transform: rotate(180deg);
@@ -3760,7 +3812,7 @@ h2 {
   gap: 4px;
   padding: 8px 4px;
   border-radius: 12px;
-  background: rgb(255 255 255 / 0.5);
+  background: rgb(var(--glass) / 0.5);
   font-size: 13px;
 }
 .pc-day-name {
@@ -3826,7 +3878,7 @@ h2 {
   padding: 0 11px;
   border: 0;
   border-radius: 999px;
-  background: rgb(255 255 255 / 0.62);
+  background: rgb(var(--glass) / 0.62);
   color: var(--on-level);
   font: inherit;
   font-size: 13px;
@@ -3834,7 +3886,7 @@ h2 {
   cursor: pointer;
 }
 .lens-tool[aria-pressed='true'] {
-  background: #fff;
+  background: var(--card);
 }
 .lens-switch-name {
   max-width: 76px;
@@ -3888,7 +3940,7 @@ h2 {
   gap: 8px;
   padding: 7px 10px;
   border-radius: 12px;
-  background: rgb(255 255 255 / 0.55);
+  background: rgb(var(--glass) / 0.55);
   font-size: 13px;
   line-height: 1.3;
 }
@@ -3916,8 +3968,8 @@ h2 {
 /* Cigarettes in a chip, a tile or a figure; joined under the AQI chip in lines of text */
 .cig-chip {
   --level: #fff3e6;
-  --on-level: #7a3f14;
-  border: 1px solid #e8c9ad;
+  --on-level: var(--ink-amber-2);
+  border: 1px solid var(--edge-amber-2);
 }
 .cig-chip-in {
   display: inline-flex;
@@ -3943,8 +3995,8 @@ h2 {
   width: auto;
   min-width: 108px;
   padding: 0 12px;
-  background: #fff6ec;
-  color: #7a3f14;
+  background: var(--tint-amber-3);
+  color: var(--ink-amber-2);
 }
 .smoke-badge .badge-num {
   font-size: 52px;
@@ -3989,7 +4041,7 @@ h2 {
   height: 52px;
   padding: 0;
   border: 0;
-  background: linear-gradient(135deg, #3b82c4, #2f5fb3);
+  background: linear-gradient(135deg, #3b82c4, var(--ink-blue-3));
   color: #fff;
   box-shadow: 0 10px 24px -8px rgb(47 95 179 / 0.65);
 }
@@ -4010,8 +4062,8 @@ h2 {
   box-shadow: 0 8px 20px -10px rgb(61 74 92 / 0.5);
 }
 .smoke-toggle.on {
-  border-color: #e8b48c;
-  background: #fff7ef;
+  border-color: var(--edge-amber-3);
+  background: var(--tint-amber-3-b);
 }
 
 /* Detect my location: one switch, wherever live location is wanted */
@@ -4030,15 +4082,15 @@ h2 {
   border: 1px solid var(--line);
   border-radius: 999px;
   background: var(--card);
-  color: #2f6aa3;
+  color: var(--ink-blue-1);
   font: inherit;
   font-size: 13px;
   font-weight: 700;
   cursor: pointer;
 }
 .detect-button.on {
-  border-color: #8fbbe6;
-  background: #e6f1fb;
+  border-color: var(--edge-blue-2);
+  background: var(--tint-blue-2);
 }
 .detect-button.asking {
   opacity: 0.7;
@@ -4046,7 +4098,7 @@ h2 {
 .locate-hint {
   display: block;
   margin: -4px 4px 0 0;
-  color: #2f6aa3;
+  color: var(--ink-blue-1);
   font-size: 12px;
   font-weight: 700;
   text-align: right;
@@ -4059,7 +4111,7 @@ h2 {
   padding: 8px 12px;
   border: 1px solid var(--line);
   border-radius: var(--radius);
-  background: rgb(255 255 255 / 0.94);
+  background: rgb(var(--glass) / 0.94);
 }
 .legend-head {
   display: flex;
@@ -4122,7 +4174,7 @@ h2 {
 }
 .form-error {
   margin: 0;
-  color: #b3261e;
+  color: var(--ink-red-2);
   font-weight: 600;
 }
 
@@ -4373,7 +4425,7 @@ h2 {
   gap: 10px;
   width: 100%;
   padding: 10px 12px;
-  border: 1px solid #efe09a;
+  border: 1px solid var(--edge-yellow);
   border-radius: 14px;
   background: #fff9d9;
   color: var(--text);
@@ -4397,7 +4449,7 @@ h2 {
   width: 36px;
   height: 36px;
   border-radius: 50%;
-  background: #fff;
+  background: var(--card);
 }
 .alert-row .pill {
   flex: none;
@@ -4527,11 +4579,11 @@ h2 {
   width: 100%;
   height: 100%;
   border-radius: 8px;
-  background: #e6ecf4;
+  background: var(--track-1);
 }
 .tl-cell {
   min-width: 0;
-  background: #dfe6ef;
+  background: var(--line);
   transition: transform 140ms ease;
 }
 .tl-cell:first-child {
@@ -4541,7 +4593,7 @@ h2 {
   border-radius: 0 8px 8px 0;
 }
 .tl-cell.blank {
-  background: repeating-linear-gradient(135deg, #e3e9f1 0 4px, #edf1f7 4px 8px);
+  background: repeating-linear-gradient(135deg, var(--track-3) 0 4px, var(--track-4) 4px 8px);
 }
 /* The picked slot is drawn larger, as if the window magnified it */
 .tl-cell.picked {
@@ -4558,7 +4610,7 @@ h2 {
   min-width: 30px;
   border: 2.5px solid var(--text);
   border-radius: 9px;
-  background: rgb(255 255 255 / 0.1);
+  background: rgb(var(--glass) / 0.1);
   box-shadow:
     0 0 0 1px rgb(255 255 255 / 0.8),
     0 6px 14px -8px rgb(61 74 92 / 0.6);
@@ -4643,7 +4695,7 @@ h2 {
   padding: 0 14px 0 6px;
   min-height: 48px;
   border-radius: 999px;
-  background: #e8f6ed;
+  background: var(--tint-green-2);
   font-size: 14px;
 }
 .dial-log svg {
@@ -4666,7 +4718,7 @@ h2 {
   margin: 0;
   padding: 7px 9px;
   border-radius: 10px;
-  background: rgb(255 255 255 / 0.55);
+  background: rgb(var(--glass) / 0.55);
   font-size: 12.5px;
   line-height: 1.3;
 }
@@ -4678,7 +4730,7 @@ h2 {
   display: block;
 }
 .pc-assembly.inside {
-  background: #fff;
+  background: var(--card);
   box-shadow: inset 0 0 0 2px rgb(61 74 92 / 0.35);
 }
 .pc-assembly-words {
@@ -4784,7 +4836,7 @@ h2 {
   height: 8px;
   margin: 0 2px;
   border-radius: 4px;
-  background: #dfe6ef;
+  background: var(--line);
   cursor: pointer;
   touch-action: none;
 }
@@ -4806,13 +4858,13 @@ h2 {
 }
 
 .tip-place {
-  color: #2f6aa3;
+  color: var(--ink-blue-1);
   font-weight: 700;
   letter-spacing: 0.01em;
 }
 .task-assembly,
 .task-child {
-  color: #2f6aa3;
+  color: var(--ink-blue-1);
 }
 .task-school-grap {
   color: #c0541f;
@@ -4884,8 +4936,8 @@ h2 {
   gap: 6px;
   padding: 2px 9px 2px 7px;
   border-radius: 999px;
-  background: #fff;
-  color: #b3261e;
+  background: var(--card);
+  color: var(--ink-red-2);
   font-size: 11.5px;
   font-weight: 800;
   letter-spacing: 0.06em;
@@ -4907,7 +4959,7 @@ h2 {
 .outdoor-tag {
   padding: 2px 9px;
   border-radius: 999px;
-  background: rgb(255 255 255 / 0.6);
+  background: rgb(var(--glass) / 0.6);
   font-size: 11.5px;
   font-weight: 700;
 }
@@ -4949,7 +5001,7 @@ h2 {
 .person-edit:hover,
 .person-edit:focus-visible {
   background: rgb(47 106 163 / 0.18);
-  color: #2f6aa3;
+  color: var(--ink-blue-1);
 }
 
 /* The label on the combined bar, and the AQI scale for reference under the day's numbers */
@@ -4988,14 +5040,14 @@ h2 {
   height: 44px;
 }
 .gps-toggle.on {
-  border-color: #8fd0a4;
-  background: #e8f7ee;
-  color: #1f7a42;
+  border-color: var(--edge-green);
+  background: var(--tint-green-2-b);
+  color: var(--ink-green-2-b);
 }
 .gps-toggle.off {
-  border-color: #e3b0ab;
-  background: #fdeceb;
-  color: #b3261e;
+  border-color: var(--edge-red-1);
+  background: var(--tint-red-1);
+  color: var(--ink-red-2);
 }
 .map-legend {
   display: flex;
@@ -5035,7 +5087,7 @@ h2 {
   overflow: hidden;
   border: 1px solid var(--line);
   border-radius: var(--radius);
-  background: rgb(255 255 255 / 0.94);
+  background: rgb(var(--glass) / 0.94);
   box-shadow: 0 10px 28px -14px rgb(51 65 85 / 0.55);
 }
 .lens-unit-scale {
@@ -5284,7 +5336,7 @@ table.hourly .row-label {
   height: 38px;
   border-radius: 8px;
   overflow: hidden;
-  background: #e6ecf4;
+  background: var(--track-1);
 }
 .dl-cell {
   position: relative;
@@ -5293,7 +5345,7 @@ table.hourly .row-label {
   cursor: pointer;
 }
 .dl-cell.blank {
-  background: repeating-linear-gradient(135deg, #e3e9f1 0 4px, #edf1f7 4px 8px);
+  background: repeating-linear-gradient(135deg, var(--track-3) 0 4px, var(--track-4) 4px 8px);
 }
 .dl-cell > i {
   position: absolute;
@@ -5346,10 +5398,10 @@ table.hourly .row-label {
   width: 34px;
   height: 34px;
   padding: 0;
-  border: 1px solid #8fbbe6;
+  border: 1px solid var(--edge-blue-2);
   border-radius: 50%;
-  background: #e6f1fb;
-  color: #2f6aa3;
+  background: var(--tint-blue-2);
+  color: var(--ink-blue-1);
   cursor: pointer;
 }
 .lens-play[aria-pressed='true'] {
@@ -5408,7 +5460,7 @@ table.hourly .row-label {
   overflow: hidden;
   border: 1px solid rgb(255 255 255 / 0.7);
   border-radius: 16px;
-  background: rgb(255 255 255 / 0.44);
+  background: rgb(var(--glass) / 0.44);
   color: var(--text);
   font-weight: 600;
   -webkit-backdrop-filter: blur(1.5px) saturate(1.15);
@@ -5426,7 +5478,7 @@ table.hourly .row-label {
   background: rgb(176 218 248 / 0.55);
 }
 .scene-wind .scene-veil {
-  background: rgb(255 255 255 / 0.4);
+  background: rgb(var(--glass) / 0.4);
 }
 .scene-stubble .scene-veil {
   border-color: rgb(255 150 80 / 0.28);
@@ -5511,7 +5563,7 @@ table.hourly .row-label {
 }
 .scene-sheet .sheet-x {
   border-radius: 50%;
-  background: rgb(255 255 255 / 0.7);
+  background: rgb(var(--glass) / 0.7);
   color: #334155;
   position: absolute;
   top: 10px;
@@ -5551,7 +5603,7 @@ table.hourly .row-label {
   color: inherit;
 }
 .scene-card .alert-big-icon {
-  background: rgb(255 255 255 / 0.8);
+  background: rgb(var(--glass) / 0.8);
 }
 .scene-stubble .scene-card .alert-big-icon {
   background: rgb(255 140 60 / 0.25);
@@ -5602,7 +5654,7 @@ table.hourly .row-label {
   width: 38px;
   height: 38px;
   border-radius: 50%;
-  background: #fff;
+  background: var(--card);
 }
 
 /* Every place card reads alike: the heading, two lines for where it is, the air, one short note, three days, the source */
@@ -5614,7 +5666,7 @@ table.hourly .row-label {
   margin-right: 6px;
   padding: 0 7px;
   border-radius: 999px;
-  background: #fff;
+  background: var(--card);
   color: var(--text);
   font-size: 11px;
   font-weight: 800;
@@ -5686,7 +5738,7 @@ table.hourly .row-label {
 /* The day's pill on a plain alert row stays readable on every colour */
 .alert-row .pill {
   border-color: transparent;
-  background: rgb(255 255 255 / 0.85);
+  background: rgb(var(--glass) / 0.85);
   color: #334155;
 }
 
@@ -5906,7 +5958,7 @@ table.hourly .row-label {
   margin: 12px 0 0;
   padding: 10px 12px;
   border-radius: 12px;
-  background: rgb(255 255 255 / 0.65);
+  background: rgb(var(--glass) / 0.65);
   font-size: 14px;
   line-height: 1.4;
 }
@@ -5918,7 +5970,7 @@ table.hourly .row-label {
   padding: 12px 12px 4px;
   border: 1px solid var(--line);
   border-radius: var(--radius);
-  background: #fff;
+  background: var(--card);
 }
 .chart-live-head {
   display: flex;
@@ -5970,7 +6022,7 @@ table.hourly .row-label {
   margin-bottom: 14px;
 }
 .room-card {
-  background: #fff;
+  background: var(--card);
 }
 .room-more {
   display: inline-flex;
@@ -6030,7 +6082,7 @@ table.hourly .row-label {
 }
 .lens-eye[aria-pressed='true'] {
   border-color: var(--ink);
-  background: #fff;
+  background: var(--card);
 }
 .lens-unit,
 .lens-unit-scale,
@@ -6096,7 +6148,7 @@ table.hourly .row-label {
   margin: 0 0 6px;
   padding: 4px;
   border-radius: 12px;
-  background: #fff;
+  background: var(--card);
 }
 .room-pc .pc-source {
   display: flex;
@@ -6145,7 +6197,7 @@ table.hourly .row-label {
   margin: 8px 0 0;
   padding: 10px 12px;
   border-radius: 12px;
-  background: #f2f6fb;
+  background: var(--well-3);
 }
 .room-hours {
   display: grid;
@@ -6157,7 +6209,7 @@ table.hourly .row-label {
   border-radius: 4px;
 }
 .room-hour.none {
-  background: repeating-linear-gradient(135deg, #e8eef5 0 4px, #f4f7fb 4px 8px);
+  background: repeating-linear-gradient(135deg, var(--track-3-b) 0 4px, var(--page) 4px 8px);
 }
 .room-axis {
   display: flex;
@@ -6532,10 +6584,10 @@ table.hourly .row-label {
   gap: 6px;
   min-height: 40px;
   padding: 0 16px;
-  border: 1px solid #bcd3ee;
+  border: 1px solid var(--edge-blue-3);
   border-radius: 999px;
-  background: #e8f1fb;
-  color: #1f4f8f;
+  background: var(--tint-blue-2-b);
+  color: var(--ink-blue-2);
   font: inherit;
   font-weight: 700;
   cursor: pointer;
@@ -6611,9 +6663,9 @@ table.hourly .row-label {
   gap: 8px;
 }
 .welcome-guest .guest {
-  border-color: #bcd3ee;
-  background: #e8f1fb;
-  color: #1f4f8f;
+  border-color: var(--edge-blue-3);
+  background: var(--tint-blue-2-b);
+  color: var(--ink-blue-2);
 }
 .gate-note-inline {
   margin: 0;
@@ -6648,7 +6700,7 @@ table.hourly .row-label {
   gap: 10px;
 }
 .plain.danger {
-  border-color: #e6b3b3;
+  border-color: var(--edge-red-2);
   color: #9b2c2c;
 }
 
@@ -6659,10 +6711,10 @@ table.hourly .row-label {
   align-items: flex-start;
   margin: 10px 0 0;
   padding: 10px 12px;
-  border: 1px solid #bcd3ee;
+  border: 1px solid var(--edge-blue-3);
   border-radius: 12px;
-  background: #e8f1fb;
-  color: #1f4f8f;
+  background: var(--tint-blue-2-b);
+  color: var(--ink-blue-2);
   font-size: 14px;
   line-height: 1.4;
 }

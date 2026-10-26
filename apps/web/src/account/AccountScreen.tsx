@@ -2,7 +2,39 @@ import { ChevronLeft } from 'lucide-react';
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { clock12 } from '../today/time';
+import { chooseTheme, loadChoice, type ThemeChoice } from '../theme/theme';
 import { useAccount } from './AccountContext';
+
+const LOOKS: readonly { readonly choice: ThemeChoice; readonly label: string }[] = [
+  { choice: 'system', label: 'Match my phone' },
+  { choice: 'light', label: 'Light' },
+  { choice: 'dark', label: 'Dark' },
+];
+
+/** Light, dark, or whatever the phone is set to; kept on this device only. */
+function Appearance(): React.JSX.Element {
+  const [look, setLook] = useState<ThemeChoice>(() => loadChoice());
+  return (
+    <section className="card account-card" aria-label="Appearance">
+      <p>Appearance</p>
+      <div className="segmented" role="group" aria-label="Appearance">
+        {LOOKS.map((item) => (
+          <button
+            key={item.choice}
+            type="button"
+            aria-pressed={look === item.choice}
+            onClick={() => {
+              chooseTheme(item.choice);
+              setLook(item.choice);
+            }}
+          >
+            {item.label}
+          </button>
+        ))}
+      </div>
+    </section>
+  );
+}
 
 /** Where a signed-in person sees that their places are saved, signs out, or deletes the account. */
 export function AccountScreen(): React.JSX.Element {
@@ -121,6 +153,7 @@ export function AccountScreen(): React.JSX.Element {
             </div>
           </section>
         )}
+        <Appearance />
       </main>
     </div>
   );

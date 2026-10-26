@@ -2,6 +2,7 @@ import '@fontsource-variable/hanken-grotesk';
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { startAnalytics, track } from './analytics';
+import { startTheme } from './theme/theme';
 import { AccountGate } from './account/AccountContext';
 import { App } from './App';
 import { AirStore, setAirStoreFactory } from './air/store';
@@ -13,7 +14,9 @@ import { installPhoneGeolocation } from './native/geolocation';
 import { hideSplash, isNative } from './native/splash';
 import { liveLocation } from './places/liveLocation';
 import './styles.css';
+import './theme/dark.css';
 
+startTheme();
 if (isNative()) document.documentElement.classList.add('native');
 installPhoneGeolocation();
 const root = document.getElementById('root');

@@ -1,0 +1,153 @@
+/*
+ * The dark look. Everything here hangs off `data-theme='dark'` on the page, which src/theme/theme.ts sets from the
+ * person's choice or from the phone. The air-level colours (the pastel status cards, chips and scenes) keep their own
+ * colours with dark ink on them, so a level reads the same in either look; only the neutral surfaces change.
+ */
+
+html[data-theme='dark'] {
+  --page: #0e1621;
+  --card: #172231;
+  --text: #e3e9f1;
+  --muted: #a3b2c6;
+  --line: #2b3a4d;
+  --glass: 23 34 49;
+  --shadow: 0 1px 2px rgb(0 0 0 / 0.4);
+  --tint-blue-1: #17283b;
+  --tint-blue-2: #1b3047;
+  --tint-blue-3: #20395a;
+  --tint-blue-2-b: #1b3047;
+  --tint-blue-4: #223a55;
+  --tint-blue-5: #1a2838;
+  --ink-blue-1: #8fbbe6;
+  --ink-blue-2: #9cc4ee;
+  --ink-blue-3: #8fb2ec;
+  --tint-green-1: #163626;
+  --tint-green-2: #15302a;
+  --tint-green-2-b: #15302a;
+  --tint-green-3: #1f4a35;
+  --ink-green-1: #6fd39a;
+  --ink-green-2: #8be0ae;
+  --ink-green-2-b: #8be0ae;
+  --tint-amber-1: #3a2c18;
+  --tint-amber-2: #43301a;
+  --tint-amber-1-b: #3a2c18;
+  --tint-amber-3: #3a2c1c;
+  --tint-amber-3-b: #3a2c1c;
+  --tint-amber-2-b: #43301a;
+  --ink-amber-1: #f2b883;
+  --ink-amber-2: #f2b883;
+  --ink-amber-3: #f0b47c;
+  --tint-red-1: #3b2020;
+  --tint-red-2: #402822;
+  --tint-red-3: #3f2a20;
+  --ink-red-1: #f2a9a2;
+  --ink-red-2: #f2a9a2;
+  --tint-purple: #2a2548;
+  --edge-blue-1: #3a5273;
+  --edge-amber-1: #6a5528;
+  --edge-blue-2: #3f6a99;
+  --edge-amber-2: #6a4a30;
+  --edge-amber-3: #7a5230;
+  --edge-yellow: #6a5f2a;
+  --edge-green: #3d7a55;
+  --edge-red-1: #7a403b;
+  --edge-blue-3: #35557a;
+  --edge-red-2: #7a4040;
+  --track-1: #2b3a4d;
+  --track-2: #3a4a60;
+  --track-3: #2b3a4d;
+  --track-4: #233144;
+  --track-3-b: #2b3a4d;
+  --well-1: #101a26;
+  --well-2: #0f1823;
+  --well-3: #1a2635;
+}
+
+/*
+ * Light islands: the cards that are coloured by the air level or by the weather keep the light look, whatever the page
+ * is doing, so their colours and the dark ink on them mean the same in both. Zero specificity (:where) so anything
+ * a card sets for itself still wins.
+ */
+:where(html[data-theme='dark'] :is(.hero, .place-card, .dev-aqi, .room-aqi, .special-note, .scene, .alert-row, .scene-card, .scene-sheet, .alert-big-icon)) {
+  --page: #f4f7fb;
+  --card: #ffffff;
+  --text: #3d4a5c;
+  --muted: #5f6e82;
+  --line: #dfe6ef;
+  --glass: 255 255 255;
+  --shadow: 0 1px 2px rgb(61 74 92 / 0.04);
+  --tint-blue-1: #eef5fc;
+  --tint-blue-2: #e6f1fb;
+  --tint-blue-3: #dcebfa;
+  --tint-blue-2-b: #e8f1fb;
+  --tint-blue-4: #e3effb;
+  --tint-blue-5: #eef3f9;
+  --ink-blue-1: #2f6aa3;
+  --ink-blue-2: #1f4f8f;
+  --ink-blue-3: #2f5fb3;
+  --tint-green-1: #d9f2e0;
+  --tint-green-2: #e8f6ed;
+  --tint-green-2-b: #e8f7ee;
+  --tint-green-3: #bfe8cc;
+  --ink-green-1: #2e9d57;
+  --ink-green-2: #1f6e3d;
+  --ink-green-2-b: #1f7a42;
+  --tint-amber-1: #fdf1de;
+  --tint-amber-2: #fde2c6;
+  --tint-amber-1-b: #fdf6dd;
+  --tint-amber-3: #fff6ec;
+  --tint-amber-3-b: #fff7ef;
+  --tint-amber-2-b: #fde7c8;
+  --ink-amber-1: #9a4c1b;
+  --ink-amber-2: #7a3f14;
+  --ink-amber-3: #6b3a12;
+  --tint-red-1: #fdeceb;
+  --tint-red-2: #fddcd1;
+  --tint-red-3: #fbe6d9;
+  --ink-red-1: #7a2b25;
+  --ink-red-2: #b3261e;
+  --tint-purple: #e9e4fa;
+  --edge-blue-1: #b7c9e2;
+  --edge-amber-1: #e3c98b;
+  --edge-blue-2: #8fbbe6;
+  --edge-amber-2: #e8c9ad;
+  --edge-amber-3: #e8b48c;
+  --edge-yellow: #efe09a;
+  --edge-green: #8fd0a4;
+  --edge-red-1: #e3b0ab;
+  --edge-blue-3: #bcd3ee;
+  --edge-red-2: #e6b3b3;
+  --track-1: #e6ecf4;
+  --track-2: #cbd5e3;
+  --track-3: #e3e9f1;
+  --track-4: #edf1f7;
+  --track-3-b: #e8eef5;
+  --well-1: #eef2f7;
+  --well-2: #dfe8f2;
+  --well-3: #f2f6fb;
+  color: var(--text);
+}
+
+/* The map's own buttons and credit line are white by default. */
+html[data-theme='dark'] .maplibregl-ctrl-group,
+html[data-theme='dark'] .maplibregl-ctrl-attrib {
+  background: var(--card);
+  color: var(--muted);
+}
+html[data-theme='dark'] .maplibregl-ctrl-group button + button {
+  border-top-color: var(--line);
+}
+html[data-theme='dark'] .maplibregl-ctrl-group button .maplibregl-ctrl-icon {
+  filter: invert(1);
+}
+html[data-theme='dark'] .maplibregl-ctrl-attrib a {
+  color: var(--muted);
+}
+
+/* Buttons that are dark-on-light in the light look (the page's text colour as the fill) turn light, so their words turn dark. */
+html[data-theme='dark'] :is(.search-form button, .matches button, .primary) {
+  color: var(--page);
+}
+html[data-theme='dark'] .dial-log svg {
+  color: #0e2a1a;
+}

@@ -10,6 +10,7 @@ import {
 import workerUrl from 'maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import { useEffect, useRef } from 'react';
+import { applyBasemapTheme } from './darkBasemap';
 import { isNative } from '../native/splash';
 import { LEVELS } from '../design/levels';
 import type { Monitor } from './monitors';
@@ -341,9 +342,20 @@ export function MapView({
       if (fieldTimer !== undefined) clearTimeout(fieldTimer);
       fieldTimer = setTimeout(draw, 140);
     });
+    let baseLayers: ReadonlySet<string> = new Set();
+    const showTheme = (): void => {
+      applyBasemapTheme(m, baseLayers, document.documentElement.dataset.theme === 'dark');
+    };
+    // The look can change while the map is open, from the account page or from the phone's own switch.
+    const themeWatch = new MutationObserver(() => {
+      if (ready.current) showTheme();
+    });
+    themeWatch.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
     const addLayers = (): void => {
       ready.current = true;
       if (m.getSource('field-0') !== undefined) return;
+      // The layers the style came with, before ours go on top: the dark look recolours these and nothing else.
+      baseLayers = new Set(m.getStyle().layers.map((layer) => layer.id));
       const { layers: on } = latest.current;
       // A globe at country level looks flat, and MapLibre flattens it again as you zoom right in.
       // On a phone the curved edge and the white sky round it take a third of a small screen, so it stays a flat map
@@ -517,6 +529,7 @@ export function MapView({
           },
         });
       });
+      showTheme();
       draw();
     };
 
@@ -620,6 +633,7 @@ export function MapView({
     onReady(m);
     return () => {
       if (fieldTimer !== undefined) clearTimeout(fieldTimer);
+      themeWatch.disconnect();
       redrawField.current = undefined;
       m.remove();
       map.current = undefined;
