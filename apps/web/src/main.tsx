@@ -1,6 +1,7 @@
 import '@fontsource-variable/hanken-grotesk';
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
+import { startAnalytics, track } from './analytics';
 import { AccountGate } from './account/AccountContext';
 import { App } from './App';
 import { AirStore, setAirStoreFactory } from './air/store';
@@ -29,6 +30,14 @@ if (window.location.hash.startsWith('#/week')) {
   setOwnerStartsWithSamples(false);
   // If live location was left on last time, carry on following the device.
   liveLocation().resume();
+  startAnalytics();
+  // Anything the app fails at without handling is counted (a short code only, never the page or what was typed).
+  window.addEventListener('error', (event) => {
+    track('error', event.message.slice(0, 80));
+  });
+  window.addEventListener('unhandledrejection', (event) => {
+    track('error', event.reason instanceof Error ? event.reason.message.slice(0, 80) : 'rejected');
+  });
   createRoot(root).render(
     <StrictMode>
       <AccountGate>

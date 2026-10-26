@@ -1,6 +1,7 @@
 import { Languages, Mic, SendHorizontal, Sparkles, Store, Volume2, VolumeX, X } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { track } from '../analytics';
 import { alertsFor } from '../alerts/model';
 import { useFires } from '../alerts/useFires';
 import { useHousehold } from '../exposure/useExposure';
@@ -215,6 +216,7 @@ export function AssistantFab({
     if (text === '' || busy) return;
     // From the tap itself, so the phone lets the answer be spoken when it arrives.
     voice.unlock?.();
+    track('feature', 'assistant');
     const id = next.current++;
     setMessages((m) => [...m, { id, from: 'you', text }]);
     setDraft('');

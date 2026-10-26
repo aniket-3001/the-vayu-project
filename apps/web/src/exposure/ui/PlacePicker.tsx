@@ -1,5 +1,6 @@
 import { LocateFixed } from 'lucide-react';
 import { useState } from 'react';
+import { track } from '../../analytics';
 import type { PlaceMatch } from '../../data/geocode';
 import { pinId, type Pin } from '../../data/pins';
 import { GPS_OFF_WORDS, gpsOn } from '../../places/gps';
@@ -30,6 +31,7 @@ export function PlacePicker({
 }): React.JSX.Element {
   const [note, setNote] = useState('');
   const detect = (): void => {
+    track('feature', 'detect_location');
     setNote('Finding where you are…');
     locate(
       (lat, lng) => {

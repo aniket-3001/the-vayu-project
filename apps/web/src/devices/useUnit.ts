@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useSyncExternalStore } from 'react';
+import { track } from '../analytics';
 import { type UnitTransport, UnitController, sharedUnit, type UnitState } from '@vayu/unit';
 import { defaultTransport } from './transport';
 
@@ -54,7 +55,19 @@ export function useUnit(
   return {
     state,
     supported: transport.supported(),
-    connect: (named) => controller.connect(transport, named),
+    connect: (named) => {
+      track('feature', 'bluetooth_connect');
+      const attempt = controller.connect(transport, named);
+      Promise.resolve(attempt).then(
+        () => {
+          track('bluetooth', 'connect:ok');
+        },
+        () => {
+          track('bluetooth', 'connect:fail');
+        },
+      );
+      return attempt;
+    },
     disconnect: controller.disconnect,
   };
 }

@@ -1,3 +1,4 @@
+import { track } from '../analytics';
 import { gpsOn } from './gps';
 
 export type Locate = (onFound: (lat: number, lng: number) => void, onFail: () => void) => void;
@@ -22,12 +23,14 @@ export const browserLocate: Locate = (onFound, onFail) => {
     return;
   }
   const found = (position: GeolocationPosition): void => {
+    track('permission', 'location:granted');
     onFound(position.coords.latitude, position.coords.longitude);
   };
   navigator.geolocation.getCurrentPosition(
     found,
     (error) => {
       if (error.code === PERMISSION_DENIED) {
+        track('permission', 'location:denied');
         onFail();
         return;
       }

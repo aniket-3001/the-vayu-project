@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { track } from '../../analytics';
 import type { PlaceMatch } from '../../data/geocode';
 import { PlacePicker } from '../../exposure/ui/PlacePicker';
 import type { Locate } from '../locate';
@@ -69,6 +70,7 @@ export function AddPlaceSheet({
               {...(search !== undefined ? { search } : {})}
               {...(locate !== undefined ? { locate } : {})}
               onPick={(pin) => {
+                track('feature', 'add_place');
                 const place: FoundPlace = {
                   name: pin.name,
                   ...(pin.detail === undefined || pin.detail === 'Detected'

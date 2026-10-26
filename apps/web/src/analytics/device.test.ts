@@ -7,9 +7,13 @@ const memoryStorage = (): Storage => {
   const m = new Map<string, string>();
   return {
     getItem: (k) => m.get(k) ?? null,
-    setItem: (k, v) => void m.set(k, v),
-    removeItem: (k) => void m.delete(k),
-    clear: () => m.clear(),
+    setItem: (k, v) => {
+      m.set(k, v);
+    },
+    removeItem: (k) => {
+      m.delete(k);
+    },
+    clear: () => { m.clear(); },
     key: () => null,
     get length() {
       return m.size;

@@ -1,5 +1,6 @@
 import { MapPin, Search } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
+import { track } from '../../analytics';
 import { searchPlaces, type PlaceMatch } from '../../data/geocode';
 
 type State =
@@ -50,6 +51,7 @@ export function PlaceSearch({
       return;
     }
     setState({ kind: 'loading' });
+    track('feature', 'search');
     search(text).then(
       (matches) => {
         if (mine !== latest.current) return;

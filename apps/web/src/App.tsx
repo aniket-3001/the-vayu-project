@@ -1,5 +1,7 @@
 import { ChevronLeft } from 'lucide-react';
+import { useEffect } from 'react';
 import { HashRouter, Link, Route, Routes, useLocation, useParams } from 'react-router-dom';
+import { track } from './analytics';
 import { AccountScreen } from './account/AccountScreen';
 import { ExposureScreen } from './exposure/ExposureScreen';
 import { LensScreen } from './lens/LensScreen';
@@ -71,8 +73,18 @@ function PlaceRoute(): React.JSX.Element {
 }
 
 /** The frame around every screen: the pinned bar, the screen, the tab bar and the assistant that stays put. */
+/** The screens whose visits are counted; any other address is not. */
+const SCREENS = new Set(['myair', 'place', 'account', 'exposure', 'map', 'lens', 'room', 'week', 'admin']);
+
 function Frame(): React.JSX.Element {
   const route = useLocation().pathname.split('/')[1] ?? '';
+  useEffect(() => {
+    const screen = route === '' ? 'myair' : route;
+    if (!SCREENS.has(screen)) return;
+    track('screen', screen);
+    if (screen === 'lens') track('feature', 'air_lens');
+    if (screen === 'exposure') track('feature', 'exposure');
+  }, [route]);
   return (
     <div className="frame" data-route={route === '' ? 'home' : route}>
       <Routes>
