@@ -12,7 +12,15 @@ const FIXTURES = [
   'Gurugram', // testing/sampleMap.ts
 ];
 // Local addresses, and the raw API address in place of the site's own.
-const ADDRESSES = ['localhost', 'execute-api'];
+const ADDRESSES = ['127.0.0.1', 'execute-api'];
+// A local address with a port is a development server baked in (the local API is on 8787). Two libraries mention localhost
+// harmlessly and are allowed: react-router uses a bare "http://localhost" as the base to read a relative address, and
+// Sentry's off-by-default Spotlight option names its own default port, 8969.
+const LOCAL_PORT_ALLOWED = new Set(['8969']);
+const localPorts = (text) =>
+  [...text.matchAll(/localhost:(\d+)/gu)]
+    .map((m) => m[1])
+    .filter((port) => !LOCAL_PORT_ALLOWED.has(port));
 
 const read = (dir) => {
   const out = [];
@@ -42,7 +50,10 @@ const real = 'apps/web/dist';
 if (!existsSync(real)) throw new Error(`${real} is missing: build the app first`);
 const text = read(real);
 if (text.length === 0) throw new Error(`${real} has no js, css or html: build the app first`);
-const found = [...FIXTURES, ...ADDRESSES].filter((m) => text.includes(m));
+const found = [
+  ...[...FIXTURES, ...ADDRESSES].filter((m) => text.includes(m)),
+  ...localPorts(text).map((port) => `localhost:${port}`),
+];
 if (found.length > 0) {
   console.error(
     `The deployed bundle contains made-up data or a local address: ${found.join(', ')}`,
