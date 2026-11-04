@@ -35,7 +35,7 @@ cannot finish them. Sources: `AS-BUILT.md` known limits, `architecture.md` pilla
 - [~] Automated accessibility checks (axe-core) on My Air, Exposure, Account and Room in `apps/web/src/a11y.test.tsx`; they found and fixed a real fault (place cards were list items given the button role, nesting links in a button). `[you]` still needed: colour contrast (jsdom cannot judge it), the map and Lens screens, and a pass with VoiceOver, TalkBack, Dynamic Type and reduced motion on real phones.
 - [x] Route-level code splitting: the map and the Lens now load on demand. Main script 1,871 KB to 775 KB (the map's 1,071 KB loads only when the map is opened). Further: split Exposure and the recorded days, and check first-load time on a real phone.
 - [x] Bundle-size budget: `scripts/check-bundle.mjs` fails `make prove` if the main script passes 900 KB (now 775 KB).
-- [ ] Offline: show the last good reading when there is no network.
+- [x] Offline: the last good reading of each place is saved on the device and shown at once after a restart, only while younger than three hours (the same limit the rules use for advice). In the same change the age on every card now keeps growing while a reading stays on screen (it used to freeze at the age it arrived with, which overstated freshness after a failed refresh). `apps/web/src/air/store.ts`, `storePersistence.test.ts`. Not done: a service worker so the app shell itself opens with no network on the website; the phone apps bundle the shell already.
 - [~] Load test script `scripts/load-test.mjs` (read-only routes only, capped at 50 requests a second, needs `--yes`). `[you]` run it against the live address before a launch and record the numbers.
 
 ## Phase 4: product and release

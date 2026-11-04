@@ -14,11 +14,33 @@ const RETRY_MS = 20_000;
 
 type Entry<T> =
   | { readonly status: 'loading'; readonly at: number }
-  | { readonly status: 'ready'; readonly data: T; readonly at: number }
+  | {
+      readonly status: 'ready';
+      readonly data: T;
+      readonly at: number;
+      /** When this data was fetched (or saved, if it came back from storage). `at` moves on a refresh; this does not. */
+      readonly loadedAt?: number;
+    }
   | { readonly status: 'error'; readonly message: string; readonly at: number };
 
 /** Hours of each India calendar date, 0 to 23, with `undefined` where nothing was measured. */
 type Ambient = ReadonlyMap<string, readonly (number | undefined)[]>;
+
+/**
+ * A saved reading is brought back after a restart only while it is younger than this. It is the same limit the rules use
+ * for a monitor's reading (`rules.trust.unusableMin`, three hours): past it, no advice is given from a reading, so there
+ * is nothing useful to show.
+ */
+const RESTORE_MAX_MS = 180 * 60_000;
+const SAVED_PREFIX = 'vayu.air.v1.';
+
+function defaultStorage(): Storage | undefined {
+  try {
+    return typeof window === 'undefined' ? undefined : window.localStorage;
+  } catch {
+    return undefined;
+  }
+}
 
 const EMPTY_DAY: readonly (number | undefined)[] = Array.from({ length: 24 }, () => undefined);
 
@@ -66,9 +88,14 @@ export class AirStore {
     return this.source.kind;
   }
 
+  /** Today's readings as shown, with the age moved on to now. Kept so a screen gets the same object until the minute changes. */
+  private readonly aged = new Map<string, { data: TodayData; extra: number; out: TodayData }>();
+
   constructor(
     private readonly source: AirSource,
     private readonly clockMs: () => number = Date.now,
+    /** Where the last good readings are kept, so a restart with no network still has something honest to show. */
+    private readonly storage: Storage | undefined = defaultStorage(),
   ) {}
 
   readonly subscribe = (listener: () => void): (() => void) => {
@@ -87,10 +114,71 @@ export class AirStore {
   // Reading
 
   today(pin: Pin): Loaded<TodayData> {
-    const peeked = this.todays.get(pin.id) === undefined ? this.source.peekToday?.(pin) : undefined;
-    if (peeked !== undefined)
-      this.todays.set(pin.id, { status: 'ready', data: peeked, at: this.clockMs() });
-    return this.view(this.todays.get(pin.id));
+    if (this.todays.get(pin.id) === undefined) {
+      const peeked = this.source.peekToday?.(pin);
+      if (peeked !== undefined)
+        this.todays.set(pin.id, { status: 'ready', data: peeked, at: this.clockMs() });
+      else {
+        const saved = this.restore(pin);
+        if (saved !== undefined) this.todays.set(pin.id, saved);
+      }
+    }
+    const entry = this.todays.get(pin.id);
+    return entry?.status === 'ready'
+      ? { status: 'ready', data: this.withAge(pin.id, entry.data, entry.loadedAt) }
+      : this.view(entry);
+  }
+
+  /**
+   * A reading says how old it was when it was fetched. Left like that it would keep saying "5 minutes" for as long as
+   * it stayed on screen, so the minutes since it arrived are added on. (A model estimate has no age to move on.)
+   */
+  private withAge(id: string, data: TodayData, loadedAt: number | undefined): TodayData {
+    if (loadedAt === undefined || data.provenance.label !== 'Nearby station') return data;
+    const extra = Math.max(0, Math.floor((this.clockMs() - loadedAt) / 60_000));
+    if (extra === 0) return data;
+    const cached = this.aged.get(id);
+    if (cached?.data === data && cached.extra === extra) return cached.out;
+    const out: TodayData = {
+      ...data,
+      provenance: { ...data.provenance, ageMinutes: data.provenance.ageMinutes + extra },
+    };
+    this.aged.set(id, { data, extra, out });
+    return out;
+  }
+
+  private persist(pin: Pin, data: TodayData): void {
+    if (this.source.kind !== 'live' || this.storage === undefined) return;
+    try {
+      this.storage.setItem(
+        SAVED_PREFIX + pin.id,
+        JSON.stringify({ savedAt: this.clockMs(), data }),
+      );
+    } catch {
+      // Storage full or not allowed: the app works the same, it just cannot show this reading after a restart.
+    }
+  }
+
+  private restore(pin: Pin): Entry<TodayData> | undefined {
+    if (this.source.kind !== 'live' || this.storage === undefined) return undefined;
+    try {
+      const raw = this.storage.getItem(SAVED_PREFIX + pin.id);
+      if (raw === null) return undefined;
+      const saved = JSON.parse(raw) as { savedAt?: unknown; data?: TodayData };
+      const age = typeof saved.savedAt === 'number' ? this.clockMs() - saved.savedAt : Number.NaN;
+      if (!(age >= 0 && age <= RESTORE_MAX_MS) || saved.data?.id !== pin.id) {
+        this.storage.removeItem(SAVED_PREFIX + pin.id);
+        return undefined;
+      }
+      return {
+        status: 'ready',
+        data: saved.data,
+        at: saved.savedAt as number,
+        loadedAt: saved.savedAt as number,
+      };
+    } catch {
+      return undefined;
+    }
   }
 
   /** The open-air PM2.5 for each hour of a date at a place, `undefined` for an hour nothing was measured. */
@@ -136,7 +224,15 @@ export class AirStore {
 
   /** Starts a load if there is none, the one there is old, or the last one failed a while ago. `force` always loads. */
   ensureToday(pin: Pin, force = false): void {
-    this.load(this.todays, pin.id, () => this.source.today(pin), force);
+    this.load(
+      this.todays,
+      pin.id,
+      () => this.source.today(pin),
+      force,
+      (data) => {
+        this.persist(pin, data);
+      },
+    );
   }
   ensureHistory(pin: Pin, force = false): void {
     this.peekHistory(pin);
@@ -180,6 +276,7 @@ export class AirStore {
     key: string,
     fetcher: () => Promise<T>,
     force: boolean,
+    onReady?: (data: T) => void,
   ): void {
     const entry = map.get(key);
     if (!force && this.fresh(entry)) return;
@@ -191,7 +288,8 @@ export class AirStore {
     } else map.set(key, { ...previous, at: this.clockMs() });
     fetcher().then(
       (data) => {
-        map.set(key, { status: 'ready', data, at: this.clockMs() });
+        map.set(key, { status: 'ready', data, at: this.clockMs(), loadedAt: this.clockMs() });
+        onReady?.(data);
         this.changed();
       },
       (error: unknown) => {
@@ -206,6 +304,15 @@ export class AirStore {
 
   /** Forget everything, for a retry from scratch. */
   clear(): void {
+    if (this.storage !== undefined) {
+      try {
+        for (const key of Object.keys(this.storage).filter((k) => k.startsWith(SAVED_PREFIX)))
+          this.storage.removeItem(key);
+      } catch {
+        // Nothing to forget if storage cannot be read.
+      }
+    }
+    this.aged.clear();
     this.todays.clear();
     this.histories.clear();
     this.monitors = undefined;
