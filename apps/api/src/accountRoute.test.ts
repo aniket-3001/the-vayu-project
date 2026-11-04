@@ -79,6 +79,43 @@ describe('the saved account', () => {
     expect((await call('GET', 'u3')).body).toEqual({ profile: null });
   });
 
+  it('treats a caller who only writes an identity into the request as nobody', async () => {
+    const { store } = setup();
+    store.items.set('victim', { profile: { 'vayu.pins.v1': 'secret' }, updatedAt: 'then' });
+    const deps = { store, clock: fixedClock('2026-10-12T10:00:00.000Z') };
+    // None of these is where the id comes from: only the field API Gateway sets after checking the token.
+    const forged = {
+      path: '/v1/me',
+      query: { userId: 'victim', sub: 'victim', user: 'victim' },
+      headers: {
+        'x-user-id': 'victim',
+        authorization: 'Bearer not-a-real-token',
+        'x-amzn-oidc-identity': 'victim',
+      },
+    };
+    for (const [method, body] of [
+      ['GET', undefined],
+      ['DELETE', undefined],
+      ['PUT', JSON.stringify({ profile: { 'vayu.x': 'y' }, userId: 'victim', sub: 'victim' })],
+    ] as const) {
+      const res = await handleAccount(
+        { ...forged, method, ...(body === undefined ? {} : { body }) },
+        deps,
+      );
+      expect(res.statusCode).toBe(401);
+    }
+    expect(store.items.get('victim')?.profile['vayu.pins.v1']).toBe('secret');
+  });
+
+  it("leaves another person's saved copy alone when one person deletes theirs", async () => {
+    const { call, store } = setup();
+    await call('PUT', 'u1', { profile: { 'vayu.pins.v1': 'a' } });
+    await call('PUT', 'u2', { profile: { 'vayu.pins.v1': 'b' } });
+    await call('DELETE', 'u1');
+    expect(store.items.has('u1')).toBe(false);
+    expect(store.items.get('u2')?.profile['vayu.pins.v1']).toBe('b');
+  });
+
   it('deletes what a person saved', async () => {
     const { call, store } = setup();
     await call('PUT', 'u1', { profile: { 'vayu.pins.v1': 'a' } });
