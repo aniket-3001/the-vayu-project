@@ -127,9 +127,11 @@ describe('the real loader', () => {
       const failed = vi.fn();
       r.onerror = failed;
       r.start();
-      await settle();
+      // The plugin arrives through a dynamic import, whose time depends on how busy the machine is: wait for the call.
+      await vi.waitFor(() => {
+        expect(start).toHaveBeenCalledTimes(1);
+      });
       expect(failed).not.toHaveBeenCalled();
-      expect(start).toHaveBeenCalledTimes(1);
     } finally {
       vi.doUnmock('@capacitor-community/speech-recognition');
       vi.unstubAllEnvs();

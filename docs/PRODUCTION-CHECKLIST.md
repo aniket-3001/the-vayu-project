@@ -29,7 +29,7 @@ cannot finish them. Sources: `AS-BUILT.md` known limits, `architecture.md` pilla
 
 ## Phase 3: quality and performance
 
-- [ ] Fix the flaky test `apps/web/src/assistant/nativeSpeech.test.ts` ("the real loader ... refuses to be treated as a promise"): it passes alone and fails when the machine is busy.
+- [x] Flaky `nativeSpeech.test.ts` fixed: it waited one timer tick for a dynamic import; it now waits for the call.
 - [ ] End-to-end tests in CI (Playwright for web; Maestro or Detox for the native shell).
 - [ ] Real-device matrix: iPhone, Android, Bluetooth on each. `[you]`
 - [ ] Accessibility audit with VoiceOver and TalkBack, Dynamic Type, reduced motion.
