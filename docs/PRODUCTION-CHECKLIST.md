@@ -32,7 +32,7 @@ cannot finish them. Sources: `AS-BUILT.md` known limits, `architecture.md` pilla
 - [x] Flaky `nativeSpeech.test.ts` fixed: it waited one timer tick for a dynamic import; it now waits for the call.
 - [ ] End-to-end tests in CI (Playwright for web; Maestro or Detox for the native shell).
 - [ ] Real-device matrix: iPhone, Android, Bluetooth on each. `[you]`
-- [ ] Accessibility audit with VoiceOver and TalkBack, Dynamic Type, reduced motion.
+- [~] Automated accessibility checks (axe-core) on My Air, Exposure, Account and Room in `apps/web/src/a11y.test.tsx`; they found and fixed a real fault (place cards were list items given the button role, nesting links in a button). `[you]` still needed: colour contrast (jsdom cannot judge it), the map and Lens screens, and a pass with VoiceOver, TalkBack, Dynamic Type and reduced motion on real phones.
 - [x] Route-level code splitting: the map and the Lens now load on demand. Main script 1,871 KB to 775 KB (the map's 1,071 KB loads only when the map is opened). Further: split Exposure and the recorded days, and check first-load time on a real phone.
 - [x] Bundle-size budget: `scripts/check-bundle.mjs` fails `make prove` if the main script passes 900 KB (now 775 KB).
 - [ ] Offline: show the last good reading when there is no network.
