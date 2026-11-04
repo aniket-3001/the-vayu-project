@@ -32,7 +32,7 @@ cannot finish them. Sources: `AS-BUILT.md` known limits, `architecture.md` pilla
 
 - [x] Flaky `nativeSpeech.test.ts` fixed: it waited one timer tick for a dynamic import; it now waits for the call.
 - [x] End-to-end tests of the built website in a real browser: `tests/e2e` (Playwright, phone-sized Chromium, API faked, served with the real content policy), `npm run e2e`, and an `e2e` job in CI. They check the app opens, a saved place shows its source, no content-policy violation on the main screens, and the last good reading survives a dead network. The fake API answer is checked against the real contract (`tests/e2e/mock.test.ts`). **Not covered:** the native shell (Maestro or Detox on a simulator), sign-in against a real pool, the map (headless Chromium has no WebGL) and the Lens (needs a camera).
-- [ ] Real-device matrix: iPhone, Android, Bluetooth on each. `[you]`
+- [ ] Real-device matrix: iPhone, Android, Bluetooth on each. `[you]` Maestro flows for the native shell are outlined in `docs/NEXT-STEPS.md` (section 6).
 - [~] Automated accessibility checks (axe-core) on My Air, Exposure, Account and Room in `apps/web/src/a11y.test.tsx`; they found and fixed a real fault (place cards were list items given the button role, nesting links in a button). `[you]` still needed: colour contrast (jsdom cannot judge it), the map and Lens screens, and a pass with VoiceOver, TalkBack, Dynamic Type and reduced motion on real phones.
 - [x] Route-level code splitting: the map and the Lens now load on demand. Main script 1,871 KB to 775 KB (the map's 1,071 KB loads only when the map is opened). Further: split Exposure and the recorded days, and check first-load time on a real phone.
 - [x] Bundle-size budget: `scripts/check-bundle.mjs` fails `make prove` if the main script passes 900 KB (now 775 KB).
@@ -41,10 +41,10 @@ cannot finish them. Sources: `AS-BUILT.md` known limits, `architecture.md` pilla
 
 ## Phase 4: product and release
 
-- [ ] Native push notifications for severe-air alerts (the largest feature gap).
+- [ ] Native push notifications for severe-air alerts (the largest feature gap). **Not built; designed in `docs/NEXT-STEPS.md` (section 1).** Needs an Apple push key and a Firebase project `[you]`.
 - [~] In-app feedback: a "Send feedback" link on the Account page opens the person's own mail app with the build written in (`apps/web/src/account/FeedbackLink.tsx`). It appears only when the build is given `VITE_SUPPORT_EMAIL`, so no address is baked in by default. `[you]`: choose a support address and build with it. Not built: notification settings (needs push, below), a first-run onboarding tour, and a feedback form that stores messages on our side (it would need a new API route, storage, quotas and a place to read them).
-- [ ] Home-screen widgets.
-- [ ] Interface in Hindi (today only the assistant is).
+- [ ] Home-screen widgets. **Not built; designed in `docs/NEXT-STEPS.md` (section 2).** Needs native code and a device.
+- [ ] Interface in Hindi (today only the assistant is). **Not built; designed in `docs/NEXT-STEPS.md` (section 3).** Needs a translator `[you]`.
 - [~] Release automation written but never run: `apps/mobile/fastlane/Fastfile`, `.github/workflows/release-mobile.yml`, `docs/RELEASE.md` (accounts, keys, secrets, every-release steps). `[you]` create the Apple and Google accounts and secrets, then run it once by hand and fix what breaks.
 - [x] Forced-update check: `GET /v1/app-config` names the oldest phone-app version served; older apps show an "Update Vayu" screen (`apps/web/src/native/updateGate.tsx`, fails open, website unaffected). Set with `cdk deploy -c minAppVersion=x.y.z`; default is no limit.
 
