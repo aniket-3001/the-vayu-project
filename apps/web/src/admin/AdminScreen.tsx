@@ -155,7 +155,7 @@ export function AdminScreen({ api }: { readonly api?: AdminApi }): React.JSX.Ele
 
   useEffect(() => {
     if (real === undefined) {
-      navigate('/', { replace: true });
+      void navigate('/', { replace: true });
       return;
     }
     let current = true;
@@ -164,7 +164,7 @@ export function AdminScreen({ api }: { readonly api?: AdminApi }): React.JSX.Ele
         if (current) setReady(true);
       },
       () => {
-        if (current) navigate('/', { replace: true });
+        if (current) void navigate('/', { replace: true });
       },
     );
     return () => {
