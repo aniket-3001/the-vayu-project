@@ -51,6 +51,11 @@ test.describe('the built app in a real browser', () => {
     await tabs.getByRole('link', { name: 'My Air' }).click();
     await page.getByRole('link', { name: /Open Home/u }).click();
     await expect(page).toHaveURL(/#\/place\//u);
+    await expect(page.getByRole('heading', { name: 'Home' }).first()).toBeVisible();
+    for (const hash of ['#/account', '#/room', '#/exposure', '#/']) {
+      await page.goto(`/${hash}`);
+      await page.waitForLoadState('networkidle');
+    }
     expect(problems.filter((p) => /content security policy|refused to/iu.test(p))).toEqual([]);
   });
 
