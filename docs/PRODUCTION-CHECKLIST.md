@@ -25,7 +25,7 @@ cannot finish them. Sources: `AS-BUILT.md` known limits, `architecture.md` pilla
 - [x] Runbook: provider outage, kill switches, by-symptom table: `docs/RUNBOOK.md`. Still needed: a named person to call, and the commands tried once for real. `[you]`
 - [ ] SLOs (uptime, p95 latency, data freshness) with alarms on them.
 - [ ] Budget anomaly detection, not only email budgets. `[you]`
-- [ ] Threat model written down; an outside test before public launch.
+- [~] Threat model written down: `docs/THREAT-MODEL.md` (15 threats, what stops each, what is left). Still `[you]`: an outside review or pen test before a public launch.
 
 ## Phase 3: quality and performance
 
