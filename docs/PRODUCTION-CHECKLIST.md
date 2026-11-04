@@ -19,7 +19,7 @@ cannot finish them. Sources: `AS-BUILT.md` known limits, `architecture.md` pilla
 ## Phase 2: security and operations
 
 - [~] AWS WAF on CloudFront: `infra/lib/Edge.ts` (per-address rate limits, harder on the assistant and voice routes, plus AWS's IP-reputation, known-bad-input and common rule sets), tested. Off until deployed. `[you]`: `cd infra && npx cdk deploy VayuEdge -c edge=on`, then `npx cdk deploy Vayu -c webAclArn=<the ARN it prints>`. Watch the WAF metrics in CloudWatch for a week for false blocks.
-- [ ] Cognito: switch from `USER_PASSWORD_AUTH` to SRP; add optional MFA.
+- [~] Cognito sign-in now uses SRP (the password is never sent): `apps/web/src/account/srp.ts`, checked step by step against the official library, wired into `cognito.ts`, the pool client allows it. The old password flow stays enabled for phone apps built before this; `[you]` after the minimum app version has retired them, remove `userPassword` in `infra/lib/Accounts.ts`. Not verified against a live pool (the docs say no account was ever made on it by a script): sign in once on a real device after deploying. **MFA is not built:** it needs a second challenge screen and a choice of method (authenticator app or SMS), and a pool change.
 - [ ] Tokens (id, access and **refresh** token) are kept in `localStorage` (verified in `apps/web/src/account/AccountContext.tsx`). In the phone apps move them to Keychain/Keystore through a Capacitor secure-storage plugin; needs a real-device test.
 - [ ] Staging stack and a deploy pipeline (CDK Pipelines or GitHub Actions) with rollback.
 - [x] Runbook: provider outage, kill switches, by-symptom table: `docs/RUNBOOK.md`. Still needed: a named person to call, and the commands tried once for real. `[you]`

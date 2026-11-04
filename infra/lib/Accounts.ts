@@ -48,8 +48,10 @@ export class Accounts extends Construct {
     this.client = this.userPool.addClient('Web', {
       generateSecret: false,
       disableOAuth: true,
-      // The app sends the email and password to Cognito over HTTPS. There is no hosted page and no OAuth redirect.
-      authFlows: { userPassword: true },
+      // There is no hosted page and no OAuth redirect. The app signs in with SRP, which never sends the password. The
+      // older flow (the password over HTTPS) stays on while phone apps built before SRP are still installed; turn it off
+      // (remove `userPassword`) once `minAppVersion` has retired them.
+      authFlows: { userSrp: true, userPassword: true },
       // The same answer whether or not an email has an account, so the form cannot be used to find out who has one.
       preventUserExistenceErrors: true,
       idTokenValidity: Duration.hours(1),

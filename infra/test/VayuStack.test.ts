@@ -1023,7 +1023,11 @@ describe('accounts', () => {
   it('has an app client with no secret, no hosted page and an answer that does not say who has an account', () => {
     template.hasResourceProperties('AWS::Cognito::UserPoolClient', {
       GenerateSecret: false,
-      ExplicitAuthFlows: Match.arrayWith(['ALLOW_USER_PASSWORD_AUTH', 'ALLOW_REFRESH_TOKEN_AUTH']),
+      ExplicitAuthFlows: Match.arrayWith([
+        'ALLOW_USER_SRP_AUTH',
+        'ALLOW_USER_PASSWORD_AUTH',
+        'ALLOW_REFRESH_TOKEN_AUTH',
+      ]),
       PreventUserExistenceErrors: 'ENABLED',
     });
     const clients = Object.values(template.findResources('AWS::Cognito::UserPoolClient'));
