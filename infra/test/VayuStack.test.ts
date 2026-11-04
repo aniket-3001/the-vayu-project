@@ -1024,8 +1024,8 @@ describe('accounts', () => {
     template.hasResourceProperties('AWS::Cognito::UserPoolClient', {
       GenerateSecret: false,
       ExplicitAuthFlows: Match.arrayWith([
-        'ALLOW_USER_SRP_AUTH',
         'ALLOW_USER_PASSWORD_AUTH',
+        'ALLOW_USER_SRP_AUTH',
         'ALLOW_REFRESH_TOKEN_AUTH',
       ]),
       PreventUserExistenceErrors: 'ENABLED',
