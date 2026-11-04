@@ -36,7 +36,7 @@ cannot finish them. Sources: `AS-BUILT.md` known limits, `architecture.md` pilla
 - [x] Route-level code splitting: the map and the Lens now load on demand. Main script 1,871 KB to 775 KB (the map's 1,071 KB loads only when the map is opened). Further: split Exposure and the recorded days, and check first-load time on a real phone.
 - [x] Bundle-size budget: `scripts/check-bundle.mjs` fails `make prove` if the main script passes 900 KB (now 775 KB).
 - [ ] Offline: show the last good reading when there is no network.
-- [ ] Load test before a public launch.
+- [~] Load test script `scripts/load-test.mjs` (read-only routes only, capped at 50 requests a second, needs `--yes`). `[you]` run it against the live address before a launch and record the numbers.
 
 ## Phase 4: product and release
 
@@ -52,4 +52,4 @@ cannot finish them. Sources: `AS-BUILT.md` known limits, `architecture.md` pilla
 - [~] Privacy policy and terms drafted from what the app actually does: `docs/PRIVACY-POLICY.md`, `docs/TERMS.md`. `[you]` fill in the responsible person and contact, have a lawyer review (children's data under DPDP is flagged), publish at a public address, link from the app and both stores.
 - [ ] DPDP Act (and GDPR if beyond India) review: consent, export, retention.
 - [ ] Health-disclaimer review by a qualified person.
-- [ ] Sensor accuracy validated against a reference monitor before any accuracy claim.
+- [~] Validation plan for the sensor, the room verdict, the purifier's CADR, GRAP and the advice thresholds: `docs/VALIDATION-PLAN.md`. `[you]` needs the hardware and a reference monitor.
