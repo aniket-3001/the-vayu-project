@@ -16,6 +16,8 @@ const edge = app.node.tryGetContext('edge') as string | undefined;
 const minAppVersion = app.node.tryGetContext('minAppVersion') as string | undefined;
 // e.g. `cdk deploy Vayu -c crashReportingHost=o123.ingest.us.sentry.io` lets the page send crash reports there.
 const crashReportingHost = app.node.tryGetContext('crashReportingHost') as string | undefined;
+// e.g. `cdk deploy VayuStaging -c stage=staging` makes a second, separate copy to try changes on before the real one.
+const stage = app.node.tryGetContext('stage') as string | undefined;
 const webAclArn = app.node.tryGetContext('webAclArn') as string | undefined;
 if (edge === 'on') {
   new EdgeStack(app, 'VayuEdge', {
@@ -25,16 +27,22 @@ if (edge === 'on') {
   });
 }
 
-new VayuStack(app, 'Vayu', {
-  env: {
-    region: 'ap-south-1',
-    ...(process.env.CDK_DEFAULT_ACCOUNT ? { account: process.env.CDK_DEFAULT_ACCOUNT } : {}),
+// A stage gets its own stack, and by default runs none of the scheduled jobs that spend the shared provider allowances.
+new VayuStack(
+  app,
+  stage === undefined ? 'Vayu' : `Vayu${stage.charAt(0).toUpperCase()}${stage.slice(1)}`,
+  {
+    ...(stage === undefined ? {} : { stage, harvestEnabled: false, ingestEnabled: false }),
+    env: {
+      region: 'ap-south-1',
+      ...(process.env.CDK_DEFAULT_ACCOUNT ? { account: process.env.CDK_DEFAULT_ACCOUNT } : {}),
+    },
+    ...(alertEmail === undefined ? {} : { alertEmail }),
+    ...(includeSite === undefined ? {} : { includeSite: includeSite !== 'false' }),
+    ...(minAppVersion === undefined ? {} : { minAppVersion }),
+    ...(crashReportingHost === undefined ? {} : { crashReportingHost }),
+    ...(webAclArn === undefined ? {} : { webAclArn }),
+    ...(originSecret === undefined ? {} : { enforceOriginSecret: originSecret === 'on' }),
+    ...(voice === undefined ? {} : { voiceEnabled: voice === 'on' }),
   },
-  ...(alertEmail === undefined ? {} : { alertEmail }),
-  ...(includeSite === undefined ? {} : { includeSite: includeSite !== 'false' }),
-  ...(minAppVersion === undefined ? {} : { minAppVersion }),
-  ...(crashReportingHost === undefined ? {} : { crashReportingHost }),
-  ...(webAclArn === undefined ? {} : { webAclArn }),
-  ...(originSecret === undefined ? {} : { enforceOriginSecret: originSecret === 'on' }),
-  ...(voice === undefined ? {} : { voiceEnabled: voice === 'on' }),
-});
+);

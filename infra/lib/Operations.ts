@@ -17,6 +17,7 @@ import { Topic } from 'aws-cdk-lib/aws-sns';
 import { EmailSubscription } from 'aws-cdk-lib/aws-sns-subscriptions';
 import type { IStateMachine } from 'aws-cdk-lib/aws-stepfunctions';
 import { Construct } from 'constructs';
+import { stageTitle } from './stage';
 
 export interface OperationsProps {
   readonly apiFunction: IFunction;
@@ -169,7 +170,7 @@ export class Operations extends Construct {
       ),
     ];
 
-    const dashboard = new Dashboard(this, 'Dashboard', { dashboardName: 'Vayu' });
+    const dashboard = new Dashboard(this, 'Dashboard', { dashboardName: stageTitle(this) });
     const graph = (title: string, left: IMetric[], right: IMetric[] = []): GraphWidget =>
       new GraphWidget({ title, left, right, width: 8, height: 6 });
     dashboard.addWidgets(

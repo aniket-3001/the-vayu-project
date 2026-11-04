@@ -1,0 +1,87 @@
+name: deploy
+# Deploys the stack and the site. NOT YET RUN: it needs an AWS role that GitHub may assume, which only the account owner can
+# create (docs/DEPLOY.md). It runs only when started by hand (Actions tab, "Run workflow"), never by a push.
+#
+# Order, on purpose: the checks first; then staging (a separate copy of the stack); then, only if "production" is chosen and
+# a person approves in the "production" environment, the real thing.
+on:
+  workflow_dispatch:
+    inputs:
+      target:
+        description: Where to deploy
+        type: choice
+        options: [staging, production]
+        default: staging
+permissions:
+  contents: read
+  id-token: write # lets the job ask AWS for short-lived credentials; no AWS key is stored in GitHub
+concurrency:
+  group: deploy
+  cancel-in-progress: false
+jobs:
+  checks:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npx vitest run --maxWorkers=2
+      - run: npm run lint
+      - run: npm run typecheck
+  staging:
+    needs: checks
+    runs-on: ubuntu-24.04
+    environment: staging
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars.AWS_DEPLOY_ROLE_ARN }}
+          aws-region: ap-south-1
+      - name: Deploy the staging stack
+        working-directory: infra
+        run: npx cdk deploy VayuStaging -c stage=staging --require-approval never --outputs-file ../staging-outputs.json
+      - name: Upload the site to staging
+        run: STACK=VayuStaging scripts/deploy-site.sh
+      # Informational for now: staging runs none of the scheduled jobs (they share the real stack's provider allowances), so
+      # some data checks may fail there for harmless reasons. Make this step blocking once a first real run shows which pass.
+      - name: Check the staging address
+        continue-on-error: true
+        run: |
+          URL=$(node -e "const o=require('./staging-outputs.json').VayuStaging;console.log(o.SiteUrl)")
+          echo "staging: $URL"
+          npx tsx tests/smoke/live.ts "$URL"
+  production:
+    if: inputs.target == 'production'
+    needs: staging
+    runs-on: ubuntu-24.04
+    environment: production # set "required reviewers" on this environment: that is the approval step
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars.AWS_DEPLOY_ROLE_ARN }}
+          aws-region: ap-south-1
+      - name: What would change
+        working-directory: infra
+        run: npx cdk diff Vayu
+      - name: Deploy the stack
+        working-directory: infra
+        run: npx cdk deploy Vayu --require-approval never
+      - name: Upload the site
+        run: scripts/deploy-site.sh
+      - name: Check the live address
+        run: npx tsx tests/smoke/live.ts

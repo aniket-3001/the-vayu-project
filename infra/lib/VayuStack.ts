@@ -23,6 +23,7 @@ import { Ingest } from './Ingest';
 import { Operations } from './Operations';
 import { Site } from './Site';
 import { Stations } from './Stations';
+import { STAGE_CONTEXT, stageTitle } from './stage';
 
 export interface VayuStackProps extends StackProps {
   /** Where budget alerts go. Without it, no budget is created. */
@@ -49,6 +50,11 @@ export interface VayuStackProps extends StackProps {
   readonly webAclArn?: string;
   /** The oldest phone-app version the API still serves; older apps show an "Update Vayu" screen. Defaults to no limit. */
   readonly minAppVersion?: string;
+  /**
+   * A second copy of the stack beside the real one (for example `staging`): the few resources with fixed names get the
+   * stage in them. Lower-case letters and digits. Without it, every name is what it always was.
+   */
+  readonly stage?: string;
   /** A host the app may send crash reports to (the one in the build's Sentry address). Without it none is allowed. */
   readonly crashReportingHost?: string;
 }
@@ -63,6 +69,8 @@ const apiEntry = fileURLToPath(new URL('../../apps/api/src/handler.ts', import.m
 export class VayuStack extends Stack {
   constructor(scope: Construct, id: string, props: VayuStackProps = {}) {
     super(scope, id, props);
+    // Must come before any resource is made: every name that carries the stage reads it from here.
+    if (props.stage !== undefined) this.node.setContext(STAGE_CONTEXT, props.stage);
 
     const table = (name: string, sortKey?: string): Table =>
       new Table(this, name, {
@@ -324,12 +332,12 @@ export class VayuStack extends Stack {
       // A budget only fires when the month's total passes a line. This watches for an unusual jump in any service, such
       // as a flood of assistant calls, within a day, and mails a summary once the extra cost passes $5.
       const spendMonitor = new CfnAnomalyMonitor(this, 'SpendMonitor', {
-        monitorName: 'Vayu spend by service',
+        monitorName: `${stageTitle(this)} spend by service`,
         monitorType: 'DIMENSIONAL',
         monitorDimension: 'SERVICE',
       });
       new CfnAnomalySubscription(this, 'SpendAnomalies', {
-        subscriptionName: 'Vayu spend anomalies',
+        subscriptionName: `${stageTitle(this)} spend anomalies`,
         frequency: 'DAILY',
         monitorArnList: [spendMonitor.attrMonitorArn],
         subscribers: [{ type: 'EMAIL', address: props.alertEmail }],

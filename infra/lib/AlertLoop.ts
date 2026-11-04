@@ -9,6 +9,7 @@ import type { ISecret } from 'aws-cdk-lib/aws-secretsmanager';
 import { StringParameter } from 'aws-cdk-lib/aws-ssm';
 import { DefinitionBody, StateMachine, StateMachineType } from 'aws-cdk-lib/aws-stepfunctions';
 import { Construct } from 'constructs';
+import { stageName } from './stage';
 import { alertLoopDefinition } from './alertLoopDefinition';
 
 const sendEntry = fileURLToPath(new URL('../../apps/api/src/sendHandler.ts', import.meta.url));
@@ -45,7 +46,7 @@ export class AlertLoop extends Construct {
     super(scope, id);
 
     this.sendsEnabled = new StringParameter(this, 'SendsEnabled', {
-      parameterName: SENDS_ENABLED_PARAMETER,
+      parameterName: stageName(this, SENDS_ENABLED_PARAMETER),
       stringValue: 'false',
       description: 'Kill switch for alert sends. Only the exact value "true" lets a send through.',
     });
