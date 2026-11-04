@@ -29,10 +29,11 @@ cannot finish them. Sources: `AS-BUILT.md` known limits, `architecture.md` pilla
 
 ## Phase 3: quality and performance
 
+- [ ] Fix the flaky test `apps/web/src/assistant/nativeSpeech.test.ts` ("the real loader ... refuses to be treated as a promise"): it passes alone and fails when the machine is busy.
 - [ ] End-to-end tests in CI (Playwright for web; Maestro or Detox for the native shell).
 - [ ] Real-device matrix: iPhone, Android, Bluetooth on each. `[you]`
 - [ ] Accessibility audit with VoiceOver and TalkBack, Dynamic Type, reduced motion.
-- [ ] Route-level code splitting (the main script is 1.7 MB): lazy-load map, Lens, three.js.
+- [x] Route-level code splitting: the map and the Lens now load on demand. Main script 1,871 KB to 775 KB (the map's 1,071 KB loads only when the map is opened). Further: split Exposure and the recorded days, and check first-load time on a real phone.
 - [ ] Bundle-size budget that fails CI on growth.
 - [ ] Offline: show the last good reading when there is no network.
 - [ ] Load test before a public launch.

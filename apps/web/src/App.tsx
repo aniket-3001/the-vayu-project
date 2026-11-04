@@ -4,9 +4,7 @@ import { HashRouter, Link, Route, Routes, useLocation, useParams } from 'react-r
 import { track } from './analytics';
 import { AccountScreen } from './account/AccountScreen';
 import { ExposureScreen } from './exposure/ExposureScreen';
-import { LensScreen } from './lens/LensScreen';
 import { RoomScreen } from './devices/ui/RoomScreen';
-import { MapScreen } from './map/MapScreen';
 import { MyAirScreen } from './myair/MyAirScreen';
 import { TabBar } from './nav/TabBar';
 import { DockButtons } from './nav/Dock';
@@ -74,10 +72,26 @@ function PlaceRoute(): React.JSX.Element {
 
 /** The frame around every screen: the pinned bar, the screen, the tab bar and the assistant that stays put. */
 // A separate chunk, so the page everyone downloads carries none of the admin screen.
-const AdminScreen = lazy(() => import('./admin/AdminScreen').then((m) => ({ default: m.AdminScreen })));
+const AdminScreen = lazy(() =>
+  import('./admin/AdminScreen').then((m) => ({ default: m.AdminScreen })),
+);
+
+// The map carries the whole map library and the Lens its drawing code; neither is needed to open My Air.
+const MapScreen = lazy(() => import('./map/MapScreen').then((m) => ({ default: m.MapScreen })));
+const LensScreen = lazy(() => import('./lens/LensScreen').then((m) => ({ default: m.LensScreen })));
 
 /** The screens whose visits are counted; any other address is not. */
-const SCREENS = new Set(['myair', 'place', 'account', 'exposure', 'map', 'lens', 'room', 'week', 'admin']);
+const SCREENS = new Set([
+  'myair',
+  'place',
+  'account',
+  'exposure',
+  'map',
+  'lens',
+  'room',
+  'week',
+  'admin',
+]);
 
 function Frame(): React.JSX.Element {
   const route = useLocation().pathname.split('/')[1] ?? '';
@@ -98,8 +112,22 @@ function Frame(): React.JSX.Element {
         <Route path="/place/:id" element={<PlaceRoute />} />
         <Route path="/account" element={<AccountScreen />} />
         <Route path="/exposure" element={<ExposureScreen />} />
-        <Route path="/map" element={<MapScreen />} />
-        <Route path="/lens" element={<LensScreen />} />
+        <Route
+          path="/map"
+          element={
+            <Suspense fallback={null}>
+              <MapScreen />
+            </Suspense>
+          }
+        />
+        <Route
+          path="/lens"
+          element={
+            <Suspense fallback={null}>
+              <LensScreen />
+            </Suspense>
+          }
+        />
         <Route
           path="/admin"
           element={
