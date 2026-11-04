@@ -78,6 +78,18 @@ describe('the Vayu stack', () => {
         }),
       ]),
     });
+    // Spend anomalies are mailed to the same address, and exist only when one is given.
+    template.resourceCountIs('AWS::CE::AnomalyMonitor', 0);
+    template.resourceCountIs('AWS::CE::AnomalySubscription', 0);
+    const withMail = synth('someone@example.com');
+    withMail.hasResourceProperties('AWS::CE::AnomalyMonitor', {
+      MonitorType: 'DIMENSIONAL',
+      MonitorDimension: 'SERVICE',
+    });
+    withMail.hasResourceProperties('AWS::CE::AnomalySubscription', {
+      Frequency: 'DAILY',
+      Subscribers: [{ Address: 'someone@example.com', Type: 'EMAIL' }],
+    });
   });
 
   it('accepts POST (the Telegram webhook) alongside GET on the same route', () => {

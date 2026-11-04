@@ -24,7 +24,7 @@ cannot finish them. Sources: `AS-BUILT.md` known limits, `architecture.md` pilla
 - [ ] Staging stack and a deploy pipeline (CDK Pipelines or GitHub Actions) with rollback.
 - [x] Runbook: provider outage, kill switches, by-symptom table: `docs/RUNBOOK.md`. Still needed: a named person to call, and the commands tried once for real. `[you]`
 - [x] SLO alarms: `ApiAvailability` (over 2% of requests answered with a server error across 15 minutes, ignoring quiet periods) and `ApiSlow` (p95 latency over 3 s for 15 minutes), alongside the existing stopped-job alarms for data freshness (`HarvestStopped`, `StationsStopped`). Tested in `infra/test/VayuStack.test.ts`. Thresholds are first guesses; tune them after a week of real traffic. Alarms reach no one until an email is subscribed (see the first item).
-- [ ] Budget anomaly detection, not only email budgets. `[you]`
+- [~] Cost anomaly detection added next to the budget (`AWS::CE::AnomalyMonitor` by service, a daily mail when an unusual jump costs $5 or more), created only when `alertEmail` is given and tested. `[you]` deploy with `-c alertEmail=...`. AWS may already have a default monitor in the account; a second is harmless.
 - [~] Threat model written down: `docs/THREAT-MODEL.md` (15 threats, what stops each, what is left). Still `[you]`: an outside review or pen test before a public launch.
 
 ## Phase 3: quality and performance

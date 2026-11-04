@@ -4,6 +4,7 @@ import type { CfnStage } from 'aws-cdk-lib/aws-apigatewayv2';
 import { HttpApi, HttpMethod, HttpStage } from 'aws-cdk-lib/aws-apigatewayv2';
 import { HttpLambdaIntegration } from 'aws-cdk-lib/aws-apigatewayv2-integrations';
 import { CfnBudget } from 'aws-cdk-lib/aws-budgets';
+import { CfnAnomalyMonitor, CfnAnomalySubscription } from 'aws-cdk-lib/aws-ce';
 import { AttributeType, BillingMode, Table } from 'aws-cdk-lib/aws-dynamodb';
 import { Effect, PolicyStatement } from 'aws-cdk-lib/aws-iam';
 import { Architecture, Runtime, Tracing } from 'aws-cdk-lib/aws-lambda';
@@ -319,6 +320,26 @@ export class VayuStack extends Stack {
             subscribers: [{ subscriptionType: 'EMAIL', address: props.alertEmail }],
           },
         ],
+      });
+      // A budget only fires when the month's total passes a line. This watches for an unusual jump in any service, such
+      // as a flood of assistant calls, within a day, and mails a summary once the extra cost passes $5.
+      const spendMonitor = new CfnAnomalyMonitor(this, 'SpendMonitor', {
+        monitorName: 'Vayu spend by service',
+        monitorType: 'DIMENSIONAL',
+        monitorDimension: 'SERVICE',
+      });
+      new CfnAnomalySubscription(this, 'SpendAnomalies', {
+        subscriptionName: 'Vayu spend anomalies',
+        frequency: 'DAILY',
+        monitorArnList: [spendMonitor.attrMonitorArn],
+        subscribers: [{ type: 'EMAIL', address: props.alertEmail }],
+        thresholdExpression: JSON.stringify({
+          Dimensions: {
+            Key: 'ANOMALY_TOTAL_IMPACT_ABSOLUTE',
+            MatchOptions: ['GREATER_THAN_OR_EQUAL'],
+            Values: ['5'],
+          },
+        }),
       });
     }
 
