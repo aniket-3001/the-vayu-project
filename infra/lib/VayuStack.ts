@@ -44,6 +44,8 @@ export interface VayuStackProps extends StackProps {
    * anything that calls API Gateway's own address directly (old phone builds, a smoke test without LIVE_URL) is then refused.
    */
   readonly enforceOriginSecret?: boolean;
+  /** The ARN of the firewall made by EdgeStack. Without it the public address has no firewall. */
+  readonly webAclArn?: string;
 }
 
 const apiEntry = fileURLToPath(new URL('../../apps/api/src/handler.ts', import.meta.url));
@@ -285,6 +287,7 @@ export class VayuStack extends Stack {
       const site = new Site(this, 'Site', {
         api,
         originSecret: originSecret?.secretValue.unsafeUnwrap(),
+        webAclArn: props.webAclArn,
       });
       new CfnOutput(this, 'SiteUrl', {
         value: `https://${site.distribution.distributionDomainName}`,

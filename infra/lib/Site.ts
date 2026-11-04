@@ -93,6 +93,8 @@ export interface SiteProps {
   /** A secret CloudFront adds as `x-origin-verify` on every request to the API, which refuses requests without it. */
   readonly originSecret?: string | undefined;
   readonly api: HttpApi;
+  /** The ARN of a web firewall made in us-east-1 (see Edge.ts). Without it the address has no firewall. */
+  readonly webAclArn?: string | undefined;
 }
 
 /**
@@ -228,6 +230,7 @@ export class Site extends Construct {
     };
 
     this.distribution = new Distribution(this, 'Distribution', {
+      ...(props.webAclArn === undefined ? {} : { webAclId: props.webAclArn }),
       defaultRootObject: 'index.html',
       priceClass: PriceClass.PRICE_CLASS_200,
       defaultBehavior: {

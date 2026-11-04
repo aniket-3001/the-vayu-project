@@ -18,7 +18,7 @@ cannot finish them. Sources: `AS-BUILT.md` known limits, `architecture.md` pilla
 
 ## Phase 2: security and operations
 
-- [ ] AWS WAF on CloudFront: per-IP rate rule plus managed rule sets. `[you]` to deploy
+- [~] AWS WAF on CloudFront: `infra/lib/Edge.ts` (per-address rate limits, harder on the assistant and voice routes, plus AWS's IP-reputation, known-bad-input and common rule sets), tested. Off until deployed. `[you]`: `cd infra && npx cdk deploy VayuEdge -c edge=on`, then `npx cdk deploy Vayu -c webAclArn=<the ARN it prints>`. Watch the WAF metrics in CloudWatch for a week for false blocks.
 - [ ] Cognito: switch from `USER_PASSWORD_AUTH` to SRP; add optional MFA.
 - [ ] Tokens (id, access and **refresh** token) are kept in `localStorage` (verified in `apps/web/src/account/AccountContext.tsx`). In the phone apps move them to Keychain/Keystore through a Capacitor secure-storage plugin; needs a real-device test.
 - [ ] Staging stack and a deploy pipeline (CDK Pipelines or GitHub Actions) with rollback.
