@@ -1,6 +1,6 @@
 // Fails if the deployed bundle holds any made-up data from the test fixtures (apps/web/src/testing) or a local
 // address. Run after `VITE_API_URL= npm run build -w @vayu/web`.
-import { readdirSync, readFileSync, existsSync } from 'node:fs';
+import { readdirSync, readFileSync, existsSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 
 // One string from each fixture, so importing any of them into the app is caught.
@@ -50,3 +50,18 @@ if (found.length > 0) {
   process.exit(1);
 }
 console.log(`check-bundle: ${real} has no made-up data`);
+
+// Size budget for the script every visitor downloads first. The map, the Lens, the admin screen and the recorded days
+// load on demand; if this grows past the budget, something heavy has crept back into the first load.
+const MAIN_BUDGET_KB = 900;
+const html = readFileSync(join(real, 'index.html'), 'utf8');
+const mainSrc = /<script[^>]*type="module"[^>]*src="([^"]+)"/u.exec(html)?.[1];
+if (mainSrc === undefined) throw new Error('check-bundle: index.html has no module script');
+const mainKb = statSync(join(real, mainSrc.replace(/^\//u, ''))).size / 1024;
+if (mainKb > MAIN_BUDGET_KB) {
+  console.error(
+    `check-bundle: the main script is ${mainKb.toFixed(0)} KB, over the ${MAIN_BUDGET_KB} KB budget. Load the new weight on demand (React.lazy) or raise the budget on purpose.`,
+  );
+  process.exit(1);
+}
+console.log(`check-bundle: main script ${mainKb.toFixed(0)} KB (budget ${MAIN_BUDGET_KB} KB)`);
