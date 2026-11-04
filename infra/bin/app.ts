@@ -7,6 +7,8 @@ const alertEmail = app.node.tryGetContext('alertEmail') as string | undefined;
 const includeSite = app.node.tryGetContext('includeSite') as string | undefined;
 // e.g. `cdk deploy --context voice=on` adds a Hindi voice note to alerts that have Hindi wording.
 const voice = app.node.tryGetContext('voice') as string | undefined;
+// e.g. `cdk deploy --context originSecret=on` makes the API refuse anything that did not come through CloudFront.
+const originSecret = app.node.tryGetContext('originSecret') as string | undefined;
 
 new VayuStack(app, 'Vayu', {
   env: {
@@ -15,5 +17,6 @@ new VayuStack(app, 'Vayu', {
   },
   ...(alertEmail === undefined ? {} : { alertEmail }),
   ...(includeSite === undefined ? {} : { includeSite: includeSite !== 'false' }),
+  ...(originSecret === undefined ? {} : { enforceOriginSecret: originSecret === 'on' }),
   ...(voice === undefined ? {} : { voiceEnabled: voice === 'on' }),
 });

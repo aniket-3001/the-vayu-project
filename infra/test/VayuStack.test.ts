@@ -1070,7 +1070,9 @@ describe('accounts', () => {
   it('passes the token through uncached on the signed-in event and admin paths', () => {
     const config = (
       Object.values(template.findResources('AWS::CloudFront::Distribution'))[0] as {
-        Properties: { DistributionConfig: { CacheBehaviors: { PathPattern: string; CachePolicyId: string }[] } };
+        Properties: {
+          DistributionConfig: { CacheBehaviors: { PathPattern: string; CachePolicyId: string }[] };
+        };
       }
     ).Properties.DistributionConfig;
     for (const path of ['/v1/me/events', '/v1/admin/*'])
@@ -1088,5 +1090,37 @@ describe('accounts', () => {
     expect(Object.keys(api?.Properties.Environment?.Variables ?? {})).toContain(
       'USER_POOL_CLIENT_ID',
     );
+  });
+});
+
+describe('the origin secret', () => {
+  interface Origin {
+    OriginCustomHeaders?: { HeaderName: string }[];
+  }
+  const originHeaders = (template: Template): { HeaderName: string }[] =>
+    Object.values(template.findResources('AWS::CloudFront::Distribution')).flatMap((d) => {
+      const config = (d.Properties as { DistributionConfig: { Origins: Origin[] } })
+        .DistributionConfig;
+      return config.Origins.flatMap((o) => o.OriginCustomHeaders ?? []);
+    });
+
+  it('is off by default, so nothing that calls the API directly is cut off', () => {
+    const template = synthWith({});
+    expect(originHeaders(template)).toEqual([]);
+    template.resourcePropertiesCountIs(
+      'AWS::Lambda::Function',
+      { Environment: { Variables: Match.objectLike({ ORIGIN_SECRET_ARN: Match.anyValue() }) } },
+      0,
+    );
+  });
+
+  it('when on, CloudFront adds it to the API origins and the API reads it', () => {
+    const template = synthWith({ enforceOriginSecret: true });
+    const headers = originHeaders(template);
+    expect(headers.length).toBeGreaterThan(0);
+    expect(headers.every((h) => h.HeaderName === 'x-origin-verify')).toBe(true);
+    template.hasResourceProperties('AWS::Lambda::Function', {
+      Environment: { Variables: Match.objectLike({ ORIGIN_SECRET_ARN: Match.anyValue() }) },
+    });
   });
 });

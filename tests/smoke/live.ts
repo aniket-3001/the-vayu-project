@@ -20,7 +20,7 @@ import {
   checkToday,
 } from './invariants';
 
-const BASE = (process.argv[2] ?? 'https://niu33luxo8.execute-api.ap-south-1.amazonaws.com').replace(
+const BASE = (process.argv[2] ?? 'https://d3lmq1mze2gup3.cloudfront.net').replace(
   /\/$/,
   '',
 );

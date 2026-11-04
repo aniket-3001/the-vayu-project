@@ -33,6 +33,7 @@ import { ASSISTANT_LIMITS, GROUNDED_SYSTEM_PROMPT } from './assistantAgent';
 import { ssmSwitch } from './killSwitch';
 import { s3ReplayRepo } from './replayStore';
 import { clientAddress } from './clientAddress';
+import { originAllowed } from './originGuard';
 import { dynamoQuota } from './quota';
 import { dynamoAccountStore } from './accountStore';
 import { dynamoFireReportSave } from './fireReportsStore';
@@ -222,11 +223,31 @@ function emailOf(event: APIGatewayProxyEventV2): { email?: string; emailVerified
   ).authorizer?.jwt?.claims;
   const email = claims?.email;
   if (typeof email !== 'string' || email === '') return {};
-  return { email, emailVerified: claims?.email_verified === 'true' || claims?.email_verified === true };
+  return {
+    email,
+    emailVerified: claims?.email_verified === 'true' || claims?.email_verified === true,
+  };
+}
+
+// The secret CloudFront adds to every request. Absent unless the stack was deployed with it switched on.
+let originSecretPromise: Promise<string | undefined> | undefined;
+function originSecret(): Promise<string | undefined> {
+  const arn = process.env.ORIGIN_SECRET_ARN;
+  originSecretPromise ??=
+    arn === undefined || arn === '' ? Promise.resolve(undefined) : readSecret(arn);
+  return originSecretPromise;
 }
 
 /** The thin AWS adapter around the router. */
 export async function handler(event: APIGatewayProxyEventV2): Promise<APIGatewayProxyResultV2> {
+  if (!originAllowed(event.rawPath, event.headers, await originSecret())) {
+    logger.warn('request refused: missing or wrong origin secret', { path: event.rawPath });
+    return {
+      statusCode: 403,
+      headers: { 'content-type': 'application/json', 'cache-control': 'no-store' },
+      body: JSON.stringify({ error: { code: 'forbidden', message: 'Not allowed' } }),
+    };
+  }
   const route = await buildRoute();
   const userId = userIdOf(event);
   const request: ApiRequest = {

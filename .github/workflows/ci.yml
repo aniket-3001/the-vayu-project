@@ -16,6 +16,8 @@ jobs:
           cache: npm
       - run: npm ci
       - run: make prove
+      # Known vulnerabilities in what the apps ship (dev tools are skipped). Fails the build on a critical one; high ones (zod 3, see docs/PRODUCTION-CHECKLIST.md) are tracked there until fixed.
+      - run: npm audit --omit=dev --audit-level=critical
   secrets:
     runs-on: ubuntu-24.04
     permissions:

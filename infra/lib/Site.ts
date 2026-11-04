@@ -90,6 +90,8 @@ export const CONTENT_SECURITY_POLICY = [
 ].join('; ');
 
 export interface SiteProps {
+  /** A secret CloudFront adds as `x-origin-verify` on every request to the API, which refuses requests without it. */
+  readonly originSecret?: string | undefined;
   readonly api: HttpApi;
 }
 
@@ -207,14 +209,22 @@ export class Site extends Construct {
       cookieBehavior: OriginRequestCookieBehavior.none(),
     });
 
+    const apiHttpOrigin = (): HttpOrigin =>
+      new HttpOrigin(Fn.parseDomainName(props.api.apiEndpoint), {
+        ...(props.originSecret === undefined
+          ? {}
+          : { customHeaders: { 'x-origin-verify': props.originSecret } }),
+      });
     const signedInBehavior: BehaviorOptions = {
-      origin: new HttpOrigin(Fn.parseDomainName(props.api.apiEndpoint)),
+      origin: apiHttpOrigin(),
       viewerProtocolPolicy: ViewerProtocolPolicy.HTTPS_ONLY,
       allowedMethods: AllowedMethods.ALLOW_ALL,
       cachePolicy: CachePolicy.CACHING_DISABLED,
       originRequestPolicy: OriginRequestPolicy.ALL_VIEWER_EXCEPT_HOST_HEADER,
       responseHeadersPolicy: apiHeaders,
-      functionAssociations: [{ function: apiPreflight, eventType: FunctionEventType.VIEWER_REQUEST }],
+      functionAssociations: [
+        { function: apiPreflight, eventType: FunctionEventType.VIEWER_REQUEST },
+      ],
     };
 
     this.distribution = new Distribution(this, 'Distribution', {
@@ -235,7 +245,7 @@ export class Site extends Construct {
         '/v1/me/events': signedInBehavior,
         '/v1/admin/*': signedInBehavior,
         '/v1/*': {
-          origin: new HttpOrigin(Fn.parseDomainName(props.api.apiEndpoint)),
+          origin: apiHttpOrigin(),
           viewerProtocolPolicy: ViewerProtocolPolicy.HTTPS_ONLY,
           allowedMethods: AllowedMethods.ALLOW_ALL,
           cachePolicy: apiCache,

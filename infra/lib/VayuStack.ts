@@ -39,6 +39,11 @@ export interface VayuStackProps extends StackProps {
   readonly ingestEnabled?: boolean;
   /** Set to true to give alerts a Hindi voice note too (Polly). Defaults to false. */
   readonly voiceEnabled?: boolean;
+  /**
+   * Set to true so only CloudFront can reach the API: it adds a secret header the API requires. Off by default, because
+   * anything that calls API Gateway's own address directly (old phone builds, a smoke test without LIVE_URL) is then refused.
+   */
+  readonly enforceOriginSecret?: boolean;
 }
 
 const apiEntry = fileURLToPath(new URL('../../apps/api/src/handler.ts', import.meta.url));
@@ -105,6 +110,14 @@ export class VayuStack extends Stack {
       removalPolicy: RemovalPolicy.DESTROY,
     });
 
+    const originSecret =
+      props.enforceOriginSecret === true
+        ? new Secret(this, 'OriginSecret', {
+            generateSecretString: { excludePunctuation: true, passwordLength: 40 },
+            removalPolicy: RemovalPolicy.DESTROY,
+          })
+        : undefined;
+
     const apiFunction = new NodejsFunction(this, 'ApiFunction', {
       entry: apiEntry,
       runtime: Runtime.NODEJS_22_X,
@@ -130,9 +143,11 @@ export class VayuStack extends Stack {
         FIRMS_MAP_KEY_ARN: firmsMapKey.secretArn,
         OPENAQ_API_KEY_ARN: openAqKey.secretArn,
         REQUEST_SALT_ARN: requestSalt.secretArn,
+        ...(originSecret === undefined ? {} : { ORIGIN_SECRET_ARN: originSecret.secretArn }),
       },
     });
     requestSalt.grantRead(apiFunction);
+    originSecret?.grantRead(apiFunction);
     cache.grantReadData(apiFunction);
     rooms.grantReadData(apiFunction);
     watch.grantReadWriteData(apiFunction);
@@ -203,7 +218,13 @@ export class VayuStack extends Stack {
     });
     // The routes that cost something or take a person's words get their own, tighter, throttle below.
     const limitedRoutes = [];
-    for (const path of ['/v1/assistant', '/v1/speech', '/v1/requests', '/v1/fire-reports', '/v1/events']) {
+    for (const path of [
+      '/v1/assistant',
+      '/v1/speech',
+      '/v1/requests',
+      '/v1/fire-reports',
+      '/v1/events',
+    ]) {
       limitedRoutes.push(
         ...api.addRoutes({
           path,
@@ -240,9 +261,9 @@ export class VayuStack extends Stack {
       'POST /v1/requests': { ThrottlingRateLimit: 1, ThrottlingBurstLimit: 3 },
       'POST /v1/fire-reports': { ThrottlingRateLimit: 1, ThrottlingBurstLimit: 3 },
       'POST /v1/events': { ThrottlingRateLimit: 5, ThrottlingBurstLimit: 10 },
-    'POST /v1/me/events': { ThrottlingRateLimit: 3, ThrottlingBurstLimit: 6 },
-    'GET /v1/admin/{proxy+}': { ThrottlingRateLimit: 3, ThrottlingBurstLimit: 6 },
-    'GET /v1/me': { ThrottlingRateLimit: 3, ThrottlingBurstLimit: 6 },
+      'POST /v1/me/events': { ThrottlingRateLimit: 3, ThrottlingBurstLimit: 6 },
+      'GET /v1/admin/{proxy+}': { ThrottlingRateLimit: 3, ThrottlingBurstLimit: 6 },
+      'GET /v1/me': { ThrottlingRateLimit: 3, ThrottlingBurstLimit: 6 },
       'PUT /v1/me': { ThrottlingRateLimit: 2, ThrottlingBurstLimit: 4 },
       'DELETE /v1/me': { ThrottlingRateLimit: 1, ThrottlingBurstLimit: 2 },
     };
@@ -261,7 +282,10 @@ export class VayuStack extends Stack {
     });
 
     if (props.includeSite !== false) {
-      const site = new Site(this, 'Site', { api });
+      const site = new Site(this, 'Site', {
+        api,
+        originSecret: originSecret?.secretValue.unsafeUnwrap(),
+      });
       new CfnOutput(this, 'SiteUrl', {
         value: `https://${site.distribution.distributionDomainName}`,
       });
