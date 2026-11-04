@@ -743,10 +743,29 @@ describe('the public site', () => {
       );
 
     it('has one alarm for each thing that can quietly stop', () => {
-      template.resourceCountIs('AWS::CloudWatch::Alarm', 8);
+      template.resourceCountIs('AWS::CloudWatch::Alarm', 10);
       expect(alarmFor('AWS/Lambda', 'Errors')).toHaveLength(4); // API, harvest, ingest, send
       expect(alarmFor('AWS/ApiGateway', '5xx')).toHaveLength(1);
       expect(alarmFor('AWS/States', 'ExecutionsFailed')).toHaveLength(1);
+    });
+
+    it('also watches the two promises to a person: it answers, and promptly', () => {
+      template.hasResourceProperties('AWS::CloudWatch::Alarm', {
+        AlarmName: Match.absent(),
+        Threshold: 2,
+        ComparisonOperator: 'GreaterThanThreshold',
+        Metrics: Match.arrayWith([
+          Match.objectLike({
+            Expression: 'IF(requests >= 100, 100 * failed / requests, 0)',
+          }),
+        ]),
+      });
+      const [slow] = alarmFor('AWS/ApiGateway', 'Latency');
+      expect(slow?.Properties).toMatchObject({
+        ExtendedStatistic: 'p95',
+        Threshold: 3000,
+        Period: 900,
+      });
     });
 
     it('treats a harvest that never runs as an alarm, since it would never report an error', () => {

@@ -5,6 +5,7 @@ import {
   ComparisonOperator,
   Dashboard,
   GraphWidget,
+  MathExpression,
   Metric,
   TreatMissingData,
   type IAlarm,
@@ -83,7 +84,39 @@ export class Operations extends Construct {
         statistic: 'Sum',
       });
 
+    // The two promises the app makes to a person, as alarms: it answers, and it answers promptly. Short bursts do not
+    // count, so these look at fifteen minutes and ignore a quiet period (fewer than 100 requests).
+    const fifteenMinutes = Duration.minutes(15);
+    const over15 = (metricName: string, statistic: string): Metric =>
+      new Metric({
+        namespace: 'AWS/ApiGateway',
+        metricName,
+        dimensionsMap: { ApiId: props.httpApi.apiId, Stage: props.httpStage.stageName },
+        period: fifteenMinutes,
+        statistic,
+      });
+    const failedPercent = new MathExpression({
+      expression: 'IF(requests >= 100, 100 * failed / requests, 0)',
+      usingMetrics: { requests: over15('Count', 'Sum'), failed: over15('5xx', 'Sum') },
+      period: fifteenMinutes,
+      label: 'Percent of requests answered with a server error',
+    });
+
     this.alarms = [
+      alarm(
+        'ApiAvailability',
+        'More than 2% of API requests failed with a server error over 15 minutes (the availability promise).',
+        failedPercent,
+        2,
+        { operator: ComparisonOperator.GREATER_THAN_THRESHOLD },
+      ),
+      alarm(
+        'ApiSlow',
+        'Slowest 5% of API requests took over 3 seconds for 15 minutes (the speed promise).',
+        over15('Latency', 'p95'),
+        3000,
+        { operator: ComparisonOperator.GREATER_THAN_THRESHOLD },
+      ),
       alarm(
         'ApiErrors',
         'The API Lambda is failing (5 or more errors in 5 minutes).',
