@@ -42,7 +42,7 @@ cannot finish them. Sources: `AS-BUILT.md` known limits, `architecture.md` pilla
 ## Phase 4: product and release
 
 - [ ] Native push notifications for severe-air alerts (the largest feature gap).
-- [ ] Notification settings, onboarding, in-app feedback and support.
+- [~] In-app feedback: a "Send feedback" link on the Account page opens the person's own mail app with the build written in (`apps/web/src/account/FeedbackLink.tsx`). It appears only when the build is given `VITE_SUPPORT_EMAIL`, so no address is baked in by default. `[you]`: choose a support address and build with it. Not built: notification settings (needs push, below), a first-run onboarding tour, and a feedback form that stores messages on our side (it would need a new API route, storage, quotas and a place to read them).
 - [ ] Home-screen widgets.
 - [ ] Interface in Hindi (today only the assistant is).
 - [~] Release automation written but never run: `apps/mobile/fastlane/Fastfile`, `.github/workflows/release-mobile.yml`, `docs/RELEASE.md` (accounts, keys, secrets, every-release steps). `[you]` create the Apple and Google accounts and secrets, then run it once by hand and fix what breaks.
