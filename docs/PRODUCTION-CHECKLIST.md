@@ -49,7 +49,7 @@ cannot finish them. Sources: `AS-BUILT.md` known limits, `architecture.md` pilla
 
 ## Phase 5: legal and trust
 
-- [ ] Published privacy policy and terms, linked in the stores and the app.
+- [~] Privacy policy and terms drafted from what the app actually does: `docs/PRIVACY-POLICY.md`, `docs/TERMS.md`. `[you]` fill in the responsible person and contact, have a lawyer review (children's data under DPDP is flagged), publish at a public address, link from the app and both stores.
 - [ ] DPDP Act (and GDPR if beyond India) review: consent, export, retention.
 - [ ] Health-disclaimer review by a qualified person.
 - [ ] Sensor accuracy validated against a reference monitor before any accuracy claim.
