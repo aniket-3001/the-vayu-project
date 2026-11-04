@@ -1,0 +1,65 @@
+# Release lanes for the two phone apps. NOT YET RUN: written from Fastlane's documentation, without an Apple or Google
+# account in this environment. Read docs/RELEASE.md before the first use, and expect to fix small things on the first run.
+#
+#   cd apps/mobile && bundle exec fastlane ios beta        # build and upload to TestFlight
+#   cd apps/mobile && bundle exec fastlane android beta    # build and upload to Play's internal track
+#
+# Both lanes first build the web app into www and sync it into the native projects, exactly as `npm run mobile:sync` does.
+
+default_platform(:ios)
+
+before_all do
+  sh('npm run sync', log: true) # builds apps/web into apps/mobile/www and runs `cap sync`
+end
+
+platform :ios do
+  desc 'Build the iPhone app and send it to TestFlight'
+  lane :beta do
+    # App Store Connect API key, from CI secrets: see docs/RELEASE.md.
+    api_key = app_store_connect_api_key(
+      key_id: ENV.fetch('ASC_KEY_ID'),
+      issuer_id: ENV.fetch('ASC_ISSUER_ID'),
+      key_content: ENV.fetch('ASC_KEY_P8'),
+      is_key_content_base64: true
+    )
+    # Certificates and profiles are kept in a private git repo by `match`; run `fastlane match appstore` once by hand.
+    match(type: 'appstore', readonly: is_ci, api_key: api_key)
+    increment_build_number(
+      xcodeproj: 'ios/App/App.xcodeproj',
+      build_number: latest_testflight_build_number(api_key: api_key) + 1
+    )
+    build_app(
+      workspace: 'ios/App/App.xcworkspace',
+      scheme: 'App',
+      export_method: 'app-store'
+    )
+    upload_to_testflight(api_key: api_key, skip_waiting_for_build_processing: true)
+  end
+end
+
+platform :android do
+  desc 'Build the Android app bundle and send it to the internal testing track'
+  lane :beta do
+    # The upload key is kept out of the repository: see docs/RELEASE.md.
+    gradle(
+      project_dir: 'android',
+      task: 'bundle',
+      build_type: 'Release',
+      properties: {
+        'android.injected.signing.store.file' => ENV.fetch('ANDROID_KEYSTORE_PATH'),
+        'android.injected.signing.store.password' => ENV.fetch('ANDROID_KEYSTORE_PASSWORD'),
+        'android.injected.signing.key.alias' => ENV.fetch('ANDROID_KEY_ALIAS'),
+        'android.injected.signing.key.password' => ENV.fetch('ANDROID_KEY_PASSWORD'),
+        'android.injected.version.code' => Time.now.to_i / 60 # always rises
+      }
+    )
+    upload_to_play_store(
+      track: 'internal',
+      json_key_data: ENV.fetch('PLAY_SERVICE_ACCOUNT_JSON'),
+      aab: 'android/app/build/outputs/bundle/release/app-release.aab',
+      skip_upload_metadata: true,
+      skip_upload_images: true,
+      skip_upload_screenshots: true
+    )
+  end
+end

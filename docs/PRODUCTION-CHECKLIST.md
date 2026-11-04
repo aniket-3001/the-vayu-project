@@ -44,7 +44,7 @@ cannot finish them. Sources: `AS-BUILT.md` known limits, `architecture.md` pilla
 - [ ] Notification settings, onboarding, in-app feedback and support.
 - [ ] Home-screen widgets.
 - [ ] Interface in Hindi (today only the assistant is).
-- [ ] Automated iOS and Android builds and signing (Fastlane or Xcode Cloud), TestFlight and Play internal track. `[you]`
+- [~] Release automation written but never run: `apps/mobile/fastlane/Fastfile`, `.github/workflows/release-mobile.yml`, `docs/RELEASE.md` (accounts, keys, secrets, every-release steps). `[you]` create the Apple and Google accounts and secrets, then run it once by hand and fix what breaks.
 - [x] Forced-update check: `GET /v1/app-config` names the oldest phone-app version served; older apps show an "Update Vayu" screen (`apps/web/src/native/updateGate.tsx`, fails open, website unaffected). Set with `cdk deploy -c minAppVersion=x.y.z`; default is no limit.
 
 ## Phase 5: legal and trust
