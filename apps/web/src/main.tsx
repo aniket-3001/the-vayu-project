@@ -5,6 +5,7 @@ import { startAnalytics, track } from './analytics';
 import { startCrashReporting } from './crashReporting';
 import { startTheme } from './theme/theme';
 import { AccountGate } from './account/AccountContext';
+import { installSecureSession } from './account/secureSession';
 import { UpdateGate } from './native/updateGate';
 import { App } from './App';
 import { AirStore, setAirStoreFactory } from './air/store';
@@ -24,10 +25,8 @@ installPhoneGeolocation();
 const root = document.getElementById('root');
 if (root === null) throw new Error('index.html needs a #root');
 
-if (window.location.hash.startsWith('#/week')) {
-  // The recorded days: seven real days played through the same app, opened by an unlisted address.
-  void import('./week/entry').then(({ startWeek }) => startWeek(root)).then(() => hideSplash());
-} else {
+/** The live app. Starts once the session has been read from wherever it is kept (see account/secureSession.ts). */
+function startApp(root: HTMLElement): void {
   // The deployed app reads the real air from our API on AWS.
   setAirStoreFactory(() => new AirStore(liveAirSource(API_URL)));
   // A new person starts with empty places to fill in, not with someone else's.
@@ -56,4 +55,14 @@ if (window.location.hash.startsWith('#/week')) {
   );
   // In the phone app the startup screen is still up; take it down now the app is drawn.
   void hideSplash();
+}
+
+if (window.location.hash.startsWith('#/week')) {
+  // The recorded days: seven real days played through the same app, opened by an unlisted address.
+  void import('./week/entry').then(({ startWeek }) => startWeek(root)).then(() => hideSplash());
+} else {
+  // On a phone the session lives in the secure store, which has to be read before the first screen is drawn.
+  void installSecureSession().then(() => {
+    startApp(root);
+  });
 }

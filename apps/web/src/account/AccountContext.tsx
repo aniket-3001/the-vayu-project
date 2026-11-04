@@ -3,6 +3,7 @@ import { API_URL } from '../config';
 import { isNative } from '../native/splash';
 import { AuthError, cognito, type AuthConfig, type CognitoClient, type Fetch } from './cognito';
 import { Welcome } from './Welcome';
+import { sessionStore } from './secureSession';
 import { clearSession, freshIdToken, loadSession, saveSession, type Session } from './session';
 import { liveLocation } from '../places/liveLocation';
 import { accountSync, clearProfile, forgetLocation, httpSyncApi, type SyncStatus } from './sync';
@@ -55,7 +56,7 @@ const SAVE_EVERY_MS = 5_000;
 export function AccountGate({
   children,
   fetchImpl = fetch,
-  storage = window.localStorage,
+  storage = sessionStore(),
   apiUrl = API_URL,
   reload = () => {
     window.location.reload();
