@@ -31,7 +31,7 @@ cannot finish them. Sources: `AS-BUILT.md` known limits, `architecture.md` pilla
 ## Phase 3: quality and performance
 
 - [x] Flaky `nativeSpeech.test.ts` fixed: it waited one timer tick for a dynamic import; it now waits for the call.
-- [ ] End-to-end tests in CI (Playwright for web; Maestro or Detox for the native shell).
+- [x] End-to-end tests of the built website in a real browser: `tests/e2e` (Playwright, phone-sized Chromium, API faked, served with the real content policy), `npm run e2e`, and an `e2e` job in CI. They check the app opens, a saved place shows its source, no content-policy violation on the main screens, and the last good reading survives a dead network. The fake API answer is checked against the real contract (`tests/e2e/mock.test.ts`). **Not covered:** the native shell (Maestro or Detox on a simulator), sign-in against a real pool, the map (headless Chromium has no WebGL) and the Lens (needs a camera).
 - [ ] Real-device matrix: iPhone, Android, Bluetooth on each. `[you]`
 - [~] Automated accessibility checks (axe-core) on My Air, Exposure, Account and Room in `apps/web/src/a11y.test.tsx`; they found and fixed a real fault (place cards were list items given the button role, nesting links in a button). `[you]` still needed: colour contrast (jsdom cannot judge it), the map and Lens screens, and a pass with VoiceOver, TalkBack, Dynamic Type and reduced motion on real phones.
 - [x] Route-level code splitting: the map and the Lens now load on demand. Main script 1,871 KB to 775 KB (the map's 1,071 KB loads only when the map is opened). Further: split Exposure and the recorded days, and check first-load time on a real phone.
