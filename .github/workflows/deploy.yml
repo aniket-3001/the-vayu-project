@@ -28,7 +28,7 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
-      - run: npx vitest run --maxWorkers=2
+      - run: npx vitest run
       - run: npm run lint
       - run: npm run typecheck
   staging:
