@@ -3,7 +3,7 @@ import { HttpApi } from 'aws-cdk-lib/aws-apigatewayv2';
 import { Match, Template } from 'aws-cdk-lib/assertions';
 import { describe, expect, it } from 'vitest';
 import { EdgeStack } from '../lib/Edge';
-import { Site } from '../lib/Site';
+import { Site, contentSecurityPolicy, CONTENT_SECURITY_POLICY } from '../lib/Site';
 
 interface Rule {
   Name: string;
@@ -64,5 +64,20 @@ describe('the web firewall', () => {
     siteWith(arn).hasResourceProperties('AWS::CloudFront::Distribution', {
       DistributionConfig: Match.objectLike({ WebACLId: arn }),
     });
+  });
+});
+
+describe('the content policy', () => {
+  it('allows no crash-reporting host unless one is given', () => {
+    expect(CONTENT_SECURITY_POLICY).not.toContain('sentry');
+    const withHost = contentSecurityPolicy(['o123.ingest.us.sentry.io']);
+    expect(withHost).toMatch(/connect-src [^;]*https:\/\/o123\.ingest\.us\.sentry\.io/u);
+    expect(withHost).toContain("script-src 'self'");
+  });
+
+  it('refuses anything that is not a plain host name', () => {
+    expect(() => contentSecurityPolicy(['evil.com; script-src *'])).toThrow();
+    expect(() => contentSecurityPolicy(['*.sentry.io'])).toThrow();
+    expect(() => contentSecurityPolicy(["a.com 'unsafe-eval'"])).toThrow();
   });
 });

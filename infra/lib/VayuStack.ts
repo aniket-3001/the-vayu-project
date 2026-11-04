@@ -48,6 +48,8 @@ export interface VayuStackProps extends StackProps {
   readonly webAclArn?: string;
   /** The oldest phone-app version the API still serves; older apps show an "Update Vayu" screen. Defaults to no limit. */
   readonly minAppVersion?: string;
+  /** A host the app may send crash reports to (the one in the build's Sentry address). Without it none is allowed. */
+  readonly crashReportingHost?: string;
 }
 
 const apiEntry = fileURLToPath(new URL('../../apps/api/src/handler.ts', import.meta.url));
@@ -291,6 +293,7 @@ export class VayuStack extends Stack {
         api,
         originSecret: originSecret?.secretValue.unsafeUnwrap(),
         webAclArn: props.webAclArn,
+        crashReportingHost: props.crashReportingHost,
       });
       new CfnOutput(this, 'SiteUrl', {
         value: `https://${site.distribution.distributionDomainName}`,

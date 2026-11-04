@@ -37,6 +37,8 @@ Amazon Web Services (hosting, sign-in, database, the language model, speech); Op
 Photon (air, weather, wind, fire and place data, which receive coordinates or search words but not your identity); OpenFreeMap
 (map tiles, which sees your address as any website does).
 
+If crash reporting is switched on for a release, Sentry (a service that collects error reports) also receives the kind of error, its message and its technical trace, and the app version. We remove your identity, your address, the page you were on and any coordinates before it is sent. [If enabled: confirm this paragraph, name the Sentry data region, and state the retention period.]
+
 ## Your choices
 
 - **Delete your account** on the Account page. This deletes your saved copy, your usage timeline and the account itself.

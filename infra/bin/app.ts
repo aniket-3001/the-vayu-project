@@ -14,6 +14,8 @@ const originSecret = app.node.tryGetContext('originSecret') as string | undefine
 const edge = app.node.tryGetContext('edge') as string | undefined;
 // e.g. `cdk deploy Vayu -c minAppVersion=0.2.0` makes phone apps older than that ask their owner to update.
 const minAppVersion = app.node.tryGetContext('minAppVersion') as string | undefined;
+// e.g. `cdk deploy Vayu -c crashReportingHost=o123.ingest.us.sentry.io` lets the page send crash reports there.
+const crashReportingHost = app.node.tryGetContext('crashReportingHost') as string | undefined;
 const webAclArn = app.node.tryGetContext('webAclArn') as string | undefined;
 if (edge === 'on') {
   new EdgeStack(app, 'VayuEdge', {
@@ -31,6 +33,7 @@ new VayuStack(app, 'Vayu', {
   ...(alertEmail === undefined ? {} : { alertEmail }),
   ...(includeSite === undefined ? {} : { includeSite: includeSite !== 'false' }),
   ...(minAppVersion === undefined ? {} : { minAppVersion }),
+  ...(crashReportingHost === undefined ? {} : { crashReportingHost }),
   ...(webAclArn === undefined ? {} : { webAclArn }),
   ...(originSecret === undefined ? {} : { enforceOriginSecret: originSecret === 'on' }),
   ...(voice === undefined ? {} : { voiceEnabled: voice === 'on' }),

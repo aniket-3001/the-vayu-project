@@ -2,6 +2,7 @@ import '@fontsource-variable/hanken-grotesk';
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { startAnalytics, track } from './analytics';
+import { startCrashReporting } from './crashReporting';
 import { startTheme } from './theme/theme';
 import { AccountGate } from './account/AccountContext';
 import { UpdateGate } from './native/updateGate';
@@ -35,6 +36,8 @@ if (window.location.hash.startsWith('#/week')) {
   // If live location was left on last time, carry on following the device.
   liveLocation().resume();
   startAnalytics();
+  // Does nothing unless the build was given a crash-reporting address.
+  void startCrashReporting();
   // Anything the app fails at without handling is counted (a short code only, never the page or what was typed).
   window.addEventListener('error', (event) => {
     track('error', event.message.slice(0, 80));
