@@ -272,6 +272,15 @@ describe('accounts on the router', () => {
     };
   };
 
+  it('names the oldest phone-app version it still serves, and sets no limit by default', async () => {
+    const none = await route({ method: 'GET', path: '/v1/app-config', query: {}, headers: {} });
+    expect(none.body).toEqual({ minAppVersion: '0.0.0' });
+    const limited = createRouter({ ...baseDeps, appConfig: { minAppVersion: '0.2.0' } });
+    const res = await limited({ method: 'GET', path: '/v1/app-config', query: {}, headers: {} });
+    expect(res.body).toEqual({ minAppVersion: '0.2.0' });
+    expect(res.headers).toEqual({ 'cache-control': 'public, max-age=300' });
+  });
+
   it('says there is no sign-in where none is set up, and gives the ids where there is', async () => {
     const none = await route({ method: 'GET', path: '/v1/auth-config', query: {}, headers: {} });
     expect(none.body).toEqual({ enabled: false });
@@ -310,8 +319,13 @@ describe('accounts on the router', () => {
 
 describe('analytics routes are off unless wired', () => {
   it('answers not_found for events and admin paths with no analytics', async () => {
-    const route = createRouter({ clock: fixedClock('2026-10-10T12:00:00.000Z'), mode: 'live' } as unknown as RouterDeps);
+    const route = createRouter({
+      clock: fixedClock('2026-10-10T12:00:00.000Z'),
+      mode: 'live',
+    } as unknown as RouterDeps);
     for (const path of ['/v1/events', '/v1/me/events', '/v1/admin/summary'])
-      expect((await route({ method: 'GET', path, query: {}, headers: {} })).statusCode, path).toBe(404);
+      expect((await route({ method: 'GET', path, query: {}, headers: {} })).statusCode, path).toBe(
+        404,
+      );
   });
 });

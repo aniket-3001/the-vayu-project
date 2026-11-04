@@ -12,6 +12,8 @@ const voice = app.node.tryGetContext('voice') as string | undefined;
 const originSecret = app.node.tryGetContext('originSecret') as string | undefined;
 // e.g. `cdk deploy VayuEdge -c edge=on`, then `cdk deploy Vayu -c webAclArn=arn:aws:wafv2:us-east-1:...` puts a firewall in front.
 const edge = app.node.tryGetContext('edge') as string | undefined;
+// e.g. `cdk deploy Vayu -c minAppVersion=0.2.0` makes phone apps older than that ask their owner to update.
+const minAppVersion = app.node.tryGetContext('minAppVersion') as string | undefined;
 const webAclArn = app.node.tryGetContext('webAclArn') as string | undefined;
 if (edge === 'on') {
   new EdgeStack(app, 'VayuEdge', {
@@ -28,6 +30,7 @@ new VayuStack(app, 'Vayu', {
   },
   ...(alertEmail === undefined ? {} : { alertEmail }),
   ...(includeSite === undefined ? {} : { includeSite: includeSite !== 'false' }),
+  ...(minAppVersion === undefined ? {} : { minAppVersion }),
   ...(webAclArn === undefined ? {} : { webAclArn }),
   ...(originSecret === undefined ? {} : { enforceOriginSecret: originSecret === 'on' }),
   ...(voice === undefined ? {} : { voiceEnabled: voice === 'on' }),

@@ -77,6 +77,8 @@ export interface RouterDeps {
   /** The sign-in service's public ids, for the app to start from. Absent: accounts are off and the app needs no sign-in. */
   readonly authConfig?:
     { readonly userPoolId: string; readonly clientId: string; readonly region: string } | undefined;
+  /** The oldest phone-app version still supported. Absent: no limit. */
+  readonly appConfig?: { readonly minAppVersion: string } | undefined;
   /** The assistant behind Bedrock. Absent where nothing is wired: /v1/assistant is then not found. */
   readonly assistant?: AssistantDeps | undefined;
   /** Asking for a demo or monitors. Absent where nothing is wired: /v1/requests is then not found. */
@@ -186,6 +188,10 @@ export function createRouter(deps: RouterDeps) {
         deps.authConfig === undefined ? { enabled: false } : { enabled: true, ...deps.authConfig },
         300,
       );
+    }
+    if (request.path === '/v1/app-config') {
+      // Public, and the same for everyone: lets the API retire a phone-app build that is too old to trust.
+      return okCached({ minAppVersion: deps.appConfig?.minAppVersion ?? '0.0.0' }, 300);
     }
     if (request.path === '/v1/assistant') {
       return deps.assistant === undefined

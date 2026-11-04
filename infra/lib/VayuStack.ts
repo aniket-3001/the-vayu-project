@@ -46,6 +46,8 @@ export interface VayuStackProps extends StackProps {
   readonly enforceOriginSecret?: boolean;
   /** The ARN of the firewall made by EdgeStack. Without it the public address has no firewall. */
   readonly webAclArn?: string;
+  /** The oldest phone-app version the API still serves; older apps show an "Update Vayu" screen. Defaults to no limit. */
+  readonly minAppVersion?: string;
 }
 
 const apiEntry = fileURLToPath(new URL('../../apps/api/src/handler.ts', import.meta.url));
@@ -145,6 +147,7 @@ export class VayuStack extends Stack {
         FIRMS_MAP_KEY_ARN: firmsMapKey.secretArn,
         OPENAQ_API_KEY_ARN: openAqKey.secretArn,
         REQUEST_SALT_ARN: requestSalt.secretArn,
+        MIN_APP_VERSION: props.minAppVersion ?? '0.0.0',
         ...(originSecret === undefined ? {} : { ORIGIN_SECRET_ARN: originSecret.secretArn }),
       },
     });

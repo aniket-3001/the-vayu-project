@@ -4,6 +4,7 @@ import { createRoot } from 'react-dom/client';
 import { startAnalytics, track } from './analytics';
 import { startTheme } from './theme/theme';
 import { AccountGate } from './account/AccountContext';
+import { UpdateGate } from './native/updateGate';
 import { App } from './App';
 import { AirStore, setAirStoreFactory } from './air/store';
 import { liveAirSource } from './air/liveSource';
@@ -43,9 +44,11 @@ if (window.location.hash.startsWith('#/week')) {
   });
   createRoot(root).render(
     <StrictMode>
-      <AccountGate>
-        <App />
-      </AccountGate>
+      <UpdateGate apiUrl={API_URL}>
+        <AccountGate>
+          <App />
+        </AccountGate>
+      </UpdateGate>
     </StrictMode>,
   );
   // In the phone app the startup screen is still up; take it down now the app is drawn.

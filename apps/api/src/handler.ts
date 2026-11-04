@@ -193,6 +193,7 @@ function buildRoute(): Promise<ReturnType<typeof createRouter>> {
             },
           }
         : {}),
+      appConfig: { minAppVersion: process.env.MIN_APP_VERSION ?? '0.0.0' },
       clock: liveClock(),
       mode: 'live',
       linkStore: dynamoLinkStore({ tableName: mustEnv('WATCH_TABLE'), docClient }),
