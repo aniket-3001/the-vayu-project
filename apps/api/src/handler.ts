@@ -206,6 +206,10 @@ function buildRoute(): Promise<ReturnType<typeof createRouter>> {
     };
     return createRouter(deps);
   })();
+  // A failed start (a secret not created yet, a hiccup) must not stay cached for the life of this container.
+  routePromise.catch(() => {
+    routePromise = undefined;
+  });
   return routePromise;
 }
 
@@ -236,6 +240,9 @@ function originSecret(): Promise<string | undefined> {
   const arn = process.env.ORIGIN_SECRET_ARN;
   originSecretPromise ??=
     arn === undefined || arn === '' ? Promise.resolve(undefined) : readSecret(arn);
+  originSecretPromise.catch(() => {
+    originSecretPromise = undefined;
+  });
   return originSecretPromise;
 }
 
