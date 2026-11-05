@@ -23,6 +23,9 @@ import { makeWindField } from './windTexture';
 import { useMapData } from './useMapData';
 import { weekActive } from '../week/active';
 
+/** How far the map zooms in on the device: the surrounding streets can be read. */
+const STREET_ZOOM = 15;
+
 /** Where the air is bad, and where it is going: a flat map of readings and fires, or a globe with the wind on it. */
 export function MapScreen(): React.JSX.Element {
   // Everything is always on: the monitors, the air colour, the fires and the wind.
@@ -105,8 +108,9 @@ export function MapScreen(): React.JSX.Element {
     // Fly in once, when the position first arrives, unless a link opened the map somewhere on purpose.
     if (!flown.current && start === undefined) {
       // A phone is too slow for the arc of a fly-to (it zooms right out and back in), so it eases straight there.
-      if (isNative()) map.easeTo({ center: [liveLng, liveLat], zoom: 12.5, duration: 700 });
-      else void map.flyTo({ center: [liveLng, liveLat], zoom: 9.5, duration: 1800 });
+      // Zoom 15 is close enough to read the streets around the device, which is what a person pressing Detect wants.
+      if (isNative()) map.easeTo({ center: [liveLng, liveLat], zoom: STREET_ZOOM, duration: 700 });
+      else void map.flyTo({ center: [liveLng, liveLat], zoom: STREET_ZOOM, duration: 1800 });
     }
     flown.current = true;
   }, [map, liveLat, liveLng, start]);

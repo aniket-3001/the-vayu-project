@@ -232,7 +232,7 @@ describe('live location on the map', () => {
       </MemoryRouter>,
     );
     expect(flyTo).toHaveBeenCalledTimes(1);
-    expect(flyTo).toHaveBeenCalledWith(expect.objectContaining({ center: [77.2, 28.6] }));
+    expect(flyTo).toHaveBeenCalledWith(expect.objectContaining({ center: [77.2, 28.6], zoom: 15 }));
   });
 
   it('stays where a link put it, rather than flying away from it', () => {

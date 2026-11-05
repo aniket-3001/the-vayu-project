@@ -5123,8 +5123,25 @@ button.back {
 .lens-unit-time .timeline {
   padding-top: 34px;
 }
+/* The four round buttons make one even row under the slider, at the card's right edge, on every screen width (a phone
+   and a desktop used to differ: the eye stacked over the GPS switch beside a squeezed slider). */
+.lens-unit-time {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0;
+}
 .lens-unit-time .dock-buttons {
-  padding-bottom: 20px;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 6px 0 0;
+}
+.lens-unit-time .dock-stack {
+  display: contents;
+}
+.lens-unit-time .dock-buttons .assistant-fab,
+.lens-unit-time .dock-buttons .smoke-toggle {
+  width: 44px;
+  height: 44px;
 }
 
 /* A narrow scale uses short names, so six bold names never run into each other */
