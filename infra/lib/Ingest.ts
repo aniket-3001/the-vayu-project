@@ -9,6 +9,7 @@ import { LogGroup, RetentionDays } from 'aws-cdk-lib/aws-logs';
 import { Effect, PolicyStatement, Role, ServicePrincipal } from 'aws-cdk-lib/aws-iam';
 import type { IBucket } from 'aws-cdk-lib/aws-s3';
 import { Construct } from 'constructs';
+import { stageIdent, stageName } from './stage';
 
 const ingestEntry = fileURLToPath(new URL('../../apps/api/src/ingestHandler.ts', import.meta.url));
 
@@ -99,7 +100,7 @@ export class Ingest extends Construct {
     );
 
     this.rule = new CfnTopicRule(this, 'ReadingsRule', {
-      ruleName: 'vayu_readings',
+      ruleName: stageIdent(this, 'vayu_readings'),
       topicRulePayload: {
         sql: `SELECT *, topic(3) AS thingId FROM '${READINGS_TOPIC_FILTER}'`,
         awsIotSqlVersion: '2016-03-23',
@@ -123,7 +124,7 @@ export class Ingest extends Construct {
     });
 
     this.devicePolicy = new CfnPolicy(this, 'DevicePolicy', {
-      policyName: 'vayu-device',
+      policyName: stageName(this, 'vayu-device'),
       policyDocument: {
         Version: '2012-10-17',
         Statement: [

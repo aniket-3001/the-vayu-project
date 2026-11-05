@@ -78,6 +78,29 @@ describe('the Vayu stack', () => {
         }),
       ]),
     });
+    // Spend anomalies are mailed to the same address, and exist only when one is given.
+    template.resourceCountIs('AWS::CE::AnomalyMonitor', 0);
+    template.resourceCountIs('AWS::CE::AnomalySubscription', 0);
+    const withMail = synth('someone@example.com');
+    withMail.hasResourceProperties('AWS::CE::AnomalyMonitor', {
+      MonitorType: 'DIMENSIONAL',
+      MonitorDimension: 'SERVICE',
+    });
+    withMail.hasResourceProperties('AWS::CE::AnomalySubscription', {
+      Frequency: 'DAILY',
+      Subscribers: [{ Address: 'someone@example.com', Type: 'EMAIL' }],
+    });
+  });
+
+  it('reuses an existing spend monitor instead of creating a second one (AWS allows one per account)', () => {
+    const reused = synthWith({
+      alertEmail: 'someone@example.com',
+      spendMonitorArn: 'arn:aws:ce::123456789012:anomalymonitor/abc',
+    });
+    reused.resourceCountIs('AWS::CE::AnomalyMonitor', 0);
+    reused.hasResourceProperties('AWS::CE::AnomalySubscription', {
+      MonitorArnList: ['arn:aws:ce::123456789012:anomalymonitor/abc'],
+    });
   });
 
   it('accepts POST (the Telegram webhook) alongside GET on the same route', () => {
@@ -743,10 +766,29 @@ describe('the public site', () => {
       );
 
     it('has one alarm for each thing that can quietly stop', () => {
-      template.resourceCountIs('AWS::CloudWatch::Alarm', 8);
+      template.resourceCountIs('AWS::CloudWatch::Alarm', 10);
       expect(alarmFor('AWS/Lambda', 'Errors')).toHaveLength(4); // API, harvest, ingest, send
       expect(alarmFor('AWS/ApiGateway', '5xx')).toHaveLength(1);
       expect(alarmFor('AWS/States', 'ExecutionsFailed')).toHaveLength(1);
+    });
+
+    it('also watches the two promises to a person: it answers, and promptly', () => {
+      template.hasResourceProperties('AWS::CloudWatch::Alarm', {
+        AlarmName: Match.absent(),
+        Threshold: 2,
+        ComparisonOperator: 'GreaterThanThreshold',
+        Metrics: Match.arrayWith([
+          Match.objectLike({
+            Expression: 'IF(requests >= 100, 100 * failed / requests, 0)',
+          }),
+        ]),
+      });
+      const [slow] = alarmFor('AWS/ApiGateway', 'Latency');
+      expect(slow?.Properties).toMatchObject({
+        ExtendedStatistic: 'p95',
+        Threshold: 3000,
+        Period: 900,
+      });
     });
 
     it('treats a harvest that never runs as an alarm, since it would never report an error', () => {
@@ -1023,7 +1065,11 @@ describe('accounts', () => {
   it('has an app client with no secret, no hosted page and an answer that does not say who has an account', () => {
     template.hasResourceProperties('AWS::Cognito::UserPoolClient', {
       GenerateSecret: false,
-      ExplicitAuthFlows: Match.arrayWith(['ALLOW_USER_PASSWORD_AUTH', 'ALLOW_REFRESH_TOKEN_AUTH']),
+      ExplicitAuthFlows: Match.arrayWith([
+        'ALLOW_USER_PASSWORD_AUTH',
+        'ALLOW_USER_SRP_AUTH',
+        'ALLOW_REFRESH_TOKEN_AUTH',
+      ]),
       PreventUserExistenceErrors: 'ENABLED',
     });
     const clients = Object.values(template.findResources('AWS::Cognito::UserPoolClient'));
@@ -1070,7 +1116,9 @@ describe('accounts', () => {
   it('passes the token through uncached on the signed-in event and admin paths', () => {
     const config = (
       Object.values(template.findResources('AWS::CloudFront::Distribution'))[0] as {
-        Properties: { DistributionConfig: { CacheBehaviors: { PathPattern: string; CachePolicyId: string }[] } };
+        Properties: {
+          DistributionConfig: { CacheBehaviors: { PathPattern: string; CachePolicyId: string }[] };
+        };
       }
     ).Properties.DistributionConfig;
     for (const path of ['/v1/me/events', '/v1/admin/*'])
@@ -1088,5 +1136,37 @@ describe('accounts', () => {
     expect(Object.keys(api?.Properties.Environment?.Variables ?? {})).toContain(
       'USER_POOL_CLIENT_ID',
     );
+  });
+});
+
+describe('the origin secret', () => {
+  interface Origin {
+    OriginCustomHeaders?: { HeaderName: string }[];
+  }
+  const originHeaders = (template: Template): { HeaderName: string }[] =>
+    Object.values(template.findResources('AWS::CloudFront::Distribution')).flatMap((d) => {
+      const config = (d.Properties as { DistributionConfig: { Origins: Origin[] } })
+        .DistributionConfig;
+      return config.Origins.flatMap((o) => o.OriginCustomHeaders ?? []);
+    });
+
+  it('is off by default, so nothing that calls the API directly is cut off', () => {
+    const template = synthWith({});
+    expect(originHeaders(template)).toEqual([]);
+    template.resourcePropertiesCountIs(
+      'AWS::Lambda::Function',
+      { Environment: { Variables: Match.objectLike({ ORIGIN_SECRET_ARN: Match.anyValue() }) } },
+      0,
+    );
+  });
+
+  it('when on, CloudFront adds it to the API origins and the API reads it', () => {
+    const template = synthWith({ enforceOriginSecret: true });
+    const headers = originHeaders(template);
+    expect(headers.length).toBeGreaterThan(0);
+    expect(headers.every((h) => h.HeaderName === 'x-origin-verify')).toBe(true);
+    template.hasResourceProperties('AWS::Lambda::Function', {
+      Environment: { Variables: Match.objectLike({ ORIGIN_SECRET_ARN: Match.anyValue() }) },
+    });
   });
 });

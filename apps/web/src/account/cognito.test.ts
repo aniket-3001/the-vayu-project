@@ -56,7 +56,10 @@ describe('the sign-in calls', () => {
         },
       },
     ]);
-    const tokens = await cognito(config, fetchImpl, () => 1_000).signIn('a@b.in', 'secret123');
+    const tokens = await cognito(config, fetchImpl, () => 1_000, { srp: false }).signIn(
+      'a@b.in',
+      'secret123',
+    );
     expect(calls[0]?.target).toBe('InitiateAuth');
     expect(calls[0]?.body).toMatchObject({
       AuthFlow: 'USER_PASSWORD_AUTH',
@@ -141,5 +144,90 @@ describe('the sign-in calls', () => {
     ]);
     expect(calls[2]?.body).toMatchObject({ ConfirmationCode: '654321', Password: 'newpass1' });
     expect(calls[4]?.body).toEqual({ AccessToken: 'access' });
+  });
+});
+
+describe('signing in with SRP', () => {
+  const challenge = {
+    ok: true,
+    body: {
+      ChallengeName: 'PASSWORD_VERIFIER',
+      Session: 'sess-1',
+      ChallengeParameters: {
+        USER_ID_FOR_SRP: 'user-uuid',
+        SALT: 'aabbccddeeff00112233445566778899',
+        SRP_B: 'ab'.repeat(300),
+        SECRET_BLOCK: 'c2VjcmV0LWJsb2Nr',
+      },
+    },
+  };
+  const signedIn = {
+    ok: true,
+    body: {
+      AuthenticationResult: {
+        IdToken: 'id',
+        AccessToken: 'access',
+        RefreshToken: 'refresh',
+        ExpiresIn: 3600,
+      },
+    },
+  };
+
+  it('proves it knows the password without sending it', async () => {
+    const { fetchImpl, calls } = fake([challenge, signedIn]);
+    const tokens = await cognito(config, fetchImpl, () => Date.UTC(2026, 10, 4, 3, 4, 5)).signIn(
+      'a@b.in',
+      'secret123',
+    );
+    expect(calls.map((c) => c.target)).toEqual(['InitiateAuth', 'RespondToAuthChallenge']);
+    expect(calls[0]?.body).toMatchObject({
+      AuthFlow: 'USER_SRP_AUTH',
+      AuthParameters: { USERNAME: 'a@b.in' },
+    });
+    const srpA = (calls[0]?.body.AuthParameters as { SRP_A: string }).SRP_A;
+    expect(srpA).toMatch(/^[0-9a-f]+$/u);
+    expect(calls[1]?.body).toMatchObject({
+      ChallengeName: 'PASSWORD_VERIFIER',
+      Session: 'sess-1',
+      ChallengeResponses: {
+        USERNAME: 'user-uuid',
+        PASSWORD_CLAIM_SECRET_BLOCK: 'c2VjcmV0LWJsb2Nr',
+        TIMESTAMP: 'Wed Nov 4 03:04:05 UTC 2026',
+      },
+    });
+    const responses = calls[1]?.body.ChallengeResponses as { PASSWORD_CLAIM_SIGNATURE: string };
+    expect(responses.PASSWORD_CLAIM_SIGNATURE).toMatch(/^[A-Za-z0-9+/]{43}=$/u);
+    // The password appears in no request at all.
+    expect(JSON.stringify(calls)).not.toContain('secret123');
+    expect(tokens.idToken).toBe('id');
+  });
+
+  it('falls back to the older sign-in only when the pool does not offer SRP', async () => {
+    const { fetchImpl, calls } = fake([
+      { ok: false, body: { __type: 'InvalidParameterException' } },
+      signedIn,
+    ]);
+    const tokens = await cognito(config, fetchImpl).signIn('a@b.in', 'secret123');
+    expect(calls.map((c) => c.body.AuthFlow)).toEqual(['USER_SRP_AUTH', 'USER_PASSWORD_AUTH']);
+    expect(tokens.accessToken).toBe('access');
+  });
+
+  it('does not try a wrong password a second time', async () => {
+    const { fetchImpl, calls } = fake([
+      challenge,
+      { ok: false, body: { __type: 'NotAuthorizedException' } },
+    ]);
+    await expect(cognito(config, fetchImpl).signIn('a@b.in', 'wrong')).rejects.toMatchObject({
+      code: 'NotAuthorizedException',
+      message: 'That email and password do not match.',
+    });
+    expect(calls.map((c) => c.target)).toEqual(['InitiateAuth', 'RespondToAuthChallenge']);
+  });
+
+  it('gives up plainly on a challenge it cannot answer (such as a second factor)', async () => {
+    const { fetchImpl } = fake([{ ok: true, body: { ChallengeName: 'SMS_MFA', Session: 's' } }]);
+    await expect(cognito(config, fetchImpl).signIn('a@b.in', 'secret123')).rejects.toBeInstanceOf(
+      AuthError,
+    );
   });
 });

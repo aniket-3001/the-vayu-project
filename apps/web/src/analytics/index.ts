@@ -1,4 +1,5 @@
 import { API_URL } from '../config';
+import { sessionStore } from '../account/secureSession';
 import { loadSession } from '../account/session';
 import { createCollector, type Collector } from './collector';
 import { deviceId, deviceInfo } from './device';
@@ -12,8 +13,9 @@ const TOKEN_SPARE_MS = 60_000;
 /** The signed-in person's ID token if one is held and still good; otherwise none, and the batch goes as anonymous. */
 function heldToken(): string | undefined {
   try {
-    const session = loadSession(window.localStorage);
-    if (session === undefined || session.tokens.expiresAt - Date.now() <= TOKEN_SPARE_MS) return undefined;
+    const session = loadSession(sessionStore());
+    if (session === undefined || session.tokens.expiresAt - Date.now() <= TOKEN_SPARE_MS)
+      return undefined;
     return session.tokens.idToken;
   } catch {
     return undefined;
@@ -61,7 +63,9 @@ export function startAnalytics(): void {
     queued = 0;
     void made.flush();
   };
-  setInterval(() => { flush(); }, FLUSH_EVERY_MS);
+  setInterval(() => {
+    flush();
+  }, FLUSH_EVERY_MS);
   document.addEventListener('visibilitychange', () => {
     if (document.visibilityState === 'hidden') flush(true);
     else visibleSince = Date.now();

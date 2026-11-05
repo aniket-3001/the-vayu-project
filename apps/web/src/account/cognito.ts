@@ -3,6 +3,8 @@
  * to the user pool's own address, so there is no library: sign up, confirm the emailed code, sign in, keep the
  * session going, reset a password, and delete the account. Every failure is turned into words a person can act on.
  */
+import { passwordClaim, srpAvailable, startSrp } from './srp';
+
 export interface AuthConfig {
   readonly userPoolId: string;
   readonly clientId: string;
@@ -59,10 +61,19 @@ export interface CognitoClient {
   readonly deleteUser: (accessToken: string) => Promise<void>;
 }
 
+/** Thrown inside, never shown: the pool does not offer the SRP sign-in, so the older password sign-in is used. */
+class SrpNotOffered extends Error {}
+
+export interface CognitoOptions {
+  /** Whether to sign in with SRP, so the password is never sent. On by default wherever the browser can do it. */
+  readonly srp?: boolean;
+}
+
 export function cognito(
   config: AuthConfig,
   fetchImpl: Fetch = fetch,
   now: () => number = Date.now,
+  options: CognitoOptions = {},
 ): CognitoClient {
   const endpoint = `https://cognito-idp.${config.region}.amazonaws.com/`;
 
@@ -115,6 +126,77 @@ export function cognito(
     };
   };
 
+  /** The name Cognito uses for the pool inside the proof, the part of the id after the underscore. */
+  const poolName = config.userPoolId.split('_')[1] ?? config.userPoolId;
+
+  /** Sign in without sending the password: a proof that it is known goes instead (see srp.ts). */
+  async function signInWithSrp(email: string, password: string): Promise<Tokens> {
+    const start = startSrp();
+    let first: Record<string, unknown>;
+    try {
+      first = await call('InitiateAuth', {
+        AuthFlow: 'USER_SRP_AUTH',
+        ClientId: config.clientId,
+        AuthParameters: { USERNAME: email, SRP_A: start.A.toString(16) },
+      });
+    } catch (error) {
+      // The pool answers a flow it does not offer with "invalid parameter"; nothing about the password has been tried.
+      if (error instanceof AuthError && error.code === 'InvalidParameterException')
+        throw new SrpNotOffered();
+      throw error;
+    }
+    // A server that is satisfied at once (it has the tokens ready) needs no proof from us.
+    if (first.AuthenticationResult !== undefined) return tokensFrom(first.AuthenticationResult);
+    const params = first.ChallengeParameters as Record<string, string> | undefined;
+    if (
+      first.ChallengeName !== 'PASSWORD_VERIFIER' ||
+      params?.USER_ID_FOR_SRP === undefined ||
+      params.SRP_B === undefined ||
+      params.SALT === undefined ||
+      params.SECRET_BLOCK === undefined
+    )
+      throw new AuthError('failed', 'Something went wrong. Try again in a moment.');
+    let claim: Awaited<ReturnType<typeof passwordClaim>>;
+    try {
+      claim = await passwordClaim(
+        poolName,
+        start,
+        {
+          userIdForSrp: params.USER_ID_FOR_SRP,
+          saltHex: params.SALT,
+          srpBHex: params.SRP_B,
+          secretBlockBase64: params.SECRET_BLOCK,
+        },
+        password,
+        new Date(now()),
+      );
+    } catch {
+      throw new AuthError('failed', 'Something went wrong. Try again in a moment.');
+    }
+    const out = await call('RespondToAuthChallenge', {
+      ChallengeName: 'PASSWORD_VERIFIER',
+      ClientId: config.clientId,
+      ChallengeResponses: {
+        USERNAME: params.USER_ID_FOR_SRP,
+        PASSWORD_CLAIM_SECRET_BLOCK: params.SECRET_BLOCK,
+        TIMESTAMP: claim.timestamp,
+        PASSWORD_CLAIM_SIGNATURE: claim.signature,
+      },
+      ...(typeof first.Session === 'string' ? { Session: first.Session } : {}),
+    });
+    return tokensFrom(out.AuthenticationResult);
+  }
+
+  /** The older sign-in, which sends the password itself over HTTPS. Used only where SRP cannot be. */
+  async function signInWithPassword(email: string, password: string): Promise<Tokens> {
+    const out = await call('InitiateAuth', {
+      AuthFlow: 'USER_PASSWORD_AUTH',
+      ClientId: config.clientId,
+      AuthParameters: { USERNAME: email, PASSWORD: password },
+    });
+    return tokensFrom(out.AuthenticationResult);
+  }
+
   return {
     async signUp(email: string, password: string): Promise<void> {
       await call('SignUp', {
@@ -135,12 +217,15 @@ export function cognito(
       await call('ResendConfirmationCode', { ClientId: config.clientId, Username: email });
     },
     async signIn(email: string, password: string): Promise<Tokens> {
-      const out = await call('InitiateAuth', {
-        AuthFlow: 'USER_PASSWORD_AUTH',
-        ClientId: config.clientId,
-        AuthParameters: { USERNAME: email, PASSWORD: password },
-      });
-      return tokensFrom(out.AuthenticationResult);
+      if (options.srp !== false && srpAvailable()) {
+        try {
+          return await signInWithSrp(email, password);
+        } catch (error) {
+          // Only "this pool does not offer SRP" falls back. A wrong password must not be tried a second time.
+          if (!(error instanceof SrpNotOffered)) throw error;
+        }
+      }
+      return signInWithPassword(email, password);
     },
     async refresh(refreshToken: string): Promise<Tokens> {
       const out = await call('InitiateAuth', {

@@ -4,6 +4,7 @@ import { Effect, PolicyStatement } from 'aws-cdk-lib/aws-iam';
 import type { IFunction } from 'aws-cdk-lib/aws-lambda';
 import { StringParameter } from 'aws-cdk-lib/aws-ssm';
 import { Construct } from 'constructs';
+import { stageName } from './stage';
 
 /**
  * The model the assistant may call, through its Asia-Pacific inference profile. Nova Micro cannot be called by its
@@ -28,7 +29,7 @@ export class Assistant extends Construct {
 
     // On for the exact value "true"; anything else, or an error reading it, is off. Flip it to stop all spend.
     this.enabled = new StringParameter(this, 'Enabled', {
-      parameterName: ASSISTANT_SWITCH_PARAMETER,
+      parameterName: stageName(this, ASSISTANT_SWITCH_PARAMETER),
       stringValue: 'true',
       description:
         'The assistant calls the model only while this is exactly "true". Anything else turns it off.',

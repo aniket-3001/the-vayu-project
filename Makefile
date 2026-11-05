@@ -13,6 +13,8 @@ typecheck:
 	npm run typecheck
 	npx tsc --noEmit -p scripts
 	npx tsc --noEmit -p tests/smoke
+	npx tsc --noEmit -p tests/lint
+	npx tsc --noEmit -p tests/e2e
 
 test:
 	NODE_OPTIONS=--no-experimental-webstorage npm test

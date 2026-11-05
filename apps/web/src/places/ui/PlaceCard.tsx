@@ -72,6 +72,7 @@ export function PlaceCard({
         ref={drag?.setNodeRef}
         style={drag?.style}
         {...(drag?.attributes ?? {})}
+        role={undefined}
         {...(drag?.listeners ?? {})}
       >
         <div className="pc-hit">
@@ -121,6 +122,7 @@ export function PlaceCard({
       ref={drag?.setNodeRef}
       style={{ ...levelVars(level), ...(drag?.style ?? {}) }}
       {...(drag?.attributes ?? {})}
+      role={undefined}
       {...(drag?.listeners ?? {})}
     >
       <Link

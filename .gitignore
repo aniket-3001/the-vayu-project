@@ -19,3 +19,7 @@ tests/live-check/out/
 
 # The web app built for the native shell
 apps/mobile/www/
+
+# Browser test output
+test-results/
+playwright-report/

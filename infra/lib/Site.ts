@@ -74,23 +74,45 @@ function handler(event) {
  * weather and place-search services it asks; and our own API, which is the same address. Nothing else, and no
  * other site may put the app in a frame.
  */
-export const CONTENT_SECURITY_POLICY = [
-  "default-src 'self'",
-  "script-src 'self'",
-  "style-src 'self' 'unsafe-inline'",
-  "img-src 'self' data: blob: https://tiles.openfreemap.org",
-  "font-src 'self' data: https://tiles.openfreemap.org",
-  "connect-src 'self' data: blob: https://tiles.openfreemap.org https://api.open-meteo.com https://air-quality-api.open-meteo.com https://geocoding-api.open-meteo.com https://photon.komoot.io https://cognito-idp.ap-south-1.amazonaws.com",
-  "worker-src 'self' blob:",
-  "media-src 'self' blob:",
-  "object-src 'none'",
-  "base-uri 'self'",
-  "form-action 'self'",
-  "frame-ancestors 'none'",
-].join('; ');
+/**
+ * The page's content policy. `extraConnect` adds hosts the page may send data to, for the one optional service (crash
+ * reporting); each must be a plain host name, so nothing else can be slipped in.
+ */
+export const contentSecurityPolicy = (extraConnect: readonly string[] = []): string => {
+  for (const host of extraConnect) {
+    if (!/^[a-z0-9]([a-z0-9.-]*[a-z0-9])?$/u.test(host))
+      throw new Error(`Not a plain host name: ${host}`);
+  }
+  return [
+    "default-src 'self'",
+    "script-src 'self'",
+    "style-src 'self' 'unsafe-inline'",
+    "img-src 'self' data: blob: https://tiles.openfreemap.org",
+    "font-src 'self' data: https://tiles.openfreemap.org",
+    "connect-src 'self' data: blob: https://tiles.openfreemap.org https://api.open-meteo.com https://air-quality-api.open-meteo.com https://geocoding-api.open-meteo.com https://photon.komoot.io https://cognito-idp.ap-south-1.amazonaws.com",
+    "worker-src 'self' blob:",
+    "media-src 'self' blob:",
+    "object-src 'none'",
+    "base-uri 'self'",
+    "form-action 'self'",
+    "frame-ancestors 'none'",
+  ]
+    .join('; ')
+    .replace(/(connect-src [^;]*)/u, (match) =>
+      [match, ...extraConnect.map((host) => `https://${host}`)].join(' '),
+    );
+};
+
+export const CONTENT_SECURITY_POLICY = contentSecurityPolicy();
 
 export interface SiteProps {
+  /** A secret CloudFront adds as `x-origin-verify` on every request to the API, which refuses requests without it. */
+  readonly originSecret?: string | undefined;
   readonly api: HttpApi;
+  /** A host the page may send crash reports to (e.g. `o123.ingest.us.sentry.io`). Without it the policy allows none. */
+  readonly crashReportingHost?: string | undefined;
+  /** The ARN of a web firewall made in us-east-1 (see Edge.ts). Without it the address has no firewall. */
+  readonly webAclArn?: string | undefined;
 }
 
 /**
@@ -118,6 +140,9 @@ export class Site extends Construct {
       code: FunctionCode.fromInline(APP_INDEX_FUNCTION),
     });
 
+    const csp = contentSecurityPolicy(
+      props.crashReportingHost === undefined ? [] : [props.crashReportingHost],
+    );
     const securityHeaders = new ResponseHeadersPolicy(this, 'SecurityHeaders', {
       securityHeadersBehavior: {
         strictTransportSecurity: {
@@ -131,7 +156,7 @@ export class Site extends Construct {
           referrerPolicy: HeadersReferrerPolicy.STRICT_ORIGIN_WHEN_CROSS_ORIGIN,
           override: true,
         },
-        contentSecurityPolicy: { contentSecurityPolicy: CONTENT_SECURITY_POLICY, override: true },
+        contentSecurityPolicy: { contentSecurityPolicy: csp, override: true },
       },
       customHeadersBehavior: {
         // The camera and the location are asked for by the page itself; nothing else may use them.
@@ -159,7 +184,7 @@ export class Site extends Construct {
           referrerPolicy: HeadersReferrerPolicy.STRICT_ORIGIN_WHEN_CROSS_ORIGIN,
           override: true,
         },
-        contentSecurityPolicy: { contentSecurityPolicy: CONTENT_SECURITY_POLICY, override: true },
+        contentSecurityPolicy: { contentSecurityPolicy: csp, override: true },
       },
       customHeadersBehavior: {
         // The camera and the location are asked for by the page itself; nothing else may use them.
@@ -207,17 +232,26 @@ export class Site extends Construct {
       cookieBehavior: OriginRequestCookieBehavior.none(),
     });
 
+    const apiHttpOrigin = (): HttpOrigin =>
+      new HttpOrigin(Fn.parseDomainName(props.api.apiEndpoint), {
+        ...(props.originSecret === undefined
+          ? {}
+          : { customHeaders: { 'x-origin-verify': props.originSecret } }),
+      });
     const signedInBehavior: BehaviorOptions = {
-      origin: new HttpOrigin(Fn.parseDomainName(props.api.apiEndpoint)),
+      origin: apiHttpOrigin(),
       viewerProtocolPolicy: ViewerProtocolPolicy.HTTPS_ONLY,
       allowedMethods: AllowedMethods.ALLOW_ALL,
       cachePolicy: CachePolicy.CACHING_DISABLED,
       originRequestPolicy: OriginRequestPolicy.ALL_VIEWER_EXCEPT_HOST_HEADER,
       responseHeadersPolicy: apiHeaders,
-      functionAssociations: [{ function: apiPreflight, eventType: FunctionEventType.VIEWER_REQUEST }],
+      functionAssociations: [
+        { function: apiPreflight, eventType: FunctionEventType.VIEWER_REQUEST },
+      ],
     };
 
     this.distribution = new Distribution(this, 'Distribution', {
+      ...(props.webAclArn === undefined ? {} : { webAclId: props.webAclArn }),
       defaultRootObject: 'index.html',
       priceClass: PriceClass.PRICE_CLASS_200,
       defaultBehavior: {
@@ -235,7 +269,7 @@ export class Site extends Construct {
         '/v1/me/events': signedInBehavior,
         '/v1/admin/*': signedInBehavior,
         '/v1/*': {
-          origin: new HttpOrigin(Fn.parseDomainName(props.api.apiEndpoint)),
+          origin: apiHttpOrigin(),
           viewerProtocolPolicy: ViewerProtocolPolicy.HTTPS_ONLY,
           allowedMethods: AllowedMethods.ALLOW_ALL,
           cachePolicy: apiCache,

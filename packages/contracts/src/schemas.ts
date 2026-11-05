@@ -8,7 +8,7 @@ import { z } from 'zod';
 
 const record = <Shape extends z.ZodRawShape>(shape: Shape): z.ZodReadonly<z.ZodObject<Shape>> =>
   z.object(shape).readonly();
-const list = <Item extends z.ZodTypeAny>(item: Item): z.ZodReadonly<z.ZodArray<Item>> =>
+const list = <Item extends z.ZodType>(item: Item): z.ZodReadonly<z.ZodArray<Item>> =>
   z.array(item).readonly();
 
 /** What kind of value the viewer is looking at. Never mix these without a label (rule I12). */
@@ -529,7 +529,7 @@ export const Alert = record({
   audience: record({ groupId: z.string(), role: z.string() }),
   title: z.string(),
   body: z.string(),
-  facts: z.record(z.union([z.number(), z.string()])).readonly(),
+  facts: z.record(z.string(), z.union([z.number(), z.string()])).readonly(),
   createdAt: z.string(),
   mode: Mode,
   unofficial: z.boolean().optional(),

@@ -4,6 +4,7 @@ import type { CfnStage } from 'aws-cdk-lib/aws-apigatewayv2';
 import { HttpApi, HttpMethod, HttpStage } from 'aws-cdk-lib/aws-apigatewayv2';
 import { HttpLambdaIntegration } from 'aws-cdk-lib/aws-apigatewayv2-integrations';
 import { CfnBudget } from 'aws-cdk-lib/aws-budgets';
+import { CfnAnomalyMonitor, CfnAnomalySubscription } from 'aws-cdk-lib/aws-ce';
 import { AttributeType, BillingMode, Table } from 'aws-cdk-lib/aws-dynamodb';
 import { Effect, PolicyStatement } from 'aws-cdk-lib/aws-iam';
 import { Architecture, Runtime, Tracing } from 'aws-cdk-lib/aws-lambda';
@@ -22,10 +23,13 @@ import { Ingest } from './Ingest';
 import { Operations } from './Operations';
 import { Site } from './Site';
 import { Stations } from './Stations';
+import { STAGE_CONTEXT, stageTitle } from './stage';
 
 export interface VayuStackProps extends StackProps {
   /** Where budget alerts go. Without it, no budget is created. */
   readonly alertEmail?: string;
+  /** An existing Cost Explorer by-service anomaly monitor to reuse (an account may have only one). */
+  readonly spendMonitorArn?: string;
   /** Monthly spend limit in US dollars. */
   readonly monthlyBudgetUsd?: number;
   /**
@@ -39,6 +43,22 @@ export interface VayuStackProps extends StackProps {
   readonly ingestEnabled?: boolean;
   /** Set to true to give alerts a Hindi voice note too (Polly). Defaults to false. */
   readonly voiceEnabled?: boolean;
+  /**
+   * Set to true so only CloudFront can reach the API: it adds a secret header the API requires. Off by default, because
+   * anything that calls API Gateway's own address directly (old phone builds, a smoke test without LIVE_URL) is then refused.
+   */
+  readonly enforceOriginSecret?: boolean;
+  /** The ARN of the firewall made by EdgeStack. Without it the public address has no firewall. */
+  readonly webAclArn?: string;
+  /** The oldest phone-app version the API still serves; older apps show an "Update Vayu" screen. Defaults to no limit. */
+  readonly minAppVersion?: string;
+  /**
+   * A second copy of the stack beside the real one (for example `staging`): the few resources with fixed names get the
+   * stage in them. Lower-case letters and digits. Without it, every name is what it always was.
+   */
+  readonly stage?: string;
+  /** A host the app may send crash reports to (the one in the build's Sentry address). Without it none is allowed. */
+  readonly crashReportingHost?: string;
 }
 
 const apiEntry = fileURLToPath(new URL('../../apps/api/src/handler.ts', import.meta.url));
@@ -51,6 +71,8 @@ const apiEntry = fileURLToPath(new URL('../../apps/api/src/handler.ts', import.m
 export class VayuStack extends Stack {
   constructor(scope: Construct, id: string, props: VayuStackProps = {}) {
     super(scope, id, props);
+    // Must come before any resource is made: every name that carries the stage reads it from here.
+    if (props.stage !== undefined) this.node.setContext(STAGE_CONTEXT, props.stage);
 
     const table = (name: string, sortKey?: string): Table =>
       new Table(this, name, {
@@ -105,6 +127,14 @@ export class VayuStack extends Stack {
       removalPolicy: RemovalPolicy.DESTROY,
     });
 
+    const originSecret =
+      props.enforceOriginSecret === true
+        ? new Secret(this, 'OriginSecret', {
+            generateSecretString: { excludePunctuation: true, passwordLength: 40 },
+            removalPolicy: RemovalPolicy.DESTROY,
+          })
+        : undefined;
+
     const apiFunction = new NodejsFunction(this, 'ApiFunction', {
       entry: apiEntry,
       runtime: Runtime.NODEJS_22_X,
@@ -130,9 +160,12 @@ export class VayuStack extends Stack {
         FIRMS_MAP_KEY_ARN: firmsMapKey.secretArn,
         OPENAQ_API_KEY_ARN: openAqKey.secretArn,
         REQUEST_SALT_ARN: requestSalt.secretArn,
+        MIN_APP_VERSION: props.minAppVersion ?? '0.0.0',
+        ...(originSecret === undefined ? {} : { ORIGIN_SECRET_ARN: originSecret.secretArn }),
       },
     });
     requestSalt.grantRead(apiFunction);
+    originSecret?.grantRead(apiFunction);
     cache.grantReadData(apiFunction);
     rooms.grantReadData(apiFunction);
     watch.grantReadWriteData(apiFunction);
@@ -203,7 +236,13 @@ export class VayuStack extends Stack {
     });
     // The routes that cost something or take a person's words get their own, tighter, throttle below.
     const limitedRoutes = [];
-    for (const path of ['/v1/assistant', '/v1/speech', '/v1/requests', '/v1/fire-reports', '/v1/events']) {
+    for (const path of [
+      '/v1/assistant',
+      '/v1/speech',
+      '/v1/requests',
+      '/v1/fire-reports',
+      '/v1/events',
+    ]) {
       limitedRoutes.push(
         ...api.addRoutes({
           path,
@@ -240,9 +279,9 @@ export class VayuStack extends Stack {
       'POST /v1/requests': { ThrottlingRateLimit: 1, ThrottlingBurstLimit: 3 },
       'POST /v1/fire-reports': { ThrottlingRateLimit: 1, ThrottlingBurstLimit: 3 },
       'POST /v1/events': { ThrottlingRateLimit: 5, ThrottlingBurstLimit: 10 },
-    'POST /v1/me/events': { ThrottlingRateLimit: 3, ThrottlingBurstLimit: 6 },
-    'GET /v1/admin/{proxy+}': { ThrottlingRateLimit: 3, ThrottlingBurstLimit: 6 },
-    'GET /v1/me': { ThrottlingRateLimit: 3, ThrottlingBurstLimit: 6 },
+      'POST /v1/me/events': { ThrottlingRateLimit: 3, ThrottlingBurstLimit: 6 },
+      'GET /v1/admin/{proxy+}': { ThrottlingRateLimit: 3, ThrottlingBurstLimit: 6 },
+      'GET /v1/me': { ThrottlingRateLimit: 3, ThrottlingBurstLimit: 6 },
       'PUT /v1/me': { ThrottlingRateLimit: 2, ThrottlingBurstLimit: 4 },
       'DELETE /v1/me': { ThrottlingRateLimit: 1, ThrottlingBurstLimit: 2 },
     };
@@ -261,7 +300,12 @@ export class VayuStack extends Stack {
     });
 
     if (props.includeSite !== false) {
-      const site = new Site(this, 'Site', { api });
+      const site = new Site(this, 'Site', {
+        api,
+        originSecret: originSecret?.secretValue.unsafeUnwrap(),
+        webAclArn: props.webAclArn,
+        crashReportingHost: props.crashReportingHost,
+      });
       new CfnOutput(this, 'SiteUrl', {
         value: `https://${site.distribution.distributionDomainName}`,
       });
@@ -286,6 +330,30 @@ export class VayuStack extends Stack {
             subscribers: [{ subscriptionType: 'EMAIL', address: props.alertEmail }],
           },
         ],
+      });
+      // A budget only fires when the month's total passes a line. This watches for an unusual jump in any service, such
+      // as a flood of assistant calls, within a day, and mails a summary once the extra cost passes $5.
+      // AWS allows one by-service monitor per account and often creates it itself ("Default-Services-Monitor"), so an
+      // existing one can be passed in with `-c spendMonitorArn=...` and is reused instead of created.
+      const monitorArn =
+        props.spendMonitorArn ??
+        new CfnAnomalyMonitor(this, 'SpendMonitor', {
+          monitorName: `${stageTitle(this)} spend by service`,
+          monitorType: 'DIMENSIONAL',
+          monitorDimension: 'SERVICE',
+        }).attrMonitorArn;
+      new CfnAnomalySubscription(this, 'SpendAnomalies', {
+        subscriptionName: `${stageTitle(this)} spend anomalies`,
+        frequency: 'DAILY',
+        monitorArnList: [monitorArn],
+        subscribers: [{ type: 'EMAIL', address: props.alertEmail }],
+        thresholdExpression: JSON.stringify({
+          Dimensions: {
+            Key: 'ANOMALY_TOTAL_IMPACT_ABSOLUTE',
+            MatchOptions: ['GREATER_THAN_OR_EQUAL'],
+            Values: ['5'],
+          },
+        }),
       });
     }
 

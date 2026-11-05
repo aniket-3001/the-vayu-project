@@ -2,8 +2,11 @@ import '@fontsource-variable/hanken-grotesk';
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { startAnalytics, track } from './analytics';
+import { startCrashReporting } from './crashReporting';
 import { startTheme } from './theme/theme';
 import { AccountGate } from './account/AccountContext';
+import { installSecureSession } from './account/secureSession';
+import { UpdateGate } from './native/updateGate';
 import { App } from './App';
 import { AirStore, setAirStoreFactory } from './air/store';
 import { liveAirSource } from './air/liveSource';
@@ -22,10 +25,8 @@ installPhoneGeolocation();
 const root = document.getElementById('root');
 if (root === null) throw new Error('index.html needs a #root');
 
-if (window.location.hash.startsWith('#/week')) {
-  // The recorded days: seven real days played through the same app, opened by an unlisted address.
-  void import('./week/entry').then(({ startWeek }) => startWeek(root)).then(() => hideSplash());
-} else {
+/** The live app. Starts once the session has been read from wherever it is kept (see account/secureSession.ts). */
+function startApp(root: HTMLElement): void {
   // The deployed app reads the real air from our API on AWS.
   setAirStoreFactory(() => new AirStore(liveAirSource(API_URL)));
   // A new person starts with empty places to fill in, not with someone else's.
@@ -34,6 +35,8 @@ if (window.location.hash.startsWith('#/week')) {
   // If live location was left on last time, carry on following the device.
   liveLocation().resume();
   startAnalytics();
+  // Does nothing unless the build was given a crash-reporting address.
+  void startCrashReporting();
   // Anything the app fails at without handling is counted (a short code only, never the page or what was typed).
   window.addEventListener('error', (event) => {
     track('error', event.message.slice(0, 80));
@@ -43,11 +46,23 @@ if (window.location.hash.startsWith('#/week')) {
   });
   createRoot(root).render(
     <StrictMode>
-      <AccountGate>
-        <App />
-      </AccountGate>
+      <UpdateGate apiUrl={API_URL}>
+        <AccountGate>
+          <App />
+        </AccountGate>
+      </UpdateGate>
     </StrictMode>,
   );
   // In the phone app the startup screen is still up; take it down now the app is drawn.
   void hideSplash();
+}
+
+if (window.location.hash.startsWith('#/week')) {
+  // The recorded days: seven real days played through the same app, opened by an unlisted address.
+  void import('./week/entry').then(({ startWeek }) => startWeek(root)).then(() => hideSplash());
+} else {
+  // On a phone the session lives in the secure store, which has to be read before the first screen is drawn.
+  void installSecureSession().then(() => {
+    startApp(root);
+  });
 }

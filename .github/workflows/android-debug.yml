@@ -3,27 +3,43 @@ name: android-debug
 # until it is started. It touches no AWS account: the app is built from this repository alone.
 on:
   workflow_dispatch:
+    inputs:
+      api_url:
+        description: "Address the app talks to, e.g. https://d3r3d40l2fiord.cloudfront.net (leave empty for the default)"
+        required: false
+        default: ""
 permissions:
   contents: read
 jobs:
   apk:
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: 22
           cache: npm
-      - uses: actions/setup-java@v5
+      - uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5
         with:
           distribution: temurin
           java-version: 21
       - run: npm ci
-      - run: npm run mobile:sync
+      - name: Sync the web app into the phone project
+        env:
+          API_URL: ${{ inputs.api_url }}
+        run: |
+          # Passed through the environment, not pasted into the script, and only if it looks like an https address.
+          if [ -n "$API_URL" ]; then
+            case "$API_URL" in
+              https://*) export VAYU_API_URL="${API_URL%/}" ;;
+              *) echo "api_url must start with https://" >&2; exit 1 ;;
+            esac
+          fi
+          npm run mobile:sync
       - run: chmod +x apps/mobile/android/gradlew
       - run: ./gradlew assembleDebug
         working-directory: apps/mobile/android
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: vayu-debug-apk
           path: apps/mobile/android/app/build/outputs/apk/debug/app-debug.apk

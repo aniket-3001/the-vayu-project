@@ -5,6 +5,10 @@ interface ImportMetaEnv {
   readonly VITE_ASSISTANT_URL?: string;
   /** "true" only in the build for the Android and iOS apps; unset for the website. */
   readonly VITE_NATIVE?: string;
+  /** Where feedback mail goes. Unset means the Account page has no feedback link. */
+  readonly VITE_SUPPORT_EMAIL?: string;
+  /** Where crash reports go (a Sentry DSN). Unset means no crash reporting at all. */
+  readonly VITE_SENTRY_DSN?: string;
   /** The build mode: development, production, or test. */
   readonly MODE: string;
   /** True while running the dev server. */

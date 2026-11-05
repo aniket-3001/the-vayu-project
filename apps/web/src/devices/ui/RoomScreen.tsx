@@ -138,7 +138,7 @@ export function RoomScreen({
             onClick={() => {
               if (unit.state.deviceId === device.id) unit.disconnect();
               remove(device.id);
-              navigate('/');
+              void navigate('/');
             }}
           >
             <Trash2 size={16} aria-hidden="true" /> Remove device
