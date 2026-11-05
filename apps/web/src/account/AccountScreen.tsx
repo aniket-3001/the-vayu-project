@@ -6,6 +6,7 @@ import { clock12 } from '../today/time';
 import { chooseTheme, loadChoice, type ThemeChoice } from '../theme/theme';
 import { useAccount } from './AccountContext';
 import { FeedbackLink } from './FeedbackLink';
+import { LegalLinks } from './LegalLinks';
 
 const LOOKS: readonly { readonly choice: ThemeChoice; readonly label: string }[] = [
   { choice: 'system', label: 'Auto' },
@@ -190,6 +191,7 @@ export function AccountScreen(): React.JSX.Element {
         <AdminLink />
         <Appearance />
         <FeedbackLink />
+        <LegalLinks />
         <p className="muted small build-note">{buildLabel()}</p>
       </main>
     </div>

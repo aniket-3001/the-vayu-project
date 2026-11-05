@@ -1,3 +1,4 @@
+import { timedFetch } from './timedFetch';
 import { RawHour } from '@vayu/contracts';
 import type { StationRepo } from './repos';
 import type { Point, Station } from './station';
@@ -64,7 +65,7 @@ async function getJson<T>(
 
 export function openAqStationRepo(options: OpenAqClientOptions): StationRepo {
   const baseUrl = options.baseUrl ?? 'https://api.openaq.org/v3';
-  const doFetch = options.fetchImpl ?? fetch;
+  const doFetch = options.fetchImpl ?? timedFetch();
 
   return {
     async stationsNear(point: Point): Promise<readonly Station[]> {

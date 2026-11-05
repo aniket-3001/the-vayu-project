@@ -3,10 +3,12 @@
 //
 //   node scripts/load-test.mjs https://<address> --rps 10 --seconds 30 --yes
 //
-// Reports p50/p95/p99 latency, the error rate and the status counts. Exit code 1 if the error rate or p95 is over the limits
-// (--max-error-pct, default 1; --max-p95-ms, default 1500), so it can gate a release.
+// Reports latency for the first look at each address and for repeats separately, the error rate and the status counts.
+// Exit code 1 if the error rate, the repeat p95 or the slowest first look is over the limits (--max-error-pct, default 1;
+// --max-p95-ms, default 1500; --max-first-ms, default 8000), so it can gate a release.
 import { performance } from 'node:perf_hooks';
 import { setTimeout as sleep } from 'node:timers/promises';
+import { summarise } from './loadStats.mjs';
 
 const args = process.argv.slice(2);
 const base = args.find((a) => /^https?:\/\//u.test(a))?.replace(/\/$/u, '');
@@ -19,14 +21,20 @@ const seconds = flag('seconds', 30);
 const max = flag('max', 2000);
 const maxErrorPct = flag('max-error-pct', 1);
 const maxP95 = flag('max-p95-ms', 1500);
+// A first look at a new place waits on the outside providers (each call is cut off at 4 s), so it gets its own, looser limit.
+const maxFirst = flag('max-first-ms', 8000);
 
 if (base === undefined || !args.includes('--yes')) {
-  console.error('usage: node scripts/load-test.mjs <https://address> [--rps 10] [--seconds 30] [--max 2000] --yes');
+  console.error(
+    'usage: node scripts/load-test.mjs <https://address> [--rps 10] [--seconds 30] [--max 2000] --yes',
+  );
   console.error('--yes confirms you mean to send this traffic to that address.');
   process.exit(2);
 }
 if (rps > 50) {
-  console.error('refusing more than 50 requests a second: the API throttle is 25 and a test must not look like an attack');
+  console.error(
+    'refusing more than 50 requests a second: the API throttle is 25 and a test must not look like an attack',
+  );
   process.exit(2);
 }
 
@@ -47,7 +55,7 @@ const paths = [
   '/v1/auth-config',
 ];
 
-const latencies = [];
+const samples = [];
 const statuses = new Map();
 let sent = 0;
 let failed = 0;
@@ -63,7 +71,7 @@ async function one(path) {
     statuses.set('network', (statuses.get('network') ?? 0) + 1);
     failed += 1;
   }
-  latencies.push(performance.now() - started);
+  samples.push({ path, ms: performance.now() - started });
 }
 
 const inflight = new Set();
@@ -79,15 +87,21 @@ while (Date.now() < end && sent < max) {
 }
 await Promise.all(inflight);
 
-const sorted = [...latencies].sort((a, b) => a - b);
-const at = (q) => sorted[Math.min(sorted.length - 1, Math.floor(q * sorted.length))] ?? 0;
 const errorPct = sent === 0 ? 0 : (failed / sent) * 100;
+const { first, repeat } = summarise(samples);
+const line = (g) =>
+  `n ${String(g.n)}  p50 ${g.p50.toFixed(0)}  p95 ${g.p95.toFixed(0)}  max ${g.max.toFixed(0)}`;
 console.log(`sent ${String(sent)} requests to ${base} at ${String(rps)}/s`);
-console.log(`latency ms: p50 ${at(0.5).toFixed(0)}  p95 ${at(0.95).toFixed(0)}  p99 ${at(0.99).toFixed(0)}`);
+console.log(`first look at an address (nothing cached), ms: ${line(first)}`);
+console.log(`repeat requests (cached), ms:                  ${line(repeat)}`);
 console.log(`errors (5xx, 429, network): ${failed} (${errorPct.toFixed(2)}%)`);
 console.log(`statuses: ${[...statuses].map(([k, v]) => `${String(k)}=${String(v)}`).join('  ')}`);
-if (errorPct > maxErrorPct || at(0.95) > maxP95) {
-  console.error(`FAILED: limits are ${String(maxErrorPct)}% errors and p95 ${String(maxP95)} ms`);
+const problems = [];
+if (errorPct > maxErrorPct) problems.push(`errors over ${String(maxErrorPct)}%`);
+if (repeat.p95 > maxP95) problems.push(`repeat p95 over ${String(maxP95)} ms`);
+if (first.max > maxFirst) problems.push(`a first look took over ${String(maxFirst)} ms`);
+if (problems.length > 0) {
+  console.error(`FAILED: ${problems.join('; ')}`);
   process.exit(1);
 }
 console.log('within limits');

@@ -1,3 +1,4 @@
+import { timedFetch } from './timedFetch';
 import type { WindPoint } from '@vayu/contracts';
 import { z } from 'zod';
 import { keepGrid } from './keepGrid';
@@ -64,7 +65,7 @@ export interface OpenMeteoWindGridOptions {
  */
 export function openMeteoWindGridRepo(options: OpenMeteoWindGridOptions = {}): WindGridRepo {
   const baseUrl = options.baseUrl ?? 'https://api.open-meteo.com/v1/forecast';
-  const fetchImpl = options.fetchImpl ?? fetch;
+  const fetchImpl = options.fetchImpl ?? timedFetch();
   const fetchAll = async (): Promise<readonly WindPoint[]> => {
     const wanted = windGridPoints();
     const out: WindPoint[] = [];
@@ -154,7 +155,7 @@ export interface MetNoWindGridOptions {
  */
 export function metNoWindGridRepo(options: MetNoWindGridOptions = {}): WindGridRepo {
   const baseUrl = options.baseUrl ?? 'https://api.met.no/weatherapi/locationforecast/2.0/compact';
-  const fetchImpl = options.fetchImpl ?? fetch;
+  const fetchImpl = options.fetchImpl ?? timedFetch();
   const userAgent =
     options.userAgent ?? 'TheVayuProject/0.1 github.com/hrsh-kr/the-vayu-project (air quality app)';
   const concurrency = Math.max(1, options.concurrency ?? 8);
