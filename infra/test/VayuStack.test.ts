@@ -1062,6 +1062,14 @@ describe('accounts', () => {
     });
   });
 
+  it('protects the real user pool from deletion, and leaves a staging copy deletable', () => {
+    template.hasResourceProperties('AWS::Cognito::UserPool', { DeletionProtection: 'ACTIVE' });
+    template.hasResource('AWS::Cognito::UserPool', { DeletionPolicy: 'Retain' });
+    const staging = synthWith({ stage: 'staging' });
+    staging.hasResource('AWS::Cognito::UserPool', { DeletionPolicy: 'Delete' });
+    staging.hasResourceProperties('AWS::Cognito::UserPool', { DeletionProtection: 'INACTIVE' });
+  });
+
   it('has an app client with no secret, no hosted page and an answer that does not say who has an account', () => {
     template.hasResourceProperties('AWS::Cognito::UserPoolClient', {
       GenerateSecret: false,
