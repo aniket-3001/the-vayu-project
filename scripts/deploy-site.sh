@@ -3,6 +3,14 @@
 #   AWS_PROFILE=vayu scripts/deploy-site.sh
 set -euo pipefail
 cd "$(dirname "$0")/.."
+# Settings this account always uses (Sentry address, feedback email, Sentry token) can live in `.deploy-site.env`, which is not
+# committed, so a token never has to be typed into a terminal or a chat. Variables already set in the shell win.
+if [ -f .deploy-site.env ]; then
+  while IFS='=' read -r key value; do
+    case "$key" in ''|'#'*) continue ;; esac
+    if [ -z "${!key:-}" ]; then export "$key=${value%\"}"; fi
+  done < <(sed -e 's/^\([A-Za-z_][A-Za-z_0-9]*=\)"/\1/' .deploy-site.env | tr -d '\r')
+fi
 STACK="${STACK:-Vayu}"
 REGION="${AWS_REGION:-ap-south-1}"
 
@@ -19,7 +27,10 @@ if [ -z "$BUCKET" ] || [ "$BUCKET" = "None" ]; then
 fi
 
 # An empty API address: the page and the API share one address, so there is nothing to allow across sites.
+# Source maps are made only when a Sentry token is given; they go to Sentry and are removed from the build before it is uploaded.
+if [ -n "${SENTRY_AUTH_TOKEN:-}" ]; then export VAYU_SOURCEMAPS=on; fi
 VITE_API_URL= npm run build -w @vayu/web
+node scripts/upload-sourcemaps.mjs
 node scripts/check-bundle.mjs
 
 # (MSYS_NO_PATHCONV stops Git Bash on Windows turning "/index.html" into a Windows path.)
