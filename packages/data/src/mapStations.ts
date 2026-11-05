@@ -1,3 +1,4 @@
+import { timedFetch } from './timedFetch';
 import { MapStation } from '@vayu/contracts';
 
 /** The monitors with a recent PM2.5 reading, for the map. */
@@ -46,7 +47,7 @@ export function openAqMapStationRepo(options: OpenAqMapOptions): MapStationRepo 
   const maxAgeMs = (options.maxAgeHours ?? 6) * HOUR_MS;
   const maxPages = options.maxPages ?? 25;
   const spacing = options.delayMs ?? 1100;
-  const doFetch = options.fetchImpl ?? fetch;
+  const doFetch = options.fetchImpl ?? timedFetch();
   const sleep =
     options.sleep ?? ((ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms)));
   const clock = options.now ?? Date.now;

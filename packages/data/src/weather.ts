@@ -1,3 +1,4 @@
+import { timedFetch } from './timedFetch';
 import { WeatherNow } from '@vayu/contracts';
 import { z } from 'zod';
 import type { Point } from './station';
@@ -31,7 +32,7 @@ export interface OpenMeteoWeatherOptions {
  */
 export function openMeteoWeatherRepo(options: OpenMeteoWeatherOptions = {}): WeatherRepo {
   const baseUrl = options.baseUrl ?? 'https://api.open-meteo.com/v1/forecast';
-  const doFetch = options.fetchImpl ?? fetch;
+  const doFetch = options.fetchImpl ?? timedFetch();
   return {
     async nowAt(point, asOf) {
       const url =

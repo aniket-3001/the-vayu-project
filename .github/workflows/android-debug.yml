@@ -8,6 +8,14 @@ on:
         description: "Address the app talks to, e.g. https://d3r3d40l2fiord.cloudfront.net (leave empty for the default)"
         required: false
         default: ""
+      sentry_dsn:
+        description: "Sentry DSN for crash reports from the app (leave empty for none)"
+        required: false
+        default: ""
+      support_email:
+        description: "Address for the Send feedback link (leave empty for no link)"
+        required: false
+        default: ""
 permissions:
   contents: read
 jobs:
@@ -27,6 +35,8 @@ jobs:
       - name: Sync the web app into the phone project
         env:
           API_URL: ${{ inputs.api_url }}
+          SENTRY_DSN: ${{ inputs.sentry_dsn }}
+          SUPPORT_EMAIL: ${{ inputs.support_email }}
         run: |
           # Passed through the environment, not pasted into the script, and only if it looks like an https address.
           if [ -n "$API_URL" ]; then
@@ -35,6 +45,13 @@ jobs:
               *) echo "api_url must start with https://" >&2; exit 1 ;;
             esac
           fi
+          if [ -n "$SENTRY_DSN" ]; then
+            case "$SENTRY_DSN" in
+              https://*) export VITE_SENTRY_DSN="$SENTRY_DSN" ;;
+              *) echo "sentry_dsn must start with https://" >&2; exit 1 ;;
+            esac
+          fi
+          if [ -n "$SUPPORT_EMAIL" ]; then export VITE_SUPPORT_EMAIL="$SUPPORT_EMAIL"; fi
           npm run mobile:sync
       - run: chmod +x apps/mobile/android/gradlew
       - run: ./gradlew assembleDebug

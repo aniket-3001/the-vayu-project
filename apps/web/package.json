@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "prebuild": "node ../../scripts/build-legal.mjs",
     "build": "tsc -p . && vite build",
     "preview": "vite preview",
     "typecheck": "tsc -p ."

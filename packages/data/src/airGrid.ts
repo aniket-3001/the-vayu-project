@@ -1,3 +1,4 @@
+import { timedFetch } from './timedFetch';
 import type { AirGridPoint } from '@vayu/contracts';
 import { z } from 'zod';
 import { keepGrid } from './keepGrid';
@@ -56,7 +57,7 @@ export interface OpenMeteoAirGridOptions {
  */
 export function openMeteoAirGridRepo(options: OpenMeteoAirGridOptions = {}): AirGridRepo {
   const baseUrl = options.baseUrl ?? 'https://air-quality-api.open-meteo.com/v1/air-quality';
-  const fetchImpl = options.fetchImpl ?? fetch;
+  const fetchImpl = options.fetchImpl ?? timedFetch();
   const fetchAll = async (): Promise<readonly AirGridPoint[]> => {
     const wanted = airGridPoints();
     const out: AirGridPoint[] = [];

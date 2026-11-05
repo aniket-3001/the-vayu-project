@@ -1,12 +1,13 @@
-# Privacy policy (draft)
+# Privacy policy
 
-> **Draft for review.** This states what the app does today, taken from the code and `README.md`. It has not been reviewed by a
+> **Owner's note (not shown on the published page).** This states what the app does today, taken from the code and `README.md`. It has not been reviewed by a
 > lawyer. Before it is published at a public address and linked from the App Store and Google Play, a person responsible for
 > the project must read it, fill in the contact details, and have it checked against the Digital Personal Data Protection Act,
 > 2023 (India) and, if the app is offered outside India, the GDPR.
 
-**Who is responsible:** The Vayu Project, run by [name and postal address to be filled in]. Contact: [email to be filled in].
-**Last updated:** [date of publication]
+**Who is responsible:** The Vayu Project, run by Aniket Gupta. Contact: aniketgupta3001@gmail.com.
+
+**Last updated:** 5 November 2026
 
 ## What the app is
 
@@ -37,18 +38,18 @@ Amazon Web Services (hosting, sign-in, database, the language model, speech); Op
 Photon (air, weather, wind, fire and place data, which receive coordinates or search words but not your identity); OpenFreeMap
 (map tiles, which sees your address as any website does).
 
-If crash reporting is switched on for a release, Sentry (a service that collects error reports) also receives the kind of error, its message and its technical trace, and the app version. We remove your identity, your address, the page you were on and any coordinates before it is sent. [If enabled: confirm this paragraph, name the Sentry data region, and state the retention period.]
+The website also sends crash reports to Sentry (a service that collects error reports), hosted in the European Union. A report holds the kind of error, its message and its technical trace, and the app version. We remove your identity, your address, the page you were on and any coordinates before it is sent. Sentry keeps reports for up to 90 days, its standard period.
 
 ## Your choices
 
 - **Delete your account** on the Account page. This deletes your saved copy, your usage timeline and the account itself.
 - **Use the app as a guest** (phone apps) or without an account: nothing is sent to an account.
 - **Turn off location** at any time in the app or in your phone's settings.
-- **Ask us** to see or correct what we hold about you, by writing to the address above.
+- **Ask us** to see or correct what we hold about you, by writing to aniketgupta3001@gmail.com.
 
 ## Children
 
-The app lets an adult add the names and ages of children in their family. It does not knowingly create accounts for people under 18. [To be reviewed: the DPDP Act requires verifiable consent of a parent or guardian for processing a child's data.]
+The app lets an adult add the names and ages of children in their family. It does not knowingly create accounts for people under 18. Names and ages of children are entered only by an adult who is their parent or guardian.
 
 ## Security
 
