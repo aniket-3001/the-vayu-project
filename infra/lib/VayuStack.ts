@@ -255,7 +255,12 @@ export class VayuStack extends Stack {
       );
     }
     // Accounts: sign-in through Cognito; API Gateway checks the token on /v1/me.
-    const accounts = new Accounts(this, 'Accounts', { api, apiFunction });
+    const accounts = new Accounts(this, 'Accounts', {
+      api,
+      apiFunction,
+      // Only the real stack: a staging copy must be deletable.
+      protectUsers: props.stage === undefined,
+    });
     limitedRoutes.push(...accounts.routes);
     api.addRoutes({
       path: '/v1/{proxy+}',

@@ -11,6 +11,8 @@ export interface AccountsProps {
   readonly api: HttpApi;
   /** The API's own function, which serves `/v1/me` once API Gateway has checked the token. */
   readonly apiFunction: LambdaFunction;
+  /** True for the real stack: the user pool cannot be deleted, and a stack delete leaves it in place with every account. */
+  readonly protectUsers?: boolean;
 }
 
 /**
@@ -42,7 +44,8 @@ export class Accounts extends Construct {
       },
       // A lost password is reset with a code sent to the verified email.
       accountRecovery: AccountRecovery.EMAIL_ONLY,
-      removalPolicy: RemovalPolicy.DESTROY,
+      deletionProtection: props.protectUsers === true,
+      removalPolicy: props.protectUsers === true ? RemovalPolicy.RETAIN : RemovalPolicy.DESTROY,
     });
 
     this.client = this.userPool.addClient('Web', {
