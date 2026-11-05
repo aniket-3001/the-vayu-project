@@ -17,3 +17,11 @@ describe('the Android manifest', () => {
     expect(exported).toHaveLength(1);
   });
 });
+
+describe('the Android build settings', () => {
+  it('needs Android 8 or later, since older versions no longer get security patches', () => {
+    const gradle = readFileSync('apps/mobile/android/variables.gradle', 'utf8');
+    const min = Number(/minSdkVersion\s*=\s*(\d+)/u.exec(gradle)?.[1]);
+    expect(min).toBeGreaterThanOrEqual(26);
+  });
+});
