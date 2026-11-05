@@ -3,6 +3,11 @@ name: android-debug
 # until it is started. It touches no AWS account: the app is built from this repository alone.
 on:
   workflow_dispatch:
+    inputs:
+      api_url:
+        description: "Address the app talks to, e.g. https://d3r3d40l2fiord.cloudfront.net (leave empty for the default)"
+        required: false
+        default: ""
 permissions:
   contents: read
 jobs:
@@ -19,7 +24,18 @@ jobs:
           distribution: temurin
           java-version: 21
       - run: npm ci
-      - run: npm run mobile:sync
+      - name: Sync the web app into the phone project
+        env:
+          API_URL: ${{ inputs.api_url }}
+        run: |
+          # Passed through the environment, not pasted into the script, and only if it looks like an https address.
+          if [ -n "$API_URL" ]; then
+            case "$API_URL" in
+              https://*) export VAYU_API_URL="${API_URL%/}" ;;
+              *) echo "api_url must start with https://" >&2; exit 1 ;;
+            esac
+          fi
+          npm run mobile:sync
       - run: chmod +x apps/mobile/android/gradlew
       - run: ./gradlew assembleDebug
         working-directory: apps/mobile/android
