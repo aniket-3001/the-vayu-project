@@ -180,7 +180,7 @@ Deploying without `-c adminEmails=...` leaves the list empty, which means nobody
 
 **What this does.** GitHub builds the Android app on its own computers and gives you the installable file (an APK). Nothing is installed on your PC, and it uses no AWS.
 
-**What you need.** An Android phone (Android 7 or later) and a way to move a file to it (USB cable, Google Drive, Telegram, email).
+**What you need.** An Android phone (Android 8 or later) and a way to move a file to it (USB cable, Google Drive, Telegram, email).
 
 - [ ] 2.1 Open `https://github.com/aniket-3001/the-vayu-project` and sign in as `aniket-3001`.
 - [ ] 2.2 Click the **Actions** tab.
