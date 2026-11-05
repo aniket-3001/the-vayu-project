@@ -28,3 +28,5 @@ apps/web/public/privacy.html
 apps/web/public/terms.html
 # Account-specific deploy options (infra/lib/localOptions.ts)
 infra/deploy.local.json
+# Site deploy settings and the Sentry token (scripts/deploy-site.sh)
+.deploy-site.env
