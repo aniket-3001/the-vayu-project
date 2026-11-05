@@ -1,3 +1,4 @@
+import { timedFetch } from './timedFetch';
 import { Gases, WeatherDay, WeatherHour } from '@vayu/contracts';
 import { z } from 'zod';
 import type { Point } from './station';
@@ -69,7 +70,7 @@ export function openMeteoWeatherForecastRepo(
   options: OpenMeteoWeatherForecastOptions = {},
 ): WeatherForecastRepo {
   const baseUrl = options.baseUrl ?? 'https://api.open-meteo.com/v1/forecast';
-  const doFetch = options.fetchImpl ?? fetch;
+  const doFetch = options.fetchImpl ?? timedFetch();
   const hoursAhead = options.hoursAhead ?? 48;
   return {
     async forecastAt(point, asOf) {
@@ -176,7 +177,7 @@ export function openMeteoGasRepo(
   options: { readonly baseUrl?: string; readonly fetchImpl?: typeof fetch } = {},
 ): GasRepo {
   const baseUrl = options.baseUrl ?? 'https://air-quality-api.open-meteo.com/v1/air-quality';
-  const doFetch = options.fetchImpl ?? fetch;
+  const doFetch = options.fetchImpl ?? timedFetch();
   return {
     async gasesAt(point, asOf) {
       const url =

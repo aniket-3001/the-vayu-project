@@ -1,3 +1,4 @@
+import { timedFetch } from './timedFetch';
 import type { Point } from './station';
 
 /**
@@ -101,7 +102,7 @@ export interface FirmsClientOptions {
 export function firmsFireRepo(options: FirmsClientOptions): FireRepo {
   const baseUrl = options.baseUrl ?? 'https://firms.modaps.eosdis.nasa.gov/api/area/csv';
   const source = options.source ?? 'VIIRS_NOAA20_NRT';
-  const doFetch = options.fetchImpl ?? fetch;
+  const doFetch = options.fetchImpl ?? timedFetch();
   return {
     async firesIn(box, asOf) {
       const area = `${box.west},${box.south},${box.east},${box.north}`;
