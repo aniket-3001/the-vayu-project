@@ -1,5 +1,4 @@
 import { describe, expect, it } from 'vitest';
-// @ts-expect-error - a plain script with no types
 import { inline, toHtml, page } from '../../scripts/build-legal.mjs';
 
 describe('the legal pages builder', () => {

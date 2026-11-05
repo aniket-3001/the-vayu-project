@@ -26,3 +26,5 @@ playwright-report/
 # Made from docs/ by scripts/build-legal.mjs at build time
 apps/web/public/privacy.html
 apps/web/public/terms.html
+# Account-specific deploy options (infra/lib/localOptions.ts)
+infra/deploy.local.json

@@ -54,3 +54,10 @@ Actions → **deploy** → Run workflow → choose `staging` to try a change, or
 - The staging live check is informational until a first run shows which of its checks make sense there.
 - No automatic rollback. If the live check fails after production, redeploy the previous commit (see `RUNBOOK.md`).
 - The shared provider secrets (`vayu/openaq-api-key`, `vayu/firms-map-key`, `vayu/telegram-bot-token`) are used by both stacks.
+
+## Keeping your deploy options
+
+A plain `cd infra && npx cdk deploy Vayu` reads `infra/deploy.local.json` (not committed; copy `infra/deploy.local.example.json`) for
+the options this account always uses: `alertEmail`, `spendMonitorArn`, `webAclArn`, `originSecret`, `crashReportingHost`. Without
+that file, leaving one off the command line quietly switches that protection off. `-c name=value` still overrides the file, and a
+staging copy (`-c stage=staging`) ignores the file on purpose, so it never shares the real firewall or mails the real alarm address.

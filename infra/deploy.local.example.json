@@ -1,0 +1,7 @@
+{
+  "alertEmail": "you@example.com",
+  "spendMonitorArn": "arn:aws:ce::<account id>:anomalymonitor/<id>  (from: aws ce get-anomaly-monitors --region us-east-1)",
+  "webAclArn": "arn:aws:wafv2:us-east-1:<account id>:global/webacl/<name>/<id>  (the VayuEdge output)",
+  "originSecret": "on",
+  "crashReportingHost": "o123.ingest.de.sentry.io"
+}
