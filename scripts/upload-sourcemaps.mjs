@@ -18,6 +18,11 @@ export function releaseName(version, commit) {
   return `vayu@${version}${commit === '' ? '' : `+${commit}`}`;
 }
 
+/** One argument made safe for a shell: a path with a space ("Vayu Labs") would otherwise arrive as two arguments. */
+export function shellQuote(arg) {
+  return /[\s"]/u.test(arg) ? `"${arg.replace(/"/gu, '\\"')}"` : arg;
+}
+
 /** The app version, read from the one place it is written, so the two cannot drift apart. */
 export function appVersion(deviceSource) {
   const match = /APP_VERSION\s*=\s*'([^']+)'/u.exec(deviceSource);
@@ -63,8 +68,9 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
       commit(),
     );
     const run = (args) =>
-      spawnSync('npx', ['--yes', SENTRY_CLI, ...args], {
-        stdio: 'inherit',
+      spawnSync('npx', ['--yes', SENTRY_CLI, ...args.map(shellQuote)], {
+        stdio: ['inherit', 'pipe', 'inherit'],
+        encoding: 'utf8',
         shell: true,
         env: process.env,
       });
@@ -81,16 +87,24 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
       ],
       ['releases', 'finalize', release],
     ];
+    let bundled = 0;
     for (const step of steps) {
-      if (run(step).status !== 0) {
+      const result = run(step);
+      const output = result.stdout ?? '';
+      process.stdout.write(output);
+      if (step[1] === 'upload') bundled = Number(/Bundled (\d+) files/u.exec(output)?.[1] ?? 0);
+      // The tool can exit 0 having found nothing to send, so the upload step must also report the files it bundled.
+      if (result.status !== 0 || (step[1] === 'upload' && bundled === 0)) {
         console.error(
-          `upload-sourcemaps: "${step.slice(0, 2).join(' ')}" failed; the maps are removed anyway`,
+          `upload-sourcemaps: "${step.slice(0, 2).join(' ')}" failed or found no files; the maps are removed anyway`,
         );
         for (const file of mapFiles(dist)) rmSync(file);
         process.exit(1);
       }
     }
-    console.log(`upload-sourcemaps: uploaded for release ${release}`);
+    console.log(
+      `upload-sourcemaps: sent ${String(bundled)} file(s) to Sentry for release ${release}`,
+    );
   } else {
     console.log('upload-sourcemaps: no SENTRY_AUTH_TOKEN, nothing uploaded');
   }
