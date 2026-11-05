@@ -24,4 +24,12 @@ describe('source map upload', () => {
     expect(shellQuote('vayu@0.1.0+abc')).toBe('vayu@0.1.0+abc');
     expect(shellQuote('~/assets')).toBe('~/assets');
   });
+
+  it('doubles backslashes that would swallow a quote, and only those', () => {
+    // One backslash at the end, before the closing quote, must become two. A quote inside, after a backslash, gets that
+    // backslash doubled plus its own escape. Backslashes elsewhere stay as they are.
+    expect(shellQuote('D:\\Vayu Labs\\dist\\')).toBe('"D:\\Vayu Labs\\dist\\\\"');
+    expect(shellQuote('a b\\"c')).toBe('"a b\\\\\\"c"');
+    expect(shellQuote('D:\\x\\y')).toBe('D:\\x\\y');
+  });
 });

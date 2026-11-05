@@ -20,7 +20,11 @@ export function releaseName(version, commit) {
 
 /** One argument made safe for a shell: a path with a space ("Vayu Labs") would otherwise arrive as two arguments. */
 export function shellQuote(arg) {
-  return /[\s"]/u.test(arg) ? `"${arg.replace(/"/gu, '\\"')}"` : arg;
+  if (!/[\s"]/u.test(arg)) return arg;
+  // Windows rules: backslashes are literal except in front of a quote (and at the end, before the closing quote), where
+  // each one is doubled so it cannot swallow the quote after it.
+  const escaped = arg.replace(/(\\*)"/gu, '$1$1\\"').replace(/(\\+)$/u, '$1$1');
+  return `"${escaped}"`;
 }
 
 /** The app version, read from the one place it is written, so the two cannot drift apart. */
