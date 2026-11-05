@@ -56,3 +56,16 @@ fix the alarm in `infra/lib/Operations.ts` first.
 **Known:** the load test's p95 limit (1.5 s) fails on cold places (about 4.2 s on 2026-11-05, after the 4 s provider limit was added).
 Repeat lookups are fast (median 26 ms). Making `/v1/today` read the 15-minute harvest cache first would fix it; not built.
 
+## Readable crash reports (source maps)
+
+Needs a Sentry auth token: in Sentry, Settings → Developer Settings → Personal or Organization Tokens (permissions: Release Admin,
+Project Read & Write). Then run the site deploy with it, from the repo root:
+
+```
+SENTRY_AUTH_TOKEN=... SENTRY_ORG=aniket-gupta SENTRY_PROJECT=vayu-web SENTRY_URL=https://de.sentry.io   VITE_SENTRY_DSN=... VITE_SUPPORT_EMAIL=... scripts/deploy-site.sh
+```
+
+`scripts/upload-sourcemaps.mjs` sends the maps to Sentry under the release `vayu@<version>+<commit>` (the same name the page reports),
+then deletes every `.map` from the build, so they are never published on the site. Without a token nothing is sent and the maps are
+still removed. `SENTRY_URL` is the EU address because the project is in Sentry's EU region.
+

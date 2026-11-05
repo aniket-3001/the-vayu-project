@@ -19,7 +19,10 @@ if [ -z "$BUCKET" ] || [ "$BUCKET" = "None" ]; then
 fi
 
 # An empty API address: the page and the API share one address, so there is nothing to allow across sites.
+# Source maps are made only when a Sentry token is given; they go to Sentry and are removed from the build before it is uploaded.
+if [ -n "${SENTRY_AUTH_TOKEN:-}" ]; then export VAYU_SOURCEMAPS=on; fi
 VITE_API_URL= npm run build -w @vayu/web
+node scripts/upload-sourcemaps.mjs
 node scripts/check-bundle.mjs
 
 # (MSYS_NO_PATHCONV stops Git Bash on Windows turning "/index.html" into a Windows path.)
