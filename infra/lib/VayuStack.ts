@@ -28,6 +28,8 @@ import { STAGE_CONTEXT, stageTitle } from './stage';
 export interface VayuStackProps extends StackProps {
   /** Where budget alerts go. Without it, no budget is created. */
   readonly alertEmail?: string;
+  /** An existing Cost Explorer by-service anomaly monitor to reuse (an account may have only one). */
+  readonly spendMonitorArn?: string;
   /** Monthly spend limit in US dollars. */
   readonly monthlyBudgetUsd?: number;
   /**
@@ -331,15 +333,19 @@ export class VayuStack extends Stack {
       });
       // A budget only fires when the month's total passes a line. This watches for an unusual jump in any service, such
       // as a flood of assistant calls, within a day, and mails a summary once the extra cost passes $5.
-      const spendMonitor = new CfnAnomalyMonitor(this, 'SpendMonitor', {
-        monitorName: `${stageTitle(this)} spend by service`,
-        monitorType: 'DIMENSIONAL',
-        monitorDimension: 'SERVICE',
-      });
+      // AWS allows one by-service monitor per account and often creates it itself ("Default-Services-Monitor"), so an
+      // existing one can be passed in with `-c spendMonitorArn=...` and is reused instead of created.
+      const monitorArn =
+        props.spendMonitorArn ??
+        new CfnAnomalyMonitor(this, 'SpendMonitor', {
+          monitorName: `${stageTitle(this)} spend by service`,
+          monitorType: 'DIMENSIONAL',
+          monitorDimension: 'SERVICE',
+        }).attrMonitorArn;
       new CfnAnomalySubscription(this, 'SpendAnomalies', {
         subscriptionName: `${stageTitle(this)} spend anomalies`,
         frequency: 'DAILY',
-        monitorArnList: [spendMonitor.attrMonitorArn],
+        monitorArnList: [monitorArn],
         subscribers: [{ type: 'EMAIL', address: props.alertEmail }],
         thresholdExpression: JSON.stringify({
           Dimensions: {

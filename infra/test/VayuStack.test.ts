@@ -92,6 +92,17 @@ describe('the Vayu stack', () => {
     });
   });
 
+  it('reuses an existing spend monitor instead of creating a second one (AWS allows one per account)', () => {
+    const reused = synthWith({
+      alertEmail: 'someone@example.com',
+      spendMonitorArn: 'arn:aws:ce::123456789012:anomalymonitor/abc',
+    });
+    reused.resourceCountIs('AWS::CE::AnomalyMonitor', 0);
+    reused.hasResourceProperties('AWS::CE::AnomalySubscription', {
+      MonitorArnList: ['arn:aws:ce::123456789012:anomalymonitor/abc'],
+    });
+  });
+
   it('accepts POST (the Telegram webhook) alongside GET on the same route', () => {
     template.hasResourceProperties('AWS::ApiGatewayV2::Route', {
       RouteKey: 'GET /v1/{proxy+}',

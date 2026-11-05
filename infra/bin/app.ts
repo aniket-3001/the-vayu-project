@@ -18,6 +18,8 @@ const minAppVersion = app.node.tryGetContext('minAppVersion') as string | undefi
 const crashReportingHost = app.node.tryGetContext('crashReportingHost') as string | undefined;
 // e.g. `cdk deploy VayuStaging -c stage=staging` makes a second, separate copy to try changes on before the real one.
 const stage = app.node.tryGetContext('stage') as string | undefined;
+// e.g. `-c spendMonitorArn=arn:aws:ce::...:anomalymonitor/...` reuses the account's existing by-service cost monitor (it allows one).
+const spendMonitorArn = app.node.tryGetContext('spendMonitorArn') as string | undefined;
 const webAclArn = app.node.tryGetContext('webAclArn') as string | undefined;
 if (edge === 'on') {
   new EdgeStack(app, 'VayuEdge', {
@@ -42,6 +44,7 @@ new VayuStack(
     ...(minAppVersion === undefined ? {} : { minAppVersion }),
     ...(crashReportingHost === undefined ? {} : { crashReportingHost }),
     ...(webAclArn === undefined ? {} : { webAclArn }),
+    ...(spendMonitorArn === undefined ? {} : { spendMonitorArn }),
     ...(originSecret === undefined ? {} : { enforceOriginSecret: originSecret === 'on' }),
     ...(voice === undefined ? {} : { voiceEnabled: voice === 'on' }),
   },
