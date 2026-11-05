@@ -1,0 +1,3 @@
+# Fake values in a test (base64 of the word "secret-block"), not credentials.
+2d8d5632128d45ce2494a90a913bfc772d3c0e74:apps/web/src/account/cognito.test.ts:generic-api-key:160
+2d8d5632128d45ce2494a90a913bfc772d3c0e74:apps/web/src/account/cognito.test.ts:generic-api-key:194
