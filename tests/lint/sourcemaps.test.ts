@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
-import { appVersion, releaseName } from '../../scripts/upload-sourcemaps.mjs';
+import { appVersion, releaseName, shellQuote } from '../../scripts/upload-sourcemaps.mjs';
 
 describe('source map upload', () => {
   it('names the release the way the page reports it', () => {
@@ -17,5 +17,19 @@ describe('source map upload', () => {
   it('matches crashReporting.ts, which builds the release the same way', () => {
     const page = readFileSync('apps/web/src/crashReporting.ts', 'utf8');
     expect(page).toContain("`vayu@${APP_VERSION}${build === undefined ? '' : `+${build.commit}`}`");
+  });
+
+  it('keeps a path with a space as one argument', () => {
+    expect(shellQuote('D:/Aniket/Vayu Labs/dist')).toBe('"D:/Aniket/Vayu Labs/dist"');
+    expect(shellQuote('vayu@0.1.0+abc')).toBe('vayu@0.1.0+abc');
+    expect(shellQuote('~/assets')).toBe('~/assets');
+  });
+
+  it('doubles backslashes that would swallow a quote, and only those', () => {
+    // One backslash at the end, before the closing quote, must become two. A quote inside, after a backslash, gets that
+    // backslash doubled plus its own escape. Backslashes elsewhere stay as they are.
+    expect(shellQuote('D:\\Vayu Labs\\dist\\')).toBe('"D:\\Vayu Labs\\dist\\\\"');
+    expect(shellQuote('a b\\"c')).toBe('"a b\\\\\\"c"');
+    expect(shellQuote('D:\\x\\y')).toBe('D:\\x\\y');
   });
 });
