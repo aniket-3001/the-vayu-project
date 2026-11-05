@@ -16,3 +16,7 @@ updates:
     directory: /
     schedule:
       interval: weekly
+    groups:
+      # init and analyze must run the same version, or the scan fails; one PR moves them together.
+      codeql:
+        patterns: ["github/codeql-action/*"]

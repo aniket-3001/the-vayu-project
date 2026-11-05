@@ -1,3 +1,4 @@
+import { timedFetch } from './timedFetch';
 import { RawHour } from '@vayu/contracts';
 import type { ForecastRepo } from './repos';
 import type { Point } from './station';
@@ -24,7 +25,7 @@ interface OpenMeteoResponse {
 
 export function openMeteoForecastRepo(options: OpenMeteoClientOptions = {}): ForecastRepo {
   const baseUrl = options.baseUrl ?? 'https://air-quality-api.open-meteo.com/v1/air-quality';
-  const doFetch = options.fetchImpl ?? fetch;
+  const doFetch = options.fetchImpl ?? timedFetch();
 
   return {
     async forecastFor(point: Point, asOf: string): Promise<readonly RawHour[]> {
@@ -69,7 +70,7 @@ export interface ModelHistoryRepo {
 
 export function openMeteoHistoryRepo(options: OpenMeteoClientOptions = {}): ModelHistoryRepo {
   const baseUrl = options.baseUrl ?? 'https://air-quality-api.open-meteo.com/v1/air-quality';
-  const doFetch = options.fetchImpl ?? fetch;
+  const doFetch = options.fetchImpl ?? timedFetch();
   return {
     async historyFor(point, asOf, days) {
       const span = Math.min(14, Math.max(1, Math.round(days)));

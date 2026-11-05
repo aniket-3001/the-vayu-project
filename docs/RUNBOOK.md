@@ -41,3 +41,30 @@ rules and says so.
 
 Add a short entry to `learning-log.md`: what broke, how it was found, how it was fixed. If an alarm did not fire when it should have,
 fix the alarm in `infra/lib/Operations.ts` first.
+
+## Shipping a change (as done on 2026-11-05)
+
+1. Work on a branch, open a PR to `main`; the four checks (`prove`, `e2e`, `analyze`, `secrets`) must pass, then merge.
+2. `git checkout main && git pull`.
+3. Stack: `cd infra && npx cdk deploy Vayu --require-approval never`. The options (alarm mail, firewall, origin secret, Sentry host)
+   come from the uncommitted `infra/deploy.local.json` (see `DEPLOY.md`). Check afterwards that the direct `execute-api` address still
+   answers 403 and the CloudFront distribution still lists the firewall.
+4. Site: from the repo root, `VITE_SENTRY_DSN=... VITE_SUPPORT_EMAIL=... scripts/deploy-site.sh`. A run without those two values drops
+   crash reporting and the feedback link from the live site.
+5. Check: the site, `/v1/app-config`, `/privacy.html`; run `node scripts/load-test.mjs <address> --rps 5 --seconds 20 --max 120 --yes`.
+
+**Known:** the load test's p95 limit (1.5 s) fails on cold places (about 4.2 s on 2026-11-05, after the 4 s provider limit was added).
+Repeat lookups are fast (median 26 ms). Making `/v1/today` read the 15-minute harvest cache first would fix it; not built.
+
+## Readable crash reports (source maps)
+
+Needs a Sentry auth token: in Sentry, Settings → Developer Settings → Organization Tokens → Create New Token (permissions: Release
+Admin, Project Read & Write). Copy it once; Sentry will not show it again.
+
+Do not type the token into a terminal or a chat. Copy `.deploy-site.env.example` to `.deploy-site.env` (not committed), open it in
+an editor and fill in the values (`SENTRY_AUTH_TOKEN`, and your usual `VITE_SENTRY_DSN` and `VITE_SUPPORT_EMAIL`). Then the deploy
+needs no options: from the repo root, run `scripts/deploy-site.sh`.
+
+`scripts/upload-sourcemaps.mjs` sends the maps to Sentry under the release `vayu@<version>+<commit>` (the same name the page reports),
+then deletes every `.map` from the build, so they are never published on the site. Without a token nothing is sent and the maps are
+still removed. `SENTRY_URL` is the EU address because the project is in Sentry's EU region.

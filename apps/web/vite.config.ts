@@ -7,7 +7,11 @@ function commit(): string {
   const fromCi = process.env.GITHUB_SHA;
   if (fromCi !== undefined && fromCi !== '') return fromCi.slice(0, 7);
   try {
-    return execSync('git rev-parse --short HEAD', { stdio: ['ignore', 'pipe', 'ignore'] }).toString().trim() || 'dev';
+    return (
+      execSync('git rev-parse --short HEAD', { stdio: ['ignore', 'pipe', 'ignore'] })
+        .toString()
+        .trim() || 'dev'
+    );
   } catch {
     return 'dev';
   }
@@ -16,7 +20,12 @@ function commit(): string {
 export default defineConfig({
   plugins: [react()],
   // Shown on the Account page, so what is running on a phone can be told apart from an older build.
-  define: { __BUILD__: JSON.stringify({ commit: commit(), date: new Date().toISOString().slice(0, 10) }) },
+  define: {
+    __BUILD__: JSON.stringify({ commit: commit(), date: new Date().toISOString().slice(0, 10) }),
+  },
   // MapLibre starts its worker from a path relative to its own file, which pre-bundling would break.
   optimizeDeps: { exclude: ['maplibre-gl'] },
+  // Maps are made only when they are about to be sent to Sentry (scripts/upload-sourcemaps.mjs), 'hidden' so the built files
+  // do not point at them, and are deleted from the build before it is uploaded to the site.
+  build: { sourcemap: process.env.VAYU_SOURCEMAPS === 'on' ? 'hidden' : false },
 });
