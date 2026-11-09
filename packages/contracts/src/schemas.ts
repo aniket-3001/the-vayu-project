@@ -343,12 +343,12 @@ export type FireReport = z.infer<typeof FireReport>;
 export const AssistantContext = z
   .object({
     place: z.string().trim().min(1).max(60),
-    aqi: z.number().int().min(0).max(500),
+    aqi: z.number().int().min(0).max(2000),
     level: z.string().max(40),
     pm25: z.number().min(0).max(1000),
     /** The cleanest daylight hour ahead, if any. */
     best: z
-      .object({ span: z.string().max(40), aqi: z.number().int().min(0).max(500) })
+      .object({ span: z.string().max(40), aqi: z.number().int().min(0).max(2000) })
       .strict()
       .optional(),
     /** GRAP stage by our estimate, 0 for none. */

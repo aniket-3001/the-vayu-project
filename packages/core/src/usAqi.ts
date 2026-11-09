@@ -17,15 +17,21 @@ const BREAKPOINTS = [
 
 /**
  * The US AQI for a PM2.5 concentration in µg/m³. This is the scale IQAir shows; it is a different
- * scale from India's CPCB bands. The AQI on a card is this one; the CPCB scale is used for the GRAP stage, which the alert says. The EPA truncates the
+ * scale from India's CPCB bands. The AQI on a card is this one; the CPCB scale is used for the GRAP stage, which the alert says. Past 325.4 µg/m³ the line is extended (see below). The EPA truncates the
  * concentration to one decimal before looking it up.
  */
 export function usAqi(pm25: number): UsAqi | undefined {
   if (!Number.isFinite(pm25) || pm25 < 0) return undefined;
   const c = Math.floor(pm25 * 10 + 1e-9) / 10;
   const last = BREAKPOINTS[BREAKPOINTS.length - 1];
-  if (last !== undefined && c > last.cHigh)
-    return { value: 500, category: last.category, level: BREAKPOINTS.length - 1 };
+  // Above the top of the EPA table the scale has no official numbers. The Hazardous line is carried on at the same
+  // slope, as IQAir and the other air apps do, so heavy smoke shows its real figure (700 µg/m³ reads about 1,200)
+  // instead of a flat 500.
+  if (last !== undefined && c > last.cHigh) {
+    const beyond =
+      ((last.iHigh - last.iLow) / (last.cHigh - last.cLow)) * (c - last.cLow) + last.iLow;
+    return { value: Math.round(beyond), category: last.category, level: BREAKPOINTS.length - 1 };
+  }
   const row =
     BREAKPOINTS.find((bp) => c >= bp.cLow && c <= bp.cHigh) ??
     BREAKPOINTS.find((bp) => c < bp.cLow);

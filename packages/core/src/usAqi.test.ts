@@ -21,9 +21,16 @@ describe('usAqi (US EPA, PM2.5)', () => {
     expect(usAqi(225.5)).toMatchObject({ value: 301, category: 'Hazardous' });
   });
 
-  it('truncates to one decimal as the EPA does, and caps at 500', () => {
+  it('truncates to one decimal as the EPA does', () => {
     expect(usAqi(9.04)).toMatchObject({ value: 50, category: 'Good' });
-    expect(usAqi(900)?.value).toBe(500);
+  });
+
+  it('carries the Hazardous line past 500 instead of stopping, so heavy smoke shows its real number', () => {
+    expect(usAqi(325.4)?.value).toBe(500);
+    expect(usAqi(500)?.value).toBe(848);
+    expect(usAqi(700)).toMatchObject({ value: 1246, category: 'Hazardous', level: 5 });
+    expect(usAqi(900)?.value).toBe(1645);
+    expect(usAqi(900)?.value).toBeGreaterThan(usAqi(899)?.value ?? Infinity);
   });
 
   it('gives nothing for a missing or impossible value', () => {
