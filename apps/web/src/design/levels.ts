@@ -80,11 +80,8 @@ export const LEVELS: readonly Level[] = [
 ];
 
 /** The level a US AQI falls in. A value that makes no sense reads as the best level, never a crash. */
-/**
- * An AQI as it is written. The US scale stops at 500, so 500 means "500 or more": it is a ceiling, not a measurement,
- * and is shown as 500+.
- */
-export const aqiText = (aqi: number): string => (aqi >= 500 ? '500+' : String(aqi));
+/** An AQI as it is written: the number itself, even past 500 (the scale is carried on, see usAqi). */
+export const aqiText = (aqi: number): string => String(aqi);
 
 export function levelForAqi(aqi: number): Level {
   const first = LEVELS[0];

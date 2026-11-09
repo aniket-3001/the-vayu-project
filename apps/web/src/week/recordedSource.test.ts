@@ -107,16 +107,18 @@ describe('the recorded source', () => {
     expect(await stageOn('2025-12-22', park)).toBe(2);
   });
 
-  it('says the stage and what the 24-hour average was, in words that agree with an AQI of 500', async () => {
+  it('says the stage and what the 24-hour average was, and the card shows the real US figure above 500, not a ceiling', async () => {
     const day = dayOf('2025-10-21');
     setClock(() => day.asOf);
     const [, park] = WEEK_PINS;
     if (park === undefined) throw new Error('no pin');
     const data = await recordedSource(recorded, day).today(park);
-    expect(data.aqi).toBe(500);
+    // The park monitor's smoke reading was far past the US table's top (500), so the card now shows its real number.
+    expect(data.aqi).toBe(1805);
     const grap = alertsFor(data, 0, { school: false }).find((a) => a.kind === 'grap');
     expect(grap?.title).toBe('Air here is in the GRAP Stage IV band today');
     expect(grap?.body).toContain('last 24 hours at this monitor average AQI 500');
+    // That 500 is the India (CPCB) 24-hour average, a different scale that does stop at 500.
     // No school among the places: no line about assembly.
     expect(grap?.body).not.toMatch(/assembly/iu);
   });
