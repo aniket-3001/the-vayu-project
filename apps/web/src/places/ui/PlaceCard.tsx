@@ -7,7 +7,7 @@ import { weekday } from '../../today/time';
 import { AqiChip } from '../../today/ui/Chip';
 import { levelVars } from '../../today/ui/format';
 import { CONDITION_LABELS, FaceIcon, WeatherIcon } from '../../today/ui/icons';
-import { AirFigures } from '../../units/AirUnits';
+import { AirFigures, useAirUnits } from '../../units/AirUnits';
 import { airStore, useToday } from '../../air/store';
 import { grapStageFor } from '../../tasks/model';
 import { placeNote } from '../notes';
@@ -51,6 +51,7 @@ export function PlaceCard({
    */
   readonly live?: { readonly sameAs: string | undefined };
 }): React.JSX.Element {
+  const { smoke } = useAirUnits();
   const state = useToday(pin);
   const removeButton =
     onRemove === undefined || isOriginalPlace(pin) ? null : (
@@ -127,7 +128,7 @@ export function PlaceCard({
     >
       <Link
         to={`/place/${encodeURIComponent(pin.id)}`}
-        className="pc-hit"
+        className={`pc-hit${smoke ? ' with-smoke' : ''}`}
         aria-label={`Open ${heading}`}
         draggable={false}
         onClick={(event) => {

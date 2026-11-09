@@ -4356,6 +4356,20 @@ button.back {
 .pc-aqi.pair.auto .smoke-fig-label {
   display: none;
 }
+/* A narrow card with the cigarettes on: the two figures need the whole width, so the face moves down beside the
+   level and weather instead of sitting in the same row as them. */
+@container (max-width: 299px) {
+  .pc-hit.with-smoke .pc-aqi {
+    grid-column: 1 / -1;
+  }
+  .pc-hit.with-smoke .pc-line {
+    grid-column: 1;
+  }
+  .pc-hit.with-smoke .pc-face {
+    grid-row: 4;
+    align-self: center;
+  }
+}
 @container (min-width: 300px) {
   .place-card .pc-aqi {
     font-size: 48px;

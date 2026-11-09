@@ -27,7 +27,14 @@ interface World {
 }
 
 const world = (): { w: World; fetchImpl: typeof fetch } => {
-  const w: World = { cognito: [], api: [], saved: null, cognitoReplies: {}, authConfig: CONFIG, adminOk: false };
+  const w: World = {
+    cognito: [],
+    api: [],
+    saved: null,
+    cognitoReplies: {},
+    authConfig: CONFIG,
+    adminOk: false,
+  };
   const fetchImpl = ((url: string, init?: RequestInit) => {
     const json = (ok: boolean, body: unknown): Promise<Response> =>
       Promise.resolve({
@@ -385,7 +392,10 @@ describe('the way into the admin panel, and which build this is', () => {
 
   it('shows an admin a link to the panel, because the server said so', async () => {
     await signedIn(true);
-    expect(await screen.findByRole('link', { name: 'Open the admin panel' })).toHaveAttribute('href', '/admin');
+    expect(await screen.findByRole('link', { name: 'Open the admin panel' })).toHaveAttribute(
+      'href',
+      '/admin',
+    );
   });
 
   it('shows no link to anyone the server does not call an admin', async () => {
