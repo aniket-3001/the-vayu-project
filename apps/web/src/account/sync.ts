@@ -46,8 +46,15 @@ export function forgetLocation(storage: Storage): void {
   for (const key of LOCATION_KEYS) storage.removeItem(key);
 }
 
+/**
+ * What this device last saved to (or took from) the account, kept on the device so it survives a restart. It tells the
+ * next launch whether the device has changes the account has not seen yet. Never sent to the account.
+ */
+export const LAST_SYNCED_KEY = 'vayu.sync.last.v1';
+
 export function clearProfile(storage: Storage): void {
   for (const key of SYNC_KEYS) storage.removeItem(key);
+  storage.removeItem(LAST_SYNCED_KEY);
   forgetLocation(storage);
 }
 
@@ -89,6 +96,14 @@ export function accountSync(options: {
   const report = options.onStatus ?? ((): void => undefined);
   let lastSynced = '';
   let serverStamp: string | undefined;
+  const remember = (copy: Profile): void => {
+    lastSynced = text(copy);
+    try {
+      storage.setItem(LAST_SYNCED_KEY, lastSynced);
+    } catch {
+      // Best effort: without it the account's copy wins at the next launch, as it always did.
+    }
+  };
 
   const saved = (updatedAt: string | undefined): void => {
     serverStamp = updatedAt;
@@ -101,7 +116,7 @@ export function accountSync(options: {
     report({ state: 'saving' });
     try {
       const out = await api.put(now);
-      lastSynced = text(now);
+      remember(now);
       saved(out.updatedAt);
     } catch {
       report({ state: 'error' });
@@ -115,22 +130,31 @@ export function accountSync(options: {
       // A new account: what this device has becomes the account's copy.
       if (Object.keys(local).length > 0) {
         const out = await api.put(local);
-        lastSynced = text(local);
+        remember(local);
         saved(out.updatedAt);
       } else {
-        lastSynced = text(local);
+        remember(local);
         saved(undefined);
       }
       return 'ready';
     }
     if (sameProfile(server.profile, local)) {
-      lastSynced = text(local);
+      remember(local);
       saved(server.updatedAt);
       return 'ready';
     }
-    // The account already has a copy: the device takes it. Signing in replaces what this device held.
+    // A change made here that the account has not seen (the app was closed before the save) is newer than the
+    // account's copy, so it is kept and sent, not overwritten. Only a device that has synced before can say so.
+    const before = storage.getItem(LAST_SYNCED_KEY);
+    if (before !== null && before !== text(local)) {
+      const out = await api.put(local);
+      remember(local);
+      saved(out.updatedAt);
+      return 'ready';
+    }
+    // Nothing changed here since the last save, or this device has never synced: it takes the account's copy.
     applyProfile(storage, server.profile);
-    lastSynced = text(server.profile);
+    remember(server.profile);
     saved(server.updatedAt);
     return 'reload';
   }
@@ -148,7 +172,7 @@ export function accountSync(options: {
       return 'ready';
     }
     applyProfile(storage, server.profile);
-    lastSynced = text(server.profile);
+    remember(server.profile);
     saved(server.updatedAt);
     return 'reload';
   }

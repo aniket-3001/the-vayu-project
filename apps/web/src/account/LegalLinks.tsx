@@ -9,7 +9,8 @@ import { API_URL } from '../config';
 export function LegalLinks(): React.JSX.Element {
   return (
     <p className="feedback-link legal-links">
-      <a href={`${API_URL}/privacy.html`}>Privacy policy</a> · <a href={`${API_URL}/terms.html`}>Terms of use</a>
+      <a href={`${API_URL}/privacy.html`}>Privacy policy</a> ·{' '}
+      <a href={`${API_URL}/terms.html`}>Terms of use</a>
     </p>
   );
 }

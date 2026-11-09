@@ -267,3 +267,42 @@ describe('the sign-in kept on a device', () => {
     expect(loadSession(storage)).toBeUndefined();
   });
 });
+
+describe('a change made on this device that has not reached the account yet', () => {
+  it('is not undone when the app is opened again (the cigarette switch kept coming back on)', async () => {
+    const storage = memoryStorage({ 'vayu.units.v1': 'smoke' });
+    const server = fakeServer();
+    // First visit: the device's copy becomes the account's, with the switch on.
+    await accountSync({ storage, api: server }).start();
+    // The person switches it off, and the app is closed before the five-second save.
+    storage.setItem('vayu.units.v1', 'aqi');
+    // Next launch: a new sync object, as after a restart.
+    const result = await accountSync({ storage, api: server }).start();
+    expect(result).toBe('ready');
+    expect(storage.getItem('vayu.units.v1')).toBe('aqi');
+    expect(server.copy.profile?.['vayu.units.v1']).toBe('aqi');
+  });
+
+  it('still takes the account copy on a device that has never synced', async () => {
+    const server = fakeServer({ profile: { 'vayu.units.v1': 'smoke' }, updatedAt: 'x' });
+    const storage = memoryStorage({ 'vayu.units.v1': 'aqi' });
+    expect(await accountSync({ storage, api: server }).start()).toBe('reload');
+    expect(storage.getItem('vayu.units.v1')).toBe('smoke');
+  });
+
+  it('still takes a newer copy from another device when this one changed nothing', async () => {
+    const storage = memoryStorage({ 'vayu.units.v1': 'aqi' });
+    const server = fakeServer();
+    await accountSync({ storage, api: server }).start();
+    server.copy = { profile: { 'vayu.units.v1': 'smoke' }, updatedAt: 'later' };
+    expect(await accountSync({ storage, api: server }).start()).toBe('reload');
+    expect(storage.getItem('vayu.units.v1')).toBe('smoke');
+  });
+
+  it('is forgotten on sign-out, so the next person starts clean', async () => {
+    const storage = memoryStorage({ 'vayu.units.v1': 'smoke' });
+    await accountSync({ storage, api: fakeServer() }).start();
+    clearProfile(storage);
+    expect(storage.length).toBe(0);
+  });
+});

@@ -8,7 +8,13 @@ afterEach(cleanup);
 describe('LegalLinks', () => {
   it('links the privacy policy and the terms', () => {
     render(<LegalLinks />);
-    expect(screen.getByRole('link', { name: 'Privacy policy' })).toHaveProperty('pathname', '/privacy.html');
-    expect(screen.getByRole('link', { name: 'Terms of use' })).toHaveProperty('pathname', '/terms.html');
+    expect(screen.getByRole('link', { name: 'Privacy policy' })).toHaveProperty(
+      'pathname',
+      '/privacy.html',
+    );
+    expect(screen.getByRole('link', { name: 'Terms of use' })).toHaveProperty(
+      'pathname',
+      '/terms.html',
+    );
   });
 });
